@@ -72,7 +72,7 @@ object FIR {
   def main(args: Array[String]): Unit = {
 
     val randGen = new Random(30)
-    val coeff144 = DenseVector(Array.ofDim[Double](144).map(_ => {
+    val coeff144 = DenseVector(Array.ofDim[Double](72).map(_ => {
       val value = randGen.nextInt % 100 + 500 // 避开较小的整数和2的幂,避免优化
       if (isPow2(value)) (value + 13).toDouble
       else value.toDouble
