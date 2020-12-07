@@ -27,4 +27,6 @@ case class Apb3 (config: Apb3Config) extends Bundle with IMasterSlave{ // design
     in(PREADY, PRDATA)
     if(config.userSlaveError) in(PSLVERROR)
   }
+
+  def writing = PWRITE && PENABLE
 }

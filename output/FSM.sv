@@ -10,6 +10,8 @@
 `define fsm_enumDefinition_binary_sequential_fsm_stateC 2'b11
 
 
+
+`include "ff.sv"
 module FSM (
   output reg          io_result,
   input               clk,
@@ -65,12 +67,15 @@ module FSM (
     endcase
   end
 
-  always @ (*) begin
-    io_result = 1'b0;
-    if((_zz_1 && (! _zz_2)))begin
-      io_result = 1'b1;
-    end
-  end
+
+  ff u_ff (
+    // Inputs
+    ._zz_1(_zz_1),
+    ._zz_2(_zz_2),
+    // Outputs
+    .io_result(io_result)
+  );
+
 
   assign _zz_1 = (fsm_stateReg == `fsm_enumDefinition_binary_sequential_fsm_stateB);
   assign _zz_2 = (fsm_stateNext == `fsm_enumDefinition_binary_sequential_fsm_stateB);

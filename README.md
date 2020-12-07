@@ -1,108 +1,44 @@
-Spinal Base Project
-============
-This repository is a base SBT project added to help non Scala/SBT native people in their first steps.
+## 2020.12.08
 
-Just one important note, you need a java JDK >= 8
+- 开始复现Xilinx FIR IP
+    - 完成的内容包括
+        - 初步设计了对应AXI4-Stream的可配置接口
+        - 初步设计了握手协议状态机
+            - 状态机周期性正确
+            - 
 
-On debian : 
 
-```sh
-sudo add-apt-repository -y ppa:openjdk-r/ppa
-sudo apt-get update
-sudo apt-get install openjdk-8-jdk -y
+    - 遇到的问题包括
+        - 对于Spinal中可配置端口的设计有些纠结,可以使用的语法包括
+            - if...else... 但感觉else之后最好是null,如果是两个不同的端口,似乎在类型推断时会束手束脚,不利于后续设计
+            - 通过位宽来实现可配置端口,位宽为0的端口会自动"坍塌"
+            - 目前在设计中,这两种方式都有,对应的配置项分别是userWidth和hasLast,感觉这不是best practice,之后要统一
+            - 归根结底,这是Scala的面向对象和类型系统的问题,未来可以通过对Scala的深度学习,对Spinal的研究和对编译原理的学习解决
+        - 对于Spinal lib当中的AXI4
+            - 本身对于AXI的了解不够,还是有点云里雾里,需要读书
+            - 在Doc中找到的资料,尝试在
+                - 最新的RTD中
+                - 源代码中 进一步寻找,判断是否可以直接使用lib中的AXI4,即使不能直接使用,可以借鉴设计"可配置端口"的方式
+        - Spinal.lib.fsm
+            - 提供了非常好的抽象,让设计状态机变得非常轻松愉快,但目前似乎还有若干bug
+                - 在reset方法为BOOT时,似乎不能boot state自动进入entry point,目前通过显式编程解决
+                - StateDelay在回到自己时,似乎不能很正确地重置计数器,目前通过使用两个StateDelay交叉跳转解决
+                - 许多方法Doc没有提到,源代码中也没有注释,有的方法语义不清晰,需要探索
+                - 但总得来说,使用fsm还是利大于弊,很多概念有了非常好的抽象,即使语义不清晰,因为当前设计方法的迭代速度非常快,
+            
+    - todo
+        - 进行更加完整的波形视图配置,
+        - 将仿真流程改为通过xsim.tcl进行,脚本的最后一步要调用GUI
+        - 使用计时器计算出"迭代时间",对于每个"微迭代"
+            - 学会使用轻量级git命令或是idea的本地版本控制来"保护现场"
+            - 进行更多的设计,简要地进行"实验设计",明确"实验目的",记录"实验结果"
+        - 做出一个能够有机结合
+            - 设计原理文件
+            - Spinal代码
+            - dvt中拼装的verilog design & testbench代码
+            - vivado工程文件 的版本控制方案
+        - 做出一套用于验证握手协议的测试方案,更具体来说,是握手协议+计算任务的测试方案,因为可以想象之后还有大量的module,需要做这种范式的测试,相应的testbench设计,在思路上肯定有共同点
+        - 深入看FIR IP文档了解其工作时序,推测其状态机
+        - 深入学习一款仿真器,使用更多高阶功能
 
-#To set the default java
-sudo update-alternatives --config java
-sudo update-alternatives --config javac
-```
-
-## Basics, without any IDE
-
-You need to install SBT
-
-```sh
-echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
-sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823
-sudo apt-get update
-sudo apt-get install sbt
-```
-
-If you want to run the scala written testbench, you have to be on linux and have Verilator installed (a recent version) :
-
-```sh
-sudo apt-get install git make autoconf g++ flex bison -y  # First time prerequisites
-git clone http://git.veripool.org/git/verilator   # Only first time
-unsetenv VERILATOR_ROOT  # For csh; ignore error if on bash
-unset VERILATOR_ROOT  # For bash
-cd verilator
-git pull        # Make sure we're up-to-date
-git checkout verilator_3_916
-autoconf        # Create ./configure script
-./configure
-make -j$(nproc)
-sudo make install
-cd ..
-echo "DONE"
-
-```
-
-Clone or download this repository.
-
-```sh
-git clone https://github.com/SpinalHDL/SpinalTemplateSbt.git
-```
-
-Open a terminal in the root of it and run "sbt run". At the first execution, the process could take some seconds
-
-```sh
-cd SpinalTemplateSbt
-
-//If you want to generate the Verilog of your design
-sbt "runMain mylib.MyTopLevelVerilog"
-
-//If you want to generate the VHDL of your design
-sbt "runMain mylib.MyTopLevelVhdl"
-
-//If you want to run the scala written testbench
-sbt "runMain mylib.MyTopLevelSim"
-```
-
-The top level spinal code is defined into src\main\scala\mylib
-
-## Basics, with Intellij IDEA and its scala plugin
-
-You need to install :
-
-- Java JDK 8
-- SBT
-- Intellij IDEA (the free Community Edition is good enough)
-- Intellij IDEA Scala plugin (when you run Intellij IDEA the first time, he will ask you about it)
-
-And do the following :
-
-- Clone or download this repository.
-- In Intellij IDEA, "import project" with the root of this repository, Import project from external model SBT
-- In addition maybe you need to specify some path like JDK to Intellij
-- In the project (Intellij project GUI), go in src/main/scala/mylib/MyTopLevel.scala, right click on MyTopLevelVerilog, "Run MyTopLevelVerilog"
-
-Normally, this must generate an MyTopLevel.v output files.
-
-## Basics, with Eclipse and its scala plugin
-
-You need to install :
-
-- Java JDK
-- Scala
-- SBT
-- Eclipse (tested with Mars.2 - 4.5.2)
-- [scala plugin](http://scala-ide.org/) (tested with 4.4.1)
-
-And do the following :
-
-- Clone or download this repository.
-- Run ```sbt eclipse``` in the ```SpinalTemplateSbt``` directory.
-- Import the eclipse project from eclipse.
-- In the project (eclipse project GUI), right click on src/main/scala/mylib/MyTopLevel.scala, right click on MyTopLevelVerilog, and select run it
-
-Normally, this must generate output file ```MyTopLevel.v```.
-
+        - 周三,FIR交流会 & 中导资料完成之后,要开始有计划地制作Spinal教案,还有将之前的chisel设计迁移过来,Spinal教案可以分成若干个模块去做,任务可以和陈泳豪,何伟亮,还有其它人分担

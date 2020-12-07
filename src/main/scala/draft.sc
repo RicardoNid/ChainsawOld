@@ -1,9 +1,7 @@
-import spinal.core._
-import math.{exp, round}
+def testbenchGen(cycle: Int) = {
+  import scala.util.Random
+  val randGen = new Random(42)
+  Range(0, cycle).foreach(_ => println("s_axis_data_tdata  = 32'd" + randGen.nextInt(100) + "; #10;"))
+}
 
-
-
-val amplitudeWidth = 8
-
-(1.573 * (1 << amplitudeWidth).toDouble).toInt
-val A = S(402, 16 bits)
+testbenchGen(100)
