@@ -67,6 +67,8 @@ class Interleave(wordWidth: Int, sizeRd: Int, sizeWr: Int) extends Component {
       .whenIsActive {
         when(doneWr)(goto(HALF))
       }
+      .onEntry()
+      .onExit()
 
     HALF
       .whenIsActive {
