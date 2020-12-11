@@ -5,6 +5,7 @@ import spinal.lib._
 import spinal.lib.fsm._
 import spinal.core.sim._
 import scala.util.Random
+import spinal.lib.eda.xilinx._
 
 class FSM extends Component {
   val io = new Bundle {

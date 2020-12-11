@@ -36,7 +36,7 @@ class AdderTree(bitWidth: Int = 8,
 
 object AdderTree {
   def main(args: Array[String]): Unit = {
-    SpinalConfig(mode = SystemVerilog).generate(new AdderTree(8, 7, false))
+    SpinalConfig(mode = SystemVerilog).generate(new AdderTree(8, 7, true))
   }
 }
 
