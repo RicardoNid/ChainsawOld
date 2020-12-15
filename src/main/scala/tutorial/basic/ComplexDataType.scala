@@ -1,10 +1,7 @@
-package VerilogLike
+package tutorial.basic
 
 import spinal.core._
-import spinal.lib._
-import spinal.lib.fsm._
-
-import Riscv._
+import tutorial.basic.Riscv._
 
 class ComplexDataType extends Component {
 

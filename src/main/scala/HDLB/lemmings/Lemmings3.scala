@@ -27,9 +27,8 @@ class Lemmings3 extends Component {
   import directionType._
   import walkingType._
 
-  val clockConfig = ClockDomainConfig(resetKind = ASYNC) // design : 设置同步/异步reset
+  val clockConfig = ClockDomainConfig(resetKind = ASYNC)
   new ClockingArea(new ClockDomain(clock = io.clk, reset = io.areset, config = clockConfig)) {
-    // design : 设计代码
     val walkingStateNext = walkingType()
     val walkingState = RegNext(walkingStateNext) init (walkingS)
 
@@ -60,7 +59,7 @@ class Lemmings3 extends Component {
     directionStateNext := directionState
     switch(directionState) {
       is(leftS) {
-        when(io.ground && !io.dig && walkingState === walkingS && io.bump_left) { // design : dig将会压制bump
+        when(io.ground && !io.dig && walkingState === walkingS && io.bump_left) {
           directionStateNext := rightS
         }
       }

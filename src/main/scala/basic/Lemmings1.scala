@@ -39,30 +39,6 @@ class Lemming1 extends Component {
     io.walk_left := (state === walkLeftS)
     io.walk_right := (state === walkRightS)
 
-    // design : fsm库的语法和逻辑我很喜欢,但是由于自带一个不能跳过(至少我不知道怎么做)的bootState,反而难以处理这个HDLBits上这些简单的状态机
-    // design : 这也说明一个问题,当高级特性的设计与你预期不符时,你始终可以通过写verilog-style的代码来回避
-    //
-    //    val fsm = new StateMachine {
-    //
-    //      val walkLeftS = new State with EntryPoint
-    //      val walkRightS = new State
-    //
-    //      walkLeftS.whenIsActive {
-    //        when(io.bump_left) {
-    //          goto(walkRightS)
-    //        }
-    //      }
-    //
-    //      walkRightS.whenIsActive {
-    //        when(io.bump_right) {
-    //          goto(walkLeftS)
-    //        }
-    //      }
-    //
-    //      io.walk_left := isActive(walkLeftS)
-    //      io.walk_right := isActive(walkRightS)
-    //    }
-
     noIoPrefix()
   }
 }

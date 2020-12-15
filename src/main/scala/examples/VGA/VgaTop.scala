@@ -19,7 +19,7 @@ class VgaTop extends Component {
   }
 
   val ctrl = new VgaCtrl(rgbConfig = rgbConfig)
-  ctrl.io.timings.setAs_h640_v480_r60 // design : 设置VGA控制器频率
+  ctrl.io.timings.setAs_h640_v480_r60
 
 
   val colCount = Counter(0 until 64, ctrl.io.pixels.fire)
@@ -27,7 +27,7 @@ class VgaTop extends Component {
   val rowCount = Counter(0 until 48, colBlockCount.willOverflowIfInc && colCount.willOverflowIfInc)
   val rowBlockCount = Counter(0 until 10, rowCount.willOverflowIfInc && colBlockCount.willOverflowIfInc && colCount.willOverflowIfInc)
   val samples = 100
-  val rom = Mem(UInt(rgbConfig.getWidth bits), Range(0, samples).map(_ => U(Random.nextInt(65536)))) // design :预制颜色
+  val rom = Mem(UInt(rgbConfig.getWidth bits), Range(0, samples).map(_ => U(Random.nextInt(65536))))
 
   ctrl.io.softReset := io.reset
   io.error := ctrl.io.error

@@ -12,14 +12,14 @@ class SinusROM(resolutionWidth: Int, sampleCount: Int) extends Component {
 
   def sinTable = Range(0, sampleCount).
     map(i => Math.sin(2 * Math.PI * i / sampleCount)).
-    map(sinValue => S((sinValue * ((1 << resolutionWidth) / 2 - 1)).toInt, resolutionWidth bits)) // design : 手动转换定点数
+    map(sinValue => S((sinValue * ((1 << resolutionWidth) / 2 - 1)).toInt, resolutionWidth bits))
 
   val rom = Mem(SInt(resolutionWidth bits), initialContent = sinTable)
   val phase = Reg(UInt(log2Up(sampleCount) bits)) init(0)
   phase := phase + 1
 
   io.sin := rom.readSync(phase)
-  io.sinFiltered := RegNext(io.sinFiltered - (io.sinFiltered >> 5) + (io.sin >> 5)) init(0) // design : SpinalHDL中,输出端口的值可以被使用
+  io.sinFiltered := RegNext(io.sinFiltered - (io.sinFiltered >> 5) + (io.sin >> 5)) init(0)
 }
 
 object SinusROM {

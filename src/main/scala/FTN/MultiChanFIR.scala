@@ -8,11 +8,11 @@ import spinal.core.sim._
 import scala.util.Random
 
 case class ComplexNumberVector(bitWidth: Int, num: Int, direction: IODirection) extends Bundle {
-  val real = direction Vec(SInt(bitWidth bits), num) // design : Bundle端口方向需要给出,不能用in/out修饰Bundle
+  val real = direction Vec(SInt(bitWidth bits), num)
   val imag = direction Vec(SInt(bitWidth bits), num)
 }
 
-case class MultiChanFIRConfig( // design : 对于配置比较多,比较复杂的模块,声明一个Config类
+case class MultiChanFIRConfig(
                                widthInput: Int = 8,
                                widthCoeff: Int = 8,
                                widthOutput: Int = 8,

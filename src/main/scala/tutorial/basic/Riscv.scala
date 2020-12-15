@@ -1,8 +1,6 @@
-package VerilogLike
+package tutorial.basic
 
 import spinal.core._
-import spinal.lib._
-import spinal.lib.fsm._
 
 case class MIPS() extends Bundle {
   val inst = Bits(32 bits)

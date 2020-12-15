@@ -17,9 +17,8 @@ class CountClock extends Component {
     val ss = out Bits (8 bits)
   }
 
-  val clockConfig = ClockDomainConfig(resetKind = SYNC) // design : 设置同步/异步reset
+  val clockConfig = ClockDomainConfig(resetKind = SYNC)
   new ClockingArea(new ClockDomain(clock = io.clk, reset = io.reset, config = clockConfig)) {
-    // design : 设计代码
 
     val counterSs0 = Counter(0 to 9, io.ena)
     val counterSs1 = Counter(0 to 5, counterSs0.willOverflow)

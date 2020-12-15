@@ -1,13 +1,21 @@
-import spinal.core._
-import spinal.lib.eda.xilinx._
+// live templates
 
-val report = VivadoFlow(
-  vivadoPath = "C:/Xilinx/Vivado/2020.1/bin",
-  workspacePath = "C:/Users/lsfan/Documents/GitHub/anotherWork",
-  toplevelPath = "FSMTemplate.sv",
-  family = "Artix 7",
-  device = "xc7k70t-fbg676-3",
-  frequencyTarget = 1 MHz
-)
-println(report.getArea())
-println(report.getFMax())
+// optional port
+
+// 可选端口 if(config.userSlaveError) Bool else null
+
+// 自定义bundle类
+//  不光是定义端口,更重要的是实现含有语义的方法
+//  按照层次包括端口名定义,端口连接规则,数据行为规则
+// 自定义config类
+// 自定义bundle文件
+
+// typedef
+
+import spinal.core._
+import spinal.lib._
+import spinal.lib.fsm._
+import spinal.lib.bus.amba4.axi._
+import spinal.core.sim._
+
+println(log2Up(1))

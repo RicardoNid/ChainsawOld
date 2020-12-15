@@ -51,12 +51,12 @@ object testBasicStream {
 
         val mainThread = fork {
 
-          def randInput = randGen.nextInt(1 << 8) // design : 预先设置好随机数模式
+          def randInput = randGen.nextInt(1 << 8)
           // 模式1,一直读写
           dut.io.input.valid #= true
           dut.io.output.ready #= true
           sleep(17 * period)
-          sleep(period / 2) // design : 使得激励差半周期
+          sleep(period / 2)
           for (i <- 0 until 100) {
             dut.io.input.payload #= randInput
             sleep(period)

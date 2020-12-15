@@ -1,16 +1,14 @@
-// design : 自定义Bundle上实现方法
-
 package examples
 
 import spinal.core._
 import spinal.lib._
 
-case class Color(channelWidth: Int) extends Bundle { // design : 自定义Bundle不仅可以定义接口,还可以实现方法
+case class Color(channelWidth: Int) extends Bundle {
   val r = UInt(channelWidth bits)
   val g = UInt(channelWidth bits)
   val b = UInt(channelWidth bits)
 
-  def +(that: Color): Color = { // design : 定义+方法 scala中方法和operator同质
+  def +(that: Color): Color = {
     val result = Color(channelWidth)
     result.r := this.r + that.r
     result.g := this.g + that.g

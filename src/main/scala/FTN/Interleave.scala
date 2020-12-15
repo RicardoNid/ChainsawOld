@@ -1,4 +1,5 @@
-// design :
+// design : 实现了ping-pong buffer + Stream协议
+// design : 这应当是"计算电路"中模块连接的标准方式 - calc - buffer - calc,思考这种范式怎么和CNN中的"计算图"结合
 // 功能 : 交织
 // 协议 : Stream(握手) + Fragment
 // 综合要求 : 双口BRAM
@@ -26,10 +27,10 @@ class Interleave(wordWidth: Int, sizeRd: Int, sizeWr: Int) extends Component {
     val output = master Stream (Fragment(typeWord))
   }
 
-  val ping = Mem(typeWord, depth) // mem0 // design : 实现ping-pong buffer
+  val ping = Mem(typeWord, depth) // mem0
   val pong = Mem(typeWord, depth) // mem1
 
-  val ptrWr = Reg(UInt(1 bits)) init (U(0)) // design : 重置后,读写指针都指向ping
+  val ptrWr = Reg(UInt(1 bits)) init (U(0))
   val ptrRd = Reg(UInt(1 bits)) init (U(0))
 
   // -----读写逻辑-----//
@@ -39,7 +40,7 @@ class Interleave(wordWidth: Int, sizeRd: Int, sizeWr: Int) extends Component {
 
   val addressWr = UInt(log2Up(depth) bits)
   addressWr := countWr
-  ping.write(addressWr, io.input.payload, io.input.fire && ptrWr === U(0)) // design : 对不同mem的选择不能通过when进行,因为mem的读写方法是描述连线,不是描述事件
+  ping.write(addressWr, io.input.payload, io.input.fire && ptrWr === U(0))
   pong.write(addressWr, io.input.payload, io.input.fire && ptrWr === U(1))
 
   val counterRd = Counter(0 until depth, io.output.fire)
@@ -55,7 +56,7 @@ class Interleave(wordWidth: Int, sizeRd: Int, sizeWr: Int) extends Component {
 
   // -----状态机部分-----//
   val doneRdDelay = Delay(doneRd, 1) init (False)
-  when(doneWr)(ptrWr := ~ptrWr) // design : 单行内容可以使用()
+  when(doneWr)(ptrWr := ~ptrWr)
   when(doneRdDelay)(ptrRd := ~ptrRd)
 
   val fsm = new StateMachine {

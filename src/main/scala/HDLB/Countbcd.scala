@@ -13,10 +13,8 @@ class Countbcd extends Component {
     val q = out Bits (16 bits)
   }
 
-  val clockConfig = ClockDomainConfig(resetKind = SYNC) // design : 设置同步/异步reset
+  val clockConfig = ClockDomainConfig(resetKind = SYNC)
   new ClockingArea(new ClockDomain(clock = io.clk, reset = io.reset, config = clockConfig)) {
-    // design : 设计代码
-
     // 更加熟悉集合类型之后,改写
     val counter1 = Counter(10, True)
     val counter2 = Counter(10, counter1.willOverflow)

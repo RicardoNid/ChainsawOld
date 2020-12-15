@@ -12,9 +12,9 @@ case class PixelSolverGenerics(
                                 fixResulotion: Int,
                                 iterationLimit: Int
                               ) {
-  val iterationWidth = log2Up(iterationLimit + 1) // todo : why +1 ?
-  def iterationType = UInt(iterationWidth bits) // design : 以def声明类型，之后用作typedef
-  def fixType = SFix( // design : 定义定点数类型
+  val iterationWidth = log2Up(iterationLimit + 1)
+  def iterationType = UInt(iterationWidth bits)
+  def fixType = SFix(
     peak = fixAmplitude exp,
     resolution = fixResulotion exp
   )
@@ -30,11 +30,11 @@ case class PixelResult(g: PixelSolverGenerics) extends Bundle {
 
 class PixelSolver(g: PixelSolverGenerics) extends Component {
   val io = new Bundle {
-    val cmd = slave Stream (PixelTask(g)) // design : Stream类型不是分in,out,而是分master,对于Stream,slave;in = slave,out = master
+    val cmd = slave Stream (PixelTask(g))
     val rsp = master Stream (PixelResult(g))
   }
 
-  import g._ // design : import types
+  import g._
   val x, y = Reg(fixType) init (0)
   val iteration = Reg(iterationType) init (0)
 
@@ -42,7 +42,7 @@ class PixelSolver(g: PixelSolverGenerics) extends Component {
   val yy = y * y
   val xy = x * y
 
-  io.cmd.ready := False // design : Stream本身具有valid,ready和payload端口
+  io.cmd.ready := False
   io.rsp.valid := False
   io.rsp.iteration := iteration
 
@@ -50,7 +50,7 @@ class PixelSolver(g: PixelSolverGenerics) extends Component {
     when(xx + yy >= 4.0 || iteration === iterationLimit) {
       io.rsp.valid := True
       when(io.rsp.ready) {
-        io.cmd.ready := True // design : 握手stream的"back pressure"
+        io.cmd.ready := True
         x := 0
         y := 0
         iteration := 0

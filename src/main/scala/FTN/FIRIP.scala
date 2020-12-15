@@ -29,7 +29,7 @@ class FIRIP(FIRConfig: FIRIPConfig) extends Component {
     val aclk = in Bool
     val aclken = if (FIRConfig.hasClken) in Bool else null
     val aresetn = if (FIRConfig.hasResetn) in Bool else null
-    val config = if (FIRConfig.hasConfig) slave(AXIS(1, FIRConfig.hasLast, 0)) else null // design : 通过设置宽度为0,相应端口不会产生
+    val config = if (FIRConfig.hasConfig) slave(AXIS(1, FIRConfig.hasLast, 0)) else null
     val reload = if (FIRConfig.hasReload) slave(AXIS(8, FIRConfig.hasLast, 0)) else null
     val datain = slave(AXIS(FIRConfig.dataWidth, FIRConfig.hasLast, FIRConfig.userWidth))
     val dataout = master(AXIS(FIRConfig.dataWidth + bitGrowth, FIRConfig.hasLast, FIRConfig.userWidth))
@@ -38,7 +38,7 @@ class FIRIP(FIRConfig: FIRIPConfig) extends Component {
   // 设定时钟域
   val CD = ClockDomain(
     clock = io.aclk,
-    reset = io.aresetn, // todo : 能否为null?
+    reset = io.aresetn,
     clockEnable = io.aclken,
     config = XilinxCDConfig
   )
@@ -78,13 +78,13 @@ class FIRIP(FIRConfig: FIRIPConfig) extends Component {
         .whenIsActive(when(io.datain.stream.fire)(goto(BUSY1)))
 
       BUSY1
-        .whenCompleted{
+        .whenCompleted {
           io.dataout.stream.valid := True
           when(io.datain.stream.fire)(goto(BUSY2)).otherwise(goto(IDLE))
         }
 
       BUSY2
-        .whenCompleted{
+        .whenCompleted {
           io.dataout.stream.valid := True
           when(io.datain.stream.fire)(goto(BUSY1)).otherwise(goto(IDLE))
         }
@@ -103,11 +103,14 @@ object FIRIP {
 
   val config = FIRIPConfig(
     dataWidth = 16,
-    userWidth = 0) // design : 不能在generate时再声明config
+    userWidth = 0)
 
   def main(args: Array[String]): Unit = {
     SpinalConfig(mode = SystemVerilog, targetDirectory = outputDir)
-      .generate(new FIRIP(config)).printPruned().printPrunedIo()
+      .generate(new FIRIP(
+        FIRIPConfig(
+        dataWidth = 16,
+        userWidth = 0))).printPruned().printPrunedIo()
   }
 }
 

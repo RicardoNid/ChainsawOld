@@ -16,7 +16,7 @@ class VgaCtrl(rgbConfig: RgbConfig = new RgbConfig(8, 8, 8), timingsWidth: Int =
     val vga = master(Vga(rgbConfig))
   }
 
-  case class HVArea(timingsHV: VgaTimingsHV, enable: Bool) extends Area { // design : 总是避免将H,V的逻辑写两遍
+  case class HVArea(timingsHV: VgaTimingsHV, enable: Bool) extends Area {
     val counter = Reg(UInt(timingsWidth bit)) init (0)
 
     val syncStart = counter === timingsHV.syncStart
@@ -41,7 +41,7 @@ class VgaCtrl(rgbConfig: RgbConfig = new RgbConfig(8, 8, 8), timingsWidth: Int =
     }
   }
 
-  val h = HVArea(io.timings.h, True) // design : 将Area当做子模块使用
+  val h = HVArea(io.timings.h, True)
   val v = HVArea(io.timings.v, h.syncEnd)
 
   val colorEn = h.colorEn && v.colorEn

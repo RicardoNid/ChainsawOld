@@ -1,5 +1,3 @@
-// design : 使用中间变量
-
 package examples
 
 import spinal.core._
@@ -11,7 +9,7 @@ class CarryAdder(size: Int) extends Component {
     val b = in UInt (size bits)
     val result = out UInt (size bits)
   }
-  var c = False // design : 使用var + \=赋值,通过中间变量构筑逻辑
+  var c = False
   for (i <- 0 until size) {
     val a = io.a(i)
     val b = io.b(i)

@@ -6,7 +6,7 @@ import spinal.lib._
 import spinal.lib.fsm._
 
 // HDLBits URL = https://hdlbits.01xz.net/wiki/Lemmings4
-class Lemmings4 extends Component { // design : one-shoot success on this!
+class Lemmings4 extends Component {
 
   val io = new Bundle {
     val clk = in Bool
@@ -45,7 +45,7 @@ class Lemmings4 extends Component { // design : one-shoot success on this!
 
       DIG.whenIsActive(when(!io.ground)(goto(FALL)))
 
-      FALL // design : "状态计时器"的典型用法
+      FALL
         .onEntry(fallTimeout.clear())
         .whenIsActive {
           when(io.ground) {

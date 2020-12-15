@@ -16,9 +16,9 @@ class Lemmings2FSM extends Component {
     val aaah = out Bool
   }
 
-  val clockConfig = ClockDomainConfig(resetKind = ASYNC) // design : 设置同步/异步reset
+  val clockConfig = ClockDomainConfig(resetKind = ASYNC)
   new ClockingArea(new ClockDomain(clock = io.clk, reset = io.areset, config = clockConfig)) {
-    // design : 设计代码
+
 
     val fsm = new StateMachineNoBoot {
       val WALK = StateEntryPoint()

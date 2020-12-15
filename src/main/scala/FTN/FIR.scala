@@ -1,7 +1,7 @@
-package DSP
+package FTN
 
-import spinal.core._
 import breeze.linalg.DenseVector
+import spinal.core._
 
 import scala.util.Random
 
@@ -68,6 +68,8 @@ class FIR(
   }
 }
 
+import spinal.lib.eda.xilinx._
+
 object FIR {
   def main(args: Array[String]): Unit = {
 
@@ -78,6 +80,16 @@ object FIR {
       else value.toDouble
     }))
 
-    SpinalVerilog(new FIR(coeffs = coeff144, version = "systolic"))
+    SpinalConfig(mode = SystemVerilog, targetDirectory = "output/FTN")
+      .generateSystemVerilog(new FIR(coeffs = coeff144, version = "systolic"))
+
+    val report = VivadoFlow(
+      "C:/Xilinx/Vivado/2020.1/bin",
+      "output/FIRVIVADO/",
+      "FIR.sv",
+      "Artix 7", "xc7k70t-fbg676-3", 100 MHz, 1)
+
+    println(report.getArea())
+    println(report.getFMax())
   }
 }

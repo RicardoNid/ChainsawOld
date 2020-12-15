@@ -1,8 +1,6 @@
-package VerilogLike
+package tutorial.basic
 
 import spinal.core._
-import spinal.lib._
-import spinal.lib.fsm._
 
 // HDLBits URL = https://hdlbits.01xz.net/wiki/Exams/ece241_2014_q4
 class DFFAndGates extends Component {

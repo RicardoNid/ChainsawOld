@@ -28,8 +28,6 @@ package object FTN {
       out(user)
       if(hasLast) out(last)
     }
-
-    // todo : 定义方法令两个AXIS端口的user字段可以进行直连/指定delay的连接
   }
 
   val default_vector = Array(6, 0, -4, -3, 5, 6, -6, -13, 7, 44, 64, 44, 7, -13, -6, 6, 5, -3, -4, 0, 6)

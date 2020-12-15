@@ -1,18 +1,16 @@
-package VerilogLike
+package tutorial.FSM
 
 import spinal.core._
-import spinal.lib._
 import spinal.core.sim._
+import spinal.lib._
 import spinal.lib.fsm.{State, StateMachine}
-
-import scala.util.Random
 
 class FSM extends Component {
     val io = new Bundle {
     val output = out Bool
   }
 
-  val fsm = new StateMachine { // design : 取消boot的特殊行为,将boot作为"第一个",而非"第零个"状态使用
+  val fsm = new StateMachine {
     val S0 = stateBoot
     setEntry(S0)
     S0.setName("S0")
@@ -22,9 +20,9 @@ class FSM extends Component {
     val timeout = Timeout(2)
 
     S0.onEntry(timeout.clear())
-      .whenIsActive(when(timeout)(goto(S1)))
+      .whenIsActive(when(timeout.counter.willOverflow)(goto(S1)))
     S1.onEntry(timeout.clear())
-      .whenIsActive(when(timeout)(goto(S0)))
+      .whenIsActive(when(timeout.counter.willOverflow)(goto(S0)))
 
     io.output := isActive(S1)
   }

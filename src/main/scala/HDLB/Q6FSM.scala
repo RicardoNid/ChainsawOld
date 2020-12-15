@@ -13,9 +13,8 @@ class Q6FSM extends Component {
     val z = out Bool
   }
 
-  val clockConfig = ClockDomainConfig(resetKind = SYNC) // design : 设置同步/异步reset
+  val clockConfig = ClockDomainConfig(resetKind = SYNC)
   new ClockingArea(new ClockDomain(clock = io.clk, reset = io.reset, config = clockConfig)) {
-    // design : 设计代码
     val fsm = new StateMachine {
       val A = StateEntryPoint()
       val B = State()

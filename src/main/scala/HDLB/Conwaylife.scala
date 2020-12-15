@@ -14,9 +14,8 @@ class Conwaylife extends Component {
     val q = out Bits (256 bits)
   }
 
-  val clockConfig = ClockDomainConfig(resetKind = SYNC, resetActiveLevel = HIGH) // design : 设置同步/异步reset
+  val clockConfig = ClockDomainConfig(resetKind = SYNC, resetActiveLevel = HIGH)
   new ClockingArea(new ClockDomain(clock = io.clk, reset = io.load, config = clockConfig)) {
-    // design : 设计代码
     val wrap = (x: Int) => if (x > 15) 0 else if (x < 0) 15 else x
 
     val qReg = RegInit(io.data)

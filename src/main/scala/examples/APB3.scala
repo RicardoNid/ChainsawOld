@@ -1,4 +1,4 @@
-// design : 自定义接口设计
+
 
 package examples
 
@@ -12,7 +12,7 @@ case class Apb3Config(
                        userSlaveError: Boolean
                      )
 
-case class Apb3 (config: Apb3Config) extends Bundle with IMasterSlave{ // design : 自定义Bundle时,使用case class
+case class Apb3 (config: Apb3Config) extends Bundle with IMasterSlave{
   val PADDR = UInt(config.addressWidth bits) // address in byte
   val PSEL = UInt(config.addressWidth bits) // one bit per slave
   val PENABLE = Bool
@@ -20,9 +20,9 @@ case class Apb3 (config: Apb3Config) extends Bundle with IMasterSlave{ // design
   val PWRITE = Bool
   val PWDATA = Bits(config.dataWidth bits) // write data
   val PRDATA = Bits(config.dataWidth bits) // read data
-  val PSLVERROR = if(config.userSlaveError) Bool else null // design : 在Spinal中不是使用Option,而是这样定义可选端口
+  val PSLVERROR = if(config.userSlaveError) Bool else null
 
-  override def asMaster(): Unit = { // design : 需要override关键字
+  override def asMaster(): Unit = {
     out(PADDR, PSEL, PENABLE, PWRITE, PWDATA)
     in(PREADY, PRDATA)
     if(config.userSlaveError) in(PSLVERROR)

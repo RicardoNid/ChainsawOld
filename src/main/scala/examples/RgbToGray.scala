@@ -7,7 +7,7 @@ import spinal.core.sim._
 class RgbToGray extends Component {
   val io = new Bundle {
     val clear = in Bool
-    val r, g, b = in UInt (8 bits) // design : 可以一次性声明多个同类型信号
+    val r, g, b = in UInt (8 bits)
     val wr = out Bool
     val address = out UInt (16 bits)
     val data = out UInt (8 bits)
@@ -16,12 +16,12 @@ class RgbToGray extends Component {
   def coef(value: UInt, by: Float): UInt = (value * U((255 * by).toInt, 8 bits) >> 8)
 
   val gray = RegNext(
-    coef(io.r, 0.4f) + // design : f后缀,float
+    coef(io.r, 0.4f) +
       coef(io.g, 0.4f) +
       coef(io.b, 0.3f)
   )
 
-  val address = CounterFreeRun(1 << 16) // design : CounterFreeRun在给定范围内循环
+  val address = CounterFreeRun(1 << 16)
   io.address := address
   io.wr := True
   io.data := gray
