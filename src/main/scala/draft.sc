@@ -1,3 +1,5 @@
-val a = Array(Array(1), Array(2))
+import spinal.core._
+import spinal.lib._
+import spinal.lib.fsm._
 
-a.flatten
+StateMachineSimExample.main(Array(" "))

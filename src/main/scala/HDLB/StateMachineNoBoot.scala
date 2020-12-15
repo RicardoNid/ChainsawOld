@@ -32,10 +32,10 @@ class StateMachineNoBoot extends Area with StateMachineAccessor with ScalaLocate
 
   val cache = mutable.HashMap[Any, Any]()
   val enumDefinition = new StateMachineEnum
-  var stateReg: enumDefinition.C = null
-  var stateNext: enumDefinition.C = null
+  private var stateReg: enumDefinition.C = null
+  private var stateNext: enumDefinition.C = null
   /* Candidate for next state */
-  var stateNextCand: enumDefinition.C = null
+  private var stateNextCand: enumDefinition.C = null
   /* Condition for transition */
   var transitionCond: Bool = null
   override val wantExit = False.allowPruning()
@@ -91,6 +91,8 @@ class StateMachineNoBoot extends Area with StateMachineAccessor with ScalaLocate
 
     val stateRegOneHotMap = states.map(state => (state -> (stateReg === enumOf(state)))).toMap
     val stateNextOneHotMap = states.map(state => (state -> (stateNext === enumOf(state)))).toMap
+    println(stateRegOneHotMap)
+    println(stateNextOneHotMap)
     if (transitionCond == null) {
       stateNext := stateReg
     } else {

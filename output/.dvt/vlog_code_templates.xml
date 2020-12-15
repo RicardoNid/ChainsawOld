@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><templates><template autoinsert="false" context="ro.amiq.vlogdt.templates.contextType.file_content" deleted="false" description="mips_module" enabled="true" name="mips_module">// ${user}&#13;
-// ${date}&#13;
-&#13;
-module ${file_name} (&#13;
-	input logic clk,&#13;
-	input logic rstn,&#13;
-	output logic out&#13;
-);</template></templates>
