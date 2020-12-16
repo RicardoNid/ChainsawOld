@@ -1,5 +1,1 @@
-import spinal.core._
-import spinal.lib._
-import spinal.lib.fsm._
-
-StateMachineSimExample.main(Array(" "))
+"output/FTN/FIR.sv".split("/").last

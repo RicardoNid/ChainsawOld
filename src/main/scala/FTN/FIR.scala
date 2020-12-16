@@ -6,7 +6,7 @@ import spinal.core._
 import scala.util.Random
 
 class FIR(
-           bitWidthIn: Int = 27,
+           bitWidthIn: Int = 27, // design : 注意，DSP48E1是25*18,E2才是27*18,这直接影响了DSP的生成
            bitWidthWeight: Int = 18,
            bitWidthOut: Int = 48,
            mantissaWidth: Int = 0,
@@ -34,24 +34,12 @@ class FIR(
   inputZERO := 0 // 如果写成0.0,ZERO的位数会被拓展
 
   if (version == "systolic") {
-    //    val inReg = RegInit(inputZERO)
-    //    val xRegs = RegInit(Vec(Seq.fill(2 * length - 1)(inputZERO)))
     // fixme : spinal会把reset全部放在一起处理,"打断"了综合器对于代码的阅读,而无法推断出相邻DSP间的传播,无法推断出脉动阵列
-    // fixme : 需要显示reset,而非使用RegInit
+    // fixme : 需要显式reset,而非使用RegInit
     val inReg = RegNext(io.dataIn) // fixme : 如果不使用inReg,xRegs(0) := io.in 将会大大增加时延 找出原因
     val xRegs = Reg(Vec(typeIn, 2 * length - 1))
     val multRegs = Reg(Vec(typeMult, length))
     val yRegs = Reg(Vec(typeOut, length))
-
-    //    inReg := io.dataIn // fixme : 如果不使用inReg,xRegs(0) := io.in 将会大大增加时延 找出原因
-    //    xRegs(0) := inReg
-    //    for (i <- 1 until xRegs.length) xRegs(i) := xRegs(i - 1) // 连接输入传播线
-    //    for (i <- 0 until length) multRegs(i) := weightWires(i) * xRegs(i * 2)
-    //    yRegs(0) := multRegs(0)
-    //    for (i <- 1 until length) yRegs(i) := yRegs(i - 1) + multRegs(i)
-    //    //    io.out := yRegs(length - 1)
-    //    val bufReg = RegNext(yRegs(length - 1))
-    //    io.dataOut := bufReg
 
     xRegs(0) := inReg
     multRegs(0) := weightWires(0) * xRegs(0)
@@ -64,11 +52,10 @@ class FIR(
     }
     val bufReg = RegNext(yRegs(length - 1))
     io.dataOut := bufReg
-
   }
 }
 
-import spinal.lib.eda.xilinx._
+import glob._
 
 object FIR {
   def main(args: Array[String]): Unit = {
@@ -84,12 +71,15 @@ object FIR {
       .generateSystemVerilog(new FIR(coeffs = coeff144, version = "systolic"))
 
     val report = VivadoFlow(
-      "C:/Xilinx/Vivado/2020.1/bin",
-      "output/FIRVIVADO/",
-      "FIR.sv",
-      "Artix 7", "xc7k70t-fbg676-3", 100 MHz, 1)
+      "output/VIVADO",
+      "output/FTN/FIR.sv",
+      Vivado.bin,
+      Vivado.family,
+      Vivado.device,
+      100 MHz,
+      1)
 
     println(report.getArea())
-    println(report.getFMax())
+    println(report.getFMax() / 1E6 + " MHz")
   }
 }
