@@ -9,6 +9,9 @@ libraryDependencies ++= Seq(
   compilerPlugin("com.github.spinalhdl" % "spinalhdl-idsl-plugin_2.11" % spinalVersion)
 )
 
+// https://mvnrepository.com/artifact/org.tensorflow/tensorflow
+libraryDependencies += "org.tensorflow" % "tensorflow" % "1.15.0"
+
 fork := true
 EclipseKeys.withSource := true
 

@@ -48,10 +48,10 @@ class TinyCPU extends Component {
     pcReg := pcReg + 1
 
     switch(opcode) {
-      is(U"8'h00")(acReg := acReg + memory(address.resized).asUInt)
-      is(U"8'h01")(memory(address.resized) := acReg.asBits)
-      is(U"8'h02")(acReg := memory(address.resized).asUInt)
-      is(U"8'h03")(pcReg := address.resized)
+      is(U"8'h00")(acReg := acReg + memory(address.resized).asUInt) // ADD
+      is(U"8'h01")(memory(address.resized) := acReg.asBits) // STORE
+      is(U"8'h02")(acReg := memory(address.resized).asUInt) // LOAD
+      is(U"8'h03")(pcReg := address.resized) //
       is(U"8'h04")(when(acReg < ZERO)(pcReg := address.resized))
     }
 

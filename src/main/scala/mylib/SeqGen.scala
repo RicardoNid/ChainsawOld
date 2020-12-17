@@ -8,11 +8,12 @@ import spinal.core.sim._
 import scala.util.Random
 import glob._
 
-class SeqGen(sequence: Seq[Int]) extends Component { // todo : 找一种比Array更好的数据类型
+// todo : 实现一个工厂方法,接收迭代器
+class SeqGen(sequence: Seq[Int]) extends Component {
 
   // encoding
   // todo : 补充序列重复检查
-  require(sequence.forall(_ >= 0))
+  require(sequence.forall(_ >= 0), "SeqGen requires a sequence of unsigned(>=0) integers")
   val length = sequence.length
 
   val bitWidth = log2Up(sequence.max)
@@ -26,7 +27,11 @@ class SeqGen(sequence: Seq[Int]) extends Component { // todo : 找一种比Array
     (0 until length).foreach(i => encodedSequence(i) := U(sequence(i), bitWidth bits))
     actualWidth = bitWidth
   }
-  else { // 有重复项,还要编码计数器值到低位 todo : 实现按重复次数编码(总之,更优编码) todo : 搞清楚截断高位还是低位
+  else { // 有重复项,还要编码计数器值到高位
+    // todo : 实现按重复次数编码(总之,更优编码)
+    // todo : 寄存器数量更优的编码,组合逻辑上不一定
+    // todo : dontCare的使用是必要的,改进很大
+    // todo : 搞清楚截断高位还是低位 - 截断的是高位
     (0 until length).foreach(i => encodedSequence(i) := U(i, counterWidth bits) @@ U(sequence(i), bitWidth bits))
     actualWidth = bitWidth + counterWidth
   }
@@ -48,7 +53,6 @@ class SeqGen(sequence: Seq[Int]) extends Component { // todo : 找一种比Array
 }
 
 object SeqGen {
-
 
   def main(args: Array[String]): Unit = {
 
