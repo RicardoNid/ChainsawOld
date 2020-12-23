@@ -1,16 +1,9 @@
-import breeze.linalg._
-import breeze.numerics._
-import breeze.signal._
+type transformer = (Int, Int, Int, Int, Int, Int) => Any
+type transformer1D = (Int, Int, Int, Int, Int, Int) => Int // order = kx, ky, ni, ox, oy, no (same as Ma,2018)
+type transformer2D = (Int, Int, Int, Int, Int, Int) => (Int, Int)
+type transformer3D = (Int, Int, Int, Int, Int, Int) => (Int, Int, Int)
+type transformer4D = (Int, Int, Int, Int, Int, Int) => (Int, Int, Int, Int)
 
-val reuse = DenseMatrix.eye[Int](5)
+transformer4D
 
-val cols = (0 until 5).map(i => reuse(::, i))
-
-cols(1) == cols(2)
-
-cols.
-
-
-
-
-
+println
