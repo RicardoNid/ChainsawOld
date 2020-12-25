@@ -7,7 +7,7 @@ import spinal.lib.bus.simple.PipelinedMemoryBus
 
 import scala.util.Random
 
-class AdderTree(operands: Seq[UInt], pipelined: Boolean = false) extends ImplicitArea[UInt] {
+class AdderTree(operands: Seq[UInt], pipelined: Boolean = true) extends ImplicitArea[UInt] {
 
   //  require(isPow2(numOperand), "number of operands should be power of 2")
   val numOperand = operands.length

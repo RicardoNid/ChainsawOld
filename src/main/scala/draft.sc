@@ -1,9 +1,7 @@
-type transformer = (Int, Int, Int, Int, Int, Int) => Any
-type transformer1D = (Int, Int, Int, Int, Int, Int) => Int // order = kx, ky, ni, ox, oy, no (same as Ma,2018)
-type transformer2D = (Int, Int, Int, Int, Int, Int) => (Int, Int)
-type transformer3D = (Int, Int, Int, Int, Int, Int) => (Int, Int, Int)
-type transformer4D = (Int, Int, Int, Int, Int, Int) => (Int, Int, Int, Int)
+import spinal.core._
+import spinal.lib._
+import spinal.lib.fsm._
+import spinal.lib.bus.amba4.axi._
+import spinal.core.sim._
 
-transformer4D
-
-println
+println(Vec.isInstanceOf[Seq])

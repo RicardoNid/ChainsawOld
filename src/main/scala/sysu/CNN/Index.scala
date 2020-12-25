@@ -1,7 +1,13 @@
-package sysu.CNN.data
+package sysu.CNN
+
+/*
+  @param : grid 所在空间的尺寸
+  @param : coords 坐标
+ */
 
 case class Index(grid: Array[Int], coords: Int*) {
   val dimension = coords.length
+  require(coords.forall(_ >= -1))
   require(coords.length <= 4)
   require(coords.length == grid.length)
 

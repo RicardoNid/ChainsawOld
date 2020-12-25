@@ -15,4 +15,6 @@ package object huang {
 
   def output_t = UInt((2 * dataWidth + log2Up(64)) bits)
 
+  val loopNestHuang1 = LoopNestConv()
+  val loopNestHuang2 = LoopNestConv(Nkx = 3, Nky = 3, Tkx = 3, Tky = 3, Pof = 32)
 }
