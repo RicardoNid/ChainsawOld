@@ -42,9 +42,9 @@ case class VivadoTask(
         taskName = "impl"
       }
     }
-    if (writeCheckpoint) script += s"write_checkpoint ${topModuleName}_${taskName}.dcp\n"
-    if (reportUtil) script += s"report_utilization\n"
-    if (reportTiming) script += s"report_timing\n"
+    if (reportUtil && taskType != ELABO) script += s"report_utilization\n"
+    if (reportTiming && taskType != ELABO) script += s"report_timing\n"
+    if (writeCheckpoint && taskType != ELABO) script += s"write_checkpoint ${topModuleName}_${taskName}.dcp\n"
     script
   }
 

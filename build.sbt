@@ -17,4 +17,3 @@ EclipseKeys.withSource := true
 
 // https://mvnrepository.com/artifact/org.scalanlp/breeze
 libraryDependencies += "org.scalanlp" %% "breeze" % "1.0"
-

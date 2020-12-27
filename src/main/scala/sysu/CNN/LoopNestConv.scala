@@ -1,5 +1,7 @@
 package sysu.CNN
 
+import scala.collection.mutable.Map
+
 /*
 design : 目前采用的简化设定
   Padding= same
@@ -7,10 +9,35 @@ design : 目前采用的简化设定
     thus, Hout = Hin
 */
 
-trait LoopVar
+trait LoopVar {
+  val name = ""
+  val report : Map[String, Array[Int]] = Map()
 
-case object OY extends LoopVar // oy
-case object OX extends LoopVar // ox
+  def + (that:LoopVar) = {
+    this.report ++= that.report
+    this
+  }
+
+  def % (number : Int) = {
+    report(name)(0) = number
+    this
+  }
+
+  def / (number: Int) = {
+    report(name)(1) = number
+    this
+  }
+}
+
+case object OY extends LoopVar {
+  override val name = "oy"
+  override val report = Map("oy" -> Array(0, 0))
+}
+
+case object OX extends LoopVar {
+  override val name = "ox"
+  override val report = Map("ox" -> Array(0, 0))
+}
 case object OF extends LoopVar // n
 case object IF extends LoopVar // c
 case object KY extends LoopVar // ky
@@ -23,13 +50,23 @@ case class DimensionParam(
                          )
 
 case class LoopNestConv(
-                         Nof: Int = 64, Nif: Int = 64, Niy: Int = 32, Nix: Int = 32, Nky: Int = 1, Nkx: Int = 1, Noy: Int = 32, Nox: Int = 32,
-                         Tof: Int = 64, Tif: Int = 64, Tiy: Int = 32, Tix: Int = 32, Tky: Int = 1, Tkx: Int = 1, Toy: Int = 32, Tox: Int = 32,
-                         Pif: Int = 16, Pof: Int = 16, Piy: Int = 1, Pix: Int = 1, Pky: Int = 1, Pkx: Int = 1, Poy: Int = 1, Pox: Int = 1,
+                         Nof: Int = 64, Nif: Int = 64, Niy: Int = 32, Nix: Int = 32, Nky: Int = 1, Nkx: Int = 1,
+                         Tof: Int = 64, Tif: Int = 64, Tiy: Int = 32, Tix: Int = 32, Tky: Int = 1, Tkx: Int = 1,
+                         Pif: Int = 16, Pof: Int = 16, Pky: Int = 1, Pkx: Int = 1, Poy: Int = 1, Pox: Int = 1,
                          Stride: Int = 1,
                          tileOrder: Array[LoopVar] = Array(KX, KY, IF, OF, OX, OY),
                          outerOrder: Array[LoopVar] = Array(KX, KY, IF, OF, OX, OY)
                        ) {
+  require(Nix == Niy && Nkx == Nky) // todo : 支持非正方形
+  require(Nkx % 2 == 1)
+  require((Nix - Nkx) % Stride == 0)
+  require((Tix - Nkx) % Stride == 0)
+  val Nox = (Nix - Nkx) / Stride + 1
+  val Noy = (Niy - Nky) / Stride + 1
+  val Tox = (Tix - Nkx) / Stride + 1
+  val Toy = (Tiy - Nky) / Stride + 1
+
+
   def format(s: String, width: Int) = s.padTo(width, " ").mkString("")
 
   def printArray2D[T](array: Array[Array[T]], width: Int = 5, head: Boolean = true, tail: Boolean = false) = {
@@ -134,6 +171,8 @@ case class LoopNestConv(
 
   def inputValue() = traverseTile(inputAccess).toArray
 
+  def weightValue() = traverseTile(weightAccess).toArray
+
   def outputValue() = traverseTile(outputAccess).toArray
 
   def inputAddr(addrMap: Index => (Int, Int)) = traverseTile(inputAccess).toArray.map(_.map(addrMap(_)))
@@ -189,12 +228,12 @@ object LoopNestConv { // demo
     }
 
     printArray2D(huang.loopNestHuang2.inputAddr(inputAddrMapHuang), 10, tail = true)
-//    println(huang.loopNestHuang2.inputAddr(inputAddrMapHuang).length)
-//    // 将自己找出此序列的过程变为算法
-//    val seq = (0 until 73728).map(i => i % 3 * 4 + i % 9 / 3 * 128 + i % 36 / 9 + i / 72 * 4 + (-132))
-//    val compare = huang.loopNestHuang2.inputAddr(inputAddrMapHuang).map(_ (0)._2).zip(seq).filter { case (my, truth) => my != truth }
-//    println(seq.length - compare.length)
-//    compare.dropRight(compare.length - 100).foreach(println(_))
+    //    println(huang.loopNestHuang2.inputAddr(inputAddrMapHuang).length)
+    //    // 将自己找出此序列的过程变为算法
+    //    val seq = (0 until 73728).map(i => i % 3 * 4 + i % 9 / 3 * 128 + i % 36 / 9 + i / 72 * 4 + (-132))
+    //    val compare = huang.loopNestHuang2.inputAddr(inputAddrMapHuang).map(_ (0)._2).zip(seq).filter { case (my, truth) => my != truth }
+    //    println(seq.length - compare.length)
+    //    compare.dropRight(compare.length - 100).foreach(println(_))
 
   }
 }

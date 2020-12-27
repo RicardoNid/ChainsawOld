@@ -13,7 +13,7 @@ import scala.util.Random
 class LUTSeqGen(sequence: Seq[Int]) extends Component {
 
   val length = sequence.length
-  val bitWidth = log2Up(sequence.max)
+  val bitWidth = log2Up(sequence.max + 1)
 
   val io = new Bundle {
     val output = out UInt (bitWidth bits)
@@ -26,9 +26,8 @@ class LUTSeqGen(sequence: Seq[Int]) extends Component {
 
   val sequenceReg = Reg(UInt(bitWidth bits)) init (sequence(0))
   val addrCount = Counter(length, True)
-  sequenceReg := rom(addrCount)
 
-  io.output := sequenceReg
+  io.output := rom(addrCount)
 }
 
 object testLUTSeqGen {

@@ -13,6 +13,8 @@ class ArithmeticSeqGen(mod1: Int, mod2: Int, div1: Int, div2: Int, escape: Int, 
     val output = out UInt (7 bits)
   }
 
+  Counter
+
   val baseReg = Reg(UInt(7 bits)) init (0)
 
   val count = Counter(end, True)
