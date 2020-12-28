@@ -9,25 +9,7 @@ design : 目前采用的简化设定
     thus, Hout = Hin
 */
 
-trait LoopVar {
-  val name = ""
-  val report : Map[String, Array[Int]] = Map()
-
-  def + (that:LoopVar) = {
-    this.report ++= that.report
-    this
-  }
-
-  def % (number : Int) = {
-    report(name)(0) = number
-    this
-  }
-
-  def / (number: Int) = {
-    report(name)(1) = number
-    this
-  }
-}
+trait LoopVar
 
 case object EMPTY extends LoopVar
 case object OY extends LoopVar

@@ -45,8 +45,7 @@ class WhtSeq extends Component {
     val output = out UInt (5 bits)
   }
 
-  val innerSeqGen = new LUTSeqGen(seq)
-  io.output := innerSeqGen.io.output
+  io.output := SeqGen(seq, LUT)
 }
 
 object WhtSeq extends App {

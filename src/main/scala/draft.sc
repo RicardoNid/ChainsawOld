@@ -5,6 +5,7 @@ val buf1 = ArrayBuffer(1, 2, 3, 2)
 val buf2 = ArrayBuffer(1, 1, 2, 2)
 
 buf1 += 1
+
 buf1 += (1, 2, 3)
 buf1 ++= buf2
 
