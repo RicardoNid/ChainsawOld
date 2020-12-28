@@ -5,12 +5,18 @@ import spinal.lib._
 import spinal.lib.fsm._
 import spinal.lib.bus.amba4.axi._
 import spinal.core.sim._
+import sysu.CNN.{LoopNestConv, convTransformer}
+
 import scala.util.Random
 
-class ArithmeticSeqGen(mod1: Int, mod2: Int, div1: Int, div2: Int, escape: Int, end: Int = 100) extends Component {
+// 初步的实现,额外约束条件包括
+// 1.loopNest各个维度的bound都是常数 -> todo 依赖其他var的bound,以及相应的动态计数器
+// 2.对各个计数器变量只进行% / +,没有*(step = 1) -> todo 实现step = n, 实现escape
+// 3.
+class ArithmeticSeqGen[T](loopNestConv: LoopNestConv, access:convTransformer[T]) extends Component {
 
   val io = new Bundle {
-    val output = out UInt (7 bits)
+    val output = out UInt (10 bits)
   }
 
   Counter

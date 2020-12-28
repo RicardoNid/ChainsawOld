@@ -11,7 +11,8 @@ import breeze.signal._
 
 package object CNN {
 
-  import sysu.xilinx.{VivadoFlowOld => VivadoFlow}
+  type convTransformer[T] = (Int, Int, Int, Int, Int, Int) => T
+
 
   def div(a: Int, b: Int) = ceil(a.toDouble / b.toDouble).toInt
 

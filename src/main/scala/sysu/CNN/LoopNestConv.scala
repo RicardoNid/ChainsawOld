@@ -29,15 +29,9 @@ trait LoopVar {
   }
 }
 
-case object OY extends LoopVar {
-  override val name = "oy"
-  override val report = Map("oy" -> Array(0, 0))
-}
-
-case object OX extends LoopVar {
-  override val name = "ox"
-  override val report = Map("ox" -> Array(0, 0))
-}
+case object EMPTY extends LoopVar
+case object OY extends LoopVar
+case object OX extends LoopVar
 case object OF extends LoopVar // n
 case object IF extends LoopVar // c
 case object KY extends LoopVar // ky
@@ -96,7 +90,6 @@ case class LoopNestConv(
   // 依照并行度设置和变换函数,得到一个周期的数据
   // order = kx, ky, ni, no, ox, oy
   // template val transform : transformerXX = (kx:Int, ky:Int, c:Int, n:Int, ox:Int, oy:Int) => {}
-  type transformer = (Int, Int, Int, Int, Int, Int) => Any
 
   def getDimensionParam(loopVar: LoopVar) = {
     loopVar match {
