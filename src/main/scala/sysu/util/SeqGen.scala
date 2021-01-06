@@ -21,7 +21,6 @@ case object AUTO extends SegGenMode
 
 class SeqGen(sequence: Seq[Int], mode: SegGenMode = FSM) extends ImplicitArea[UInt] {
 
-
   val length = sequence.length
   val bitWidth = log2Up(sequence.max + 1)
 

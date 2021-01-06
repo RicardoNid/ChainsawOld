@@ -11,8 +11,8 @@ import sysu.xilinx._
 import sysu.util._
 
 // design : 使用Area实现的轻量化util模块,参数信息往往不是显式给出,而是藏在接入的data中
-// @param switch : 其中每个BitVector对应一个输出端口
-class CrossBar(input: Vec[Bits], switch: Vec[Bits]) extends ImplicitArea[Vec[Bits]] {
+
+class CrossBar(input: Vec[Bits], switch: Seq[Bits]) extends ImplicitArea[Vec[Bits]] {
 
   val bitWidth = input(0).getBitsWidth
   val inputCount = input.length
@@ -27,6 +27,6 @@ class CrossBar(input: Vec[Bits], switch: Vec[Bits]) extends ImplicitArea[Vec[Bit
 }
 
 object CrossBar {
-  def apply(input: Vec[Bits], switch: Vec[Bits]): CrossBar = new CrossBar(input, switch)
+  def apply(input: Vec[Bits], switch: Seq[Bits]): CrossBar = new CrossBar(input, switch)
 }
 
