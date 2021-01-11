@@ -1,25 +1,9 @@
 package sysu.CNN
 
-import ai.djl._
 import ai.djl.ndarray._
+import ai.djl.ndarray.types._
 import ai.djl.nn._
 import ai.djl.nn.core._
-import ai.djl.training._
-import java.nio.file._
-import ai.djl._
-import ai.djl.basicdataset._
-import ai.djl.ndarray.types._
-import ai.djl.training._
-import ai.djl.training.dataset._
-import ai.djl.training.initializer._
-import ai.djl.training.loss._
-import ai.djl.training.listener._
-import ai.djl.training.evaluator._
-import ai.djl.training.optimizer._
-import ai.djl.training.util._
-import ai.djl.basicmodelzoo.cv.classification._
-import ai.djl.basicmodelzoo.basic._
-import ai.djl.mxnet.zoo.MxModelZoo
 
 class djlCNN {
 

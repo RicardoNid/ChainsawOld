@@ -25,11 +25,20 @@ libraryDependencies += "ai.djl" % "repository" % "0.4.1"
 libraryDependencies += "ai.djl.mxnet" % "mxnet-engine" % "0.9.0" % "runtime"
 libraryDependencies += "ai.djl.mxnet" % "mxnet-model-zoo" % "0.9.0"
 libraryDependencies += "ai.djl.mxnet" % "mxnet-native-auto" % "1.7.0-b"
+libraryDependencies += "ai.djl" % "examples" % "0.6.0"
 
 
 libraryDependencies += "ai.djl" % "model-zoo" % "0.9.0"
 // https://mvnrepository.com/artifact/ai.djl/basicdataset
 libraryDependencies += "ai.djl" % "basicdataset" % "0.9.0"
+
+// https://mvnrepository.com/artifact/org.jgrapht/jgrapht-core
+libraryDependencies += "org.jgrapht" % "jgrapht-core" % "1.4.0"
+// https://mvnrepository.com/artifact/org.jgrapht/jgrapht-ext
+libraryDependencies += "org.jgrapht" % "jgrapht-ext" % "1.4.0"
+// https://mvnrepository.com/artifact/org.jgrapht/jgrapht-io
+libraryDependencies += "org.jgrapht" % "jgrapht-io" % "1.4.0"
+
 
 //// https://mvnrepository.com/artifact/org.slf4j/slf4j-api
 //libraryDependencies += "org.slf4j" % "slf4j-api" % "1.7.26"

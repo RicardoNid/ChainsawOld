@@ -31,7 +31,7 @@ object Tutorial2 {
     import ai.djl.training.EasyTrain
     // Deep learning is typically trained in epochs where each epoch trains the model on each item in the dataset once.// Deep learning is typically trained in epochs where each epoch trains the model on each item in the dataset once.
 
-    val epoch = 1
+    val epoch = 10
 
     for (i <- 0 until epoch) {
       val index = 0
@@ -45,8 +45,9 @@ object Tutorial2 {
         // If the memory isn't closed after each batch, you will very quickly run out of memory on your GPU
         batch.close
       }
-      // Call the end epoch event for the training listeners now that we are done
+      println("epoch", i, "finished")
     }
+
     val modelDir = Paths.get("build/mlp")
     Files.createDirectories(modelDir)
     model.setProperty("Epoch", String.valueOf(epoch))
