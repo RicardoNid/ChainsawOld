@@ -9,17 +9,17 @@ import sysu.xilinx._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
-trait SegGenMode
+trait SeqGenMode
 
-case object FSM extends SegGenMode
+case object FSM extends SeqGenMode
 
-case object COUNT extends SegGenMode
+case object COUNT extends SeqGenMode
 
-case object LUT extends SegGenMode
+case object LUT extends SeqGenMode
 
-case object AUTO extends SegGenMode
+case object AUTO extends SeqGenMode
 
-class SeqGen(sequence: Seq[Int], mode: SegGenMode = FSM) extends ImplicitArea[UInt] {
+class SeqGen(sequence: Seq[Int], mode: SeqGenMode = FSM) extends ImplicitArea[UInt] {
 
   val length = sequence.length
   val bitWidth = log2Up(sequence.max + 1)
@@ -27,7 +27,7 @@ class SeqGen(sequence: Seq[Int], mode: SegGenMode = FSM) extends ImplicitArea[UI
   val output = out UInt (bitWidth bits)
 
   mode match {
-    case FSM => {
+    case FSM => { // 以真值表方式实现
       // encoding
       require(sequence.forall(_ >= 0), "SeqGen requires a sequence of unsigned(>=0) integers")
       val encodedSequence = encode(sequence)
@@ -44,7 +44,7 @@ class SeqGen(sequence: Seq[Int], mode: SegGenMode = FSM) extends ImplicitArea[UI
       output := sequenceReg.resize(bitWidth)
     }
 
-    case LUT => {
+    case LUT => { // 以查表方式实现
       val sequenceVec = Vec(UInt(bitWidth bits), length)
       (0 until length).foreach(i => sequenceVec(i) := U(sequence(i)).resized)
 
@@ -60,7 +60,7 @@ class SeqGen(sequence: Seq[Int], mode: SegGenMode = FSM) extends ImplicitArea[UI
 
 object SeqGen {
 
-  def apply(sequence: Seq[Int], mode: SegGenMode) = new SeqGen(sequence, mode)
+  def apply(sequence: Seq[Int], mode: SeqGenMode) = new SeqGen(sequence, mode)
 
   // optimization : 对SeqGen的优化通过优化编码函数实现
   // 当前编码方案
@@ -81,8 +81,30 @@ object SeqGen {
     }
   }
 
-  // fixme
-  def verilogPostProcess(content: String) = content.replace("wire       [8:0]    dontCare;", "")
-    .replace("assign dontCare = 9'h1f4;", "")
-    .replace("dontCare", "\'x")
+  def main(args: Array[String]): Unit = { // demo
+    val report = VivadoFlow(
+      design = new SeqGenModule(Array(1, 2, 3, 4), LUT),
+      vivadoConfig = recommended.vivadoConfig,
+      vivadoTask = VivadoTask(topModuleName = "SeqGen", workspacePath = "output/seqgen", frequencyTarget = 400 MHz, taskType = SYNTH),
+      force = true).doit()
+    report.printArea
+    report.printFMax
+    println(report.getReport)
+  }
+}
+
+object testSeqGen {
+
+  val period = 2
+
+  def main(args: Array[String]): Unit = {
+    SimConfig.withWave.compile(new SeqGenModule(Array(1, 2, 3, 4), LUT)).
+      doSimUntilVoid { dut =>
+        val clockThread = fork {
+          dut.clockDomain.forkStimulus(period = period)
+        }
+        sleep(100)
+        simSuccess()
+      }
+  }
 }

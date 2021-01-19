@@ -10,12 +10,12 @@ class VivadoReport(workspacePath: String,
                    deviceFamily: DeviceFamily,
                    frequencyTarget: HertzNumber = null
                   ) {
-  val report = Source.fromFile(Paths.get(workspacePath, "doit.log").toFile).getLines.mkString
+  private val report = Source.fromFile(Paths.get(workspacePath, "doit.log").toFile).getLines.mkString
 
-  val intFind = "(\\d+,?)+".r // Regex to find int
-  val doubleFind = "-?(\\d+\\.?)+".r
+  private val intFind = "(\\d+,?)+".r // Regex to find int
+  private val doubleFind = "-?(\\d+\\.?)+".r
 
-  def getIntAfter(pattern: String) = {
+  private def getIntAfter(pattern: String) = {
     try {
       intFind.findFirstIn(s"${pattern}[ ]*\\|[ ]*(\\d+,?)+".r.findFirstIn(report).get).get.toInt
     }
@@ -24,7 +24,7 @@ class VivadoReport(workspacePath: String,
     }
   }
 
-  def getDoubleBefore(pattern: String) = {
+  private def getDoubleBefore(pattern: String) = {
     try {
       doubleFind.findFirstIn(s"-?(\\d+.?)+ns  \\(${pattern}\\)".r.findFirstIn(report).get).get.toDouble
     }
@@ -41,14 +41,14 @@ class VivadoReport(workspacePath: String,
   3.create a field of VivadoReport, implement the corresponding "printXXX" method
    */
 
-  val LUT = if (deviceFamily == UltraScale) getIntAfter("CLB LUTs\\*") else 0
-  val FF = if (deviceFamily == UltraScale) getIntAfter("CLB Registers") else 0
-  val DSP = if (deviceFamily == UltraScale) getIntAfter("DSPs") else 0
-  val BRAM = if (deviceFamily == UltraScale) getIntAfter("Block RAM Tile") else 0
+  private val LUT = if (deviceFamily == UltraScale) getIntAfter("CLB LUTs\\*") else 0
+  private val FF = if (deviceFamily == UltraScale) getIntAfter("CLB Registers") else 0
+  private val DSP = if (deviceFamily == UltraScale) getIntAfter("DSPs") else 0
+  private val BRAM = if (deviceFamily == UltraScale) getIntAfter("Block RAM Tile") else 0
 
-  val targetPeriod = (if (frequencyTarget != null) frequencyTarget else 400 MHz).toTime
-  val slack = getDoubleBefore("required time - arrival time")
-  val Frequency = 1.0 / (targetPeriod.toDouble - slack * 1e-9)
+  private val targetPeriod = (if (frequencyTarget != null) frequencyTarget else 400 MHz).toTime
+  private val slack = getDoubleBefore("required time - arrival time")
+  private val Frequency = 1.0 / (targetPeriod.toDouble - slack * 1e-9)
 
 
   def printArea = println(s"LUT: ${LUT}\nFF: ${FF}\nDSP: ${DSP}\nBRAM: ${BRAM}\n")

@@ -40,6 +40,7 @@ public class Hello {
         };
 
         Graph<String, DefaultEdge> completeGraph = new SimpleGraph<>(vSupplier, SupplierUtil.createDefaultEdgeSupplier(), false);
+
         CompleteGraphGenerator<String, DefaultEdge> completeGraphGenerator = new CompleteGraphGenerator<>(10);
 //        completeGraphGenerator.generateGraph(completeGraph);
 
@@ -52,5 +53,6 @@ public class Hello {
 //        while (iter2.hasNext()) System.out.println(completeGraph.edgesOf(iter2.next()).toString());
         Iterator<String> iter3 = new RandomWalkIterator<>(completeGraph);
         while (iter3.hasNext()) System.out.println(iter3.next());
+
     }
 }

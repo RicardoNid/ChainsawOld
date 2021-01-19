@@ -21,9 +21,7 @@ public class FindBridges {
                 low[v] = Math.min(low[v], low[w]);
                 if (low[w] > order[v]) result.add(new Edge(v, w));
             } else if (w != parent) low[v] = Math.min(low[v], low[w]);
-
         }
-
     }
 
     public ArrayList<Edge> result() {
