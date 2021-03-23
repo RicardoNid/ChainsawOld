@@ -4,21 +4,30 @@ import spinal.core._
 
 class Datatype extends Component {
 
-  val io = new Bundle {
-    val input0 = in Bool
-    val input1 = in Bits (10 bits)
-    val input2 = in UInt (10 bits)
-    val input3 = in SInt (10 bits)
-    val output0 = out Bool
-    val output1 = out Bits (10 bits)
-    val output2 = out UInt (10 bits)
-    val output3 = out SInt (10 bits)
+//  def getGray(zeroBasedValue: Int) = {
+//    val value = zeroBasedValue + 1
+//    if (log2Up(value) == 1) {
+//      if (zeroBasedValue == 0) 0
+//      else 1
+//    }
+//    else {
+//      if value
+//    }
+//  }
+
+  object myState extends SpinalEnum{
+
+    val e0, e1, e2, e3 = newElement()
+    defaultEncoding = SpinalEnumEncoding("dynamicEncoding", _ * 2 + 1)
+    defaultEncoding = native
   }
 
-  io.output0 := !io.input0
-  io.output1 := (io.input1.asUInt + io.input2).asBits
-  io.output2 := io.input2 + io.input3.asUInt
-  io.output3 := io.input3 + io.input2.asSInt
+  val io = new Bundle {
+
+    val output = out Bits(2 bits)
+  }
+
+  io.output := myState.e3.asBits
 }
 
 object Datatype {

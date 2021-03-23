@@ -1,27 +1,19 @@
 // Generator : SpinalHDL v1.4.2    git head : 804c7bd7b7feaddcc1d25ecef6c208fd5f776f79
 // Component : Datatype
-// Git hash  : dc2e7e237db31ab3a9b8a328557ea33d950732f5
+// Git hash  : d7943635f0317afaf10af76ed9307a372bbef1fa
 
+
+`define myState_binary_sequential_type [1:0]
+`define myState_binary_sequential_e0 2'b00
+`define myState_binary_sequential_e1 2'b01
+`define myState_binary_sequential_e2 2'b10
+`define myState_binary_sequential_e3 2'b11
 
 
 module Datatype (
-  input               io_input0,
-  input      [9:0]    io_input1,
-  input      [9:0]    io_input2,
-  input      [9:0]    io_input3,
-  output              io_output0,
-  output     [9:0]    io_output1,
-  output     [9:0]    io_output2,
-  output     [9:0]    io_output3
+  output     [1:0]    io_output
 );
-  wire       [9:0]    _zz_1;
-  wire       [9:0]    _zz_2;
 
-  assign _zz_1 = (io_input1 + io_input2);
-  assign _zz_2 = io_input2;
-  assign io_output0 = (! io_input0);
-  assign io_output1 = _zz_1;
-  assign io_output2 = (io_input2 + io_input3);
-  assign io_output3 = ($signed(io_input3) + $signed(_zz_2));
+  assign io_output = `myState_binary_sequential_e3;
 
 endmodule

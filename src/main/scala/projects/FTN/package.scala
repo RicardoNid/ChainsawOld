@@ -13,6 +13,12 @@ package object FTN {
     resetKind = ASYNC
   )
 
+  // typedefs
+  val naturalWidth = 8
+  val fractionalWidth = 8
+  val bitWidth = naturalWidth + fractionalWidth
+
+
   // axi stream = stream + fragment + user
   case class AXIS(dataWidth: Int,
                   hasLast: Boolean,
