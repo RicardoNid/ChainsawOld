@@ -59,5 +59,4 @@ object testStaticComplexMultiplier {
         simSuccess()
       }
   }
-
 }
