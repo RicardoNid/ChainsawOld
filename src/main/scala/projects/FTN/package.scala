@@ -10,8 +10,19 @@ package object FTN {
   import spinal.lib._
   import spinal.lib.fsm._
 
+  val testFFTLength = 8
+
   def data = SFix(peak = naturalWidth exp, resolution = -fractionalWidth exp)
+
   def Double2Fix(value: Double) = floor(value * (1 << fractionalWidth)).toInt // convert Double to valid stimulus for simulation
+
+  def isPrime(n: Int): Boolean =
+    if (n <= 1)
+      false
+    else if (n == 2)
+      true
+    else
+      !(2 until n).exists(n % _ == 0)
 
   def complexMultiplier(C: Double, S: Double, X: SFix, Y: SFix) = {
     val Cfix, Sfix = data
@@ -27,6 +38,24 @@ package object FTN {
     (R, I)
   }
 
+  def winogradDFT(N: Int, input: IndexedSeq[ComplexNumber]) = {
+    require(isPrime(N), s"Winograd DFT is for prime number")
+    require(Set(2).contains(N), s"$N point Winograd DFT will be supported in later release")
+
+    val output = Array.ofDim[ComplexNumber](N)
+    if (N == 2) {
+      val a0 = input(0)
+      val a1 = input(1)
+      val s0 = a0 + a1
+      val s1 = a0 - a1
+      val m0 = s0
+      val m1 = s1
+      output(0) = m0
+      output(1) = m1
+    }
+    output
+  }
+
 
   val CDConfig = ClockDomainConfig(
     resetActiveLevel = LOW,
@@ -37,16 +66,6 @@ package object FTN {
   val naturalWidth = 8
   val fractionalWidth = 8
   val bitWidth = naturalWidth + fractionalWidth
-
-  case class ComplexNumber(r: Double,
-                           i: Double) {
-
-    def data = SFix(peak = naturalWidth exp, resolution = -fractionalWidth exp)
-
-    val real, imag = data
-    real := r
-    imag := i
-  }
 
   // axi stream = stream + fragment + user
   case class AXIS(dataWidth: Int,

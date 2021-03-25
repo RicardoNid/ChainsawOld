@@ -41,14 +41,14 @@ class VivadoReport(workspacePath: String,
   3.create a field of VivadoReport, implement the corresponding "printXXX" method
    */
 
-  private val LUT = if (deviceFamily == UltraScale) getIntAfter("CLB LUTs\\*") else 0
-  private val FF = if (deviceFamily == UltraScale) getIntAfter("CLB Registers") else 0
-  private val DSP = if (deviceFamily == UltraScale) getIntAfter("DSPs") else 0
-  private val BRAM = if (deviceFamily == UltraScale) getIntAfter("Block RAM Tile") else 0
+  val LUT = if (deviceFamily == UltraScale) getIntAfter("CLB LUTs\\*") else 0
+  val FF = if (deviceFamily == UltraScale) getIntAfter("CLB Registers") else 0
+  val DSP = if (deviceFamily == UltraScale) getIntAfter("DSPs") else 0
+  val BRAM = if (deviceFamily == UltraScale) getIntAfter("Block RAM Tile") else 0
 
   private val targetPeriod = (if (frequencyTarget != null) frequencyTarget else 400 MHz).toTime
   private val slack = getDoubleBefore("required time - arrival time")
-  private val Frequency = 1.0 / (targetPeriod.toDouble - slack * 1e-9)
+  val Frequency = 1.0 / (targetPeriod.toDouble - slack * 1e-9)
 
 
   def printArea = println(s"LUT: ${LUT}\nFF: ${FF}\nDSP: ${DSP}\nBRAM: ${BRAM}\n")
