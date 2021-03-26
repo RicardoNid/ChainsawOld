@@ -4,6 +4,10 @@ import spinal.core._
 import spinal.lib._
 import spinal.core.sim._
 
+/**
+ * @param R real part of the complex number
+ * @param I imaginary part of the complex number
+ */
 class ComplexNumber(R: SFix, I: SFix) {
   val real = R
   val imag = I

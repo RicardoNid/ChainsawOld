@@ -33,7 +33,6 @@ package object FTN {
       !(2 until n).exists(n % _ == 0)
   }
 
-
   def factorize(N: Int): ArrayBuffer[Int] = {
     if (isPrime(N)) ArrayBuffer(N)
     else {
@@ -44,22 +43,10 @@ package object FTN {
     }
   }
 
-  def complexMultiplier(C: Double, S: Double, X: SFix, Y: SFix) = {
-    val Cfix, Sfix = data
-    Cfix := C
-    Sfix := S
+  def winogradDFT(input: IndexedSeq[ComplexNumber]) = {
 
-    val E = X - Y
-    val Z = Cfix * E
+    val N = input.length
 
-    val R = ((Cfix - Sfix) * Y + Z).truncated
-    val I = ((Cfix + Sfix) * X - Z).truncated
-
-    (R, I)
-  }
-
-
-  def winogradDFT(N: Int, input: IndexedSeq[ComplexNumber]) = {
     require(isPrime(N), s"Winograd DFT is for prime number")
     require(Set(2).contains(N), s"$N point Winograd DFT will be supported in later release")
 
@@ -86,14 +73,17 @@ package object FTN {
     output
   }
 
-  def cooleyTukeyFFT(N: Int, input: IndexedSeq[ComplexNumber]): IndexedSeq[ComplexNumber] = {
+  def cooleyTukeyFFT(input: IndexedSeq[ComplexNumber]): IndexedSeq[ComplexNumber] = {
+
+    val N = input.length
+
     val factors = factorize(N)
     val factor1 = factors(0)
     val factor2 = factors.reduce(_ * _) / factor1
 
     val outputNumbers = Array.ofDim[ComplexNumber](N)
 
-    if (isPrime(N)) (0 until N).foreach(i => outputNumbers(i) = winogradDFT(N, input)(i))
+    if (isPrime(N)) (0 until N).foreach(i => outputNumbers(i) = winogradDFT(input)(i))
     else {
 
       // W_{N}^{k n} = \mathrm{e}^{-\mathrm{j} 2 \pi k n / N}
@@ -103,13 +93,13 @@ package object FTN {
 
       val cooleyGroups = input.zipWithIndex.sortBy(_._2 % factor1).map(_._1).grouped(factor2).toArray
 
-      val stage1Numbers = cooleyGroups.map(cooleyTukeyFFT(factor2, _)).flatten.map(_.tap)
+      val stage1Numbers = cooleyGroups.map(cooleyTukeyFFT(_)).flatten.map(_.tap)
 
       val stage2Numbers = stage1Numbers.zipWithIndex.sortBy(_._2 % factor2).map(_._1).zip(coefficients).map { case (number, coeff) => number * coeff }
 
       val winoGroups = stage2Numbers.grouped(factor1).toArray
 
-      val winoResults = winoGroups.map(winogradDFT(factor1, _)).flatten
+      val winoResults = winoGroups.map(winogradDFT(_)).flatten
 
       (0 until N).foreach(i => outputNumbers(i % factor1 * factor2 + i / factor1) = winoResults(i))
     }
