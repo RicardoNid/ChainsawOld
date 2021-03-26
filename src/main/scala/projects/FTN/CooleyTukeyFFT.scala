@@ -35,7 +35,9 @@ class CooleyTukeyFFT(N: Int) extends Component {
     io.output.payload(2 * i + 1) := outputNumbers(i).imag.truncated
   }
 
-  io.output.valid := Delay(io.input.valid, 1)
+  // TODO: find a way to determine the latency automatically
+  io.output.valid := Delay(io.input.valid, 2)
+  io.output.valid.init(False)
 }
 
 object CooleyTukeyFFT {
@@ -66,8 +68,8 @@ case class FFTCase(data: Array[Double]) extends TestCase
 class testCooleyTukeyFFT(length: Int) extends CooleyTukeyFFT(length) with DSPSim {
 
   val testCases = mutable.Queue[FFTCase]()
-  val refResults = mutable.Queue[Array[Double]]()
-  val dutResults = mutable.Queue[Array[Double]]()
+  val refResults = mutable.Queue[DenseVector[Complex]]()
+  val dutResults = mutable.Queue[DenseVector[Complex]]()
 
   override def init(): Unit = {
     clockDomain.forkStimulus(2)
@@ -75,14 +77,29 @@ class testCooleyTukeyFFT(length: Int) extends CooleyTukeyFFT(length) with DSPSim
     clockDomain.waitSampling(10)
   }
 
+  def sim() = {
+    init
+    driver
+    monitor
+    scoreBoard
+  }
+
+  def simDone() = {
+    clockDomain.waitSampling(10)
+    while (refResults.nonEmpty && dutResults.nonEmpty) {
+      clockDomain.waitSampling(10)
+    }
+  }
+
   override def driver: Unit = {
     val drv = fork {
       while (true) {
         if (testCases.nonEmpty) {
           val testCase = testCases.dequeue()
-          referenceModel()
+          referenceModel(testCase)
           io.input.valid #= true
           (0 until length * 2).foreach(i => io.input.payload(i).raw #= Double2Fix(testCase.data(i)))
+          println("stimuluts in ")
           clockDomain.waitSampling()
           io.input.valid #= false
         }
@@ -91,19 +108,22 @@ class testCooleyTukeyFFT(length: Int) extends CooleyTukeyFFT(length) with DSPSim
     }
   }
 
-  override def referenceModel() = {
-    //    val ComplexNumbers = (0 until length).foreach(i => Complex(testCase.data(2 * i), testCase.data(2 * i + 1)))
-    //    val golden = DenseVector(ComplexNumbers)
-    refResults.enqueue(Array(28.0, 0, -4, 9.6569, -4, 4, -4, 1.6569, -4, 0, -4, -1.6569, -4, -4, -4, -9.6569))
+  def referenceModel(testCase: FFTCase) = {
+    val ComplexNumbers = (0 until length).map(i => Complex(testCase.data(2 * i), testCase.data(2 * i + 1)))
+    val golden = fourierTr.dvComplex1DFFT(DenseVector(ComplexNumbers.toArray))
+    refResults.enqueue(golden)
   }
 
   override def monitor: Unit = {
     val mon = fork {
       while (true) {
         if (io.output.valid.toBoolean) {
-          dutResults.enqueue(
-            (0 until length * 2).map(i => io.output.payload(i).raw.toBigInt.toDouble / 256.0).toArray
-          )
+          val result = (0 until length).map { i =>
+            val real = Fix2Double(io.output.payload(i * 2))
+            val imag = Fix2Double(io.output.payload(i * 2 + 1))
+            Complex(real, imag)
+          }
+          dutResults.enqueue(DenseVector(result.toArray))
         }
         clockDomain.waitSampling()
       }
@@ -119,25 +139,11 @@ class testCooleyTukeyFFT(length: Int) extends CooleyTukeyFFT(length) with DSPSim
           val dutResult = dutResults.dequeue()
           val refResult = refResults.dequeue()
           println(s"$dutResult")
-          //          assert(dutResult == refResults.dequeue(), "incorrect")
+          println(s"$refResult")
           assert(true, "incorrect")
         }
         clockDomain.waitSampling()
       }
-    }
-  }
-
-  def sim() = {
-    init
-    driver
-    monitor
-    scoreBoard
-  }
-
-  def simDone() = {
-    clockDomain.waitSampling(10)
-    while (refResults.nonEmpty && dutResults.nonEmpty) {
-      clockDomain.waitSampling(10)
     }
   }
 }

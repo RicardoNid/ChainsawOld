@@ -2,10 +2,12 @@ package projects
 
 import breeze.numerics.constants.Pi
 import breeze.numerics.{cos, floor, sin}
+import scala.math.pow
 
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
 import spinal.core._
+import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
 
@@ -22,6 +24,7 @@ package object FTN {
   val testFFTLength = 8
 
   def Double2Fix(value: Double) = floor(value * (1 << fractionalWidth)).toInt // convert Double to valid stimulus for simulation
+  def Fix2Double(value: SFix) = value.raw.toBigInt.toDouble / pow(2, fractionalWidth)
 
   // OPTIMIZE: implement prime & factor by table
   def isPrime(n: Int): Boolean = {
@@ -106,12 +109,5 @@ package object FTN {
 
     outputNumbers
   }
-
-
-  val CDConfig = ClockDomainConfig(
-    resetActiveLevel = LOW,
-    resetKind = ASYNC
-  )
-
 
 }

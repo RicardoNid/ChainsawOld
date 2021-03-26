@@ -12,8 +12,6 @@ trait DSPSim {
 
   def driver()
 
-  def referenceModel
-
   def monitor()
 
   def scoreBoard()
