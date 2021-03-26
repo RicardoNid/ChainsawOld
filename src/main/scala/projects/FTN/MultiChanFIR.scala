@@ -69,7 +69,7 @@ object MultiChanFIR {
   def coeffTable(indexCarrier: Int, indexTap: Int) = S(1758)
 
   def main(args: Array[String]): Unit = {
-    SpinalConfig(mode = SystemVerilog, targetDirectory = projectSrcs).generate(new MultiChanFIR(MultiChanFIRConfig()))
+    SpinalConfig(mode = SystemVerilog).generate(new MultiChanFIR(MultiChanFIRConfig()))
   }
 }
 

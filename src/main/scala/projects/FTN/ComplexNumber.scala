@@ -23,6 +23,8 @@ class ComplexNumber(R: SFix, I: SFix) {
     val I = ((that.real + that.imag) * real - Z).truncated
     ComplexNumber(R, I)
   }
+
+  def tap = ComplexNumber(RegNext(real), RegNext(imag))
 }
 
 object ComplexNumber {

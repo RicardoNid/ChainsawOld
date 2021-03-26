@@ -56,7 +56,7 @@ class ShortGenerator extends Component {
 
 object ShortGenerator {
   def main(args: Array[String]): Unit = {
-    SpinalConfig(mode = SystemVerilog, targetDirectory = projectSrcs).generate(new ShortGenerator)
+    SpinalConfig(mode = SystemVerilog).generate(new ShortGenerator)
   }
 }
 

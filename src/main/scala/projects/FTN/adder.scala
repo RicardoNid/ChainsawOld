@@ -24,7 +24,7 @@ class adder extends Component {
 
 object adder {
   def main(args: Array[String]): Unit = {
-    SpinalConfig(mode = SystemVerilog, targetDirectory = projectSrcs).generate(new adder)
+    SpinalConfig(mode = SystemVerilog).generate(new adder)
   }
 }
 

@@ -94,7 +94,7 @@ class Interleave(wordWidth: Int, sizeRd: Int, sizeWr: Int) extends Component {
 
 object Interleave {
   def main(args: Array[String]): Unit = {
-    SpinalConfig(mode = SystemVerilog, targetDirectory = projectSrcs).generate(new Interleave(8, 32, 64))
+    SpinalConfig(mode = SystemVerilog).generate(new Interleave(8, 32, 64))
   }
 }
 

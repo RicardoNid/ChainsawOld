@@ -22,7 +22,7 @@ class mapper(bitWidth: Int = 16,
 
 object mapper {
   def main(args: Array[String]): Unit = {
-    SpinalConfig(mode = SystemVerilog, targetDirectory = projectSrcs).generate(new mapper)
+    SpinalConfig(mode = SystemVerilog).generate(new mapper)
   }
 }
 
