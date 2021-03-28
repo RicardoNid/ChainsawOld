@@ -27,7 +27,7 @@ class CooleyTukeyFFT(N: Int) extends Component {
   }
 
   // TODO: find a way to determine the latency automatically
-  io.output.valid := Delay(io.input.valid, 2)
+  io.output.valid := Delay(io.input.valid, 2 * factorize(N).length - 1)
   io.output.valid.init(False)
 }
 
@@ -40,16 +40,21 @@ object CooleyTukeyFFT {
       frequencyTarget = (600 MHz)
     )
 
-    val report = VivadoFlow( // performance verification
+    def testPerformance(length: Int) = VivadoFlow( // performance verification
       design = new CooleyTukeyFFT(testFFTLength),
       vivadoConfig = recommended.vivadoConfig,
       vivadoTask = task,
       force = true
     ).doit()
 
-    println(s"DSP estimated = , DSP consumed = ${report.DSP}")
-    println(s"frequency expected = 600 MHz, frequency met = ${report.Frequency / 1E6} MHz")
-    report.printArea
-    report.printFMax
+    def doReport(report: VivadoReport) = {
+      println(s"DSP estimated = , DSP consumed = ${report.DSP}")
+      println(s"FF estimated = ${bitWidth * testFFTLength * (factorize(testFFTLength).length * 2 - 1)}, FF consumed = ${report.FF}")
+      println(s"frequency expected = 600 MHz, frequency met = ${report.Frequency / 1E6} MHz")
+      report.printArea
+      report.printFMax
+    }
+
+    Array(4, 8, 16).map(testPerformance(_)).foreach(doReport(_))
   }
 }

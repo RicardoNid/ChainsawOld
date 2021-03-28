@@ -63,7 +63,7 @@ class testCooleyTukeyFFT(length: Int) extends CooleyTukeyFFT(length) with DSPSim
 
   override def scoreBoard(): Unit = {
 
-    def same(a: Double, b: Double) = (scala.math.abs(a - b) / ((a + b) / 2) < 0.01)
+    def same(a: Double, b: Double) = (scala.math.abs(a - b) / ((a + b) / 2) < 0.01 || scala.math.abs(a - b) < 0.1)
 
     def sameVector(v1: DenseVector[Complex], v2: DenseVector[Complex]) =
       v1.toArray.zip(v2.toArray).forall { case (c1, c2) => same(c1.real, c2.real) && same(c1.imag, c2.imag) }
@@ -81,20 +81,26 @@ class testCooleyTukeyFFT(length: Int) extends CooleyTukeyFFT(length) with DSPSim
   }
 }
 
+
 object testCooleyTukeyFFT {
-  def main(args: Array[String]): Unit = {
+  val r = Random
 
-    val r = Random
+  //    def randomCase(length: Int) = (for (elem <- (0 until 2 * length)) yield (r.nextDouble() * scala.math.pow(2, naturalWidth / 2))).toArray
+  def randomCase(length: Int) = (for (elem <- (0 until 2 * length)) yield (r.nextDouble())).toArray
 
-    def randomCase(length: Int) = (for (elem <- (0 until 2 * length)) yield (r.nextDouble() * scala.math.pow(2, naturalWidth / 2))).toArray
-
-    val dut = SimConfig.withWave.compile(new testCooleyTukeyFFT(testFFTLength))
+  def randomSim(length: Int) = {
+    val dut = SimConfig.withWave.compile(new testCooleyTukeyFFT(length))
     dut.doSim { dut =>
       dut.sim()
-      dut.insertTestCase(randomCase(testFFTLength))
-      dut.insertTestCase(randomCase(testFFTLength))
-      dut.insertTestCase(randomCase(testFFTLength))
+      for (i <- 0 until 100000) dut.insertTestCase(randomCase(length))
       dut.simDone()
     }
+    print(Console.GREEN)
+    println(s"$length point FFT, PASS")
+    print(Console.BLACK)
+  }
+
+  def main(args: Array[String]): Unit = {
+    Array(4, 8, 16).foreach(randomSim(_))
   }
 }

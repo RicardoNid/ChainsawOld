@@ -28,6 +28,7 @@ class ComplexNumber(R: SFix, I: SFix) {
     ComplexNumber(R, I)
   }
 
+  // TODO: implement it in another way
   def tap = ComplexNumber(RegNext(real), RegNext(imag))
 }
 

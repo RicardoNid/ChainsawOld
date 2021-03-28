@@ -73,7 +73,7 @@ package object FTN {
     //      val m2 = s2 * ComplexNumber(cos(2 * Pi / 3) - 1, 0)
     //    }
 
-    output
+    output.map(_.tap)
   }
 
   def cooleyTukeyFFT(input: IndexedSeq[ComplexNumber]): IndexedSeq[ComplexNumber] = {
@@ -93,15 +93,12 @@ package object FTN {
       def coefficient(n2: Int, k1: Int) = ComplexNumber(cos(-2 * Pi * n2 * k1 / N), sin(-2 * Pi * n2 * k1 / N))
 
       val coefficients = Array.tabulate(factor2, factor1)((k1, n2) => coefficient(n2, k1)).flatten
-
       val cooleyGroups = input.zipWithIndex.sortBy(_._2 % factor1).map(_._1).grouped(factor2).toArray
 
-      val stage1Numbers = cooleyGroups.map(cooleyTukeyFFT(_)).flatten.map(_.tap)
-
-      val stage2Numbers = stage1Numbers.zipWithIndex.sortBy(_._2 % factor2).map(_._1).zip(coefficients).map { case (number, coeff) => number * coeff }
+      val stage1Numbers = cooleyGroups.map(cooleyTukeyFFT(_)).flatten
+      val stage2Numbers = stage1Numbers.zipWithIndex.sortBy(_._2 % factor2).map(_._1).zip(coefficients).map { case (number, coeff) => number * coeff }.map(_.tap)
 
       val winoGroups = stage2Numbers.grouped(factor1).toArray
-
       val winoResults = winoGroups.map(winogradDFT(_)).flatten
 
       (0 until N).foreach(i => outputNumbers(i % factor1 * factor2 + i / factor1) = winoResults(i))
