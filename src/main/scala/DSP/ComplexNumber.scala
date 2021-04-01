@@ -1,43 +1,39 @@
 package DSP
 
 import spinal.core._
-import spinal.lib._
-import spinal.core.sim._
 
+// TODO: extend this from Data
 /**
  * @param R real part of the complex number
  * @param I imaginary part of the complex number
  */
-class ComplexNumber(R: SFix, I: SFix) {
-  val real = R
-  val imag = I
+class ComplexNumber(R: SFix, I: SFix){
+  val real: SFix = R
+  val imag: SFix = I
 
-  def +(that: ComplexNumber) = ComplexNumber(real + that.real, imag + that.imag)
+  def +(that: ComplexNumber): ComplexNumber = ComplexNumber(real + that.real, imag + that.imag)
 
-  def -(that: ComplexNumber) = ComplexNumber(real - that.real, imag - that.imag)
+  def -(that: ComplexNumber): ComplexNumber = ComplexNumber(real - that.real, imag - that.imag)
 
   // ALGO: 6.10
-  def *(that: ComplexNumber) = { // TODO: thick about "static"
-
-
+  def *(that: ComplexNumber): ComplexNumber = {
     val E = real - imag
     val Z = that.real * E
-
     val R = ((that.real - that.imag) * imag + Z).truncated
     val I = ((that.real + that.imag) * real - Z).truncated
     ComplexNumber(R, I)
   }
 
-  // TODO: implement it in another way
-  def tap = ComplexNumber(RegNext(real), RegNext(imag))
+  // TODO: deprecate after extending ComplexNumber from Data
+  def tap: ComplexNumber = ComplexNumber(RegNext(real), RegNext(imag))
 }
 
 object ComplexNumber {
 
-  val zero = data
+  private val zero = data
   zero := 0.0
 
-  def apply(R: SFix = zero, I: SFix= zero) = {
+  def apply(R: SFix = zero, I: SFix= zero): ComplexNumber = {
     new ComplexNumber(R, I)
   }
 

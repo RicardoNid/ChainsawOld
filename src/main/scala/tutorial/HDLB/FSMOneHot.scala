@@ -1,8 +1,6 @@
 package tutorial.HDLB
 
 import spinal.core._
-import spinal.lib._
-import spinal.lib.fsm._
 
 // HDLBits URL = https://hdlbits.01xz.net/wiki/Fsm_onehot
 class FSMOneHot extends Component { // todo : undone

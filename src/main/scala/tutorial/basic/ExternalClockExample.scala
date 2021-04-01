@@ -1,8 +1,6 @@
 package tutorial.basic
 
 import spinal.core._
-import spinal.lib._
-import spinal.core.sim._
 
 class ExternalClockExample extends Component {
   val io = new Bundle {

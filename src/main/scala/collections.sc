@@ -1,4 +1,4 @@
-import scala.collection.mutable.ArrayBuffer
+
 
 val array1 = Array(1,2,3,2)
 val array2 = Array(1,1,2,1,3)

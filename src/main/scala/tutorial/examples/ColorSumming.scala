@@ -1,7 +1,6 @@
 package tutorial.examples
 
 import spinal.core._
-import spinal.lib._
 
 case class Color(channelWidth: Int) extends Bundle {
   val r = UInt(channelWidth bits)

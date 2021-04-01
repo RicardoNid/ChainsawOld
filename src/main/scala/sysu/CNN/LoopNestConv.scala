@@ -3,7 +3,6 @@ package sysu.CNN
 import sysu.Opt.{Index, LoopExpr}
 
 import scala.collection.mutable.Map
-import sysu.Opt.LoopExpr._
 
 /*
 design : 目前采用的简化设定

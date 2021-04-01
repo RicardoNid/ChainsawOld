@@ -3,8 +3,6 @@ package sysu.util
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
-import sysu.CNN._
-import sysu.xilinx._
 import xilinx.{SYNTH, VivadoFlow, VivadoTask, recommended}
 
 // (a * b) matrix * (b * c) matrix
@@ -36,12 +34,15 @@ object GEMM {
     if (args(0) == "synth") {
       val report = VivadoFlow(
         design = new GEMM(8, 8, 3, 5, 7),
+        topModuleName = "GEMM",
+        workspacePath = "output/GEMM",
         vivadoConfig = recommended.vivadoConfig,
-        vivadoTask = VivadoTask(topModuleName = "GEMM", workspacePath = "output/GEMM", frequencyTarget = 600 MHz, taskType = SYNTH),
+        vivadoTask = VivadoTask( frequencyTarget = 600 MHz, taskType = SYNTH),
         force = true).doit()
       report.printArea
       report.printFMax
     }
+
     else if (args(0) == "sim") {
       val period = 2
       SimConfig.withWave.compile(new GEMM(8, 8, 3, 5, 7))

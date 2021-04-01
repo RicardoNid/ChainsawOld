@@ -1,14 +1,5 @@
 // 如何定义数据重用距离?
 
-import spinal.core._
-import spinal.lib._
-import spinal.lib.fsm._
-import spinal.lib.bus.amba4.axi._
-import spinal.core.sim._
-
-import sysu.xilinx._
-import sysu.util._
-
 val ori = Array.tabulate(32, 16)(_ * 16 + _)
 val map1 = (i: Int) => if (i > 15 && (i % 16 != 0)) i - 17 else -1
 val map2 = (i: Int) => if (i > 15) i - 16 else -1

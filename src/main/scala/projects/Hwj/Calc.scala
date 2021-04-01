@@ -1,14 +1,11 @@
 package projects.Hwj
 
-import spinal.core.Component.push
 import spinal.core._
+import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
-import spinal.lib.bus.amba4.axi._
-import spinal.core.sim._
-import sysu.xilinx._
-import sysu.util._
 import sysu.CNN._
+import sysu.util._
 import xilinx.{SYNTH, VivadoFlow, VivadoTask, recommended}
 
 // 前端中断 : 不支持中断,
@@ -77,8 +74,9 @@ object Calc {
     if (args(0) == "synth") {
       val report = VivadoFlow(
         design = new Calc(8, 8, res2_1_a),
+        topModuleName = "CalcAndOut", workspacePath = "output/CalcAndOut",
         vivadoConfig = recommended.vivadoConfig,
-        vivadoTask = VivadoTask(topModuleName = "CalcAndOut", workspacePath = "output/CalcAndOut", frequencyTarget = 600 MHz, taskType = SYNTH),
+        vivadoTask = VivadoTask( frequencyTarget = 600 MHz, taskType = SYNTH),
         force = true).doit()
       report.printArea
       report.printFMax

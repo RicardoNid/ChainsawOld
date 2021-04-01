@@ -1,13 +1,8 @@
 package projects.Hwj
 
 import spinal.core._
-import spinal.lib._
-import spinal.lib.fsm._
-import spinal.lib.bus.amba4.axi._
 import spinal.core.sim._
-import sysu.xilinx._
-import sysu.util._
-import sysu.CNN._
+import spinal.lib._
 import xilinx.{SYNTH, VivadoFlow, VivadoTask, recommended}
 
 // (a * b) matrix * (b * c) matrix
@@ -36,8 +31,10 @@ object AccFIFO {
     if (args(0) == "synth") {
       val report = VivadoFlow(
         design = new AccFIFO(200, 128),
+        topModuleName = "AccFIFO",
+        workspacePath = "output/AccFIFO",
         vivadoConfig = recommended.vivadoConfig,
-        vivadoTask = VivadoTask(topModuleName = "AccFIFO", workspacePath = "output/AccFIFO", frequencyTarget = 600 MHz, taskType = SYNTH),
+        vivadoTask = VivadoTask( frequencyTarget = 600 MHz, taskType = SYNTH),
         force = true).doit()
       report.printArea
       report.printFMax

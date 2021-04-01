@@ -1,9 +1,8 @@
 package tutorial.examples.VGA
 
 import spinal.core._
-import spinal.lib._
 import spinal.core.sim._
-import scala.util.Random
+import spinal.lib._
 
 class VgaCtrl(rgbConfig: RgbConfig = new RgbConfig(8, 8, 8), timingsWidth: Int = 12) extends Component {
   val io = new Bundle {

@@ -2,7 +2,6 @@ package tutorial.HDLB
 
 import spinal.core._
 import spinal.lib._
-import spinal.lib.fsm._
 
 // HDLBits URL = https://hdlbits.01xz.net/wiki/Count10
 class Count10 extends Component {

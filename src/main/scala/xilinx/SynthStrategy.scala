@@ -17,7 +17,7 @@ object FlattenHierarchy extends Enumeration {
   }
 }
 
-import FlattenHierarchy._
+import xilinx.FlattenHierarchy._
 
 case class SynthStrategy(
                           flatten_hierarchy: FlattenHierarchy = full

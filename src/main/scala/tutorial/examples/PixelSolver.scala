@@ -1,11 +1,8 @@
 package tutorial.examples
 
 import spinal.core._
-import spinal.lib._
 import spinal.core.sim._
-import spinal.lib
-
-import scala.util.Random
+import spinal.lib._
 
 case class PixelSolverGenerics(
                                 fixAmplitude: Int,

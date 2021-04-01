@@ -2,13 +2,6 @@ package sysu.util
 
 import spinal.core._
 import spinal.lib._
-import spinal.lib.fsm._
-import spinal.lib.bus.amba4.axi._
-import spinal.core.sim._
-import scala.util.Random
-
-import sysu.xilinx._
-import sysu.util._
 
 // design : 使用Area实现的轻量化util模块,参数信息往往不是显式给出,而是藏在接入的data中
 

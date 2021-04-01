@@ -2,7 +2,7 @@ package sysu.CNN
 
 import spinal.core._
 import sysu.Opt.Index
-import sysu.Opt.functions.{getGroups, getMap, validVirtualAddr}
+import sysu.Opt.functions.{getGroups, getMap}
 import sysu.util._
 
 trait PadMode

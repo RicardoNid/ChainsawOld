@@ -1,7 +1,6 @@
 package tutorial.examples
 
 import spinal.core._
-import spinal.lib._
 import spinal.lib.fsm._
 
 object StateMachineSimExample {

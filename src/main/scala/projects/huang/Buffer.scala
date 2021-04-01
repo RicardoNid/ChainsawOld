@@ -7,7 +7,6 @@ import spinal.lib.bus.bram._
 import spinal.lib.fsm._
 import sysu.CNN._
 import sysu.util._
-import sysu.xilinx._
 import xilinx.{VivadoFlow, VivadoTask, recommended}
 
 class Buffer(loopNestConv: LoopNestConv, next: LoopNestConv) extends Component {
@@ -85,10 +84,10 @@ object Buffer {
     val moduleName = "Buffer"
     val report = VivadoFlow(
       design = new Buffer(loopNestHuang1, loopNestHuang2),
+      topModuleName = moduleName,
+      workspacePath = s"output/huang/Buffer",
       vivadoConfig = recommended.vivadoConfig,
-      vivadoTask = VivadoTask(
-        topModuleName = moduleName,
-        workspacePath = s"output/huang/Buffer"),
+      vivadoTask = VivadoTask(),
       force = true).doit()
     report.printArea
     report.printFMax

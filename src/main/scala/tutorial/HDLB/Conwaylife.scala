@@ -1,8 +1,6 @@
 package tutorial.HDLB
 
 import spinal.core._
-import spinal.lib._
-import spinal.lib.fsm._
 
 class Conwaylife extends Component {
   val io = new Bundle {

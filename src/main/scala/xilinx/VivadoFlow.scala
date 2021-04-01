@@ -1,23 +1,27 @@
 package xilinx
 
-import java.io.File
-import java.nio.file.Paths
-
 import org.apache.commons.io.FileUtils
 import spinal.core._
 
+import java.io.File
+import java.nio.file.Paths
 import scala.io.Source
 import scala.sys.process._
 
 
 class VivadoFlow[T <: Component](
                                   design: => T,
+                                  topModuleName: String,
+                                  workspacePath: String,
                                   vivadoConfig: VivadoConfig,
                                   vivadoTask: VivadoTask,
                                   force: Boolean = false
                                 ) {
 
-  def doCmd(cmd: String): Unit = {
+  import vivadoConfig._
+  import vivadoTask._
+
+  private def doCmd(cmd: String): Unit = {
     println(cmd)
     if (isWindows)
       Process("cmd /C " + cmd) !
@@ -25,7 +29,7 @@ class VivadoFlow[T <: Component](
       Process(cmd) !
   }
 
-  def doCmd(cmd: String, path: String): Unit = { // do cmd at the workSpace
+  private def doCmd(cmd: String, path: String): Unit = { // do cmd at the workSpace
     println(cmd)
     if (isWindows)
       Process("cmd /C " + cmd, new java.io.File(path)) !
@@ -33,10 +37,7 @@ class VivadoFlow[T <: Component](
       Process(cmd, new java.io.File(path)) !
   }
 
-  import vivadoConfig._
-  import vivadoTask._
-
-  def writeFile(fileName: String, content: String) = {
+  private def writeFile(fileName: String, content: String) = {
     val tcl = new java.io.FileWriter(Paths.get(workspacePath, fileName).toFile)
     tcl.write(content)
     tcl.flush();
@@ -45,6 +46,36 @@ class VivadoFlow[T <: Component](
 
   val isWindows = System.getProperty("os.name").toLowerCase().contains("win")
 
+  def getScript(vivadoConfig: VivadoConfig) = {
+    var script = s"read_verilog -sv ${topModuleName}.sv\n read_xdc doit.xdc\n"
+    var taskName = ""
+    taskType match {
+      case ELABO => {
+        script += s"synth_design -part ${vivadoConfig.devicePart} -top ${topModuleName} -rtl\n"
+        taskName = "elabo"
+      }
+      case SYNTH => {
+        script += s"synth_design -part ${vivadoConfig.devicePart} -top ${topModuleName}\n"
+        taskName = "synth"
+      }
+      case IMPL => {
+        script += s"synth_design -part ${vivadoConfig.devicePart} -top ${topModuleName}\n"
+        script += "opt_design\n"
+        script += "place_design\n"
+        script += "route_design\n"
+        taskName = "impl"
+      }
+    }
+    if (reportUtil && taskType != ELABO) script += s"report_utilization\n"
+    if (reportTiming && taskType != ELABO) script += s"report_timing\n"
+    if (writeCheckpoint && taskType != ELABO) script += s"write_checkpoint ${topModuleName}_${taskName}.dcp\n"
+    script
+  }
+
+  def getXdc() = {
+    val targetPeriod = frequencyTarget.toTime
+    s"""create_clock -period ${(targetPeriod * 1e9) toBigDecimal} [get_ports clk]"""
+  }
 
   def doit() = {
 
@@ -66,8 +97,8 @@ class VivadoFlow[T <: Component](
     source.flush();
     source.close();
 
-    writeFile("doit.tcl", vivadoTask.getScript(vivadoConfig))
-    writeFile("doit.xdc", vivadoTask.getXdc())
+    writeFile("doit.tcl", getScript(vivadoConfig))
+    writeFile("doit.xdc", getXdc())
 
     doCmd(s"$vivadoPath/vivado -nojournal -log doit.log -mode batch -source doit.tcl", workspacePath)
 
@@ -75,11 +106,16 @@ class VivadoFlow[T <: Component](
   }
 }
 
+// TODO: modify the API, name and path should be passed to the Flow, so the user can use Config and Task from the recommendation
 object VivadoFlow {
   def apply[T <: Component](
                              design: => T,
-                             vivadoConfig: VivadoConfig,
-                             vivadoTask: VivadoTask,
+                             topModuleName: String,
+                             workspacePath: String,
+                             vivadoConfig: VivadoConfig = recommended.vivadoConfig,
+                             vivadoTask: VivadoTask = VivadoTask(),
                              force: Boolean = false
-                           ) = new VivadoFlow(design, vivadoConfig, vivadoTask, force)
+                           ) = new VivadoFlow(design, topModuleName, workspacePath, vivadoConfig, vivadoTask, force)
+
+
 }

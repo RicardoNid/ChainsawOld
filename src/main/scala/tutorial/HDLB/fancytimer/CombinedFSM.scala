@@ -1,11 +1,9 @@
 package tutorial.HDLB.fancytimer
 
-import tutorial.HDLB.StateMachineNoBoot
 import spinal.core._
-import spinal.lib._
 import spinal.lib.fsm._
-
 import sysu.util._
+import tutorial.HDLB.StateMachineNoBoot
 
 // HDLBits URL = https://hdlbits.01xz.net/wiki/Exams/review2015_fsm
 class CombinedFSM extends Component {

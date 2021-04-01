@@ -3,10 +3,6 @@ package DSP
 import breeze.linalg.DenseVector
 import spinal.core._
 
-import scala.util.Random
-import sysu.xilinx._
-import xilinx.VivadoFlowOld
-
 class FIR(
            bitWidthIn: Int = 27, // design : 注意，DSP48E1是25*18,E2才是27*18,这直接影响了DSP的生成
            bitWidthWeight: Int = 18,
@@ -59,27 +55,27 @@ class FIR(
 
 object FIR {
   def main(args: Array[String]): Unit = {
-
-    val randGen = new Random(30)
-    val coeff144 = DenseVector(Array.ofDim[Double](72).map(_ => {
-      val value = randGen.nextInt % 100 + 500 // 避开较小的整数和2的幂,避免优化
-      if (isPow2(value)) (value + 13).toDouble
-      else value.toDouble
-    }))
-
-    SpinalConfig(mode = SystemVerilog, targetDirectory = "output/FTN")
-      .generateSystemVerilog(new FIR(coeffs = coeff144, version = "systolic"))
-
-    val report = VivadoFlowOld(
-      "output/VIVADO",
-      "output/FTN/FIR.sv",
-      Vivado.bin,
-      Vivado.family,
-      Vivado.device,
-      100 MHz,
-      1)
-
-    println(report.getArea())
-    println(report.getFMax() / 1E6 + " MHz")
+//
+//    val randGen = new Random(30)
+//    val coeff144 = DenseVector(Array.ofDim[Double](72).map(_ => {
+//      val value = randGen.nextInt % 100 + 500 // 避开较小的整数和2的幂,避免优化
+//      if (isPow2(value)) (value + 13).toDouble
+//      else value.toDouble
+//    }))
+//
+//    SpinalConfig(mode = SystemVerilog, targetDirectory = "output/FTN")
+//      .generateSystemVerilog(new FIR(coeffs = coeff144, version = "systolic"))
+//
+//    val report = VivadoFlowOld(
+//      "output/VIVADO",
+//      "output/FTN/FIR.sv",
+//      Vivado.bin,
+//      Vivado.family,
+//      Vivado.device,
+//      100 MHz,
+//      1)
+//
+//    println(report.getArea())
+//    println(report.getFMax() / 1E6 + " MHz")
   }
 }

@@ -1,4 +1,4 @@
-import scala.collection.{breakOut, mutable}
+import scala.collection.mutable
 
 class LeetCode1314 {
 

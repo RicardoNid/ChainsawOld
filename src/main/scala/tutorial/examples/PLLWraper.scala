@@ -1,10 +1,7 @@
 package tutorial.examples
 
 import spinal.core._
-import spinal.core.sim._
 import spinal.lib._
-
-import scala.util.Random
 
 class singleClock extends BlackBox {
   val io = new Bundle {

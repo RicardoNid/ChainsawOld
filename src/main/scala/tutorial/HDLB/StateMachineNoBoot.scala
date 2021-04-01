@@ -1,8 +1,8 @@
 package tutorial.HDLB
 
 import spinal.core._
-import spinal.lib._
 import spinal.lib.fsm._
+
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 

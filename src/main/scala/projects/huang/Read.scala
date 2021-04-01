@@ -1,16 +1,10 @@
 package projects.huang
 
 import spinal.core._
-import spinal.lib._
-import spinal.lib.fsm._
-import spinal.lib.bus.amba4.axi._
 import spinal.core.sim._
+import spinal.lib._
 import spinal.lib.bus.bram._
 import sysu.CNN._
-
-import scala.util.Random
-import sysu.xilinx._
-import sysu.util._
 import xilinx.{VivadoFlow, VivadoTask, recommended}
 
 class Read(loopNestConv: LoopNestConv, next: LoopNestConv) extends Component {
@@ -64,10 +58,11 @@ object Read {
     val moduleName = "Read1"
     val report = VivadoFlow(
       design = new Read(loopNestHuang1, loopNestHuang2),
+      topModuleName = moduleName,
+      workspacePath = s"output/huang/Read1",
       vivadoConfig = recommended.vivadoConfig,
-      vivadoTask = VivadoTask(
-        topModuleName = moduleName,
-        workspacePath = s"output/huang/Read1")).doit()
+      vivadoTask = VivadoTask()
+    ).doit()
     report.printArea
     report.printFMax
   }

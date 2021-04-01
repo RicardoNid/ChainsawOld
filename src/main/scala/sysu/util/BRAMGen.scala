@@ -2,12 +2,6 @@ package sysu.util
 
 import spinal.core._
 import spinal.lib._
-import spinal.lib.fsm._
-import spinal.lib.bus.amba4.axi._
-import spinal.lib.bus.bram._
-import spinal.core.sim._
-import sysu.xilinx._
-import sysu.util._
 import xilinx.{VivadoFlow, VivadoTask, recommended}
 
 // 需要手动堆叠地址
@@ -36,10 +30,10 @@ object BRAMGen {
   def main(args: Array[String]): Unit = {
     val report = VivadoFlow(
       design = new BRAMGen,
+      topModuleName = "bram",
+      workspacePath = "output/bram",
       vivadoConfig = recommended.vivadoConfig,
-      vivadoTask = VivadoTask(
-        topModuleName = "bram",
-        workspacePath = "output/bram"),
+      vivadoTask = VivadoTask(),
       force = true
     ).doit()
     report.printFMax

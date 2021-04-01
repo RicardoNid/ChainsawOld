@@ -2,9 +2,6 @@ package tutorial.examples
 
 import spinal.core._
 import spinal.core.sim._
-import spinal.lib._
-
-import scala.util.Random
 
 class CounterWithClear(width: Int) extends Component {
   val io = new Bundle {

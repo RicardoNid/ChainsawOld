@@ -2,13 +2,9 @@ package sysu.util
 
 import breeze.numerics.ceil
 import spinal.core._
-import spinal.lib._
-import spinal.lib.fsm._
-import spinal.lib.bus.amba4.axi._
 import spinal.core.sim._
+import spinal.lib._
 import sysu.Opt.CounterParam
-import sysu.xilinx._
-import sysu.util._
 
 class BetterCounter(counterParam: CounterParam) extends Component {
 

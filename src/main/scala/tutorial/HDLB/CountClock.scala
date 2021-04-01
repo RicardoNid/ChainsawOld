@@ -2,7 +2,6 @@ package tutorial.HDLB
 
 import spinal.core._
 import spinal.lib._
-import spinal.lib.fsm._
 
 // https://hdlbits.01xz.net/wiki/Count_clock
 class CountClock extends Component {

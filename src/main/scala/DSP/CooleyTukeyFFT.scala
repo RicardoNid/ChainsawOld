@@ -8,13 +8,10 @@ import spinal.core._
 import spinal.lib._
 import xilinx.{VivadoFlow, VivadoReport, VivadoTask, recommended}
 
-// N-point FFT by Cooley-Tukey FFT algorithm, based on Winograd DFT algorithm
-/*
-ALGO: DSP with FPGA, algo 6.8, fig 6.12
- */
-// TODO: refactor this by functional style
-// TODO: inplement interleave function instead of the for loop in part 1 & 3
 
+/** N-point FFT by Cooley-Tukey FFT algorithm, based on Winograd DFT algorithm, DSP with FPGA, algo 6.8, fig 6.12
+ * @param N length of FFT
+ */
 class CooleyTukeyFFT(N: Int) extends Component {
 
   val io = new Bundle {
@@ -73,13 +70,13 @@ object CooleyTukeyFFT {
   def main(args: Array[String]): Unit = {
 
     val task = VivadoTask(
-      topModuleName = "FFT",
-      workspacePath = "./output/FTN",
       frequencyTarget = (600 MHz)
     )
 
     def testPerformance(length: Int) = VivadoFlow( // performance verification
       design = new CooleyTukeyFFT(length),
+      topModuleName = "FFT",
+      workspacePath = "./output/FTN",
       vivadoConfig = recommended.vivadoConfig,
       vivadoTask = task,
       force = true

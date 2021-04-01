@@ -1,8 +1,6 @@
 package tutorial.HDLB.fancytimer
 
 import spinal.core._
-import spinal.lib._
-import spinal.lib.fsm._
 
 // HDLBits URL = https://hdlbits.01xz.net/wiki/Exams/review2015_shiftcount
 class counter extends Component {

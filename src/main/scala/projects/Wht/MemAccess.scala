@@ -4,7 +4,6 @@ import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 import sysu.util._
-import sysu.xilinx._
 import xilinx.{VivadoFlow, VivadoTask, recommended}
 
 
@@ -24,10 +23,10 @@ object MemAccess {
   def main(args: Array[String]): Unit = {
     val report = VivadoFlow(
       design = new MemAccess,
+      topModuleName = "MemAccess",
+      workspacePath = "output/MemAccess",
       vivadoConfig = recommended.vivadoConfig,
-      vivadoTask = VivadoTask(
-        topModuleName = "MemAccess",
-        workspacePath = "output/MemAccess"),
+      vivadoTask = VivadoTask(),
       force = true
     ).doit()
     report.printArea

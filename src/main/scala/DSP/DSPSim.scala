@@ -31,5 +31,4 @@ trait DSPSim {
     monitor()
     scoreBoard()
   }
-
 }

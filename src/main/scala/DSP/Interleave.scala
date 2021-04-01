@@ -8,9 +8,8 @@
 package DSP
 
 import spinal.core._
-import spinal.lib._
 import spinal.core.sim._
-import scala.util.Random
+import spinal.lib._
 import spinal.lib.fsm._
 
 class Interleave(wordWidth: Int, sizeRd: Int, sizeWr: Int) extends Component {

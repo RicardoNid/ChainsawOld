@@ -1,9 +1,8 @@
 package xilinx
 
-import java.nio.file.Paths
-
 import spinal.core._
 
+import java.nio.file.Paths
 import scala.io.Source
 
 class VivadoReport(workspacePath: String,

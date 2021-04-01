@@ -3,7 +3,6 @@ package projects.Wht
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib.fsm._
-import sysu.xilinx._
 import xilinx.{VivadoFlow, VivadoTask, recommended}
 
 class Wht extends Component {
@@ -140,8 +139,10 @@ object Wht {
   def main(args: Array[String]): Unit = {
     val report = VivadoFlow(
       design = new Wht,
+      topModuleName = "projects/Wht",
+      workspacePath = "output/projects.Wht",
       vivadoConfig = recommended.vivadoConfig,
-      vivadoTask = VivadoTask(topModuleName = "projects/Wht", workspacePath = "output/projects.Wht"),
+      vivadoTask = VivadoTask(),
       force = true
     ).doit()
     report.printArea

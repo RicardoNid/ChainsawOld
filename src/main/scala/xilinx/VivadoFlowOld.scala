@@ -1,12 +1,11 @@
 package xilinx
 
-import java.io.File
-import java.nio.file.Paths
-
 import org.apache.commons.io.FileUtils
 import spinal.core._
 import spinal.lib.eda.bench.Report
 
+import java.io.File
+import java.nio.file.Paths
 import scala.sys.process._
 
 object VivadoFlowOld {

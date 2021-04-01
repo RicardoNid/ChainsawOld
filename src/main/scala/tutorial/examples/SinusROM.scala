@@ -1,7 +1,6 @@
 package tutorial.examples
 
 import spinal.core._
-import spinal.lib._
 import spinal.core.sim._
 
 class SinusROM(resolutionWidth: Int, sampleCount: Int) extends Component {

@@ -1,10 +1,8 @@
 package DSP
 
 import spinal.core._
-import spinal.lib._
-import spinal.lib.fsm._
-import spinal.lib.bus.amba4.axi._
 import spinal.core.sim._
+import spinal.lib._
 
 class ClockCross(bitWidth: Int, ratio: Int) extends Component {
   val io = new Bundle {

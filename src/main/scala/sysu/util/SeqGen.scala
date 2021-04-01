@@ -4,11 +4,7 @@ import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 import sysu.util.SeqGen.encode
-import sysu.xilinx._
 import xilinx.{SYNTH, VivadoFlow, VivadoTask, recommended}
-
-import scala.collection.mutable.ArrayBuffer
-import scala.util.Random
 
 trait SeqGenMode
 
@@ -85,8 +81,10 @@ object SeqGen {
   def main(args: Array[String]): Unit = { // demo
     val report = VivadoFlow(
       design = new SeqGenModule(Array(1, 2, 3, 4), LUT),
+      topModuleName = "SeqGen",
+      workspacePath = "output/seqgen",
       vivadoConfig = recommended.vivadoConfig,
-      vivadoTask = VivadoTask(topModuleName = "SeqGen", workspacePath = "output/seqgen", frequencyTarget = 400 MHz, taskType = SYNTH),
+      vivadoTask = VivadoTask(frequencyTarget = 400 MHz, taskType = SYNTH),
       force = true).doit()
     report.printArea
     report.printFMax

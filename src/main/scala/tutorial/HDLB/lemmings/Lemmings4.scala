@@ -1,9 +1,9 @@
 package tutorial.HDLB.lemmings
 
-import tutorial.HDLB.StateMachineNoBoot
 import spinal.core._
 import spinal.lib._
 import spinal.lib.fsm._
+import tutorial.HDLB.StateMachineNoBoot
 
 // HDLBits URL = https://hdlbits.01xz.net/wiki/Lemmings4
 class Lemmings4 extends Component {

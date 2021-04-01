@@ -2,7 +2,6 @@ package tutorial.HDLB.fancytimer
 
 import spinal.core._
 import spinal.lib._
-import spinal.lib.fsm._
 
 // HDLBits URL = https://hdlbits.01xz.net/wiki/Exams/review2015_fsmshift
 class ShiftFSM extends Component {

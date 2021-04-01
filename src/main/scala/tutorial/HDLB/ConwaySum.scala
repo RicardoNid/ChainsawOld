@@ -1,9 +1,7 @@
 package tutorial.HDLB
 
 import spinal.core._
-import spinal.lib._
 import spinal.core.sim._
-import scala.util.Random
 
 class ConwaySum extends Component {
   val io = new Bundle {

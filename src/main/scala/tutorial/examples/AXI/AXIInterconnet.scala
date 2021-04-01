@@ -1,11 +1,8 @@
 package tutorial.examples.AXI
 
 import spinal.core._
-import spinal.lib._
-import spinal.lib.fsm._
-import spinal.lib.bus.amba4.axi._
 import spinal.core.sim._
-import scala.util.Random
+import spinal.lib.bus.amba4.axi._
 
 class AXIInterconnet extends Component {
   val io = new Bundle {

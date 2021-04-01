@@ -1,13 +1,7 @@
 package sysu.CNN
 
-import spinal.core._
-import spinal.lib._
-import spinal.lib.fsm._
-import spinal.lib.bus.amba4.axi._
-import spinal.core.sim._
 import breeze.linalg._
 import breeze.numerics._
-import breeze.signal._
 
 case class CNNModel( // 高度简化的参数
                      L: Int = 13,

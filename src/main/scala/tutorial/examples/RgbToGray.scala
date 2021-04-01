@@ -1,8 +1,8 @@
 package tutorial.examples
 
 import spinal.core._
-import spinal.lib._
 import spinal.core.sim._
+import spinal.lib._
 
 class RgbToGray extends Component {
   val io = new Bundle {

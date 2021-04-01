@@ -3,8 +3,7 @@ package sysu.Opt
 import sysu.util.printArray2D
 
 import scala.collection.mutable
-import scala.collection.mutable.{ArrayBuffer, Map}
-import scala.collection.mutable.{SortedSet => Set}
+import scala.collection.mutable.{ArrayBuffer, Map, SortedSet => Set}
 
 object functions {
 

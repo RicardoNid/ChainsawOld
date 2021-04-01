@@ -1,8 +1,9 @@
 package tutorial.examples.VGA
 
 import spinal.core._
-import spinal.lib._
 import spinal.core.sim._
+import spinal.lib._
+
 import scala.util.Random
 
 class VgaTop extends Component {

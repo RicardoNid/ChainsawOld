@@ -20,11 +20,4 @@ object recommended {
   val synthStrategy = SynthStrategy(
     flatten_hierarchy = FlattenHierarchy.none
   )
-
-  val vivadoTaskTemp = VivadoTask(
-    topModuleName = "temp",
-    workspacePath = "output/temp",
-    frequencyTarget = 600 MHz,
-    taskType = SYNTH
-  )
 }

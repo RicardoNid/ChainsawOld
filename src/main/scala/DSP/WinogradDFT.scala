@@ -1,19 +1,12 @@
 package DSP
 
 import DSP.WinogradDFT.winogradDFT
-import breeze.numerics.{Inf, floor}
 import spinal.core._
-import spinal.core.sim._
 import spinal.lib.{Delay, master, slave}
 
-// N-point DFT by Winograd DFT algorithm
-/*
-algo: On Computing the Discrete Fourier Transform, P18
+/** N-point DFT by Winograd DFT algorithm, On Computing the Discrete Fourier Transform, P18
+ * @param N - length of DFT
  */
-
-// TODO: refactor after implementation of ComplexNumber class
-// TODO: refactor after implementation of arbitrary N point Winograd DFT
-
 class WinogradDFT (N: Int) extends Component {
 
   require(isPrime(N), s"Winograd DFT is for prime number")
@@ -38,6 +31,7 @@ class WinogradDFT (N: Int) extends Component {
 
 object WinogradDFT {
 
+  // TODO: Wino should be combined with hardware architecture
   def winogradDFT(input: IndexedSeq[ComplexNumber]) = {
 
     val N = input.length
@@ -46,24 +40,13 @@ object WinogradDFT {
     require(Set(2).contains(N), s"$N point Winograd DFT will be supported in later release")
 
     val output = Array.ofDim[ComplexNumber](N)
-    if (N == 2) {
-      val s0 = input(0) + input(1)
-      val s1 = input(0) - input(1)
-      val m0 = s0
-      val m1 = s1
-      output(0) = m0
-      output(1) = m1
-    }
 
-    //    if(N == 3){
-    //      val s1 = input(1) + input(2)
-    //      val s2 = input(1) - input(2)
-    //      val s3 = input(0) - input(1)
-    //
-    //      val m0 = s3
-    //      val m1 = s1 * ComplexNumber(cos(2 * Pi / 3) - 1, 0)
-    //      val m2 = s2 * ComplexNumber(cos(2 * Pi / 3) - 1, 0)
-    //    }
+    N match {
+      case 2 =>{
+        output(0) = input(0) + input(1)
+        output(1) = input(0) - input(1)
+      }
+    }
 
     output.map(_.tap)
   }

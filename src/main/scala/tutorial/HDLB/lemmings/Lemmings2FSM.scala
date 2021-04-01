@@ -1,8 +1,8 @@
 package tutorial.HDLB.lemmings
 
-import tutorial.HDLB.StateMachineNoBoot
 import spinal.core._
 import spinal.lib.fsm._
+import tutorial.HDLB.StateMachineNoBoot
 
 class Lemmings2FSM extends Component {
   val io = new Bundle {

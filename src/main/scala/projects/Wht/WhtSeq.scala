@@ -2,7 +2,6 @@ package projects.Wht
 
 import spinal.core._
 import sysu.util._
-import sysu.xilinx._
 import xilinx.{VivadoFlow, VivadoTask, recommended}
 
 class WhtSeq extends Component {
@@ -52,8 +51,10 @@ class WhtSeq extends Component {
 object WhtSeq extends App {
   val report = VivadoFlow(
     design = new WhtSeq(),
+    topModuleName = "WhtSeq",
+    workspacePath = "output/WhtSeq",
     vivadoConfig = recommended.vivadoConfig,
-    vivadoTask = VivadoTask(topModuleName = "WhtSeq", workspacePath = "output/WhtSeq"),
+    vivadoTask = VivadoTask(),
     force = true
   ).doit()
   report.printArea
