@@ -4,6 +4,7 @@ import spinal.core._
 import spinal.core.sim._
 import spinal.lib.fsm._
 import sysu.xilinx._
+import xilinx.{VivadoFlow, VivadoTask, recommended}
 
 class Wht extends Component {
 

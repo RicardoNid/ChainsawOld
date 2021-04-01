@@ -11,6 +11,7 @@ import sysu.CNN._
 import scala.util.Random
 import sysu.xilinx._
 import sysu.util._
+import xilinx.{VivadoFlow, VivadoTask, recommended}
 
 class Write(loopNestConv: LoopNestConv) extends Component {
 

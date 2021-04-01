@@ -5,6 +5,7 @@ import spinal.core.sim._
 import spinal.lib._
 import sysu.util._
 import sysu.xilinx._
+import xilinx.{VivadoFlow, VivadoTask, recommended}
 
 
 class MemAccess extends Component {

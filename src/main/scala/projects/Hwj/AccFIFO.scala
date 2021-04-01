@@ -5,10 +5,10 @@ import spinal.lib._
 import spinal.lib.fsm._
 import spinal.lib.bus.amba4.axi._
 import spinal.core.sim._
-
 import sysu.xilinx._
 import sysu.util._
 import sysu.CNN._
+import xilinx.{SYNTH, VivadoFlow, VivadoTask, recommended}
 
 // (a * b) matrix * (b * c) matrix
 class AccFIFO(dataWidth: Int, latency: Int) extends Component {

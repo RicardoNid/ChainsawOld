@@ -6,9 +6,9 @@ import spinal.lib.fsm._
 import spinal.lib.bus.amba4.axi._
 import spinal.lib.bus.bram._
 import spinal.core.sim._
-
 import sysu.xilinx._
 import sysu.util._
+import xilinx.{VivadoFlow, VivadoTask, recommended}
 
 // 需要手动堆叠地址
 class BRAMGen extends Component {

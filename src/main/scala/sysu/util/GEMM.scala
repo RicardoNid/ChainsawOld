@@ -5,6 +5,7 @@ import spinal.core.sim._
 import spinal.lib._
 import sysu.CNN._
 import sysu.xilinx._
+import xilinx.{SYNTH, VivadoFlow, VivadoTask, recommended}
 
 // (a * b) matrix * (b * c) matrix
 class GEMM(widthA: Int, widthB: Int, a: Int, b: Int, c: Int) extends Component {

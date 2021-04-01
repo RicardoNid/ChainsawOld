@@ -8,6 +8,7 @@ import spinal.lib.fsm._
 import sysu.CNN._
 import sysu.util._
 import sysu.xilinx._
+import xilinx.{VivadoFlow, VivadoTask, recommended}
 
 class Buffer(loopNestConv: LoopNestConv, next: LoopNestConv) extends Component {
 

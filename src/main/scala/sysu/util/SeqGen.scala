@@ -5,6 +5,7 @@ import spinal.core.sim._
 import spinal.lib._
 import sysu.util.SeqGen.encode
 import sysu.xilinx._
+import xilinx.{SYNTH, VivadoFlow, VivadoTask, recommended}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random

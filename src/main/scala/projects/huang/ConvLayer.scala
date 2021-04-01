@@ -10,6 +10,7 @@ import sysu.CNN._
 import scala.util.Random
 import sysu.xilinx._
 import sysu.util._
+import xilinx.{VivadoFlow, VivadoTask, recommended}
 
 class ConvLayer(loopNestConv: LoopNestConv, next: LoopNestConv) extends Component {
 

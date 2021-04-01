@@ -2,6 +2,7 @@ package sysu.util
 
 import spinal.core._
 import sysu.xilinx._
+import xilinx.{VivadoFlow, recommended}
 
 
 /*

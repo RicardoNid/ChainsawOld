@@ -10,6 +10,7 @@ import spinal.lib.bus.bram._
 import scala.util.Random
 import sysu.xilinx._
 import sysu.util._
+import xilinx.{VivadoFlow, VivadoTask, recommended}
 
 class Example extends Component {
   val io = new Bundle {

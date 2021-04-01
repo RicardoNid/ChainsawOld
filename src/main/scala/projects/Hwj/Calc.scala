@@ -9,6 +9,7 @@ import spinal.core.sim._
 import sysu.xilinx._
 import sysu.util._
 import sysu.CNN._
+import xilinx.{SYNTH, VivadoFlow, VivadoTask, recommended}
 
 // 前端中断 : 不支持中断,
 // 后端中断 :
