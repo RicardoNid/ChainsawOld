@@ -1,6 +1,7 @@
 import breeze.numerics.{floor, pow}
 import spinal.core._
 import spinal.core.sim._
+
 import scala.collection.mutable.ArrayBuffer
 
 package object DSP {
@@ -37,44 +38,13 @@ package object DSP {
     }
   }
 
-  def optimalCSD(num: Int):String = {
-    val pattern0 = "1101".r
-    val pattern1 = "11+0".r
-    val pattern2 = "901".r
-
-    var string = num.toBinaryString.reverse + "0"
-    var done0 = false
-    var done1 = false
-
-    while(!done0){
-      val sub = pattern0.findFirstIn(string).getOrElse(
-        pattern1.findFirstIn(string).getOrElse {
-          done0 = true
-          " "
-        }
-      )
-      if (sub == "1101") string = string.replaceFirst(sub, "9011")
-      else string = string.replace(sub, "9" + "0" * (sub.length - 2) + "1")
-    }
-
-    while(!done1){
-      val sub = pattern2.findFirstIn(string).getOrElse{
-        done1 = true
-        " "
-      }
-      string = string.replaceFirst(sub, "110")
-    }
-
-    assert(verifyCSD(string, num))
-    string.reverse.dropWhile(_ == '0')
-  }
-
-  def classicCSD(num: Int):String = {
+  // ALGO 2.1
+  def classicCSD(num: Int): String = {
     val pattern = "11+0".r
 
     var string = num.toBinaryString.reverse + "0"
     var done = false
-    while(!done){
+    while (!done) {
       val sub: Option[String] = pattern.findFirstIn(string)
       sub match {
         case Some(x) => string = string.replaceFirst(x, "9" + "0" * (x.length - 2) + "1")
@@ -84,7 +54,46 @@ package object DSP {
     string.reverse
   }
 
-  def verifyCSD(res:String, num:Int): Boolean ={
+  // ALGO 2.2
+  def optimalCSD(num: Int): String = {
+    val pattern0 = "11+0".r
+    val pattern1 = "1101".r
+    val pattern2 = "901".r
+
+    var string = num.toBinaryString.reverse + "0"
+    var done0 = false
+    var done1 = false
+    var done2 = false
+
+    while (!done0) {
+      val sub = pattern0.findFirstIn(string).getOrElse {
+        done0 = true
+        " "
+      }
+      string = string.replace(sub, "9" + "0" * (sub.length - 2) + "1")
+    }
+
+    while (!done1) {
+      val sub = pattern1.findFirstIn(string).getOrElse {
+        done1 = true
+        " "
+      }
+      string = string.replaceFirst(sub, "9011")
+
+    }
+
+    while (!done2) {
+      val sub = pattern2.findFirstIn(string).getOrElse {
+        done2 = true
+        " "
+      }
+      string = string.replaceFirst(sub, "110")
+    }
+
+    string.reverse.dropWhile(_ == '0')
+  }
+
+  def verifyCSD(res: String, num: Int): Boolean = {
     (0 until res.length).map { i =>
       res(i) match {
         case '0' => 0

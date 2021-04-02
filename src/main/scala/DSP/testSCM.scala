@@ -1,8 +1,5 @@
 package DSP
 
-import breeze.linalg.DenseVector
-import breeze.math.Complex
-import breeze.signal._
 import spinal.core._
 import spinal.core.sim._
 
@@ -48,7 +45,10 @@ class testSCM(constant: Int, bitWidth: Int) extends SCM(constant, 16) with DSPSi
     val mon = fork {
       while (true) {
         if (io.output.valid.toBoolean) {
+
           val dutResult = io.output.payload.toInt
+          println(s"dutResult: $dutResult")
+          println(s"result: ${result.toInt} ")
           dutResults.enqueue(dutResult)
         }
         clockDomain.waitSampling()
@@ -62,7 +62,6 @@ class testSCM(constant: Int, bitWidth: Int) extends SCM(constant, 16) with DSPSi
         if (refResults.nonEmpty && dutResults.nonEmpty) {
           val refResult = refResults.dequeue()
           val dutResult = dutResults.dequeue()
-          println(s"$refResult \n $dutResult")
           assert(refResult == dutResult, s"$refResult \n $dutResult")
         }
         clockDomain.waitSampling()
@@ -75,19 +74,19 @@ object testSCM {
   private val r = Random
 
   //    def randomCase(length: Int) = (for (elem <- (0 until 2 * length)) yield (r.nextDouble() * scala.math.pow(2, naturalWidth / 2))).toArray
-  def randomSim(): Unit = {
-    val dut = SimConfig.withWave.compile(new testSCM(93, 16))
+  def randomSim(constant: Int): Unit = {
+    val dut = SimConfig.withWave.compile(new testSCM(constant, 16))
     dut.doSim { dut =>
       dut.sim()
-      for (i <- 0 until 100) dut.insertTestCase(r.nextInt(1000))
+      for (i <- 0 until 10000) dut.insertTestCase(r.nextInt(1000))
       dut.simDone()
     }
     print(Console.GREEN)
-    println(s"CSD, PASS")
+    println(s"CSD with constant = $constant, PASS")
     print(Console.BLACK)
   }
 
   def main(args: Array[String]): Unit = {
-    randomSim()
+    (0 until 3).foreach(_ => randomSim(r.nextInt(4096)))
   }
 }
