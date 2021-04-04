@@ -8,7 +8,6 @@ import java.nio.file.Paths
 import scala.io.Source
 import scala.sys.process._
 
-
 class VivadoFlow[T <: Component](
                                   design: => T,
                                   topModuleName: String,
