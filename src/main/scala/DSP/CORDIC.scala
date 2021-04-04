@@ -82,9 +82,9 @@ object CORDIC {
     phaseCoeffcients.foreach(_.setName("coeffs"))
     val scaleComplement = SF(getScaleComplement(iterations)(algebricMode), inputX.maxExp exp, inputX.bitCount bits)
     scaleComplement.setName("scaleComplement")
-    println("phase: " + (0 until iterations).map(i => getPhase(i)(algebricMode)).mkString(" "))
-    println("shift: " + shiftingCoeffs.mkString(" "))
-    println("scaleComplement: " + getScaleComplement(iterations)(algebricMode).toString)
+    //    println("phase: " + (0 until iterations).map(i => getPhase(i)(algebricMode)).mkString(" "))
+    //    println("shift: " + shiftingCoeffs.mkString(" "))
+    //    println("scaleComplement: " + getScaleComplement(iterations)(algebricMode).toString)
 
     val regsX = (0 until iterations).map(i => Reg(magnitudeDataType(16))).toList
     regsX.foreach(_.setName("regsX"))
@@ -93,11 +93,6 @@ object CORDIC {
     val regsZ = (0 until iterations).map(i => Reg(phaseDataType)).toList
     regsZ.foreach(_.setName("regsZ"))
 
-
-    //    val shiftedX = (inputX :: regsX.dropRight(1)).zipWithIndex.map { case (regX, i) => regX >> i }
-    //    shiftedX.foreach(_.setName("shiftedX"))
-    //    val shiftedY = (inputY :: regsY.dropRight(1)).zipWithIndex.map { case (regY, i) => regY >> i }
-    //    shiftedY.foreach(_.setName("shiftedY"))
     val shiftedX = (inputX :: regsX.dropRight(1)).zip(shiftingCoeffs).map { case (regX, i) => regX >> i }
     shiftedX.foreach(_.setName("shiftedX"))
     val shiftedY = (inputY :: regsY.dropRight(1)).zip(shiftingCoeffs).map { case (regY, i) => regY >> i }
@@ -153,7 +148,7 @@ object CORDIC {
   def getPhase(iteration: Int)(implicit algebricMode: AlgebricMode) = {
     algebricMode match {
       case CIRCULAR => atan(pow(2.0, -iteration))
-      case LINEAR => -pow(2.0, -iteration)
+      case LINEAR => pow(2.0, -iteration)
       case HYPERBOLIC => atanh(pow(2.0, -getHyperbolicSequence(iteration + 1).last))
     }
   }
@@ -168,6 +163,13 @@ object CORDIC {
         .map(i => getHyperbolicSequence(i).last)
         .map(i => sqrt(1 - pow(2.0, -2 * i))).product
     }
+  }
+
+  def sin(phase: SFix) = {
+    val x, y = data
+    x := 1.0
+    y := 0.0
+    cordic(x, y, phase, ROTATION, CIRCULAR, 20)._2
   }
 
   def main(args: Array[String]): Unit = {

@@ -2,8 +2,8 @@ package DSP
 
 import DSP.AlgebricMode._
 import DSP.RotationMode._
-import breeze.numerics.constants.Pi
 import breeze.numerics._
+import breeze.numerics.constants.Pi
 import spinal.core._
 import spinal.core.sim._
 
@@ -35,7 +35,7 @@ class testCORDIC(rotationMode: RotationMode, algebricMode: AlgebricMode)
       while (true) {
         if (testCases.nonEmpty) {
           val testCase = testCases.dequeue()
-          println("test: " + testCase.toString)
+          //          println("test: " + testCase.toString)
           referenceModel(testCase)
           input.valid #= true
           input.payload.x.raw #= Double2Fix(testCase.x)
@@ -117,7 +117,7 @@ class testCORDIC(rotationMode: RotationMode, algebricMode: AlgebricMode)
           val dutResult = dutResults.dequeue()
           val same = refResult.zip(dutResult).map { case (ref, dut) => abs(ref - dut) }.forall(_ < 1E-1)
           assert(same, s"\n result: ${dutResult.mkString(" ")} \n golden: ${refResult.mkString(" ")}")
-          //                    println(s"\n result: ${dutResult.mkString(" ")} \n golden: ${refResult.mkString(" ")}")
+          //          println(s"\n result: ${dutResult.mkString(" ")} \n golden: ${refResult.mkString(" ")}")
         }
         clockDomain.waitSampling()
       }
@@ -140,15 +140,30 @@ object testCORDIC {
         y = sin(rand)
         z = 0.0
       }
+      case (ROTATION, CIRCULAR) => {
+        x = 1.0
+        y = 0.0
+        z = (r.nextDouble() - 0.5) * Pi
+      }
       case (VECTORING, HYPERBOLIC) => {
         x = r.nextDouble() * 16
         y = x * r.nextDouble() * 0.8
         z = 0.0
       }
-      case (ROTATION, CIRCULAR) => {
+      case (ROTATION, HYPERBOLIC) => {
         x = 1.0
         y = 0.0
-        z = (r.nextDouble() - 0.5) * Pi
+        z = (r.nextDouble() - 0.5) * Pi * 0.5
+      }
+      case (VECTORING, LINEAR) => {
+        x = r.nextDouble() * 5
+        y = (r.nextDouble() - 0.5) * 5
+        z = r.nextDouble() - 0.5
+      }
+      case (ROTATION, LINEAR) => {
+        x = r.nextDouble() - 0.5
+        y = r.nextDouble() - 0.5
+        z = r.nextDouble() - 0.5
       }
     }
 
@@ -160,7 +175,7 @@ object testCORDIC {
     val dut = SimConfig.withWave.compile(new testCORDIC(rotationMode, algebricMode))
     dut.doSim { dut =>
       dut.sim()
-      for (i <- 0 until 10) dut.insertTestCase(randomCase(rotationMode, algebricMode))
+      for (i <- 0 until 100) dut.insertTestCase(randomCase(rotationMode, algebricMode))
       dut.simDone()
     }
   }
@@ -171,14 +186,29 @@ object testCORDIC {
     println(s"CORDIC VECTORING + CIRCULAR, PASS")
     print(Console.BLACK)
 
+    randomSim(ROTATION, CIRCULAR)
+    print(Console.GREEN)
+    println(s"CORDIC ROTATION + CIRCULAR, PASS")
+    print(Console.BLACK)
+
     randomSim(VECTORING, HYPERBOLIC)
     print(Console.GREEN)
     println(s"CORDIC VECTORING + HYPERBOLIC, PASS")
     print(Console.BLACK)
 
-    randomSim(ROTATION, CIRCULAR)
+    randomSim(ROTATION, HYPERBOLIC)
     print(Console.GREEN)
-    println(s"CORDIC ROTATION + CIRCULAR, PASS")
+    println(s"CORDIC ROTATION + HYPERBOLIC, PASS")
+    print(Console.BLACK)
+
+    randomSim(ROTATION, LINEAR)
+    print(Console.GREEN)
+    println(s"CORDIC ROTATION + LINEAR, PASS")
+    print(Console.BLACK)
+
+    randomSim(VECTORING, LINEAR)
+    print(Console.GREEN)
+    println(s"CORDIC VECTORING + LINEAR, PASS")
     print(Console.BLACK)
   }
 }
