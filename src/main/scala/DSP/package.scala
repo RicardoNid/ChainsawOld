@@ -7,8 +7,8 @@ import scala.collection.mutable.ArrayBuffer
 package object DSP {
 
   // typedefs
-  val naturalWidth = 8
-  val fractionalWidth = 8
+  val naturalWidth = 4
+  val fractionalWidth = 12
   val bitWidth = naturalWidth + fractionalWidth
 
   def data = SFix(peak = naturalWidth exp, resolution = -fractionalWidth exp)

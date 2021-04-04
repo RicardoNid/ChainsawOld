@@ -28,7 +28,7 @@ class CooleyTukeyFFT(N: Int) extends Component {
   }
 
   // TODO: find a way to determine the latency automatically
-  io.output.valid := Delay(io.input.valid, 2 * factorize(N).length - 1)
+  io.output.valid := Delay(io.input.valid, 2 * factorize(N).length - 1, init = False)
   io.output.valid.init(False)
 }
 
