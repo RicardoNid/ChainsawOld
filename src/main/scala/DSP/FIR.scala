@@ -1,81 +1,95 @@
 package DSP
 
-import breeze.linalg.DenseVector
+import DSP.FIR.systolicFIR
+import breeze.numerics.{abs, ceil}
 import spinal.core._
+import spinal.lib._
 
-class FIR(
-           bitWidthIn: Int = 27, // design : 注意，DSP48E1是25*18,E2才是27*18,这直接影响了DSP的生成
-           bitWidthWeight: Int = 18,
-           bitWidthOut: Int = 48,
-           mantissaWidth: Int = 0,
-           coeffs: DenseVector[Double],
-           version: String = "standard"
+
+sealed trait FIRArch
+
+object FIRArch {
+
+  case object MAC extends FIRArch
+
+  case object RAG extends FIRArch
+
+  case object DA extends FIRArch
+
+}
+
+import DSP.FIRArch._
+
+class FIR(coefficients: IndexedSeq[Double],
+          FIRArch: FIRArch
          ) extends Component {
 
-  def typeIn = SFix((bitWidthIn - mantissaWidth - 1) exp, -mantissaWidth exp) // 通过这个方式实现typedef
-  def typeWeight = SFix((bitWidthWeight - mantissaWidth - 1) exp, -mantissaWidth exp)
-
-  def typeMult = SFix((bitWidthIn + bitWidthWeight - mantissaWidth - 1) exp, -mantissaWidth exp) // ?
-  def typeOut = SFix((bitWidthOut - mantissaWidth - 1) exp, -mantissaWidth exp)
+  val bitWidthGrowth = log2Up(coefficients.length + 1) + log2Up(ceil(coefficients.map(abs(_)).max + 1).toInt)
 
   val io = new Bundle {
-    val dataIn = in SFix((bitWidthIn - mantissaWidth - 1) exp, -mantissaWidth exp)
-    val dataOut = out SFix((bitWidthOut - mantissaWidth - 1) exp, -mantissaWidth exp)
+    val input = slave Flow data
+    val output = master Flow SFix(peak = (data.maxExp + bitWidthGrowth) exp, width = (data.bitCount + bitWidthGrowth) bits)
   }
 
-  val length = coeffs.length
-
-  val weightWires = Vec(typeWeight, length)
-  for (i <- 0 until length) weightWires(i) := coeffs(i)
-
-  val inputZERO = typeIn
-  inputZERO := 0 // 如果写成0.0,ZERO的位数会被拓展
-
-  if (version == "systolic") {
-    // fixme : spinal会把reset全部放在一起处理,"打断"了综合器对于代码的阅读,而无法推断出相邻DSP间的传播,无法推断出脉动阵列
-    // fixme : 需要显式reset,而非使用RegInit
-    val inReg = RegNext(io.dataIn) // fixme : 如果不使用inReg,xRegs(0) := io.in 将会大大增加时延 找出原因
-    val xRegs = Reg(Vec(typeIn, 2 * length - 1))
-    val multRegs = Reg(Vec(typeMult, length))
-    val yRegs = Reg(Vec(typeOut, length))
-
-    xRegs(0) := inReg
-    multRegs(0) := weightWires(0) * xRegs(0)
-    yRegs(0) := multRegs(0)
-    for (i <- 1 until length) {
-      xRegs(2 * i - 1) := xRegs(2 * i - 2)
-      xRegs(2 * i) := xRegs(2 * i - 1)
-      multRegs(i) := weightWires(i) * xRegs(2 * i)
-      yRegs(i) := yRegs(i - 1) + multRegs(i)
+  FIRArch match {
+    case MAC => {
+      val ZERO = SF(0.0, data.maxExp exp, data.bitCount bits)
+      val actualInput = Mux(io.input.valid, io.input.payload, ZERO)
+      // TODO: think about reverse carefully
+      io.output.payload := systolicFIR(actualInput, coefficients)
+      val n = coefficients.length
+      io.output.valid := Delay(io.input.valid, 2 * n - (n - 1) / 2, init = False)
+      io.output.valid.init(False)
     }
-    val bufReg = RegNext(yRegs(length - 1))
-    io.dataOut := bufReg
+    case RAG =>
+    case DA =>
   }
 }
 
 object FIR {
+
+  // y = \Sigma_{i=0}^{n-1}x[i]c[n-1-i]
+  // accurate bitWidth may not be important as this is for dsp slices
+  def systolicFIR(input: SFix, coefficients: IndexedSeq[Double]) = {
+
+    // types
+    def typeX = SFix(peak = input.maxExp exp, width = input.bitCount bits)
+
+    val multBitGrowth = log2Up(ceil(coefficients.map(abs(_)).max + 1).toInt)
+
+    def typeMult(i: Int) = SFix(peak = (input.maxExp + multBitGrowth) exp, width = (input.bitCount + multBitGrowth) bits)
+
+    val accBitGrowth = multBitGrowth + log2Up(coefficients.length + 1)
+
+    def typeAcc = SFix(peak = input.maxExp + accBitGrowth exp, width = input.bitCount + accBitGrowth bits)
+
+    val coeffWires = coefficients.map { coeff =>
+      val maxExp = log2Up(ceil(abs(coeff) + 1).toInt)
+      //      val maxExp = 4
+      val bitCount = input.bitCount - input.maxExp + maxExp
+      SF(coeff, peak = maxExp exp, width = bitCount bits)
+    }
+
+    //  regs
+    val n = coefficients.length
+    val xRegs0 = (0 until n - 1).map(i => Reg(typeX))
+    val xRegs1 = (0 until n - 1).map(i => Reg(typeX))
+    val multRegs = (0 until n).map(i => Reg(typeMult(i)))
+    val accRegs = (0 until n).map(i => Reg(typeAcc)) // bitWidth should be inferred
+
+    //  connections
+    xRegs0(0) := input
+    (1 until n - 1).foreach(i => xRegs0(i) := xRegs1(i - 1))
+    (0 until n - 1).foreach(i => xRegs1(i) := xRegs0(i))
+    multRegs(0) := (input * coeffWires(0)).truncated
+    (1 until n).foreach(i => multRegs(i) := (xRegs1(i - 1) * coeffWires(i)).truncated)
+    accRegs(0) := multRegs(0).truncated
+    (1 until n).foreach(i => accRegs(i) := (accRegs(i - 1) + multRegs(i)).truncated)
+
+    accRegs.last
+  }
+
   def main(args: Array[String]): Unit = {
-//
-//    val randGen = new Random(30)
-//    val coeff144 = DenseVector(Array.ofDim[Double](72).map(_ => {
-//      val value = randGen.nextInt % 100 + 500 // 避开较小的整数和2的幂,避免优化
-//      if (isPow2(value)) (value + 13).toDouble
-//      else value.toDouble
-//    }))
-//
-//    SpinalConfig(mode = SystemVerilog, targetDirectory = "output/FTN")
-//      .generateSystemVerilog(new FIR(coeffs = coeff144, version = "systolic"))
-//
-//    val report = VivadoFlowOld(
-//      "output/VIVADO",
-//      "output/FTN/FIR.sv",
-//      Vivado.bin,
-//      Vivado.family,
-//      Vivado.device,
-//      100 MHz,
-//      1)
-//
-//    println(report.getArea())
-//    println(report.getFMax() / 1E6 + " MHz")
+
   }
 }

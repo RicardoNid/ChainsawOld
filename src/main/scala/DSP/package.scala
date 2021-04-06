@@ -3,15 +3,23 @@ import spinal.core._
 import spinal.core.sim._
 
 import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
 
 package object DSP {
 
   // typedefs
-  val naturalWidth = 4
-  val fractionalWidth = 12
+  val naturalWidth = 6
+  val fractionalWidth = 10
   val bitWidth = naturalWidth + fractionalWidth
 
   def data = SFix(peak = naturalWidth exp, resolution = -fractionalWidth exp)
+
+  val rand = new Random()
+
+  // generate random value in a range defined by SFix format
+  def randData(bits: Int = naturalWidth) = {
+    ((rand.nextDouble() - 0.5) * 2 * pow(2, naturalWidth))
+  }
 
   val testFFTLength = 8
 
