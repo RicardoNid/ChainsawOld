@@ -97,10 +97,10 @@ object testFIR {
     (0 until length).map(i => randData()).toArray
   }
 
-  def randomSim(): Unit = {
+  def randomSim(arch: FIRArch): Unit = {
     val coeffLength = r.nextInt(20) + 5
     val randomCoeff = (0 until coeffLength).map(i => randData()).toArray
-    val dut = SimConfig.withWave.compile(new testFIR(randomCoeff, MAC))
+    val dut = SimConfig.withWave.compile(new testFIR(randomCoeff, arch))
     dut.doSim { dut =>
       dut.sim()
       for (i <- 0 until 10000) dut.insertTestCase(randomCase(coeffLength))
@@ -112,7 +112,7 @@ object testFIR {
   }
 
   def main(args: Array[String]): Unit = {
-    (0 until 20).foreach(i => randomSim())
+    (0 until 20).foreach(i => randomSim(MAC))
   }
 }
 

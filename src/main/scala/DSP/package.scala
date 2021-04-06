@@ -110,5 +110,4 @@ package object DSP {
       }
     }.sum == num
   }
-
 }

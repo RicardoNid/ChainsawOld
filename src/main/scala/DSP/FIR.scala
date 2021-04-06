@@ -28,7 +28,7 @@ class FIR(coefficients: IndexedSeq[Double],
 
   val io = new Bundle {
     val input = slave Flow data
-    val output = master Flow SFix(peak = (data.maxExp + bitWidthGrowth) exp, width = (data.bitCount + bitWidthGrowth) bits)
+    val output = master Flow SFix(peak = (data.maxExp + bitWidthGrowth) exp, resolution = data.minExp exp)
   }
 
   FIRArch match {
@@ -87,6 +87,34 @@ object FIR {
     (1 until n).foreach(i => accRegs(i) := (accRegs(i - 1) + multRegs(i)).truncated)
 
     accRegs.last
+  }
+
+  def DAFIR(input: SFix, coefficients: IndexedSeq[Double]) = {
+
+    // the arch below is fully-pipelined
+    def typeX = SFix(peak = input.maxExp exp, width = input.bitCount bits)
+
+    val n = coefficients.length
+    val b = input.bitCount
+    val srl = History(input, n)
+    val LUTIns = (0 until b).map(i => srl.map(_.raw(i))).map(B(_))
+    val LUTOuts = LUTIns.map(DALUT(_, coefficients, data.maxExp, data.bitCount))
+    val shiftedLUTOuts = (0 until b).map(i => LUTOuts(i) << i)
+    //  TODO: implement a well-tested and widely adaptive shift-add tree / graph before this
+    val result = AdderTree(shiftedLUTOuts.map(_.raw)).implicitValue
+
+  }
+
+  def DALUT(input: Bits, coefficients: IndexedSeq[Double], coeffMaxExp: Int, coeffBitCount: Int) = {
+    val length = input.getBitsWidth
+    val tableContents = (0 until 1 << length).map { i =>
+      val bits = i.toBinaryString
+      coefficients.zip(bits).filter { case (coeff, bit) => bit == '1' }.map { case (coeff, bit) => coeff }.reduce(_ + _)
+    }
+    val fixedTableContents = tableContents.map(coeff => SF(coeff, coeffMaxExp exp, coeffBitCount bits))
+
+    val LUT = Mem(SFix(coeffMaxExp exp, coeffBitCount bits), fixedTableContents)
+    LUT.readSync(input.asUInt)
   }
 
   def main(args: Array[String]): Unit = {
