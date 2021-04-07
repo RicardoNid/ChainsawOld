@@ -8,27 +8,27 @@ import xilinx.VivadoFlow
 
 import scala.util.Random
 
-//class ShiftAdderTreeDUT(shifts: IndexedSeq[Int]) extends Component {
-//
-//  val inputs = slave Flow Vec(UInt(8 bits), shifts.length)
-//  val output = master Flow UInt //  bitWidth can be determined later
-//
-//  output.payload := shiftAdderTree(inputs.payload, shifts)
-//  output.valid := RegNext(inputs.valid)
-//  output.valid.init(False)
-//}
-
 class ShiftAdderTreeDUT(shifts: IndexedSeq[Int]) extends Component {
 
-  val inputs = slave Flow Vec(data, shifts.length)
-  val naturalBitGrowth = shifts.max + log2Up(shifts.length)
-  val output = master Flow SFix((data.maxExp + naturalBitGrowth) exp, (data.bitCount + naturalBitGrowth) bits) //  bitWidth can be determined later
+  val inputs = slave Flow Vec(SInt(8 bits), shifts.length)
+  val output = master Flow SInt //  bitWidth can be determined later
 
-  val shiftAdderTree = ShiftAdderTree(inputs.payload, shifts)
-  output.payload := shiftAdderTree.implicitValue.truncated
+  output.payload := ShiftAdderTree(inputs.payload.map(_.toSFix), shifts).toSInt
   output.valid := RegNext(inputs.valid)
   output.valid.init(False)
 }
+
+//class ShiftAdderTreeDUT(shifts: IndexedSeq[Int]) extends Component {
+//
+//  val inputs = slave Flow Vec(data, shifts.length)
+//  val naturalBitGrowth = shifts.max + log2Up(shifts.length)
+//  val output = master Flow SFix((data.maxExp + naturalBitGrowth) exp, (data.bitCount + naturalBitGrowth) bits) //  bitWidth can be determined later
+//
+//  val shiftAdderTree = ShiftAdderTree(inputs.payload, shifts)
+//  output.payload := shiftAdderTree.implicitValue.truncated
+//  output.valid := RegNext(inputs.valid)
+//  output.valid.init(False)
+//}
 
 object ShiftAdderTreeDUT {
   def main(args: Array[String]): Unit = {
@@ -63,7 +63,8 @@ class testShiftAdderTree(shifts: IndexedSeq[Int]) extends ShiftAdderTreeDUT(shif
           referenceModel(testCase)
           inputs.valid #= true
           //          println("test: " + testCase.mkString(" "))
-          (0 until shifts.length).foreach(i => inputs.payload(i).raw #= Double2Fix(testCase(i)))
+          //          (0 until shifts.length).foreach(i => inputs.payload(i).raw #= Double2Fix(testCase(i)))
+          (0 until shifts.length).foreach(i => inputs.payload(i) #= testCase(i).toInt)
           clockDomain.waitSampling()
           inputs.valid #= false
         }
@@ -73,7 +74,8 @@ class testShiftAdderTree(shifts: IndexedSeq[Int]) extends ShiftAdderTreeDUT(shif
   }
 
   override def referenceModel(testCase: TestCase): Unit = {
-    val golden = (0 until shifts.length).map(i => testCase(i) * pow(2, shifts(i))).sum
+    //    val golden = (0 until shifts.length).map(i => testCase(i) * pow(2, shifts(i))).sum
+    val golden = (0 until shifts.length).map(i => testCase(i).toInt * pow(2, shifts(i))).sum
     refResults.enqueue(golden)
   }
 
@@ -81,7 +83,8 @@ class testShiftAdderTree(shifts: IndexedSeq[Int]) extends ShiftAdderTreeDUT(shif
     val mon = fork {
       while (true) {
         if (output.valid.toBoolean) {
-          val dutResult = Fix2Double(output.payload)
+          //          val dutResult = Fix2Double(output.payload)
+          val dutResult = output.payload.toInt
           dutResults.enqueue(dutResult)
         }
         clockDomain.waitSampling()
