@@ -1,4 +1,4 @@
-import breeze.numerics.{floor, pow}
+import breeze.numerics._
 import spinal.core._
 import spinal.core.sim._
 
@@ -6,6 +6,18 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 package object DSP {
+
+  // addition for SFix that keeps the carry
+  implicit class mySFix(val sfix: SFix) {
+    def +^(that: SFix) = {
+      val lsbDif = (sfix.maxExp - sfix.bitCount) - (that.maxExp - that.bitCount)
+      val left = if (lsbDif > 0) sfix.raw << lsbDif else sfix.raw
+      val right = if (lsbDif < 0) that.raw << -lsbDif else that.raw
+      val ret = SFix((Math.max(sfix.maxExp, that.maxExp) + 1) exp, (Math.max(left.getBitsWidth, right.getBitsWidth) + 1) bits)
+      ret.raw := left +^ right
+      ret
+    }
+  }
 
   // typedefs
   val naturalWidth = 6
@@ -22,6 +34,8 @@ package object DSP {
   }
 
   val testFFTLength = 8
+
+  def sameFixed(a: Double, b: Double) = abs(a - b) / abs((a + b) / 2) < 0.01 || scala.math.abs(a - b) < 0.1
 
   def Double2Fix(value: Double) = floor(value * (1 << fractionalWidth)).toInt // convert Double to valid stimulus for simulation
   def Fix2Double(value: SFix) = value.raw.toBigInt.toDouble / pow(2, fractionalWidth)

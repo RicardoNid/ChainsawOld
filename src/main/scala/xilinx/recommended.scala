@@ -16,8 +16,4 @@ object recommended {
     devicePart = "xczu7ev-ffvc1156-2-e", // ZCU104
     processortCount = 10
   )
-
-  val synthStrategy = SynthStrategy(
-    flatten_hierarchy = FlattenHierarchy.none
-  )
 }

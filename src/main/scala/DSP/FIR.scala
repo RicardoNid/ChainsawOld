@@ -102,7 +102,6 @@ object FIR {
     val shiftedLUTOuts = (0 until b).map(i => LUTOuts(i) << i)
     //  TODO: implement a well-tested and widely adaptive shift-add tree / graph before this
     val result = AdderTree(shiftedLUTOuts.map(_.raw)).implicitValue
-
   }
 
   def DALUT(input: Bits, coefficients: IndexedSeq[Double], coeffMaxExp: Int, coeffBitCount: Int) = {
@@ -113,7 +112,7 @@ object FIR {
     }
     val fixedTableContents = tableContents.map(coeff => SF(coeff, coeffMaxExp exp, coeffBitCount bits))
 
-    val LUT = Mem(SFix(coeffMaxExp exp, coeffBitCount bits), fixedTableContents)
+    val LUT = Mem(fixedTableContents)
     LUT.readSync(input.asUInt)
   }
 

@@ -1,13 +1,48 @@
 package DSP
 
+import breeze.numerics.pow
 import spinal.core._
 import spinal.core.sim._
+import spinal.lib.{master, slave}
+import xilinx.VivadoFlow
 
 import scala.util.Random
 
-class testShiftAdderTree(shifts: IndexedSeq[Int]) extends ShiftAdderTree(shifts) with DSPSim {
-  override type TestCase = IndexedSeq[Int]
-  override type ResultType = Int
+//class ShiftAdderTreeDUT(shifts: IndexedSeq[Int]) extends Component {
+//
+//  val inputs = slave Flow Vec(UInt(8 bits), shifts.length)
+//  val output = master Flow UInt //  bitWidth can be determined later
+//
+//  output.payload := shiftAdderTree(inputs.payload, shifts)
+//  output.valid := RegNext(inputs.valid)
+//  output.valid.init(False)
+//}
+
+class ShiftAdderTreeDUT(shifts: IndexedSeq[Int]) extends Component {
+
+  val inputs = slave Flow Vec(data, shifts.length)
+  val naturalBitGrowth = shifts.max + log2Up(shifts.length)
+  val output = master Flow SFix((data.maxExp + naturalBitGrowth) exp, (data.bitCount + naturalBitGrowth) bits) //  bitWidth can be determined later
+
+  val shiftAdderTree = ShiftAdderTree(inputs.payload, shifts)
+  output.payload := shiftAdderTree.implicitValue.truncated
+  output.valid := RegNext(inputs.valid)
+  output.valid.init(False)
+}
+
+object ShiftAdderTreeDUT {
+  def main(args: Array[String]): Unit = {
+    VivadoFlow(
+      design = new ShiftAdderTreeDUT(Array(1, 3, 5, 7, 8)),
+      topModuleName = "shiftAdderTree",
+      workspacePath = "output/shiftAdderTree",
+      force = true).doit()
+  }
+}
+
+class testShiftAdderTree(shifts: IndexedSeq[Int]) extends ShiftAdderTreeDUT(shifts) with DSPSim {
+  override type TestCase = IndexedSeq[Double]
+  override type ResultType = Double
 
   override def simInit(): Unit = {
     clockDomain.forkStimulus(2)
@@ -28,7 +63,7 @@ class testShiftAdderTree(shifts: IndexedSeq[Int]) extends ShiftAdderTree(shifts)
           referenceModel(testCase)
           inputs.valid #= true
           //          println("test: " + testCase.mkString(" "))
-          (0 until shifts.length).foreach(i => inputs.payload(i) #= testCase(i))
+          (0 until shifts.length).foreach(i => inputs.payload(i).raw #= Double2Fix(testCase(i)))
           clockDomain.waitSampling()
           inputs.valid #= false
         }
@@ -38,7 +73,7 @@ class testShiftAdderTree(shifts: IndexedSeq[Int]) extends ShiftAdderTree(shifts)
   }
 
   override def referenceModel(testCase: TestCase): Unit = {
-    val golden = (0 until shifts.length).map(i => testCase(i) << shifts(i)).sum
+    val golden = (0 until shifts.length).map(i => testCase(i) * pow(2, shifts(i))).sum
     refResults.enqueue(golden)
   }
 
@@ -46,7 +81,7 @@ class testShiftAdderTree(shifts: IndexedSeq[Int]) extends ShiftAdderTree(shifts)
     val mon = fork {
       while (true) {
         if (output.valid.toBoolean) {
-          val dutResult = output.payload.toInt
+          val dutResult = Fix2Double(output.payload)
           dutResults.enqueue(dutResult)
         }
         clockDomain.waitSampling()
@@ -55,13 +90,15 @@ class testShiftAdderTree(shifts: IndexedSeq[Int]) extends ShiftAdderTree(shifts)
   }
 
   override def scoreBoard(): Unit = {
+
     val score = fork {
       while (true) {
         if (refResults.nonEmpty && dutResults.nonEmpty) {
           val refResult = refResults.dequeue()
           val dutResult = dutResults.dequeue()
-          //                    println(s"\n ref: $refResult \n dut: $dutResult")
-          assert(refResult == dutResult, s"\n$refResult \n$dutResult")
+          if (!sameFixed(refResult, dutResult)) println(s"\n ref: $refResult \n dut: $dutResult")
+          //          if (sameFixed(refResult, dutResult)) println(s"\n ref: $refResult \n dut: $dutResult")
+          //          assert(sameFixed(refResult, dutResult), s"\n$refResult \n$dutResult")
         }
         clockDomain.waitSampling()
       }
@@ -73,13 +110,13 @@ object testShiftAdderTree {
   private val r = Random
 
   def randomShifts = {
-    val length = r.nextInt(32)
+    val length = r.nextInt(32) + 5
     val res = (0 until length).map(i => r.nextInt(10))
     println(res.mkString(" "))
     res
   }
 
-  def randomCase(length: Int) = (0 until length).map(i => r.nextInt(64)).toArray
+  def randomCase(length: Int) = (0 until length).map(i => randData()).toArray
 
   def randomSim(shifts: IndexedSeq[Int]): Unit = {
     val dut = SimConfig.withWave.compile(new testShiftAdderTree(shifts))
@@ -94,9 +131,13 @@ object testShiftAdderTree {
   }
 
   def main(args: Array[String]): Unit = {
-    (0 until 100).foreach(i => randomSim(randomShifts))
+    (0 until 10).foreach(i => randomSim(randomShifts))
   }
 }
+
+
+
+
 
 
 
