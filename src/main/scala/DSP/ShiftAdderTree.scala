@@ -7,7 +7,7 @@ import xilinx.VivadoFlow //  for digital signal processing
 
 class ShiftAdderTree(shifts: IndexedSeq[Int]) extends Component {
 
-  val inputs = slave Flow (Vec(SInt(9 bits), 5))
+  val inputs = slave Flow Vec(SInt(9 bits), shifts.length)
   val output = master Flow SInt //  bitWidth can be determined later
 
   output.payload := shiftAdderTree(inputs.payload, shifts)
@@ -40,13 +40,13 @@ object ShiftAdderTree {
             }
           }
         outputs.foreach { case (output, shift) => output.addAttribute("dont_touch = \"yes\"") }
-        println(outputs.map(_._2).mkString(" "))
+        //        println(outputs.map(_._2).mkString(" "))
         buildTree(outputs)
       }
     }
 
     val resultPair = buildTree(sortedPairs)(0)
-    println(s"bitGrowth = ${resultPair._1.getBitsWidth + resultPair._2 - inputs(0).getBitsWidth}")
+    //    println(s"bitGrowth = ${resultPair._1.getBitsWidth + resultPair._2 - inputs(0).getBitsWidth}")
     RegNext(resultPair._1 << resultPair._2)
   }
 
