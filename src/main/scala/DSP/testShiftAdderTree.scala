@@ -9,7 +9,7 @@ import xilinx.VivadoFlow
 import scala.util.Random
 
 //  LUT using SInt
-class ShiftAdderTreeDUT(shifts: IndexedSeq[Int]) extends Component {
+class ShiftAdderTreeDUT(shifts: IndexedSeq[Int]) extends Component with DSPGen {
 
   val inputs = slave Flow Vec(SInt(8 bits), shifts.length)
   val output = master Flow SInt //  bitWidth can be determined later

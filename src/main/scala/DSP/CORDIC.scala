@@ -50,7 +50,7 @@ case class CordicData() extends Bundle {
 class CORDIC(rotationMode: RotationMode = ROTATION,
              algebricMode: AlgebricMode = CIRCULAR,
              arch: CORDICArch = PIPELINED,
-             iterations: Int = 43) extends Component {
+             iterations: Int = 43) extends Component with DSPDesign {
 
   val input = slave Flow CordicData()
   val output = master Flow CordicData()
@@ -70,6 +70,8 @@ class CORDIC(rotationMode: RotationMode = ROTATION,
   println(LatencyAnalysis(input.payload.x.raw, output.payload.x.raw))
   //  ComputationExtrction(output.payload.x.raw)
   ComputationExtrction(output.valid)
+
+  override def delay: Int = 0
 }
 
 // TODO: algebricMode: Bits, rotationMode: Bool, pipelined: Int

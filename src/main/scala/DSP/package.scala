@@ -7,6 +7,10 @@ import scala.util.Random
 
 package object DSP {
 
+  var debug = false
+
+  def printlnWhenDebug(x: Any) = if (debug) println(x)
+
   // addition for SFix that keeps the carry
   implicit class mySFix(val sfix: SFix) {
     def +^(that: SFix) = {

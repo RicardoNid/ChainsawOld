@@ -5,9 +5,10 @@ import spinal.core._
 import spinal.lib.{Delay, master, slave}
 
 /** N-point DFT by Winograd DFT algorithm, On Computing the Discrete Fourier Transform, P18
+ *
  * @param N - length of DFT
  */
-class WinogradDFT (N: Int) extends Component {
+class WinogradDFT(N: Int) extends Component with DSPDesign {
 
   require(isPrime(N), s"Winograd DFT is for prime number")
   require(Set(2).contains(N), s"$N point Winograd DFT will be supported in later release")
@@ -27,6 +28,8 @@ class WinogradDFT (N: Int) extends Component {
 
   io.output.valid := Delay(io.input.valid, 1)
   io.output.valid.init(False)
+
+  override def delay: Int = 0
 }
 
 object WinogradDFT {

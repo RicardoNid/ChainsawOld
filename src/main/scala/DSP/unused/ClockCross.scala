@@ -1,4 +1,4 @@
-package DSP
+package DSP.unused
 
 import spinal.core._
 import spinal.core.sim._

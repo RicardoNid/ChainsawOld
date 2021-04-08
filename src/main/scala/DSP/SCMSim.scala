@@ -2,16 +2,33 @@ package DSP
 
 import spinal.core._
 import spinal.core.sim._
+import spinal.lib._
 
 import scala.util.Random
 
-class testSCM(constant: Int, bitWidth: Int) extends SCM(constant, 16) with DSPSim {
+class SCMDUT(constant: Int, bitWidth: Int = naturalWidth, scmArch: SCMArch) extends Component with DSPGen {
+
+  val input = slave Flow SInt(bitWidth bits)
+  val output = master Flow SInt
+
+  val body = SCM(input.payload, constant, scmArch)
+
+  output.payload := body.implicitValue
+  output.valid := Delay(input.valid, body.delay, init = False)
+}
+
+object SCMDUT {
+  def main(args: Array[String]): Unit = {
+  }
+}
+
+class SCMSim(constant: Int, bitWidth: Int, scmArch: SCMArch) extends SCMDUT(constant, bitWidth, scmArch) with DSPSim {
   override type TestCase = Int
   override type ResultType = Int
 
   override def simInit(): Unit = {
     clockDomain.forkStimulus(2)
-    io.input.valid #= false
+    input.valid #= false
     clockDomain.waitSampling(10)
   }
 
@@ -25,11 +42,11 @@ class testSCM(constant: Int, bitWidth: Int) extends SCM(constant, 16) with DSPSi
       while (true) {
         if (testCases.nonEmpty) {
           val testCase = testCases.dequeue()
-          referenceModel(testCase)
-          io.input.valid #= true
-          io.input.payload #= testCase
+          input.valid #= true
+          input.payload #= testCase
           clockDomain.waitSampling()
-          io.input.valid #= false
+          input.valid #= false
+          referenceModel(testCase)
         }
         else clockDomain.waitSampling()
       }
@@ -38,17 +55,17 @@ class testSCM(constant: Int, bitWidth: Int) extends SCM(constant, 16) with DSPSi
 
   override def referenceModel(testCase: TestCase): Unit = {
     val golden = constant * testCase
+    printlnWhenDebug(s"time $simTime: refResult = $golden")
     refResults.enqueue(golden)
   }
 
   override def monitor(): Unit = {
     val mon = fork {
       while (true) {
-        if (io.output.valid.toBoolean) {
+        if (output.valid.toBoolean) {
 
-          val dutResult = io.output.payload.toInt
-          println(s"dutResult: $dutResult")
-          println(s"result: ${result.toInt} ")
+          val dutResult = output.payload.toInt
+          printlnWhenDebug(s"time $simTime: dutResult = $dutResult")
           dutResults.enqueue(dutResult)
         }
         clockDomain.waitSampling()
@@ -70,12 +87,12 @@ class testSCM(constant: Int, bitWidth: Int) extends SCM(constant, 16) with DSPSi
   }
 }
 
-object testSCM {
+object SCMSim {
   private val r = Random
 
   //    def randomCase(length: Int) = (for (elem <- (0 until 2 * length)) yield (r.nextDouble() * scala.math.pow(2, naturalWidth / 2))).toArray
-  def randomSim(constant: Int): Unit = {
-    val dut = SimConfig.withWave.compile(new testSCM(constant, 16))
+  def randomSim(constant: Int, scmArch: SCMArch): Unit = {
+    val dut = SimConfig.withWave.compile(new SCMSim(constant, 16, scmArch))
     dut.doSim { dut =>
       dut.sim()
       for (i <- 0 until 10000) dut.insertTestCase(r.nextInt(1000))
@@ -87,6 +104,8 @@ object testSCM {
   }
 
   def main(args: Array[String]): Unit = {
-    (0 until 3).foreach(_ => randomSim(r.nextInt(4096)))
+    //    debug = true
+    randomSim(93, SCMArch.CSD)
   }
 }
+

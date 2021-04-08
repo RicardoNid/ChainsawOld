@@ -1,0 +1,3 @@
+package DSP
+
+trait TestCase

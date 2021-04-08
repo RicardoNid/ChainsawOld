@@ -2,7 +2,7 @@ package DSP
 
 import spinal.core._ //  for digital signal processing
 
-class ShiftAdderTree(inputs: IndexedSeq[SFix], shifts: IndexedSeq[Int]) extends ImplicitArea[SFix] {
+class ShiftAdderTree(inputs: IndexedSeq[SFix], shifts: IndexedSeq[Int]) extends ImplicitArea[SFix] with DSPDesign {
   require(inputs.length == shifts.length, "shiftAdderTree: number of operands and shifts must match")
 
   val sortedPairs = inputs.zip(shifts).sortBy { case (input, shift) => shift } //  ascending sequence
@@ -34,6 +34,8 @@ class ShiftAdderTree(inputs: IndexedSeq[SFix], shifts: IndexedSeq[Int]) extends 
   val result = RegNext(resultPair._1 << resultPair._2)
 
   override def implicitValue: SFix = result
+
+  override def delay: Int = 0
 }
 
 object ShiftAdderTree {

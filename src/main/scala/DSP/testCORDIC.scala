@@ -9,7 +9,7 @@ import spinal.core.sim._
 
 import scala.util.Random
 
-case class cordicTestCase(x: Double, y: Double, z: Double) {
+case class cordicTestCase(x: Double, y: Double, z: Double) extends TestCase {
   override def toString: String = s"x: $x, y: $y, z: ${z / Pi * 180.0} degree"
 }
 

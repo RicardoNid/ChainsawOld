@@ -1,26 +1,12 @@
 package DSP
 
 import DSP.FIR.{DAFIR, systolicFIR}
+import DSP.FIRArch._
 import breeze.numerics.{abs, ceil}
 import spinal.core._
 import spinal.lib._
 
 import java.lang.Math.max
-
-
-sealed trait FIRArch
-
-object FIRArch {
-
-  case object MAC extends FIRArch
-
-  case object RAG extends FIRArch
-
-  case object DA extends FIRArch
-
-}
-
-import DSP.FIRArch._
 
 class FIR(coefficients: IndexedSeq[Double],
           FIRArch: FIRArch
