@@ -29,21 +29,21 @@ class testWinogradDFT(length: Int) extends WinogradDFT(length) with DSPSim {
       while (true) {
         if (testCases.nonEmpty) {
           val testCase = testCases.dequeue()
-          referenceModel(testCase)
           io.input.valid #= true
           (0 until length * 2).foreach(i => io.input.payload(i).raw #= Double2Fix(testCase(i)))
           clockDomain.waitSampling()
           io.input.valid #= false
+          val refResult = referenceModel(testCase)
+          refResults.enqueue(refResult)
         }
         else clockDomain.waitSampling()
       }
     }
   }
 
-  override def referenceModel(testCase: TestCase): Unit = {
+  override def referenceModel(testCase: TestCase) = {
     val complexs = (0 until length).map(i => Complex(testCase(2 * i), testCase(2 * i + 1))).toArray
-    val golden = fourierTr.dvComplex1DFFT(DenseVector(complexs))
-    refResults.enqueue(golden)
+    fourierTr.dvComplex1DFFT(DenseVector(complexs))
   }
 
   override def monitor(): Unit = {
@@ -62,12 +62,13 @@ class testWinogradDFT(length: Int) extends WinogradDFT(length) with DSPSim {
     }
   }
 
+  def same(a: Double, b: Double) = scala.math.abs(a - b) / ((a + b) / 2) < 0.01 || scala.math.abs(a - b) < 0.1
+
+  def sameVector(v1: DenseVector[Complex], v2: DenseVector[Complex]) =
+    v1.toArray.zip(v2.toArray).forall { case (c1, c2) => same(c1.real, c2.real) && same(c1.imag, c2.imag) }
+
   override def scoreBoard(): Unit = {
 
-    def same(a: Double, b: Double) = scala.math.abs(a - b) / ((a + b) / 2) < 0.01 || scala.math.abs(a - b) < 0.1
-
-    def sameVector(v1: DenseVector[Complex], v2: DenseVector[Complex]) =
-      v1.toArray.zip(v2.toArray).forall { case (c1, c2) => same(c1.real, c2.real) && same(c1.imag, c2.imag) }
 
     val score = fork {
       while (true) {
@@ -80,6 +81,8 @@ class testWinogradDFT(length: Int) extends WinogradDFT(length) with DSPSim {
       }
     }
   }
+
+  override def isValid(refResult: DenseVector[Complex], dutResult: DenseVector[Complex]): Boolean = sameVector(refResult, dutResult)
 }
 
 object testWinogradDFT {

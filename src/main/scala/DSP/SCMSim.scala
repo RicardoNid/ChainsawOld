@@ -15,9 +15,12 @@ class SCMDUT(constant: Int, bitWidth: Int = naturalWidth, scmArch: SCMArch) exte
 
   output.payload := body.implicitValue
   output.valid := Delay(input.valid, body.delay, init = False)
+
+  override def delay = body.delay
 }
 
 object SCMDUT {
+  //  TODO: SCM performance test
   def main(args: Array[String]): Unit = {
   }
 }
@@ -27,15 +30,13 @@ class SCMSim(constant: Int, bitWidth: Int, scmArch: SCMArch) extends SCMDUT(cons
   override type ResultType = Int
 
   override def simInit(): Unit = {
-    clockDomain.forkStimulus(2)
+    super.simInit()
     input.valid #= false
-    clockDomain.waitSampling(10)
   }
 
-  override def simDone(): Unit = {
-    clockDomain.waitSampling(10)
-    while (refResults.nonEmpty || dutResults.nonEmpty) clockDomain.waitSampling(10)
-  }
+  override def referenceModel(testCase: TestCase): Int = constant * testCase
+
+  override def isValid(refResult: Int, dutResult: Int): Boolean = refResult == dutResult
 
   override def driver(): Unit = {
     val drv = fork {
@@ -44,26 +45,21 @@ class SCMSim(constant: Int, bitWidth: Int, scmArch: SCMArch) extends SCMDUT(cons
           val testCase = testCases.dequeue()
           input.valid #= true
           input.payload #= testCase
+          val refResult = referenceModel(testCase)
+          printlnWhenDebug(s"time $simTime: refResult = $refResult")
+          refResults.enqueue(refResult)
           clockDomain.waitSampling()
           input.valid #= false
-          referenceModel(testCase)
         }
         else clockDomain.waitSampling()
       }
     }
   }
 
-  override def referenceModel(testCase: TestCase): Unit = {
-    val golden = constant * testCase
-    printlnWhenDebug(s"time $simTime: refResult = $golden")
-    refResults.enqueue(golden)
-  }
-
   override def monitor(): Unit = {
     val mon = fork {
       while (true) {
         if (output.valid.toBoolean) {
-
           val dutResult = output.payload.toInt
           printlnWhenDebug(s"time $simTime: dutResult = $dutResult")
           dutResults.enqueue(dutResult)
@@ -73,18 +69,6 @@ class SCMSim(constant: Int, bitWidth: Int, scmArch: SCMArch) extends SCMDUT(cons
     }
   }
 
-  override def scoreBoard(): Unit = {
-    val score = fork {
-      while (true) {
-        if (refResults.nonEmpty && dutResults.nonEmpty) {
-          val refResult = refResults.dequeue()
-          val dutResult = dutResults.dequeue()
-          assert(refResult == dutResult, s"$refResult \n $dutResult")
-        }
-        clockDomain.waitSampling()
-      }
-    }
-  }
 }
 
 object SCMSim {
@@ -104,7 +88,7 @@ object SCMSim {
   }
 
   def main(args: Array[String]): Unit = {
-    //    debug = true
+    debug = true
     randomSim(93, SCMArch.CSD)
   }
 }

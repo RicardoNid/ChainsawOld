@@ -1,3 +1,4 @@
+import breeze.linalg.DenseVector
 import breeze.numerics._
 import spinal.core._
 import spinal.core.sim._
@@ -42,6 +43,11 @@ package object DSP {
   val testFFTLength = 8
 
   def sameFixed(a: Double, b: Double) = abs(a - b) / abs((a + b) / 2) < 0.01 || scala.math.abs(a - b) < 0.1
+
+  def sameFixedSeq(v1: IndexedSeq[Double], v2: IndexedSeq[Double]) =
+    v1.zip(v2).forall { case (c1, c2) => sameFixed(c1, c2) }
+
+  def sameFixedVector(v1: DenseVector[Double], v2: DenseVector[Double]) = sameFixedSeq(v1.toArray, v2.toArray)
 
   //  def Double2Fix(value: Double) = floor(value * (1 << 4)).toInt // convert Double to valid stimulus for simulation
   def Double2Fix(value: Double) = floor(value * (1 << fractionalWidth)).toInt // convert Double to valid stimulus for simulation

@@ -17,6 +17,8 @@ class ShiftAdderTreeDUT(shifts: IndexedSeq[Int]) extends Component with DSPGen {
   output.payload := ShiftAdderTree(inputs.payload.map(_.toSFix), shifts).toSInt
   output.valid := RegNext(inputs.valid)
   output.valid.init(False)
+
+  override def delay: Int = 1
 }
 
 //  DUT using SFix
@@ -62,23 +64,23 @@ class testShiftAdderTree(shifts: IndexedSeq[Int]) extends ShiftAdderTreeDUT(shif
       while (true) {
         if (testCases.nonEmpty) {
           val testCase = testCases.dequeue()
-          referenceModel(testCase)
           inputs.valid #= true
           //          println("test: " + testCase.mkString(" "))
           //          (0 until shifts.length).foreach(i => inputs.payload(i).raw #= Double2Fix(testCase(i)))
           (0 until shifts.length).foreach(i => inputs.payload(i) #= testCase(i).toInt)
           clockDomain.waitSampling()
           inputs.valid #= false
+          val refResult = referenceModel(testCase)
+          refResults.enqueue(refResult)
         }
         else clockDomain.waitSampling()
       }
     }
   }
 
-  override def referenceModel(testCase: TestCase): Unit = {
+  override def referenceModel(testCase: TestCase) = {
     //    val golden = (0 until shifts.length).map(i => testCase(i) * pow(2, shifts(i))).sum
-    val golden = (0 until shifts.length).map(i => testCase(i).toInt * pow(2, shifts(i))).sum
-    refResults.enqueue(golden)
+    (0 until shifts.length).map(i => testCase(i).toInt * pow(2, shifts(i))).sum
   }
 
   override def monitor(): Unit = {
@@ -109,6 +111,8 @@ class testShiftAdderTree(shifts: IndexedSeq[Int]) extends ShiftAdderTreeDUT(shif
       }
     }
   }
+
+  override def isValid(refResult: Double, dutResult: Double): Boolean = sameFixed(refResult, dutResult)
 }
 
 object testShiftAdderTree {

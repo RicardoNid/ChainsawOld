@@ -36,20 +36,21 @@ class testCORDIC(rotationMode: RotationMode, algebricMode: AlgebricMode)
         if (testCases.nonEmpty) {
           val testCase = testCases.dequeue()
           //          println("test: " + testCase.toString)
-          referenceModel(testCase)
           input.valid #= true
           input.payload.x.raw #= Double2Fix(testCase.x)
           input.payload.y.raw #= Double2Fix(testCase.y)
           input.payload.z.raw #= Double2Fix(testCase.z)
           clockDomain.waitSampling()
           input.valid #= false
+          val refResult = referenceModel(testCase)
+          refResults.enqueue(refResult)
         }
         else clockDomain.waitSampling()
       }
     }
   }
 
-  override def referenceModel(testCase: TestCase): Unit = {
+  override def referenceModel(testCase: TestCase) = {
 
     val x = testCase.x
     val y = testCase.y
@@ -92,8 +93,8 @@ class testCORDIC(rotationMode: RotationMode, algebricMode: AlgebricMode)
       }
     }
 
-    val golden = Array(xResult, yResult, zResult)
-    refResults.enqueue(golden)
+    Array(xResult, yResult, zResult)
+
   }
 
   override def monitor(): Unit = {
@@ -107,6 +108,8 @@ class testCORDIC(rotationMode: RotationMode, algebricMode: AlgebricMode)
       }
     }
   }
+
+  override def isValid(refResult: Array[Double], dutResult: Array[Double]): Boolean = refResult.zip(dutResult).map { case (ref, dut) => abs(ref - dut) }.forall(_ < 1E-1)
 
   override def scoreBoard(): Unit = {
 

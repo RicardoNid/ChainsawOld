@@ -28,8 +28,9 @@ class testFIR(coefficients: Array[Double], FIRArch: FIRArch) extends FIR(coeffic
       while (true) {
         if (testCases.nonEmpty) {
           val testCase = testCases.dequeue()
-//          println(s"test: ${testCase.mkString(" ")}")
-          referenceModel(testCase)
+          //          println(s"test: ${testCase.mkString(" ")}")
+          val refResult = referenceModel(testCase)
+          refResults.enqueue(refResult)
           for (data <- testCase) {
             io.input.valid #= true
             io.input.payload.raw #= Double2Fix(data)
@@ -43,10 +44,8 @@ class testFIR(coefficients: Array[Double], FIRArch: FIRArch) extends FIR(coeffic
     }
   }
 
-  override def referenceModel(testCase: TestCase): Unit = {
-    val golden = filter(DenseVector(testCase), DenseVector(coefficients))
-    refResults.enqueue(golden)
-    //    println("ref enqueue")
+  override def referenceModel(testCase: TestCase) = {
+    filter(DenseVector(testCase), DenseVector(coefficients))
   }
 
   override def monitor(): Unit = {
@@ -68,12 +67,9 @@ class testFIR(coefficients: Array[Double], FIRArch: FIRArch) extends FIR(coeffic
     }
   }
 
+  override def isValid(refResult: DenseVector[Double], dutResult: DenseVector[Double]): Boolean = sameFixedVector(refResult, dutResult)
+
   override def scoreBoard(): Unit = {
-
-    def same(a: Double, b: Double) = scala.math.abs(a - b) / ((a + b) / 2) < 0.05 || scala.math.abs(a - b) < 0.5
-
-    def sameVector(v1: DenseVector[Double], v2: DenseVector[Double]) =
-      v1.toArray.zip(v2.toArray).forall { case (c1, c2) => same(c1, c2) }
 
     val score = fork {
       while (true) {
@@ -81,7 +77,7 @@ class testFIR(coefficients: Array[Double], FIRArch: FIRArch) extends FIR(coeffic
           val refResult = refResults.dequeue()
           val dutResult = dutResults.dequeue()
           println(s"ref: $refResult \ndut: $dutResult")
-          //          assert(sameVector(refResult, dutResult), s"\n $refResult \n $dutResult")
+          assert(sameFixedVector(refResult, dutResult), s"\n $refResult \n $dutResult")
         }
         clockDomain.waitSampling()
       }
