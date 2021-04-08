@@ -26,18 +26,22 @@ package object DSP {
 
   def data = SFix(peak = naturalWidth exp, resolution = -fractionalWidth exp)
 
+  def shortType = SFix(4 exp, -4 exp)
+
   val rand = new Random()
 
   // generate random value in a range defined by SFix format
   def randData(bits: Int = naturalWidth) = {
-    ((rand.nextDouble() - 0.5) * 2 * pow(2, naturalWidth))
+    ((rand.nextDouble() - 0.5) * 2 * pow(2, bits))
   }
 
   val testFFTLength = 8
 
   def sameFixed(a: Double, b: Double) = abs(a - b) / abs((a + b) / 2) < 0.01 || scala.math.abs(a - b) < 0.1
 
+  //  def Double2Fix(value: Double) = floor(value * (1 << 4)).toInt // convert Double to valid stimulus for simulation
   def Double2Fix(value: Double) = floor(value * (1 << fractionalWidth)).toInt // convert Double to valid stimulus for simulation
+  //  def Fix2Double(value: SFix) = value.raw.toBigInt.toDouble / pow(2, 4)
   def Fix2Double(value: SFix) = value.raw.toBigInt.toDouble / pow(2, fractionalWidth)
 
   // OPTIMIZE: implement prime & factor by table

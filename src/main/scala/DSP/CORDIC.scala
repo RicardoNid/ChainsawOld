@@ -65,6 +65,11 @@ class CORDIC(rotationMode: RotationMode = ROTATION,
   output.payload.z := outputs._3.truncated
   output.valid := Delay(input.valid, iterations, init = False)
   output.valid.init(False)
+  //  output.valid := ~input.valid
+
+  println(LatencyAnalysis(input.payload.x.raw, output.payload.x.raw))
+  //  ComputationExtrction(output.payload.x.raw)
+  ComputationExtrction(output.valid)
 }
 
 // TODO: algebricMode: Bits, rotationMode: Bool, pipelined: Int
@@ -123,7 +128,6 @@ object CORDIC {
       .foreach { case ((prev, cur), (cond, coeff)) =>
         cur := Mux(cond, prev - coeff, prev + coeff).truncated
       }
-
     (regsX.last * scaleComplement, regsY.last * scaleComplement, regsZ.last)
   }
 

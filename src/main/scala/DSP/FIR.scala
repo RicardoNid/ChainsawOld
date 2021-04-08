@@ -1,9 +1,11 @@
 package DSP
 
-import DSP.FIR.systolicFIR
+import DSP.FIR.{DAFIR, systolicFIR}
 import breeze.numerics.{abs, ceil}
 import spinal.core._
 import spinal.lib._
+
+import java.lang.Math.max
 
 
 sealed trait FIRArch
@@ -27,23 +29,33 @@ class FIR(coefficients: IndexedSeq[Double],
   val bitWidthGrowth = log2Up(coefficients.length + 1) + log2Up(ceil(coefficients.map(abs(_)).max + 1).toInt)
 
   val io = new Bundle {
-    val input = slave Flow data
-    val output = master Flow SFix(peak = (data.maxExp + bitWidthGrowth) exp, resolution = data.minExp exp)
+    val input = slave Flow shortType
+    val output = master Flow SFix(peak = (shortType.maxExp + bitWidthGrowth) exp, resolution = shortType.minExp exp)
   }
+
+  val N = coefficients.length
+  val B = data.bitCount
+
+
+  val ZERO = SF(0.0, data.maxExp exp, data.bitCount bits)
+  val actualInput = Mux(io.input.valid, io.input.payload, ZERO)
+
 
   FIRArch match {
     case MAC => {
-      val ZERO = SF(0.0, data.maxExp exp, data.bitCount bits)
-      val actualInput = Mux(io.input.valid, io.input.payload, ZERO)
+
       // TODO: think about reverse carefully
       io.output.payload := systolicFIR(actualInput, coefficients)
-      val n = coefficients.length
-      io.output.valid := Delay(io.input.valid, 2 * n - (n - 1) / 2, init = False)
-      io.output.valid.init(False)
+      io.output.valid := Delay(io.input.valid, 2 * N - (N - 1) / 2, init = False)
     }
     case RAG =>
-    case DA =>
+    case DA => {
+      io.output.payload := DAFIR(actualInput, coefficients)
+      io.output.valid := Delay(io.input.valid, N + log2Up(B), init = False)
+    }
   }
+
+  io.output.valid.init(False)
 }
 
 object FIR {
@@ -98,19 +110,24 @@ object FIR {
     val b = input.bitCount
     val srl = History(input, n)
     val LUTIns = (0 until b).map(i => srl.map(_.raw(i))).map(B(_))
-    val LUTOuts = LUTIns.map(DALUT(_, coefficients, data.maxExp, data.bitCount))
-    val shiftedLUTOuts = (0 until b).map(i => LUTOuts(i) << i)
+    val LUTOuts = LUTIns.map(DALUT(_, coefficients))
     //  TODO: implement a well-tested and widely adaptive shift-add tree / graph before this
-    val result = AdderTree(shiftedLUTOuts.map(_.raw)).implicitValue
+    //  TODO: fix the bitwidth
+    val result = (ShiftAdderTree(LUTOuts, 0 until b).implicitValue << data.minExp).truncated
+    result
   }
 
-  def DALUT(input: Bits, coefficients: IndexedSeq[Double], coeffMaxExp: Int, coeffBitCount: Int) = {
+  def DALUT(input: Bits, coefficients: IndexedSeq[Double]) = {
     val length = input.getBitsWidth
     val tableContents = (0 until 1 << length).map { i =>
       val bits = i.toBinaryString
-      coefficients.zip(bits).filter { case (coeff, bit) => bit == '1' }.map { case (coeff, bit) => coeff }.reduce(_ + _)
+      val ones = coefficients.zip(bits).filter { case (coeff, bit) => bit == '1' }.map { case (coeff, bit) => coeff }
+      if (ones.isEmpty) 0.0 else ones.reduce(_ + _)
     }
-    val fixedTableContents = tableContents.map(coeff => SF(coeff, coeffMaxExp exp, coeffBitCount bits))
+    val coeffMax = max(coefficients.filter(_ > 0.0).sum, abs(coefficients.filter(_ < 0.0).sum))
+    val coeffMaxExp = log2Up(ceil(coeffMax).toInt + 1)
+    println(s"coeffMax $coeffMax, $coeffMaxExp")
+    val fixedTableContents = tableContents.map(coeff => SF(coeff, coeffMaxExp exp, coeffMaxExp bits))
 
     val LUT = Mem(fixedTableContents)
     LUT.readSync(input.asUInt)

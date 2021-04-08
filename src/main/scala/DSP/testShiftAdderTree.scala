@@ -8,6 +8,7 @@ import xilinx.VivadoFlow
 
 import scala.util.Random
 
+//  LUT using SInt
 class ShiftAdderTreeDUT(shifts: IndexedSeq[Int]) extends Component {
 
   val inputs = slave Flow Vec(SInt(8 bits), shifts.length)
@@ -18,6 +19,7 @@ class ShiftAdderTreeDUT(shifts: IndexedSeq[Int]) extends Component {
   output.valid.init(False)
 }
 
+//  DUT using SFix
 //class ShiftAdderTreeDUT(shifts: IndexedSeq[Int]) extends Component {
 //
 //  val inputs = slave Flow Vec(data, shifts.length)
