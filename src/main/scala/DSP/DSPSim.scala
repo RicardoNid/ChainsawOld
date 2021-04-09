@@ -14,6 +14,7 @@ trait DSPSim extends Component {
   val testCases = mutable.Queue[TestCase]()
   val refResults = mutable.Queue[ResultType]()
   val dutResults = mutable.Queue[ResultType]()
+  val exitPeriod = 10
 
   //  input.valid #= false
   def simInit(): Unit = {
@@ -23,7 +24,7 @@ trait DSPSim extends Component {
 
   def simDone(): Unit = {
     clockDomain.waitSampling(10)
-    while (refResults.nonEmpty || dutResults.nonEmpty) clockDomain.waitSampling(10)
+    while (refResults.nonEmpty || dutResults.nonEmpty) clockDomain.waitSampling(exitPeriod)
   }
 
   /** The function that takes the testCase and return the ground truth
@@ -85,8 +86,8 @@ trait DSPSim extends Component {
         if (refResults.nonEmpty && dutResults.nonEmpty) {
           val refResult = refResults.dequeue()
           val dutResult = dutResults.dequeue()
-          printlnWhenDebug(s"$refResult vs $dutResult")
-          assert(isValid(refResult, dutResult) || debug, s"$refResult vs $dutResult")
+          if (!isValid(refResult, dutResult)) printlnWhenDebug(Console.RED, s"\nref: $refResult \nvs \ndut: $dutResult", Console.BLACK)
+          assert(isValid(refResult, dutResult) || debug, s"\nref:$refResult \nvs \ndut:$dutResult \n")
         }
         clockDomain.waitSampling()
       }

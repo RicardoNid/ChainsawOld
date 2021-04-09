@@ -101,7 +101,7 @@ class testCORDIC(rotationMode: RotationMode, algebricMode: AlgebricMode)
     val mon = fork {
       while (true) {
         if (output.valid.toBoolean) {
-          val dutResult = Array(output.payload.x, output.payload.y, output.payload.z).map(Fix2Double)
+          val dutResult = Array(output.payload.x, output.payload.y, output.payload.z).map(Fix2Double(_))
           dutResults.enqueue(dutResult)
         }
         clockDomain.waitSampling()

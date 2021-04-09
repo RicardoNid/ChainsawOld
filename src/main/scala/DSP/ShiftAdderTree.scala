@@ -35,7 +35,7 @@ class ShiftAdderTree(inputs: IndexedSeq[SFix], shifts: IndexedSeq[Int]) extends 
 
   override def implicitValue: SFix = result
 
-  override def delay: Int = 0
+  override def getDelay: Int = 0
 }
 
 object ShiftAdderTree {

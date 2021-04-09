@@ -14,9 +14,9 @@ class SCMDUT(constant: Int, bitWidth: Int = naturalWidth, scmArch: SCMArch) exte
   val body = SCM(input.payload, constant, scmArch)
 
   output.payload := body.implicitValue
-  output.valid := Delay(input.valid, body.delay, init = False)
+  output.valid := Delay(input.valid, body.getDelay, init = False)
 
-  override def delay = body.delay
+  override def delay = body.getDelay
 }
 
 object SCMDUT {
@@ -30,8 +30,8 @@ class SCMSim(constant: Int, bitWidth: Int, scmArch: SCMArch) extends SCMDUT(cons
   override type ResultType = Int
 
   override def simInit(): Unit = {
-    super.simInit()
     input.valid #= false
+    super.simInit()
   }
 
   override def referenceModel(testCase: TestCase): Int = constant * testCase

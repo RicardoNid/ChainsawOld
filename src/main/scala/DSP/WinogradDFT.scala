@@ -14,8 +14,8 @@ class WinogradDFT(N: Int) extends Component with DSPDesign {
   require(Set(2).contains(N), s"$N point Winograd DFT will be supported in later release")
 
   val io = new Bundle {
-    val input = slave Flow (Vec(data, N * 2))
-    val output = master Flow (Vec(data, N * 2))
+    val input = slave Flow (Vec(globalType, N * 2))
+    val output = master Flow (Vec(globalType, N * 2))
   }
 
   val inputNumbers = (0 until N).map(i => ComplexNumber(io.input.payload(i * 2), io.input.payload(i * 2 + 1)))
@@ -29,7 +29,7 @@ class WinogradDFT(N: Int) extends Component with DSPDesign {
   io.output.valid := Delay(io.input.valid, 1)
   io.output.valid.init(False)
 
-  override def delay: Int = 0
+  override def getDelay: Int = 0
 }
 
 object WinogradDFT {

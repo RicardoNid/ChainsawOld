@@ -42,9 +42,9 @@ import DSP.CORDICArch._
 import DSP.RotationMode._
 
 case class CordicData() extends Bundle {
-  val x = data
-  val y = data
-  val z = data
+  val x = globalType
+  val y = globalType
+  val z = globalType
 }
 
 class CORDIC(rotationMode: RotationMode = ROTATION,
@@ -71,7 +71,7 @@ class CORDIC(rotationMode: RotationMode = ROTATION,
   //  ComputationExtrction(output.payload.x.raw)
   ComputationExtrction(output.valid)
 
-  override def delay: Int = 0
+  override def getDelay: Int = 0
 }
 
 // TODO: algebricMode: Bits, rotationMode: Bool, pipelined: Int
@@ -172,7 +172,7 @@ object CORDIC {
   }
 
   def sin(phase: SFix) = {
-    val x, y = data
+    val x, y = globalType
     x := 1.0
     y := 0.0
     cordic(x, y, phase, ROTATION, CIRCULAR, 20)._2

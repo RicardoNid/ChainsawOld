@@ -30,7 +30,7 @@ class ComplexNumber(R: SFix, I: SFix){
 
 object ComplexNumber {
 
-  private val zero = data
+  private val zero = globalType
   zero := 0.0
 
   def apply(R: SFix = zero, I: SFix= zero): ComplexNumber = {
@@ -38,7 +38,7 @@ object ComplexNumber {
   }
 
   def apply(R: Double, I: Double) = {
-    val real, imag = data
+    val real, imag = globalType
     real := R
     imag := I
     new ComplexNumber(real, imag)

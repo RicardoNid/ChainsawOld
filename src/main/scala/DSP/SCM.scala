@@ -33,7 +33,7 @@ class SCM(input: SInt, constant: Int, scmArch: SCMArch) extends ImplicitArea[SIn
 
   override def implicitValue: SInt = result
 
-  override def delay: Int = LatencyAnalysis(input, result)
+  override def getDelay: Int = LatencyAnalysis(input, result)
 }
 
 object SCM {

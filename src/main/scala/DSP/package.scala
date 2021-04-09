@@ -1,4 +1,4 @@
-import breeze.linalg.DenseVector
+import breeze.linalg._
 import breeze.numerics._
 import spinal.core._
 import spinal.core.sim._
@@ -8,6 +8,7 @@ import scala.util.Random
 
 package object DSP {
 
+  // debug mode
   var debug = false
 
   def printlnWhenDebug(x: Any) = if (debug) println(x)
@@ -22,16 +23,35 @@ package object DSP {
       ret.raw := left +^ right
       ret
     }
+
+    def -^(that: SFix) = {
+      val lsbDif = (sfix.maxExp - sfix.bitCount) - (that.maxExp - that.bitCount)
+      val left = if (lsbDif > 0) sfix.raw << lsbDif else sfix.raw
+      val right = if (lsbDif < 0) that.raw << -lsbDif else that.raw
+      val ret = SFix((Math.max(sfix.maxExp, that.maxExp) + 1) exp, (Math.max(left.getBitsWidth, right.getBitsWidth) + 1) bits)
+      ret.raw := left -^ right
+      ret
+    }
   }
 
-  // typedefs
+  def MySFix(maxValue: Double, minValue: Double, resolution: Double): SFix = {
+    val maxExp0 = log2Up(floor(maxValue + 1).toInt)
+    val maxExp1 = log2Up(abs(minValue).toInt)
+    val maxExp = Array(maxExp0, maxExp1).max
+    val minExp = -log2Up((1 / resolution).toInt)
+    SFix(maxExp exp, minExp exp)
+  }
+
+  def MySFix(maxValue: Double, resolution: Double): SFix = MySFix(maxValue, -maxValue, resolution)
+
+  // typedefs and numeric considerations
   val naturalWidth = 6
   val fractionalWidth = 10
   val bitWidth = naturalWidth + fractionalWidth
 
-  def data = SFix(peak = naturalWidth exp, resolution = -fractionalWidth exp)
+  def globalType = SFix(peak = naturalWidth exp, resolution = -fractionalWidth exp)
 
-  def shortType = SFix(4 exp, -4 exp)
+  def shortGlobalType = SFix((naturalWidth / 2) exp, -(fractionalWidth / 2) exp)
 
   val rand = new Random()
 
@@ -42,7 +62,7 @@ package object DSP {
 
   val testFFTLength = 8
 
-  def sameFixed(a: Double, b: Double) = abs(a - b) / abs((a + b) / 2) < 0.01 || scala.math.abs(a - b) < 0.1
+  def sameFixed(a: Double, b: Double) = abs(a - b) / abs((a + b) / 2) < 0.05 || scala.math.abs(a - b) < 1.0
 
   def sameFixedSeq(v1: IndexedSeq[Double], v2: IndexedSeq[Double]) =
     v1.zip(v2).forall { case (c1, c2) => sameFixed(c1, c2) }
@@ -50,9 +70,9 @@ package object DSP {
   def sameFixedVector(v1: DenseVector[Double], v2: DenseVector[Double]) = sameFixedSeq(v1.toArray, v2.toArray)
 
   //  def Double2Fix(value: Double) = floor(value * (1 << 4)).toInt // convert Double to valid stimulus for simulation
-  def Double2Fix(value: Double) = floor(value * (1 << fractionalWidth)).toInt // convert Double to valid stimulus for simulation
+  def Double2Fix(value: Double, fw: Int = fractionalWidth) = floor(value * (1 << fw)).toInt // convert Double to valid stimulus for simulation
   //  def Fix2Double(value: SFix) = value.raw.toBigInt.toDouble / pow(2, 4)
-  def Fix2Double(value: SFix) = value.raw.toBigInt.toDouble / pow(2, fractionalWidth)
+  def Fix2Double(value: SFix, fw: Int = fractionalWidth) = value.raw.toBigInt.toDouble / pow(2, fw)
 
   // OPTIMIZE: implement prime & factor by table
   def isPrime(n: Int): Boolean = {
