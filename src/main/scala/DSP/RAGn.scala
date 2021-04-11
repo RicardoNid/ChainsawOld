@@ -1,267 +1,289 @@
 package DSP
 
-import spinal.core._
-
+import java.io._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
-import scala.math.min
 
 object RAGn {
 
   val range = 16384
   val filename = "/home/lsfans/LTRSpinal/src/main/scala/mag14.dat" //  ground truth of cost LUT
   val goldenCostLUT = Source.fromFile(filename).getLines().mkString("")
-    .zipWithIndex.map { case (c, i) => (i + 1) -> c.asDigit }.take(range).filter(pair => pair._1 % 2 != 0 || isPow2(pair._1))
+    .zipWithIndex.map { case (c, i) => (i + 1) -> c.asDigit }.take(range).filter(pair => pair._1 % 2 != 0)
     .toMap
 
   val costs = Array(0, 1, 2, 3, 4, 5).map(i => goldenCostLUT.filter(_._2 == i).size)
 
-  val costLUT = mutable.Map[Int, Int]()
-  val fundamentalsLUT = mutable.Map[Int, ListBuffer[ListBuffer[Int]]]()
-
   //  TODO: get LUT by reading files
-  MAG() //  build the LUTs when algo object initialized
+  val costLUTFileName = "14bitCostLUT.dat"
+  val fundamentalsLUTFileName = "14bitFundamentalLUT.dat"
+  val costLUTFile = new File(costLUTFileName)
+  val fundamentalsLUTFile = new File(fundamentalsLUTFileName)
+  var costLUT = mutable.Map[Int, Int]() //  coeffcient -> optimal cost pair
+  var fundamentalsLUT = mutable.Map[Int, ListBuffer[ListBuffer[Int]]]()
 
-  def compareWithGolden(yours: mutable.Map[Int, Int]) = {
+  val runMAG = debug || !costLUTFile.exists() || !costLUTFile.exists()
+
+  // MAG result serialization
+  if (!runMAG) {
+    val ois0 = new ObjectInputStream(new FileInputStream(costLUTFileName))
+    val ois1 = new ObjectInputStream(new FileInputStream(fundamentalsLUTFileName))
+    costLUT = ois0.readObject.asInstanceOf[mutable.Map[Int, Int]]
+    fundamentalsLUT = ois1.readObject.asInstanceOf[mutable.Map[Int, ListBuffer[ListBuffer[Int]]]]
+    ois0.close()
+    ois1.close()
+  }
+  else {
+    val oos0 = new ObjectOutputStream(new FileOutputStream(costLUTFileName))
+    val oos1 = new ObjectOutputStream(new FileOutputStream(fundamentalsLUTFileName))
+    MAG()
+    oos0.writeObject(costLUT)
+    oos1.writeObject(fundamentalsLUT)
+    oos0.close()
+    oos1.close()
+  }
+
+  def addToLUT(coeff: Int, cost: Int, path: ListBuffer[Int]) = {
+    if (!costLUT.contains(coeff)) { //  if it's not implemented yet, add it
+      costLUT += coeff -> cost
+      fundamentalsLUT += coeff -> ListBuffer(path)
+    }
+    else if (lookupCost(coeff) == cost) lookupPaths(coeff) += path //  //  already implemented with same cost, add a new path
+    //  already implemented at lower cost, drop it
+  }
+
+  def compareWithGolden = {
     //  assert(yours.forall { case (coeff, cost) => goldenCostLUT.get(coeff).get == cost })
-    yours.foreach { case (coeff, cost) =>
+    costLUT.foreach { case (coeff, cost) =>
       val golden = goldenCostLUT.get(coeff).get
       if (golden != cost) println(s"yours: $coeff -> $cost, golden: $coeff -> $golden")
     }
-    println((0 until 5).map(i => s"cost-$i = ${yours.filter(_._2 == i).size} / ${costs(i)}").mkString("\n"))
-    println(s"table built: ${yours.size} / ${goldenCostLUT.size}")
+    println((0 until 5).map(i => s"cost-$i = ${costLUT.filter(_._2 == i).size} / ${costs(i)}").mkString("\n"))
+    println(s"table built: ${costLUT.size} / ${goldenCostLUT.size}")
   }
 
-  def showFundamentals(fundamentalsLUT: mutable.Map[Int, ListBuffer[ListBuffer[Int]]]) = {
+  def showFundamentals = {
     println(s"total paths number = ${fundamentalsLUT.map(_._2.size).sum}")
     println(s"coefficient with multiple paths: ${fundamentalsLUT.filter(_._2.size > 1).size}")
-    println("multiple path example")
-    val example = fundamentalsLUT //  from the lookup table of fundamentals
-      .filter(_._2.size > 1) //  get all the (coefficient,fundamental) who has more than one path
-      .last._2 //  take the fundamentals of the last pair as an example
-      .map(_.mkString("->")) //  for each path, make it a string, connecting by ->
-      .mkString("\n") //  make all these strings one, seperated by \n
-    println(example)
+    println("--------------------------------")
   }
 
-  def getOddFundamental(n: Int) = {
-    require(n > 0)
-    var ret = n
-    while (ret % 2 == 0) ret /= 2
+  def removeRepeatedFundamentals = {
+    fundamentalsLUT.map { case (i, buffer) => //  eliminate repeted paths
+      val result = ListBuffer[ListBuffer[Int]]()
+      val seen = mutable.HashSet[ListBuffer[Int]]()
+      buffer.foreach { path =>
+        if (!seen(path.sorted)) {
+          result += path
+          seen += path.sorted
+        }
+      }
+      result
+    }
+  }
+
+  def postProcess = {
+    removeRepeatedFundamentals
+    compareWithGolden
+    showFundamentals
+  }
+
+  def getPositiveOddFundamental(n: Int) = {
+    require(n != 0)
+    var ret = if (n < 0) -n else n //  positive
+    while (ret % 2 == 0) ret /= 2 // odd
     ret
   }
 
-  def getOddFundamentals(numbers: Seq[Int]) = {
-    numbers.map(i => if (i < 0) -i else i).filter(_ != 0).map(getOddFundamental).toSet.toSeq.sorted
-  }
+  def getPositiveOddFundamentals(numbers: Seq[Int]): Seq[Int] = numbers.filter(_ != 0).map(getPositiveOddFundamental).toSet.toSeq.sorted
 
-  def lookup(n: Int) = costLUT.get(getOddFundamental(n)).getOrElse(-1)
+  def showpath(coeff: Int) = println(lookupPaths(coeff).map(_.mkString("->")).mkString("\n"))
 
-  //  TODO: reconsider the searching range problem of A-operation
+  def lookupCost(n: Int) = costLUT.get(getPositiveOddFundamental(n)).getOrElse(-1)
+
+  def lookupPaths(n: Int) = fundamentalsLUT.get(getPositiveOddFundamental(n)).get
+
+  def costNcoeffs(n: Int) = costLUT.filter(_._2 == n).keys
+
   def AOperation(u: Int, v: Int, max: Int): mutable.Set[Int] = {
-    require(u > 0 && v > 0)
-    val ret = mutable.Set[Int]()
+    require(u > 0 && v > 0 && u % 2 != 0 && v % 2 != 0) //  positive odd fundamentals
+    val ret = mutable.Set[Int]() //  reachable coefficients
     var exp = 1
-    //  TODO: cancel the while loop with a precomputer bound
-    while ((1 << exp) * u + v <= 2 * range || (1 << exp) * v + u <= 2 * range || (1 << exp) * u - v <= 2 * range || (1 << exp) * v - u <= 2 * range) {
-      val cand0 = (1 << exp) * u + v
-      val cand1 = (1 << exp) * u - v
-      val cand2 = (1 << exp) * v + u
-      val cand3 = (1 << exp) * v - u
-      val validCand = Array(cand0, cand1, cand2, cand3).filter(cand => cand > 0 && cand <= max)
+    var continue = true
+    while (continue) { //  situation 1 & 2, j = 0, k > 0 or j >0, k = 0
+      val cands = Array( //  1 << exp stands for 2^i
+        (1 << exp) * u + v, (1 << exp) * u - v,
+        (1 << exp) * v + u, (1 << exp) * v - u)
+      val validCand = cands.filter(cand => cand > 0 && cand <= max)
       validCand.foreach(ret += _)
+      continue = cands.map(_ * 2).exists(_ < max)
       exp += 1
     }
-    ret += getOddFundamental(u + v)
+    ret += getPositiveOddFundamental(u + v) //  situation 3, j = k < 0
+    ret
+  }
+
+  def mergePaths(path0: ListBuffer[Int], path1: ListBuffer[Int], newCoeff: Int) = {
+    require(path0.head == 1 && path1.head == 1)
+    if (path0.drop(1).intersect(path1.drop(1)).nonEmpty) None
+    else Some(ListBuffer(1) ++= path0.drop(1) ++= path1.drop(1) ++= ListBuffer(newCoeff))
+  }
+
+  def mergePathLists(paths0: ListBuffer[ListBuffer[Int]], paths1: ListBuffer[ListBuffer[Int]], newCoeff: Int) = {
+    val ret = ListBuffer[ListBuffer[Int]]()
+    for (path0 <- paths0; path1 <- paths1) {
+      mergePaths(path0, path1, newCoeff) match {
+        case Some(path) => ret += path
+      }
+    }
+    ret
+  }
+
+  def ASet[T <: Iterable[Int]](U: T, V: T, max: Int, asymmetric: Boolean = true) = {
+    val ret = mutable.Set[Int]() //  generated coefficietn -> set of (u,v) s
+    for (u <- U; v <- V) if (asymmetric || u >= v) ret ++= AOperation(u, v, max)
+    ret
+  }
+
+  def ASetWithPaths[T <: Iterable[Int]](U: T, V: T, max: Int) = {
+    val checked = mutable.Set[(Int, Int)]()
+    val ret = mutable.Map[Int, mutable.Set[Tuple2[Int, Int]]]() //  generated coefficietn -> set of (u,v) s
+    for (u <- U; v <- V) {
+      if (!checked.contains((v, u))) { //  avoid repetitive combination as A-operation is commutative
+        AOperation(u, v, max).foreach { coeff =>
+          ret.get(coeff) match {
+            case Some(set) => if (!set.contains((u, v))) set += Tuple2(u, v)
+            case None => ret += coeff -> mutable.Set(Tuple2(u, v))
+          }
+        }
+        checked += Tuple2(u, v)
+      }
+    }
     ret
   }
 
   def MAG(): Unit = {
-    //  step 2
-    var i = 1
-    while (i <= range) {
-      costLUT += i -> 0
-      fundamentalsLUT += i -> ListBuffer(ListBuffer(1))
-      i = i << 1
-    }
-    compareWithGolden(costLUT)
+    //  step 2, building cost-0
+    costLUT += 1 -> 0
+    fundamentalsLUT += 1 -> ListBuffer(ListBuffer(1))
+    postProcess
+
     //  step 3, building cost-1
-    AOperation(1, 1, range).foreach { coeff =>
+    ASet(costNcoeffs(0), costNcoeffs(0), range, asymmetric = false).foreach { coeff =>
       if (!costLUT.contains(coeff)) {
         costLUT += coeff -> 1
         fundamentalsLUT += coeff -> ListBuffer(ListBuffer(1, coeff))
       }
     }
-    compareWithGolden(costLUT)
-    //  step 4, building cost-2
-    costLUT.filter(_._2 == 1).foreach { case (coeff, cost) =>
-      (AOperation(coeff, coeff, range) ++= AOperation(coeff, 1, range)).foreach { newCoeff =>
-        if (!costLUT.contains(newCoeff)) {
-          costLUT += newCoeff -> 2
-          fundamentalsLUT += newCoeff -> ListBuffer(ListBuffer(1, coeff, newCoeff))
-        }
-        //  when a new path is found
-        if (costLUT.contains(newCoeff) && costLUT.get(newCoeff).get == 2) {
-          val fundamentals = fundamentalsLUT.get(newCoeff).get
-          fundamentals += ListBuffer(1, coeff, newCoeff)
-        }
-      }
-    }
+    postProcess
 
-    fundamentalsLUT.foreach { case (i, buffer) => //  eliminate repeted paths
-      val uniquePaths = buffer.distinct
-      buffer.clear()
-      buffer ++= uniquePaths
+    //  step 4, building cost-2
+    costNcoeffs(1).foreach { coeff => //  start from cost-1 implementations
+      ASet(ListBuffer(coeff), lookupPaths(coeff).head, range) //  A(cost-1, cost-1-fundamental)
+        .foreach { newCoeff => //  for a newly found coefficient
+          val newPath = ListBuffer(1, coeff, newCoeff) //  the new path should be
+          addToLUT(newCoeff, 2, newPath)
+        }
     }
-    showFundamentals(fundamentalsLUT)
-    compareWithGolden(costLUT)
+    postProcess
 
     //  step 5, building cost-3
-
-    //  searching method of patern 1 ~ 6
-    costLUT.filter(_._2 == 2) //  for all the cost-2 coefficients
-      .foreach { case (coeff, cost) =>
-        val paths = fundamentalsLUT.get(coeff).get //  get all paths for a coefficient
-
-        paths.foreach { path => //  for a specific path
-          val newCoeffs = mutable.Set[Int]() //  prepare for new coefficients
-          path.foreach { fundamental => //  for each fundamentals
-            newCoeffs ++= AOperation(fundamental, coeff, range)
-          } //  apply A-operation on each (fundamental, coefficient) pair to generate all candidate new coefficient
-
-          newCoeffs.foreach { newCoeff => //  for each candidate
-            val newPath = path ++ ListBuffer(newCoeff) //  if added, the path should be
-            if (!costLUT.contains(newCoeff)) { //  not in cost LUT, just add it
-              costLUT += newCoeff -> 3 //  ++ creates a new buffer, that's important
-              fundamentalsLUT += newCoeff -> ListBuffer(newPath)
+    costNcoeffs(2) //  patern 1 ~ 6, starts from cost-2 implementation
+      .foreach { case coeff => //  for each cost-2 implementation
+        lookupPaths(coeff).foreach { path => //  for each specific path
+          ASet(path, ListBuffer(coeff), range) //  A(cost-2, cost-2-fundamental)
+            .foreach { newCoeff => //  strategy below is the same as step 4
+              val newPath = path ++ ListBuffer(newCoeff)
+              addToLUT(newCoeff, 3, newPath)
             }
-            if (costLUT.contains(newCoeff) && costLUT.get(newCoeff).get == 3) { //  in cost LUT already, but the new paht is as short as the previous
-              val paths = fundamentalsLUT.get(newCoeff).get //  get the previous paths
-              paths += newPath //  if it is truly new, add it
-            }
-          }
         }
       }
 
-    fundamentalsLUT.foreach { case (i, buffer) =>
-      val uniquePaths = buffer.distinct
-      buffer.clear()
-      buffer ++= uniquePaths
-    }
-    compareWithGolden(costLUT)
-    showFundamentals(fundamentalsLUT)
-
-    //  searching method of patern 7
-    val cost1coeffs = costLUT.filter(_._2 == 1).keys
-    for (coeff0 <- cost1coeffs; coeff1 <- cost1coeffs) { //  for all the cost-1 + cost-1
+    //  patern 7, cost-1 + cost-1
+    for (coeff0 <- costNcoeffs(1); coeff1 <- costNcoeffs(1)) {
       if (coeff0 >= coeff1) { //  upper triangle, avoid same combination
-        AOperation(coeff0, coeff1, range).foreach { newCoeff =>
-          if (!costLUT.contains(newCoeff)) {
-            println(newCoeff)
-            costLUT += newCoeff -> 3
-            fundamentalsLUT += newCoeff -> ListBuffer(ListBuffer(1, coeff0, coeff1, newCoeff))
+        AOperation(coeff0, coeff1, range)
+          .foreach { newCoeff =>
+            val newPath = ListBuffer(1, coeff0, coeff1, newCoeff)
+            addToLUT(newCoeff, 3, newPath)
           }
-          //  when a new path is found
-          if (costLUT.contains(newCoeff) && costLUT.get(newCoeff).get == 3) {
-            val fundamentals = fundamentalsLUT.get(newCoeff).get
-            fundamentals += ListBuffer(1, coeff0, coeff1, newCoeff)
-          }
-        }
       }
     }
-
-    fundamentalsLUT.foreach { case (i, buffer) =>
-      val uniquePaths = buffer.distinct
-      buffer.clear()
-      buffer ++= uniquePaths
-    }
-    compareWithGolden(costLUT)
-    showFundamentals(fundamentalsLUT)
+    postProcess
 
     //  step 6 building cost-4
-
-    //  searching method of patern 1 ~ 27
-    costLUT.filter(_._2 == 3) //  for all the cost-3 coefficients
-      .foreach { case (coeff, cost) =>
-        val paths = fundamentalsLUT.get(coeff).get //  get all paths for a coefficient
-
-        paths.foreach { path => //  for a specific path
-          val newCoeffs = mutable.Set[Int]() //  prepare for new coefficients
-          path.foreach { fundamental => //  for each fundamentals
-            newCoeffs ++= AOperation(fundamental, coeff, range)
-          } //  apply A-operation on each (fundamental, coefficient) pair to generate all candidate new coefficient
-
-          newCoeffs.foreach { newCoeff => //  for each candidate
-            val newPath = path ++ ListBuffer(newCoeff) //  if added, the path should be
-            if (!costLUT.contains(newCoeff)) { //  not in cost LUT, just add it
-              costLUT += newCoeff -> 4 //  ++ creates a new buffer, that's important
-              fundamentalsLUT += newCoeff -> ListBuffer(newPath)
+    costNcoeffs(3) //  patern 1 ~ 27, starts from cost-3 implementation
+      .foreach { case coeff =>
+        lookupPaths(coeff).foreach { path => //  for a specific path
+          ASet(path, ListBuffer(coeff), range) //  A(cost-3, cost-3-fundamental)
+            .foreach { newCoeff => //  strategy below is the same as step 4
+              val newPath = path ++ ListBuffer(newCoeff)
+              addToLUT(newCoeff, 4, newPath)
             }
-            if (costLUT.contains(newCoeff) && costLUT.get(newCoeff).get == 4) { //  in cost LUT already, but the new paht is as short as the previous
-              val paths = fundamentalsLUT.get(newCoeff).get //  get the previous paths
-              paths += newPath //  if it is truly new, add it
+        }
+      }
+    postProcess
+
+    //  patern 28,29,32, cost-2 + cost-1
+    for (coeff0 <- costNcoeffs(1); coeff1 <- costNcoeffs(2)) {
+      AOperation(coeff0, coeff1, range).foreach { newCoeff =>
+        val newPath = ListBuffer(1, coeff0, coeff1, newCoeff)
+        addToLUT(newCoeff, 4, newPath)
+      }
+    }
+    postProcess
+
+    // TODO: implement pattern 30, 31
+    costNcoeffs(2) //  pattern 30
+      .foreach { coeff =>
+        lookupPaths(coeff).foreach { path =>
+          val nodesBelow = AOperation(path(0), path(1), range)
+          nodesBelow.foreach { nodeBelow =>
+            AOperation(nodeBelow, coeff, range).foreach { newCoeff =>
+              val newPath = ListBuffer(path(0), path(1), coeff, nodeBelow, newCoeff)
+              addToLUT(newCoeff, 4, newPath)
             }
           }
         }
       }
+    postProcess
 
-    fundamentalsLUT.foreach { case (i, buffer) =>
-      val uniquePaths = buffer.distinct
-      buffer.clear()
-      buffer ++= uniquePaths
-    }
-    compareWithGolden(costLUT)
-    showFundamentals(fundamentalsLUT)
-
-    //  searching method of patern 28,29,32
-    val cost2coeffs = costLUT.filter(_._2 == 2).keys
-    for (coeff0 <- cost1coeffs; coeff1 <- cost2coeffs) { //  for all the cost-1 + cost-1
-      //        println(s"pair $coeff0, $coeff1")
-      AOperation(coeff0, coeff1, range).foreach { newCoeff =>
-        if (!costLUT.contains(newCoeff)) {
-          costLUT += newCoeff -> 4
-          fundamentalsLUT += newCoeff -> ListBuffer(ListBuffer(1, coeff0, coeff1, newCoeff))
-        }
-        //  when a new path is found
-        if (costLUT.contains(newCoeff) && costLUT.get(newCoeff).get == 4) {
-          val fundamentals = fundamentalsLUT.get(newCoeff).get
-          fundamentals += ListBuffer(1, coeff0, coeff1, newCoeff)
+    costNcoeffs(2) //  pattern 31
+      .foreach { coeff =>
+        lookupPaths(coeff).foreach { path =>
+          val nodesBelow = AOperation(path(1), path(1), range)
+          nodesBelow.foreach { nodeBelow =>
+            AOperation(nodeBelow, coeff, range).foreach { newCoeff =>
+              val newPath = ListBuffer(path(0), path(1), coeff, nodeBelow, newCoeff)
+              addToLUT(newCoeff, 4, newPath)
+            }
+          }
         }
       }
-    }
+    postProcess
 
-    fundamentalsLUT.foreach { case (i, buffer) =>
-      val uniquePaths = buffer.distinct
-      buffer.clear()
-      buffer ++= uniquePaths
-    }
-    compareWithGolden(costLUT)
-    showFundamentals(fundamentalsLUT)
-
-    // TODO: implement pattern 30, 31
+    println(costNcoeffs(4).map(lookupPaths(_)).head.map(_.mkString("->")).mkString("\n"))
   }
 
   def RAGn(coefficients: Seq[Int]): (mutable.ListBuffer[Int], Boolean) = {
     val incompleteSet = mutable.Set[Int]()
-    val graphSet = mutable.ListBuffer[Int](1)
-
-    val cost1 = costLUT.filter(_._2 == 1).keySet.toSeq.sorted //  sort it as smaller fundamentals have higher priority to be a building block
+    var graphSet = mutable.ListBuffer[Int](1)
 
     def showStatus = {
-      println(s"current incomplete set: ${incompleteSet.mkString(" ")}")
-      println(s"current graph set: ${graphSet.mkString(" ")}")
+      println(s"  current incomplete set: ${incompleteSet.mkString(" ")}")
+      println(s"  current graph set: ${graphSet.mkString(" ")}")
     }
 
     //  step 1-4, initialization
-    getOddFundamentals(coefficients).foreach { coeff =>
-      val cost = lookup(coeff)
-      cost match {
+    getPositiveOddFundamentals(coefficients).foreach { coeff =>
+      lookupCost(coeff) match {
         case 0 => //  drop
         case 1 => graphSet += coeff
         case _ => incompleteSet += coeff
       }
     }
+    println("initialization")
     showStatus
 
     val maxCoeff = coefficients.max
@@ -269,84 +291,73 @@ object RAGn {
     var addDistance2 = true
     var optimal = true
 
+    def findDistance1 = {
+      val intersectionSet = ASet(graphSet, graphSet, maxCoeff, asymmetric = false).intersect(incompleteSet)
+      val found = intersectionSet.nonEmpty
+      if (found) {
+        incompleteSet --= intersectionSet
+        graphSet ++= intersectionSet.toSeq
+        graphSet = graphSet.distinct
+        println("add a distance-1 coeff")
+        showStatus
+      }
+      found
+    }
+
+    def findDistance2 = {
+      val candidatePairs = mutable.Set[Tuple2[Int, Int]]() //  candidate (newly implemented coeff, auxiliary) pairs
+      for (cost1 <- costNcoeffs(1); implemented <- graphSet) { //  pattern 1: cost-1 + implemented coefficient
+        val candidates = AOperation(cost1, implemented, maxCoeff) //  all candidates generated through an A-operation
+          .intersect(incompleteSet) //  find coefficients of interest
+        candidates.foreach(coeff => candidatePairs += Tuple2(coeff, cost1)) //  add new pair to the candidate set
+      }
+      for (implemented0 <- graphSet; implemented1 <- graphSet) { //  pattern 2: cost-0 + sum of two implemented coefficient
+        if (implemented0 >= implemented1) { //  upper triangle
+          val auxiliary = implemented0 + implemented1
+          val candidates = AOperation(1, getPositiveOddFundamental(implemented0 + implemented1), maxCoeff).intersect(incompleteSet)
+          candidates.foreach(coeff => candidatePairs += Tuple2(coeff, auxiliary))
+        }
+      }
+      val found = candidatePairs.nonEmpty
+      if (found) {
+        val minCoeff = candidatePairs.map(_._1).min
+        val minAuxiliary = candidatePairs.filter(_._1 == minCoeff).map(_._2).min
+        incompleteSet.remove(minCoeff)
+        graphSet += minAuxiliary //  coefficient of interest and the auxiliary coefficient, both of them should be added
+        graphSet += minCoeff
+        graphSet = graphSet.distinct
+        println("add a distance-2 coeff")
+        showStatus
+      }
+      found
+    }
+
     while (incompleteSet.nonEmpty) {
+      addDistance2 = true
       while (incompleteSet.nonEmpty && addDistance2) {
-        //  step 5-6, repeatedly add distance-1 coefficients
-        while (incompleteSet.nonEmpty && addDistance1) {
-          addDistance1 = false
-          val intersectionSet = mutable.Set[Int]()
-          for (a <- graphSet; b <- graphSet) {
-            if (a >= b) { //  upper triangle
-              val generatedSet = AOperation(a, b, maxCoeff)
-              printlnWhenDebug(s"generated set: ${generatedSet.mkString(" ")}")
-              val intersection = generatedSet.intersect(incompleteSet)
-              printlnWhenDebug(s"intersection set: ${intersection.mkString(" ")}")
-              intersectionSet ++= intersection
-            }
-          }
-          if (intersectionSet.nonEmpty) addDistance1 = true
-          intersectionSet.foreach { coeff => //  move intersections from imcomplete set to graph set
-            incompleteSet.remove(coeff)
-            if (graphSet.contains(coeff)) graphSet += coeff
-          }
-        }
-
+        //  optimal part
+        //  step 5-6, repeatedly add distance-1 until no one can be found
+        addDistance1 = true
+        while (incompleteSet.nonEmpty && addDistance1) addDistance1 = findDistance1
         if (incompleteSet.isEmpty) return (graphSet, optimal)
-
         //  heuristic part
-
-        //  step 7, add distance-2 coefficients
-        //  coefficient of interest and the auxiliary coefficient, both of them should be added
+        //  step 7, repeatedly add distance-2 coefficients
         optimal = false //  once enter heuristic part, the solution is not asserted to be optimal
-        addDistance2 = false
-        var newDistance2 = Int.MaxValue
-        var newAuxiliary = 1
-        for (cost1coeff <- cost1; implemented <- graphSet) { //  pattern 1: cost-1 + implemented coefficient
-          println(s"current cost-1 auxiliary: $cost1coeff, implemented: $implemented")
-
-          println(s"candidates: ${AOperation(cost1coeff, implemented, maxCoeff).mkString(" ")}")
-          val candidates = AOperation(cost1coeff, implemented, maxCoeff) //  all candidates generated through an A-operation
-            .intersect(incompleteSet) //  find coefficients of interest
-          if (candidates.nonEmpty) {
-            val candidate = candidates.min
-            if (candidate < newDistance2) { //  update the minimum and its auxiliary
-              newDistance2 = candidate
-              newAuxiliary = cost1coeff
-            }
-            if (candidate == newDistance2) newAuxiliary = min(newAuxiliary, cost1coeff)
-          }
-        }
-        for (implemented0 <- graphSet; implemented1 <- graphSet) { //  pattern 2: cost-0 + sum of two implemented coefficient
-          if (implemented0 >= implemented1) { //  upper triangle
-            val auxiliary = implemented0 + implemented1
-            val candidates = AOperation(1, implemented0 + implemented1, maxCoeff).intersect(incompleteSet)
-            if (candidates.nonEmpty) {
-              val candidate = candidates.min
-              if (candidate < newDistance2) {
-                newDistance2 = candidate
-                newAuxiliary = auxiliary
-              }
-              if (candidate == newDistance2) newAuxiliary = min(newAuxiliary, auxiliary)
-            }
-          }
-        }
-        incompleteSet.remove(newDistance2)
-        if (newDistance2 != Int.MaxValue) {
-          if (!graphSet.contains(newAuxiliary)) graphSet += newAuxiliary
-          if (!graphSet.contains(newDistance2)) graphSet += newDistance2
-          addDistance2 = true
-        }
-
+        addDistance2 = findDistance2
         if (incompleteSet.isEmpty) return (graphSet, optimal)
       }
 
       //  step 9 add coefficient of distance-3 and more
-      val minCost = incompleteSet.map(lookup).min
-      val newCoeff = incompleteSet.filter(lookup(_) == minCost).min
-      val newPath = fundamentalsLUT.get(newCoeff).get.sortBy(_.intersect(graphSet).size).last //  path with most fundamentals implemented
-      //      val newPath = fundamentalsLUT.get(newCoeff).get.sortBy(_.sum).head //  path with smallest sum of fundamentals
+      val minCost = incompleteSet.map(lookupCost).min
+      val newCoeff = incompleteSet.filter(lookupCost(_) == minCost).min
+      val maxImplemented = lookupPaths(newCoeff).map(_.intersect(graphSet).size).max
+      val shortest = lookupPaths(newCoeff).filter(_.intersect(graphSet).size == maxImplemented) //  paths with most fundamentals implemented, thus shortest
+      val newPath = shortest.sortBy(_.diff(graphSet).sum).head //  path with smallest sum of unimplemented fundamentals among shortest ones
       incompleteSet.remove(newCoeff)
-      newPath.foreach(fundamental => if (!graphSet.contains(fundamental)) graphSet += fundamental)
+      graphSet ++= newPath
+      graphSet = graphSet.distinct
+      println(s"add a distance-$minCost coeff")
+      showStatus
 
       if (incompleteSet.isEmpty) return (graphSet, optimal)
     }
@@ -354,20 +365,11 @@ object RAGn {
   }
 
   def main(args: Array[String]): Unit = {
-
-    //    val test1 = Array(1, 7, 16, 21, 33)
-    //    println(RAGn(test1).mkString(" "))
-
-    //    val test2 = Array(346, 208, -44, 9)
-    //    val result = RAGn(test2)
-    //    println(s"${result._1.mkString(" ")} \n optimal solution: ${result._2}")
-
-    println(fundamentalsLUT.get(1245).get.map(_.mkString(" ")).mkString("\n"))
-
-    //    val test3 = Array(16384, 5769, 1245, 7242, 13, 1548, 798)
-    //    val result = RAGn(test3)
-    //    println(s"${result._1.mkString(" ")} \n optimal solution: ${result._2}")
-
-    //    println(AOperation(3, 11, 173))
+    //    val test = Array(16384, 5769, 1245, 7242, 13, 1548, 798)
+    val test = Array(346, 208, -44, 9)
+    //    val test = Array(3, 13, 39, 59, 173)
+    val result = RAGn(test)
+    println(s"${result._1.mkString(" ")} \n optimal solution: ${result._2}")
+    println(AOperation(13, 11, 173).mkString(" "))
   }
 }
