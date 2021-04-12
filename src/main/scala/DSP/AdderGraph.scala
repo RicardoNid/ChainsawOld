@@ -55,6 +55,8 @@ class AdderGraph {
   val graph = new DirectedWeightedMultigraph[AddSubShift, Shift](classOf[Shift])
   graph.addVertex(AddSubShift(ADD, 0, 1, INPUT))
 
+  def root = graph.vertexSet().find(_.value == 1).get
+
   def containsFundamental(that: Int) = graph.vertexSet().exists(_.value == that)
 
   def getFundamentalOption(that: Int) = {

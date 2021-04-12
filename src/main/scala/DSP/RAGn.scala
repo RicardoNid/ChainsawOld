@@ -349,8 +349,8 @@ object RAGn {
       }
       for (implemented0 <- graphSet; implemented1 <- graphSet) { //  pattern 2: cost-0 + sum of two implemented coefficient
         if (implemented0 >= implemented1) { //  upper triangle
-          val auxiliary = implemented0 + implemented1
-          val candidates = ASet(1, getPositiveOddFundamental(implemented0 + implemented1), maxCoeff).intersect(incompleteSet)
+          val auxiliary = getPositiveOddFundamental(implemented0 + implemented1)
+          val candidates = ASet(1, auxiliary, maxCoeff).intersect(incompleteSet)
           candidates.foreach(coeff => candidatePairs += Tuple3(coeff, auxiliary, implemented0))
         }
       }
@@ -363,7 +363,11 @@ object RAGn {
         graphSet += minAuxiliary //  coefficient of interest and the auxiliary coefficient, both of them should be added
         graphSet += minCoeff
         //        if (lookupCost(minAuxiliary) == 1) { // pattern 1
-        //          resultAG.addFundamental(1, 1, minAuxiliary)
+        //          resultAG.addFundamental(1, 1, minAuxiliary) // add the cost-1 aux
+        //          resultAG.addFundamental(minAuxiliary, implemented, minCoeff) // add the new coefficient
+        //        }
+        //        else { // pattern 2
+        //          val anotherImplementd = // find another implemented
         //        }
         println("add a distance-2 coeff")
         showStatus
