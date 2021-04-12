@@ -2,9 +2,12 @@ package DSP
 
 import DSP.ASSSign._
 import DSP.ASSType._
+import DSP.AdderGraph.AReverse
+import DSP.RAGn.getPositiveOddFundamental
 import org.jgrapht.alg.shortestpath.AllDirectedPaths
 import org.jgrapht.graph._
 import org.jgrapht.traverse._
+import spinal.core.{log2Up, _}
 
 import scala.collection.JavaConversions._
 
@@ -64,7 +67,7 @@ class AdderGraph {
     graph.vertexSet().find(_.value == that).get
   }
 
-  def addFundamental(u: Int, v: Int, aOperation: AOperation) = {
+  def addFundamental(u: Int, v: Int, aOperation: AOperation): Boolean = {
     val as0 = getFundamental(u)
     val as1 = getFundamental(v)
     val value = aOperation.assSign match {
@@ -77,6 +80,10 @@ class AdderGraph {
     graph.addVertex(asNew)
     graph.addEdge(as0, asNew, Shift(as0, asNew, aOperation.j))
     graph.addEdge(as1, asNew, Shift(as1, asNew, aOperation.k))
+  }
+
+  def addFundamental(u: Int, v: Int, w: Int): Boolean = {
+    addFundamental(u, v, AOperation(AReverse(w, u, v)))
   }
 
   def addOutput(u: Int, shiftLeft: Int) = {
@@ -101,7 +108,8 @@ object AdderGraph {
     adderGraph.addFundamental(1, 1, AOperation(2, SUBNEXT))
     adderGraph.addFundamental(1, 3, AOperation(4, ADD))
     adderGraph.addFundamental(3, 19, AOperation(3, ADD))
-    adderGraph.addFundamental(3, 19, AOperation(2, SUBPREV))
+    //    adderGraph.addFundamental(3, 19, AOperation(2, SUBPREV))
+    adderGraph.addFundamental(3, 19, 7)
     adderGraph.addOutput(19, 4)
 
     println(adderGraph.graph.vertexSet().mkString("\n"))
@@ -117,5 +125,30 @@ object AdderGraph {
     //    println(s"strongly connected: ${scAlg.stronglyConnectedSets().size()}")
 
     println(s"critical path 1 -> 19: ${adderGraph.criticalPath(1, 19)}")
+  }
+
+  def AReverse(w: Int, u: Int, v: Int): AConfigVector = {
+    require(w > 0 && u > 0 && v > 0 && w % 2 != 0 && u % 2 != 0 && v % 2 != 0, s"$u, $v, $w  fundamentals should be preprocessed into positive odd")
+    println(s"$w,$u,$v")
+    val cond1 = w == getPositiveOddFundamental(u + v)
+    val cond2 = (u > v) && (w == getPositiveOddFundamental(u - v))
+    val cond3 = (u < v) && (w == getPositiveOddFundamental(v - u))
+    val cond4 = (w - u > 0) && ((w - u) % v == 0) && isPow2((w - u) / v) // w = 2 << i * v + u
+    val cond5 = (w - u < 0) && (-(w - u) % v == 0) && isPow2((u - w) / v) // w = u - 2 << i * v
+    val cond6 = isPow2(w + u) && ((w + u) % v == 0) // w = 2 << i * v - u
+    val cond7 = (w - v > 0) && ((w - v) % u == 0) && isPow2((w - v) / u) // w = 2 << i * u + v
+    val cond8 = (w - v < 0) && (-(w - v) % u == 0) && isPow2((v - w) / u) // w = v - 2 << i * u
+    val cond9 = isPow2(w + v) && ((w + v) % u == 0) // w = 2 << i * u - v
+
+    if (cond1) AConfigVector(0, 0, log2Up((u + v) / w), ADD)
+    else if (cond2) AConfigVector(0, 0, log2Up((u + v) / w), SUBNEXT)
+    else if (cond3) AConfigVector(0, 0, log2Up((u + v) / w), SUBPREV)
+    else if (cond4) AConfigVector(0, log2Up((w - u) / v), 0, ADD)
+    else if (cond5) AConfigVector(0, log2Up((u - w) / v), 0, SUBNEXT)
+    else if (cond6) AConfigVector(0, log2Up((w + u) / v), 0, SUBPREV)
+    else if (cond7) AConfigVector(log2Up((w - v) / u), 0, 0, ADD)
+    else if (cond8) AConfigVector(log2Up((v - w) / u), 0, 0, SUBPREV)
+    else if (cond9) AConfigVector(log2Up((w + v) / u), 0, 0, SUBNEXT)
+    else AConfigVector(0, 0, 0, ADD)
   }
 }

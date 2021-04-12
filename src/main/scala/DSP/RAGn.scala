@@ -303,14 +303,14 @@ object RAGn {
         case 0 => //  drop
         case 1 => {
           graphSet += coeff
-          //          val exp = if (isPow2(coeff + 1)) log2Up(coeff + 1) else log2Up(coeff - 1) // since cost-1 value = 2^i \pm 1
-          //          val isAddition = if (isPow2(coeff + 1)) false else true
-          //          resultAG.addFundamental(1, 1, AOperation(exp, 0, 0, isAddition))
+          val exp = if (isPow2(coeff + 1)) log2Up(coeff + 1) else log2Up(coeff - 1) // since cost-1 value = 2^i \pm 1
+          val sign = if (isPow2(coeff + 1)) ADD else SUBNEXT
+          resultAG.addFundamental(1, 1, AOperation(exp, 0, 0, sign))
         }
         case _ => incompleteSet += coeff
       }
     }
-    println("initialization")
+    println("initialization done")
     showStatus
 
     val maxCoeff = coefficients.max
@@ -319,8 +319,6 @@ object RAGn {
     var optimal = true
 
     def addDistance1 = {
-      //      val intersectionSet = ASetOnSets(graphSet, graphSet, maxCoeff, asymmetric = false).intersect(incompleteSet)
-
       var found = false
       for (impl0 <- graphSet; impl1 <- graphSet) {
         if (impl0 >= impl1) { //  upper tri
@@ -331,18 +329,11 @@ object RAGn {
               found = true
               incompleteSet -= coeff
               graphSet += coeff
-              //              println(s"$impl0, $impl1, $coeff, $vector")
               //              if (!resultAG.containsFundamental(coeff)) println(s"successfully added ${resultAG.addFundamental(impl0, impl1, AOperation(vector))}")
             }
         }
       }
-
-      //
-      //      val found = intersectionSet.nonEmpty
       if (found) {
-        //        incompleteSet --= intersectionSet
-        //        graphSet ++= intersectionSet.toSeq
-        //        graphSet = graphSet.distinct
         println("add distance-1 coeffs")
         showStatus
       }
@@ -350,27 +341,30 @@ object RAGn {
     }
 
     def addDistance2 = {
-      val candidatePairs = mutable.Set[Tuple2[Int, Int]]() //  candidate (newly implemented coeff, auxiliary) pairs
+      val candidatePairs = mutable.Set[Tuple3[Int, Int, Int]]() //  candidate (newly implemented coeff, auxiliary, implemented coeff) pairs
       for (cost1 <- costNcoeffs(1); implemented <- graphSet) { //  pattern 1: cost-1 + implemented coefficient
         val candidates = ASet(cost1, implemented, maxCoeff) //  all candidates generated through an A-operation
           .intersect(incompleteSet) //  find coefficients of interest
-        candidates.foreach(coeff => candidatePairs += Tuple2(coeff, cost1)) //  add new pair to the candidate set
+        candidates.foreach(coeff => candidatePairs += Tuple3(coeff, cost1, implemented)) //  add new pair to the candidate set
       }
       for (implemented0 <- graphSet; implemented1 <- graphSet) { //  pattern 2: cost-0 + sum of two implemented coefficient
         if (implemented0 >= implemented1) { //  upper triangle
           val auxiliary = implemented0 + implemented1
           val candidates = ASet(1, getPositiveOddFundamental(implemented0 + implemented1), maxCoeff).intersect(incompleteSet)
-          candidates.foreach(coeff => candidatePairs += Tuple2(coeff, auxiliary))
+          candidates.foreach(coeff => candidatePairs += Tuple3(coeff, auxiliary, implemented0))
         }
       }
       val found = candidatePairs.nonEmpty
       if (found) {
         val minCoeff = candidatePairs.map(_._1).min
         val minAuxiliary = candidatePairs.filter(_._1 == minCoeff).map(_._2).min
+        val implemented = candidatePairs.filter(_._1 == minCoeff).filter(_._2 == minAuxiliary).head._3
         incompleteSet.remove(minCoeff)
         graphSet += minAuxiliary //  coefficient of interest and the auxiliary coefficient, both of them should be added
         graphSet += minCoeff
-        //        graphSet = graphSet.distinct
+        //        if (lookupCost(minAuxiliary) == 1) { // pattern 1
+        //          resultAG.addFundamental(1, 1, minAuxiliary)
+        //        }
         println("add a distance-2 coeff")
         showStatus
       }
@@ -410,16 +404,16 @@ object RAGn {
   }
 
   def main(args: Array[String]): Unit = {
-    //    val test = Array(16384, 5769, 1245, 7242, 13, 1548, 798)
+    val test = Array(16384, 5769, 1245, 7242, 13, 1548, 798)
     //    val test = Array(346, 208, -44, 9)
     //    val test1 = Array()
     //    val test = Array(3, 13, 39, 59, 173)
     //    val test = Array(3, 13, 39, 59, 173)
-    println(AVectors(3, 3, 128).mkString("\n"))
-    val coe = Source.fromFile("ex2PM16_119.coe").getLines().drop(1) map (_.filter(_.isDigit).toInt)
+    //    println(AVectors(3, 3, 128).mkString("\n"))
+    //    val coe = Source.fromFile("ex2PM16_119.coe").getLines().drop(1) map (_.filter(_.isDigit).toInt)
     //    println(coe.mkString("\n"))
-    val result = RAGn(coe.toSeq)
-    //    val result = RAGn(test)
+    //    val result = RAGn(coe.toSeq)
+    val result = RAGn(test)
     println(s"--------------------------------\n${result._1.mkString(" ")}\noptimal solution: ${result._2}\n--------------------------------")
     //    println(AVectors(3, 7, 128).mkString("\n"))
   }
