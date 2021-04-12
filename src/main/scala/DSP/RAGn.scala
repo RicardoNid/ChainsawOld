@@ -1,5 +1,7 @@
 package DSP
 
+import spinal.core._
+
 import java.io._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -24,8 +26,6 @@ object RAGn {
   var fundamentalsLUT = mutable.Map[Int, ListBuffer[ListBuffer[Int]]]()
 
   val runMAG = debug || !costLUTFile.exists() || !costLUTFile.exists()
-
-  // MAG result serialization
   if (!runMAG) {
     val ois0 = new ObjectInputStream(new FileInputStream(costLUTFileName))
     val ois1 = new ObjectInputStream(new FileInputStream(fundamentalsLUTFileName))
@@ -34,7 +34,7 @@ object RAGn {
     ois0.close()
     ois1.close()
   }
-  else {
+  else { // MAG result serialization
     val oos0 = new ObjectOutputStream(new FileOutputStream(costLUTFileName))
     val oos1 = new ObjectOutputStream(new FileOutputStream(fundamentalsLUTFileName))
     MAG()
@@ -124,6 +124,17 @@ object RAGn {
     ret
   }
 
+  def AReverse(w: Int, u: Int, v: Int) = {
+    require(w > 0 && u > 0 && v > 0 && w % 2 == 0 && u % 2 != 0 && v % 2 != 0, "fundamentals should be preprocessed into positive odd")
+    if (w == getPositiveOddFundamental(u + v)) Some((0, 0, log2Up((u + v) / w)))
+    else {
+      var found = false
+      while (!found) {
+
+      }
+    }
+  }
+
   def mergePaths(path0: ListBuffer[Int], path1: ListBuffer[Int], newCoeff: Int) = {
     require(path0.head == 1 && path1.head == 1)
     if (path0.drop(1).intersect(path1.drop(1)).nonEmpty) None
@@ -143,23 +154,6 @@ object RAGn {
   def ASet[T <: Iterable[Int]](U: T, V: T, max: Int, asymmetric: Boolean = true) = {
     val ret = mutable.Set[Int]() //  generated coefficietn -> set of (u,v) s
     for (u <- U; v <- V) if (asymmetric || u >= v) ret ++= AOperation(u, v, max)
-    ret
-  }
-
-  def ASetWithPaths[T <: Iterable[Int]](U: T, V: T, max: Int) = {
-    val checked = mutable.Set[(Int, Int)]()
-    val ret = mutable.Map[Int, mutable.Set[Tuple2[Int, Int]]]() //  generated coefficietn -> set of (u,v) s
-    for (u <- U; v <- V) {
-      if (!checked.contains((v, u))) { //  avoid repetitive combination as A-operation is commutative
-        AOperation(u, v, max).foreach { coeff =>
-          ret.get(coeff) match {
-            case Some(set) => if (!set.contains((u, v))) set += Tuple2(u, v)
-            case None => ret += coeff -> mutable.Set(Tuple2(u, v))
-          }
-        }
-        checked += Tuple2(u, v)
-      }
-    }
     ret
   }
 
@@ -287,24 +281,24 @@ object RAGn {
     showStatus
 
     val maxCoeff = coefficients.max
-    var addDistance1 = true
-    var addDistance2 = true
+    var distance1Added = true
+    var distance2Added = true
     var optimal = true
 
-    def findDistance1 = {
+    def addDistance1 = {
       val intersectionSet = ASet(graphSet, graphSet, maxCoeff, asymmetric = false).intersect(incompleteSet)
       val found = intersectionSet.nonEmpty
       if (found) {
         incompleteSet --= intersectionSet
         graphSet ++= intersectionSet.toSeq
         graphSet = graphSet.distinct
-        println("add a distance-1 coeff")
+        println("add distance-1 coeffs")
         showStatus
       }
       found
     }
 
-    def findDistance2 = {
+    def addDistance2 = {
       val candidatePairs = mutable.Set[Tuple2[Int, Int]]() //  candidate (newly implemented coeff, auxiliary) pairs
       for (cost1 <- costNcoeffs(1); implemented <- graphSet) { //  pattern 1: cost-1 + implemented coefficient
         val candidates = AOperation(cost1, implemented, maxCoeff) //  all candidates generated through an A-operation
@@ -332,22 +326,7 @@ object RAGn {
       found
     }
 
-    while (incompleteSet.nonEmpty) {
-      addDistance2 = true
-      while (incompleteSet.nonEmpty && addDistance2) {
-        //  optimal part
-        //  step 5-6, repeatedly add distance-1 until no one can be found
-        addDistance1 = true
-        while (incompleteSet.nonEmpty && addDistance1) addDistance1 = findDistance1
-        if (incompleteSet.isEmpty) return (graphSet, optimal)
-        //  heuristic part
-        //  step 7, repeatedly add distance-2 coefficients
-        optimal = false //  once enter heuristic part, the solution is not asserted to be optimal
-        addDistance2 = findDistance2
-        if (incompleteSet.isEmpty) return (graphSet, optimal)
-      }
-
-      //  step 9 add coefficient of distance-3 and more
+    def addDistance3 = {
       val minCost = incompleteSet.map(lookupCost).min
       val newCoeff = incompleteSet.filter(lookupCost(_) == minCost).min
       val maxImplemented = lookupPaths(newCoeff).map(_.intersect(graphSet).size).max
@@ -358,7 +337,22 @@ object RAGn {
       graphSet = graphSet.distinct
       println(s"add a distance-$minCost coeff")
       showStatus
+    }
 
+    while (incompleteSet.nonEmpty) {
+      distance2Added = true
+      while (incompleteSet.nonEmpty && distance2Added) {
+        //  optimal part
+        distance1Added = true
+        while (incompleteSet.nonEmpty && distance1Added) distance1Added = addDistance1 //  step 5-6, repeatedly add distance-1 until no one can be found
+        if (incompleteSet.isEmpty) return (graphSet, optimal)
+        //  heuristic part
+        optimal = false //  once enter heuristic part, the solution is not asserted to be optimal
+        distance2Added = addDistance2 //  step 7, repeatedly add distance-2 coefficients
+        if (incompleteSet.isEmpty) return (graphSet, optimal)
+      }
+      //  step 9 add coefficient of distance-3 and more
+      addDistance3
       if (incompleteSet.isEmpty) return (graphSet, optimal)
     }
     return (graphSet, optimal)
@@ -367,9 +361,13 @@ object RAGn {
   def main(args: Array[String]): Unit = {
     //    val test = Array(16384, 5769, 1245, 7242, 13, 1548, 798)
     val test = Array(346, 208, -44, 9)
+    val test1 = Array()
     //    val test = Array(3, 13, 39, 59, 173)
+    //    val test = Array(3, 13, 39, 59, 173)
+    val coe = Source.fromFile("ex2PM16_119.coe").getLines().drop(1) map (_.filter(_.isDigit).toInt)
+    //    println(coe.mkString("\n"))
+    //    val result = RAGn(coe.toSeq)
     val result = RAGn(test)
-    println(s"${result._1.mkString(" ")} \n optimal solution: ${result._2}")
-    println(AOperation(13, 11, 173).mkString(" "))
+    println(s"--------------------------------\n${result._1.mkString(" ")}\noptimal solution: ${result._2}\n--------------------------------")
   }
 }
