@@ -19,10 +19,19 @@ object ASSType {
 
 }
 
-case class AOperation(j: Int = 0, k: Int = 0, r: Int = 0, add: Boolean = true) {
+case class AConfigVector(shiftLeft0: Int, shiftLeft1: Int, shiftRight: Int, isAddition: Boolean)
+
+case class AOperation(j: Int, k: Int, r: Int, isAddtion: Boolean = true) {
   require((j > 0 && k == 0 && r == 0) || (j == 0 && k > 0 && r == 0) || (j == 0 && k == 0 && r > 0),
     "for positive odd operator, (j > 0 && k == 0) || (j == 0 && k > 0) || (j == k && j < 0)") //  for positive odd operator
-  override def toString: String = s"AOperation: ${s"(x << $j) ${if (add) "+" else "-"} (y << $k)"}"
+  override def toString: String = s"AOperation: ${s"(x << $j) ${if (isAddtion) "+" else "-"} (y << $k)"}"
+}
+
+object AOperation {
+  def apply(j: Int, isAddition: Boolean): AOperation = AOperation(j, 0, 0, isAddition)
+
+  def apply(configVector: AConfigVector): AOperation =
+    AOperation(configVector.shiftLeft0, configVector.shiftLeft1, configVector.shiftRight, configVector.isAddition)
 }
 
 case class Shift(source: AddSubShift, des: AddSubShift, shiftLeft: Int = 0)
@@ -48,9 +57,9 @@ class AdderGraph {
   def addFundamental(u: Int, v: Int, aOperation: AOperation) = {
     val as0 = getFundamental(u)
     val as1 = getFundamental(v)
-    val value = if (aOperation.add) ((u << aOperation.j) + (v << aOperation.k)) >> aOperation.r else ((u << aOperation.j) - (v << aOperation.k)) >> aOperation.r
+    val value = if (aOperation.isAddtion) ((u << aOperation.j) + (v << aOperation.k)) >> aOperation.r else ((u << aOperation.j) - (v << aOperation.k)) >> aOperation.r
     //    println(s"new value $value")
-    val asNew = AddSubShift(aOperation.add, aOperation.r, value)
+    val asNew = AddSubShift(aOperation.isAddtion, aOperation.r, value)
     graph.addVertex(asNew)
     graph.addEdge(as0, asNew, Shift(as0, asNew, aOperation.j))
     graph.addEdge(as1, asNew, Shift(as1, asNew, aOperation.k))
@@ -75,9 +84,9 @@ class AdderGraph {
 object AdderGraph {
   def main(args: Array[String]): Unit = {
     val adderGraph = new AdderGraph
-    adderGraph.addFundamental(1, 1, AOperation(2, 0, 0, false))
-    adderGraph.addFundamental(1, 3, AOperation(4, 0, 0))
-    adderGraph.addFundamental(3, 19, AOperation(3, 0, 0))
+    adderGraph.addFundamental(1, 1, AOperation(2, isAddition = false))
+    adderGraph.addFundamental(1, 3, AOperation(4, isAddition = true))
+    adderGraph.addFundamental(3, 19, AOperation(3, isAddition = true))
     adderGraph.addOutput(19, 4)
 
     println(adderGraph.graph.vertexSet().mkString("\n"))
@@ -93,7 +102,5 @@ object AdderGraph {
     //    println(s"strongly connected: ${scAlg.stronglyConnectedSets().size()}")
 
     println(s"critical path 1 -> 19: ${adderGraph.criticalPath(1, 19)}")
-
-
   }
 }
