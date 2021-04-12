@@ -1,5 +1,6 @@
 package DSP
 
+import DSP.ASSSign._
 import spinal.core._
 
 import java.io._
@@ -113,11 +114,11 @@ object RAGn {
     var continue = true
     while (continue) { //  situation 1 & 2, j = 0, k > 0 or j >0, k = 0
       val cands = Array( //  1 << exp stands for 2^i
-        (1 << exp) * u + v, (1 << exp) * u - v,
-        (1 << exp) * v + u, (1 << exp) * v - u)
+        (1 << exp) * u + v, (1 << exp) * u - v, v - (1 << exp) * u,
+        (1 << exp) * v + u, (1 << exp) * v - u, u - (1 << exp) * v)
       val validCand = cands.filter(cand => cand > 0 && cand <= max)
       validCand.foreach(ret += _)
-      continue = cands.map(_ * 2).exists(_ < max)
+      continue = validCand.map(_ * 2).exists(_ < max)
       exp += 1
     }
     ret += getPositiveOddFundamental(u + v) //  situation 3, j = k < 0
@@ -132,18 +133,21 @@ object RAGn {
     var continue = true
     while (continue) { //  situation 1 & 2, j = 0, k > 0 or j >0, k = 0
       val cands = Array( //  1 << exp stands for 2^i
-        (1 << exp) * u + v -> AConfigVector(exp, 0, 0, true),
-        (1 << exp) * u - v -> AConfigVector(exp, 0, 0, false),
-        (1 << exp) * v + u -> AConfigVector(0, exp, 0, true),
-        (1 << exp) * v - u -> AConfigVector(0, exp, 0, false))
+        (1 << exp) * u + v -> AConfigVector(exp, 0, 0, ADD),
+        (1 << exp) * u - v -> AConfigVector(exp, 0, 0, SUBNEXT),
+        -((1 << exp) * u - v) -> AConfigVector(exp, 0, 0, SUBPREV),
+        (1 << exp) * v + u -> AConfigVector(0, exp, 0, ADD),
+        (1 << exp) * v - u -> AConfigVector(0, exp, 0, SUBPREV),
+        -((1 << exp) * v - u) -> AConfigVector(0, exp, 0, SUBNEXT))
       val validCand = cands.filter(cand => cand._1 > 0 && cand._1 <= max)
       validCand.foreach(ret += _)
-      continue = cands.map(_._1 * 2).exists(_ < max)
+      continue = validCand.map(_._1 * 2).exists(_ < max)
       exp += 1
     }
-    ret += getPositiveOddFundamental(u + v) -> AConfigVector(0, 0, log2Up(getPositiveOddFundamental(u + v)), true) //  situation 3, j = k < 0
+    ret += getPositiveOddFundamental(u + v) -> AConfigVector(0, 0, log2Up(getPositiveOddFundamental(u + v)), ADD) //  situation 3, j = k < 0
     val diff = if (u > v) u - v else v - u
-    if (u != v) ret += getPositiveOddFundamental(diff) -> AConfigVector(0, 0, log2Up(getPositiveOddFundamental(diff)), true)
+    val sign = if (u > v) SUBNEXT else SUBPREV
+    if (u != v) ret += getPositiveOddFundamental(diff) -> AConfigVector(0, 0, log2Up(getPositiveOddFundamental(diff)), sign)
     ret
   }
 
@@ -297,7 +301,12 @@ object RAGn {
     getPositiveOddFundamentals(coefficients).foreach { coeff =>
       lookupCost(coeff) match {
         case 0 => //  drop
-        case 1 => graphSet += coeff
+        case 1 => {
+          graphSet += coeff
+          //          val exp = if (isPow2(coeff + 1)) log2Up(coeff + 1) else log2Up(coeff - 1) // since cost-1 value = 2^i \pm 1
+          //          val isAddition = if (isPow2(coeff + 1)) false else true
+          //          resultAG.addFundamental(1, 1, AOperation(exp, 0, 0, isAddition))
+        }
         case _ => incompleteSet += coeff
       }
     }
@@ -310,26 +319,29 @@ object RAGn {
     var optimal = true
 
     def addDistance1 = {
-      val intersectionSet = ASetOnSets(graphSet, graphSet, maxCoeff, asymmetric = false).intersect(incompleteSet)
+      //      val intersectionSet = ASetOnSets(graphSet, graphSet, maxCoeff, asymmetric = false).intersect(incompleteSet)
 
-      //      for (impl0 <- graphSet; impl1 <- graphSet) {
-      //        if (impl0 >= impl1) { //  upper tri
-      //          //  TODO: consider the situation of multiple distance-1 implementations on the same coefficient
-      //          AVectors(impl0, impl1, maxCoeff)
-      //            .filter { case (coeff, vector) => incompleteSet.contains(coeff) } //intersections with incompleteSet
-      //            .foreach { case (coeff, vector) =>
-      //              incompleteSet -= coeff
-      //              graphSet += coeff
-      //              if (!resultAG.containsFundamental(coeff)) resultAG.addFundamental(vector)
-      //            }
-      //        }
-      //      }
+      var found = false
+      for (impl0 <- graphSet; impl1 <- graphSet) {
+        if (impl0 >= impl1) { //  upper tri
+          //  TODO: consider the situation of multiple distance-1 implementations on the same coefficient
+          AVectors(impl0, impl1, maxCoeff)
+            .filter { case (coeff, vector) => incompleteSet.contains(coeff) } //intersections with incompleteSet
+            .foreach { case (coeff, vector) =>
+              found = true
+              incompleteSet -= coeff
+              graphSet += coeff
+              //              println(s"$impl0, $impl1, $coeff, $vector")
+              //              if (!resultAG.containsFundamental(coeff)) println(s"successfully added ${resultAG.addFundamental(impl0, impl1, AOperation(vector))}")
+            }
+        }
+      }
 
-
-      val found = intersectionSet.nonEmpty
+      //
+      //      val found = intersectionSet.nonEmpty
       if (found) {
-        incompleteSet --= intersectionSet
-        graphSet ++= intersectionSet.toSeq
+        //        incompleteSet --= intersectionSet
+        //        graphSet ++= intersectionSet.toSeq
         //        graphSet = graphSet.distinct
         println("add distance-1 coeffs")
         showStatus
@@ -403,6 +415,7 @@ object RAGn {
     //    val test1 = Array()
     //    val test = Array(3, 13, 39, 59, 173)
     //    val test = Array(3, 13, 39, 59, 173)
+    println(AVectors(3, 3, 128).mkString("\n"))
     val coe = Source.fromFile("ex2PM16_119.coe").getLines().drop(1) map (_.filter(_.isDigit).toInt)
     //    println(coe.mkString("\n"))
     val result = RAGn(coe.toSeq)
