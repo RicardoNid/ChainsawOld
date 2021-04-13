@@ -4,6 +4,7 @@ import spinal.core._
 import spinal.core.sim._
 
 import scala.collection.mutable.ArrayBuffer
+import scala.math.Pi
 import scala.util.Random
 
 package object DSP {
@@ -62,6 +63,9 @@ package object DSP {
   val naturalWidth = 6
   val fractionalWidth = 10
   val bitWidth = naturalWidth + fractionalWidth
+
+  def phaseType(resolution: Double = 0.001) = MySFix(Pi, -Pi, resolution) // [-Pi, Pi] for phase
+  def unitType(resolution: Double = 0.001) = MySFix(1, -1, resolution)
 
   def globalType = SFix(peak = naturalWidth exp, resolution = -fractionalWidth exp)
 

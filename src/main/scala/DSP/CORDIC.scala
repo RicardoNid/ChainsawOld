@@ -1,9 +1,7 @@
 package DSP
 
-import DSP.CORDIC.cordic
 import breeze.numerics._
 import spinal.core._
-import spinal.lib._
 
 import scala.collection.mutable.ListBuffer
 
@@ -35,50 +33,24 @@ object CORDICArch {
 
   case object PIPELINED extends CORDICArch
 
+  case object ITERATIVE extends CORDICArch
+
 }
 
 import DSP.AlgebricMode._
-import DSP.CORDICArch._
 import DSP.RotationMode._
 
 case class CordicData() extends Bundle {
   val x = globalType
   val y = globalType
-  val z = globalType
-}
-
-class CORDIC(rotationMode: RotationMode = ROTATION,
-             algebricMode: AlgebricMode = CIRCULAR,
-             arch: CORDICArch = PIPELINED,
-             iterations: Int = 43) extends Component with DSPDesign {
-
-  val input = slave Flow CordicData()
-  val output = master Flow CordicData()
-
-  val outputs = cordic(
-    input.payload.x, input.payload.y, input.payload.z,
-    rotationMode, algebricMode,
-    iterations)
-
-  output.payload.x := outputs._1.truncated
-  output.payload.y := outputs._2.truncated
-  output.payload.z := outputs._3.truncated
-  output.valid := Delay(input.valid, iterations, init = False)
-  output.valid.init(False)
-  //  output.valid := ~input.valid
-
-  println(LatencyAnalysis(input.payload.x.raw, output.payload.x.raw))
-  //  ComputationExtrction(output.payload.x.raw)
-  ComputationExtrction(output.valid)
-
-  override def getDelay: Int = 0
+  val z = phaseType()
 }
 
 // TODO: algebricMode: Bits, rotationMode: Bool, pipelined: Int
-object CORDIC {
-  def cordic(inputX: SFix, inputY: SFix, inputZ: SFix,
-             rotationMode: RotationMode, algebricMode: AlgebricMode,
-             iterations: Int) = {
+class CORDIC {
+  def apply(inputX: SFix, inputY: SFix, inputZ: SFix,
+            rotationMode: RotationMode, algebricMode: AlgebricMode,
+            iterations: Int) = {
 
     def magnitudeDataType(i: Int) = SFix(peak = inputX.maxExp exp, width = (inputX.bitCount + i) bits)
 
@@ -175,7 +147,7 @@ object CORDIC {
     val x, y = globalType
     x := 1.0
     y := 0.0
-    cordic(x, y, phase, ROTATION, CIRCULAR, 20)._2
+    CORDIC(x, y, phase, ROTATION, CIRCULAR, 20)._2
   }
 
   def main(args: Array[String]): Unit = {

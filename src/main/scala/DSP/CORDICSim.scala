@@ -4,7 +4,6 @@ import DSP.AlgebricMode._
 import DSP.RotationMode._
 import breeze.numerics._
 import breeze.numerics.constants.Pi
-import spinal.core._
 import spinal.core.sim._
 
 import scala.util.Random
@@ -13,8 +12,8 @@ case class cordicTestCase(x: Double, y: Double, z: Double) extends TestCase {
   override def toString: String = s"x: $x, y: $y, z: ${z / Pi * 180.0} degree"
 }
 
-class testCORDIC(rotationMode: RotationMode, algebricMode: AlgebricMode)
-  extends CORDIC(rotationMode = rotationMode, algebricMode = algebricMode)
+class CORDICSim(rotationMode: RotationMode, algebricMode: AlgebricMode)
+  extends CORDICGen(rotationMode = rotationMode, algebricMode = algebricMode)
     with DSPSim {
   override type TestCase = cordicTestCase
   override type ResultType = Array[Double]
@@ -109,26 +108,14 @@ class testCORDIC(rotationMode: RotationMode, algebricMode: AlgebricMode)
     }
   }
 
-  override def isValid(refResult: Array[Double], dutResult: Array[Double]): Boolean = refResult.zip(dutResult).map { case (ref, dut) => abs(ref - dut) }.forall(_ < 1E-1)
+  override def isValid(refResult: Array[Double], dutResult: Array[Double]): Boolean =
+    sameFixedSeq(refResult, dutResult)
 
-  override def scoreBoard(): Unit = {
-
-    val score = fork {
-      while (true) {
-        if (refResults.nonEmpty && dutResults.nonEmpty) {
-          val refResult = refResults.dequeue()
-          val dutResult = dutResults.dequeue()
-          val same = refResult.zip(dutResult).map { case (ref, dut) => abs(ref - dut) }.forall(_ < 1E-1)
-          assert(same, s"\n result: ${dutResult.mkString(" ")} \n golden: ${refResult.mkString(" ")}")
-          //          println(s"\n result: ${dutResult.mkString(" ")} \n golden: ${refResult.mkString(" ")}")
-        }
-        clockDomain.waitSampling()
-      }
-    }
-  }
+  override def messageWhenInvalid(refResult: Array[Double], dutResult: Array[Double]): String =
+    s"\n result: ${dutResult.mkString(" ")} \n golden: ${refResult.mkString(" ")}"
 }
 
-object testCORDIC {
+object CORDICSim {
   private val r = Random
 
   private def randomCase(rotationMode: RotationMode, algebricMode: AlgebricMode) = {
@@ -160,7 +147,7 @@ object testCORDIC {
       }
       case (VECTORING, LINEAR) => {
         x = r.nextDouble() * 5
-        y = (r.nextDouble() - 0.5) * 5
+        y = (r.nextDouble() - 0.5) * x
         z = r.nextDouble() - 0.5
       }
       case (ROTATION, LINEAR) => {
@@ -175,7 +162,7 @@ object testCORDIC {
 
   def randomSim(rotationMode: RotationMode, algebricMode: AlgebricMode): Unit = {
 
-    val dut = SimConfig.withWave.compile(new testCORDIC(rotationMode, algebricMode))
+    val dut = SimConfig.withWave.compile(new CORDICSim(rotationMode, algebricMode))
     dut.doSim { dut =>
       dut.sim()
       for (i <- 0 until 100) dut.insertTestCase(randomCase(rotationMode, algebricMode))
