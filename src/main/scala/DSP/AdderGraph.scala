@@ -12,23 +12,15 @@ import spinal.core.{log2Up, _}
 import scala.collection.JavaConversions._
 
 sealed trait ASSType
-
 object ASSType {
-
   case object INPUT extends ASSType
-
   case object OUTPUT extends ASSType
-
   case object ASS extends ASSType
-
 }
 
 sealed trait ASSSign
-
 object ASSSign {
-
   case object ADD extends ASSSign
-
   case object SUBNEXT extends ASSSign // prev - next
   case object SUBPREV extends ASSSign // next - prev
 }
@@ -47,10 +39,12 @@ object AOperation {
     AOperation(configVector.shiftLeft0, configVector.shiftLeft1, configVector.shiftRight, configVector.assSign)
 }
 
-case class Shift(source: AddSubShift, des: AddSubShift, shiftLeft: Int = 0)
+case class Shift(source: AddSubShift, des: AddSubShift, shiftLeft: Int = 0, negation: Boolean = false)
 
 case class AddSubShift(assSign: ASSSign = ADD, shiftRight: Int = 0, value: Int, assType: ASSType = ASS)
 
+//  TODO: consider negation
+//  TODO: consider the order of parallel edges, as left / right count by SUBNEXT/SUBPREV
 class AdderGraph {
   val graph = new DirectedWeightedMultigraph[AddSubShift, Shift](classOf[Shift])
   graph.addVertex(AddSubShift(ADD, 0, 1, INPUT))
@@ -59,14 +53,14 @@ class AdderGraph {
 
   def containsFundamental(that: Int) = graph.vertexSet().exists(_.value == that)
 
-  def getFundamentalOption(that: Int) = {
-    if (containsFundamental(that)) Some(graph.vertexSet().find(_.value == that).get)
-    else None
-  }
-
   def getFundamental(that: Int) = {
     require(containsFundamental(that), s"fundamental $that not found!")
     graph.vertexSet().find(_.value == that).get
+  }
+
+  def getFundamentalOption(that: Int) = {
+    if (containsFundamental(that)) Some(graph.vertexSet().find(_.value == that).get)
+    else None
   }
 
   def addFundamental(u: Int, v: Int, aOperation: AOperation): Boolean = {
@@ -77,7 +71,6 @@ class AdderGraph {
       case ASSSign.SUBNEXT => ((u << aOperation.j) - (v << aOperation.k)) >> aOperation.r
       case ASSSign.SUBPREV => ((v << aOperation.k) - (u << aOperation.j)) >> aOperation.r
     }
-
     val asNew = AddSubShift(aOperation.assSign, aOperation.r, value)
     graph.addVertex(asNew)
     graph.addEdge(as0, asNew, Shift(as0, asNew, aOperation.j))
@@ -88,13 +81,19 @@ class AdderGraph {
     addFundamental(u, v, AOperation(AReverse(w, u, v)))
   }
 
-  def addOutput(u: Int, shiftLeft: Int) = {
+  def addOutput(u: Int, shiftLeft: Int, negation: Boolean = false) = {
     val as = getFundamental(u)
-    val value = if (shiftLeft >= 0) u << shiftLeft else u >> (-shiftLeft)
+    val value = (if (negation) -1 else 1) * (if (shiftLeft >= 0) u << shiftLeft else u >> (-shiftLeft))
     val asNew = AddSubShift(ADD, 0, value, OUTPUT)
     graph.addVertex(asNew)
-    graph.addEdge(as, asNew, Shift(as, asNew, shiftLeft))
+    graph.addEdge(as, asNew, Shift(as, asNew, shiftLeft, negation))
   }
+
+  def numberOfOutputs = graph.vertexSet().filter(_.assType == OUTPUT).size
+
+  def outputs = graph.vertexSet().filter(_.assType == OUTPUT)
+
+  def valueOfOutputs = graph.vertexSet().filter(_.assType == OUTPUT).map(_.value)
 
   def criticalPath(u: Int, v: Int) = {
     //  TODO: pick a suitable algo

@@ -11,6 +11,8 @@ trait DSPSim extends Component {
   type TestCase
   type ResultType
 
+  def messageWhenInvalid(refResult: ResultType, dutResult: ResultType): String = s"\n${refResult}\n${dutResult}"
+
   val testCases = mutable.Queue[TestCase]()
   val refResults = mutable.Queue[ResultType]()
   val dutResults = mutable.Queue[ResultType]()
@@ -86,8 +88,12 @@ trait DSPSim extends Component {
         if (refResults.nonEmpty && dutResults.nonEmpty) {
           val refResult = refResults.dequeue()
           val dutResult = dutResults.dequeue()
-          if (!isValid(refResult, dutResult)) printlnWhenDebug(Console.RED, s"\nref: $refResult \nvs \ndut: $dutResult", Console.BLACK)
-          assert(isValid(refResult, dutResult) || debug, s"\nref:$refResult \nvs \ndut:$dutResult \n")
+          if (!isValid(refResult, dutResult)) {
+            printlnWhenDebug(Console.RED)
+            printlnWhenDebug(messageWhenInvalid(refResult, dutResult))
+            printlnWhenDebug(Console.BLACK)
+          }
+          assert(isValid(refResult, dutResult) || debug, messageWhenInvalid(refResult, dutResult))
         }
         clockDomain.waitSampling()
       }

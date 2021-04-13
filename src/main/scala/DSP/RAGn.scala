@@ -1,9 +1,12 @@
 package DSP
 
 import DSP.ASSSign._
+import breeze.numerics.abs
+import org.jgrapht.traverse.DepthFirstIterator
 import spinal.core._
 
 import java.io._
+import scala.collection.JavaConversions._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
@@ -144,10 +147,10 @@ object RAGn {
       continue = validCand.map(_._1 * 2).exists(_ < max)
       exp += 1
     }
-    ret += getPositiveOddFundamental(u + v) -> AConfigVector(0, 0, log2Up(getPositiveOddFundamental(u + v)), ADD) //  situation 3, j = k < 0
+    ret += getPositiveOddFundamental(u + v) -> AConfigVector(0, 0, log2Up((u + v) / getPositiveOddFundamental(u + v)), ADD) //  situation 3, j = k < 0
     val diff = if (u > v) u - v else v - u
     val sign = if (u > v) SUBNEXT else SUBPREV
-    if (u != v) ret += getPositiveOddFundamental(diff) -> AConfigVector(0, 0, log2Up(getPositiveOddFundamental(diff)), sign)
+    if (u != v) ret += getPositiveOddFundamental(diff) -> AConfigVector(0, 0, log2Up(diff / getPositiveOddFundamental(diff)), sign)
     ret
   }
 
@@ -287,7 +290,7 @@ object RAGn {
     println(costNcoeffs(4).map(lookupPaths(_)).head.map(_.mkString("->")).mkString("\n"))
   }
 
-  def RAGn(coefficients: Seq[Int]): (mutable.LinkedHashSet[Int], Boolean) = {
+  def apply(coefficients: Seq[Int]): (mutable.LinkedHashSet[Int], Boolean, AdderGraph) = {
     val incompleteSet = mutable.Set[Int]()
     var graphSet = mutable.LinkedHashSet[Int](1)
     val resultAG = new AdderGraph()
@@ -304,8 +307,8 @@ object RAGn {
         case 1 => {
           graphSet += coeff
           val exp = if (isPow2(coeff + 1)) log2Up(coeff + 1) else log2Up(coeff - 1) // since cost-1 value = 2^i \pm 1
-          val sign = if (isPow2(coeff + 1)) ADD else SUBNEXT
-          resultAG.addFundamental(1, 1, AOperation(exp, 0, 0, sign))
+          val sign = if (isPow2(coeff + 1)) SUBNEXT else ADD
+          if (resultAG.addFundamental(1, 1, AOperation(exp, 0, 0, sign))) printlnWhenDebug(s"$coeff successfully added")
         }
         case _ => incompleteSet += coeff
       }
@@ -329,7 +332,8 @@ object RAGn {
               found = true
               incompleteSet -= coeff
               graphSet += coeff
-              //              if (!resultAG.containsFundamental(coeff)) println(s"successfully added ${resultAG.addFundamental(impl0, impl1, AOperation(vector))}")
+              println(impl0, impl1, vector)
+              if (!resultAG.containsFundamental(coeff) && resultAG.addFundamental(impl0, impl1, AOperation(vector))) printlnWhenDebug(s"$coeff successfully added ")
             }
         }
       }
@@ -388,23 +392,41 @@ object RAGn {
       showStatus
     }
 
+    def createOutput = {
+      coefficients.foreach { coeff =>
+        val OF = getPositiveOddFundamental(coeff)
+        val exp = log2Up(abs(coeff / OF))
+        resultAG.addOutput(OF, exp, coeff < 0)
+      }
+    }
+
     while (incompleteSet.nonEmpty) {
       distance2Added = true
       while (incompleteSet.nonEmpty && distance2Added) {
         //  optimal part
         distance1Added = true
         while (incompleteSet.nonEmpty && distance1Added) distance1Added = addDistance1 //  step 5-6, repeatedly add distance-1 until no one can be found
-        if (incompleteSet.isEmpty) return (graphSet, optimal)
+        if (incompleteSet.isEmpty) {
+          createOutput
+          return (graphSet, optimal, resultAG)
+        }
         //  heuristic part
         optimal = false //  once enter heuristic part, the solution is not asserted to be optimal
         distance2Added = addDistance2 //  step 7, repeatedly add distance-2 coefficients
-        if (incompleteSet.isEmpty) return (graphSet, optimal)
+        if (incompleteSet.isEmpty) {
+          createOutput
+          return (graphSet, optimal, resultAG)
+        }
       }
       //  step 9 add coefficient of distance-3 and more
       addDistance3
-      if (incompleteSet.isEmpty) return (graphSet, optimal)
+      if (incompleteSet.isEmpty) {
+        createOutput
+        return (graphSet, optimal, resultAG)
+      }
     }
-    return (graphSet, optimal)
+    createOutput
+    return (graphSet, optimal, resultAG)
   }
 
   def main(args: Array[String]): Unit = {
@@ -414,11 +436,12 @@ object RAGn {
     //    val test = Array(3, 13, 39, 59, 173)
     //    val test = Array(3, 13, 39, 59, 173)
     //    println(AVectors(3, 3, 128).mkString("\n"))
-    //    val coe = Source.fromFile("ex2PM16_119.coe").getLines().drop(1) map (_.filter(_.isDigit).toInt)
-    //    println(coe.mkString("\n"))
-    //    val result = RAGn(coe.toSeq)
-    val result = RAGn(test)
+    val coe = Source.fromFile("ex2PM16_119.coe").getLines().drop(1) map (_.filter(_.isDigit).toInt)
+    val result = apply(coe.toSeq)
+    //    val result = RAGn(test)
     println(s"--------------------------------\n${result._1.mkString(" ")}\noptimal solution: ${result._2}\n--------------------------------")
+    val dfsIter = new DepthFirstIterator(result._3.graph)
+    println(s"DFS: ${dfsIter.toSeq.map(_.value).mkString("->")}")
     //    println(AVectors(3, 7, 128).mkString("\n"))
   }
 }

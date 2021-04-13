@@ -32,17 +32,31 @@ package object DSP {
       ret.raw := left -^ right
       ret
     }
+
+    def unary_- = {
+      val ret = SFix(sfix.maxExp exp, sfix.minExp exp)
+      ret.raw := -sfix.raw
+      ret
+    }
+
   }
 
   def MySFix(maxValue: Double, minValue: Double, resolution: Double): SFix = {
+    require(maxValue >= 0)
     val maxExp0 = log2Up(floor(maxValue + 1).toInt)
     val maxExp1 = log2Up(abs(minValue).toInt)
     val maxExp = Array(maxExp0, maxExp1).max
-    val minExp = -log2Up((1 / resolution).toInt)
+    val minExp = -log2Up(abs(1 / resolution).toInt)
     SFix(maxExp exp, minExp exp)
   }
 
   def MySFix(maxValue: Double, resolution: Double): SFix = MySFix(maxValue, -maxValue, resolution)
+
+  def MySF(value: Double) = {
+    val tmp = MySFix(value, 0.001)
+    tmp := value
+    tmp
+  }
 
   // typedefs and numeric considerations
   val naturalWidth = 6
@@ -62,7 +76,7 @@ package object DSP {
 
   val testFFTLength = 8
 
-  def sameFixed(a: Double, b: Double) = abs(a - b) / abs((a + b) / 2) < 0.05 || scala.math.abs(a - b) < 1.0
+  def sameFixed(a: Double, b: Double) = (abs(a - b) / abs((a + b) / 2)) < 0.1 || scala.math.abs(a - b) < 1.0
 
   def sameFixedSeq(v1: IndexedSeq[Double], v2: IndexedSeq[Double]) =
     v1.zip(v2).forall { case (c1, c2) => sameFixed(c1, c2) }
