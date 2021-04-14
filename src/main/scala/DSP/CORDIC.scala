@@ -47,7 +47,7 @@ case class CordicData() extends Bundle {
 }
 
 // TODO: algebricMode: Bits, rotationMode: Bool, pipelined: Int
-class CORDIC {
+object CORDIC {
   def apply(inputX: SFix, inputY: SFix, inputZ: SFix,
             rotationMode: RotationMode, algebricMode: AlgebricMode,
             iterations: Int) = {

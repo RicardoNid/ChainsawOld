@@ -23,3 +23,13 @@ object SCMArch {
   case object MULT extends SCMArch
 
 }
+
+sealed trait SAGArch extends DSPArch
+
+object SAGArch {
+
+  case object RAW extends SAGArch // all these
+
+  case object NORMAL extends SAGArch
+
+}

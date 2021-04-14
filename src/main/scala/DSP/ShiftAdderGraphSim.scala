@@ -1,11 +1,12 @@
 package DSP
 
+import DSP.SAGArch._
 import spinal.core.sim._
 
 import scala.io.Source
 import scala.util.Random
 
-class ShiftAdderGraphSim(adderGraph: AdderGraph) extends ShiftAdderGraphDUT(adderGraph) with DSPSim {
+class ShiftAdderGraphSim(adderGraph: AdderGraph, sagArch: SAGArch = NORMAL) extends ShiftAdderGraphDUT(adderGraph, sagArch) with DSPSim {
   override type TestCase = Double
   override type ResultType = Array[Double]
 
@@ -78,8 +79,8 @@ object ShiftAdderGraphSim {
 
   def randomCase = randData()
 
-  def randomSim(adderGraph: AdderGraph): Unit = {
-    val dut = SimConfig.withWave.compile(new ShiftAdderGraphSim(adderGraph))
+  def randomSim(adderGraph: AdderGraph, sagArch: SAGArch = NORMAL): Unit = {
+    val dut = SimConfig.withWave.compile(new ShiftAdderGraphSim(adderGraph, sagArch))
     dut.doSim { dut =>
       dut.sim()
       for (i <- 0 until 100) dut.insertTestCase(randomCase)
@@ -110,10 +111,9 @@ object ShiftAdderGraphSim {
 
     val coe = Source.fromFile("ex2PM16_119.coe").getLines().drop(1).map(_.filter(_.isDigit).toInt).toSeq
     val optimalGraph = RAGn(coe)._3
-    val temp = optimalGraph.valueOfOutputs.toIndexedSeq.sorted
-    println(optimalGraph.valueOfOutputs.size)
-    println(optimalGraph.outputs.mkString(" "))
-    randomSim(optimalGraph)
+    //    randomSim(optimalGraph)
+
+    randomSim(optimalGraph, sagArch = RAW)
   }
 }
 

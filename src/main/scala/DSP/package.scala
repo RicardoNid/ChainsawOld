@@ -53,8 +53,14 @@ package object DSP {
 
   def MySFix(maxValue: Double, resolution: Double): SFix = MySFix(maxValue, -maxValue, resolution)
 
-  def MySF(value: Double) = {
-    val tmp = MySFix(value, 0.001)
+  /** SFix literal with an appropriated bitWidth
+   *
+   * @param value
+   * @param resolution
+   * @return
+   */
+  def MySF(value: Double, resolution: Double = 1.0) = {
+    val tmp = MySFix(value, resolution)
     tmp := value
     tmp
   }

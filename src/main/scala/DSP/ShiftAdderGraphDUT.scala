@@ -1,24 +1,36 @@
 package DSP
 
 import DSP.ASSSign._
+import DSP.SAGArch._
 import breeze.numerics.abs
 import spinal.core._
-import spinal.lib.{master, slave}
+import spinal.lib.{Delay, master, slave}
 import xilinx.VivadoFlow
 
 //  LUT using SInt
-class ShiftAdderGraphDUT(adderGraph: AdderGraph) extends Component with DSPGen {
+class ShiftAdderGraphDUT(adderGraph: AdderGraph, sagArch: SAGArch = NORMAL) extends Component with DSPGen {
 
+  val numberOfOutputs = adderGraph.numberOfOutputs
   val input = slave Flow globalType
 
   def outputType = SFix(globalType.maxExp + log2Up(adderGraph.valueOfOutputs.map(abs(_)).sum) exp, globalType.minExp exp)
 
-  val output = master Flow Vec(outputType, adderGraph.numberOfOutputs) //  bitWidth can be determined later
+  val output = master Flow Vec(outputType, numberOfOutputs) //  bitWidth can be determined later
 
-  val ret = ShiftAdderGraph(input.payload, adderGraph).implicitValue
-  (0 until adderGraph.numberOfOutputs).foreach(i => output.payload(i) := RegNext(ret(i)).truncated)
+  val inputReg = RegNext(input.payload)
 
-  output.valid := RegNext(input.valid)
+  sagArch match {
+    case SAGArch.NORMAL => {
+      val ret = ShiftAdderGraph(inputReg, adderGraph).implicitValue
+      (0 until numberOfOutputs).foreach(i => output.payload(i) := RegNext(ret(i)).truncated)
+    }
+    case SAGArch.RAW => {
+      val coefficients = adderGraph.valueOfOutputs.toArray.sorted
+      (0 until numberOfOutputs).foreach(i => output.payload(i) := RegNext(inputReg * MySF(coefficients(i).toDouble)).addAttribute("use_dsp = \"no\""))
+    }
+  }
+
+  output.valid := Delay(input.valid, 2, False)
   output.valid.init(False)
 
   override def delay: Int = 1
@@ -37,9 +49,16 @@ object ShiftAdderGraphDUT {
     adderGraph.addOutput(13, 4)
     adderGraph.addOutput(173, 1)
 
-    SpinalConfig().generateSystemVerilog(new ShiftAdderGraphDUT(adderGraph))
+    //    SpinalConfig().generateSystemVerilog(new ShiftAdderGraphDUT(adderGraph, RAW))
+
     val report = VivadoFlow(new ShiftAdderGraphDUT(adderGraph), "ShiftAdderGraph", "output/ShiftAdderGraph", force = true).doit()
+    val reportRAW = VivadoFlow(new ShiftAdderGraphDUT(adderGraph, RAW), "ShiftAdderGraphRAW", "output/ShiftAdderGraphRAW", force = true).doit()
+
+    println("RAG Result")
     report.printArea
     report.printFMax
+    println("RAW Vivado Result")
+    reportRAW.printArea
+    reportRAW.printFMax
   }
 }
