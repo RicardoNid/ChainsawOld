@@ -1,2 +1,3 @@
-val temp = Range(3 to 226)
-val fft = 512
+def get = (1, 2)
+
+val (a: Int, b: Int) = get
