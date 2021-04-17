@@ -136,7 +136,7 @@ object CORDICSim {
         z = (r.nextDouble() - 0.5) * Pi
       }
       case (VECTORING, HYPERBOLIC) => {
-        x = r.nextDouble() * 16
+        x = r.nextDouble()
         y = x * r.nextDouble() * 0.8
         z = 0.0
       }
@@ -146,7 +146,7 @@ object CORDICSim {
         z = (r.nextDouble() - 0.5) * Pi * 0.5
       }
       case (VECTORING, LINEAR) => {
-        x = r.nextDouble() * 5
+        x = r.nextDouble()
         y = (r.nextDouble() - 0.5) * x
         z = r.nextDouble() - 0.5
       }
@@ -171,6 +171,9 @@ object CORDICSim {
   }
 
   def main(args: Array[String]): Unit = {
+
+    //    debug = true
+
     randomSim(VECTORING, CIRCULAR)
     print(Console.GREEN)
     println(s"CORDIC VECTORING + CIRCULAR, PASS")

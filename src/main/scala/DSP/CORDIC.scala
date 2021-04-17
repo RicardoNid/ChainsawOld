@@ -97,6 +97,9 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
       val shiftedXs = signalXs.dropRight(1).zip(shiftingCoeffs).map { case (x, i) => x >> i }
       val shiftedYs = signalYs.dropRight(1).zip(shiftingCoeffs).map { case (y, i) => y >> i }
       val phaseCoeffs = (0 until iteration).map(i => phaseTypeGen(i, getPhaseCoeff(i)(algebricMode)))
+      printlnWhenDebug((0 until iteration).map(i => getPhaseCoeff(i)(algebricMode)).mkString({
+        " "
+      }))
 
       val pipesAll = false :: (0 until iteration).map { i =>
         cordicPipe match {
@@ -108,36 +111,36 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
       val pipes = pipesAll.dropRight(1)
 
       val counterClockwises = rotationMode match {
-        case RotationMode.ROTATION => signalYs.dropRight(1).map(_.asBits.msb) // Y < 0
-        case RotationMode.VECTORING => signalZs.dropRight(1).map(~_.asBits.msb) // Z > 0
+        case RotationMode.ROTATION => signalZs.dropRight(1).map(~_.asBits.msb) // Z > 0
+        case RotationMode.VECTORING => signalYs.dropRight(1).map(_.asBits.msb) // Y < 0
       }
 
       signalXs.dropRight(1).zip(signalXs.drop(1)) // get the prev and next
         .zip(counterClockwises.zip(pipes)) // get the control signal/conditions
-        .zip(shiftedXs) // get the increment
+        .zip(shiftedYs) // get the increment
         .foreach { case (((prev, next), (counterClockwise, pipe)), shifted) => // note the format of tuple
           val combX = algebricMode match {
-            case AlgebricMode.CIRCULAR => Mux(counterClockwise, prev - shifted, prev + shifted)
-            case AlgebricMode.HYPERBOLIC => Mux(counterClockwise, prev + shifted, prev - shifted)
-            case AlgebricMode.LINEAR => prev
+            case AlgebricMode.CIRCULAR => Mux(counterClockwise, prev - shifted, prev + shifted).truncated
+            case AlgebricMode.HYPERBOLIC => Mux(counterClockwise, prev + shifted, prev - shifted).truncated
+            case AlgebricMode.LINEAR => prev.truncated
           }
-          next := (if (pipe) RegNext(combX) else combX)
+          next := (if (pipe) RegNext(combX) else combX).truncated
         }
 
       signalYs.dropRight(1).zip(signalYs.drop(1)) // get the prev and next
         .zip(counterClockwises.zip(pipes)) // get the control signal/conditions
-        .zip(shiftedYs) // get the increment
+        .zip(shiftedXs) // get the increment
         .foreach { case (((prev, next), (counterClockwise, pipe)), shifted) => // note the format of tuple
-          val combY = Mux(counterClockwise, prev - shifted, prev + shifted)
-          next := (if (pipe) RegNext(combY) else combY)
+          val combY = Mux(counterClockwise, prev + shifted, prev - shifted).truncated
+          next := (if (pipe) RegNext(combY) else combY).truncated
         }
 
       signalZs.dropRight(1).zip(signalZs.drop(1)) // get the prev and next
         .zip(counterClockwises.zip(pipes)) // get the control signal/conditions
         .zip(phaseCoeffs) // get the increment
-        .foreach { case (((prev, next), (counterClockwise, pipe)), shifted) => // note the format of tuple
-          val combZ = Mux(counterClockwise, prev - shifted, prev + shifted)
-          next := (if (pipe) RegNext(combZ) else combZ)
+        .foreach { case (((prev, next), (counterClockwise, pipe)), coeff) => // note the format of tuple
+          val combZ = Mux(counterClockwise, prev - coeff, prev + coeff).truncated
+          next := (if (pipe) RegNext(combZ) else combZ).truncated
         }
 
       val pipelinedX = if (pipesAll.last) RegNext(signalXs.last) else signalXs.last
@@ -145,8 +148,8 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
       val pipelinedZ = if (pipesAll.last) RegNext(signalZs.last) else signalZs.last
 
       val scaleComplement = magnitudeTypeGen(iteration, getScaleComplement(iteration)(algebricMode))
-      val compensatedX = (if (scaleCompensate) RegNext(pipelinedX * scaleComplement) else pipelinedX)
-      val compensatedY = (if (scaleCompensate) RegNext(pipelinedY * scaleComplement) else pipelinedY)
+      val compensatedX = (if (scaleCompensate) RegNext(pipelinedX * scaleComplement).truncated else pipelinedX)
+      val compensatedY = (if (scaleCompensate) RegNext(pipelinedY * scaleComplement).truncated else pipelinedY)
       val compensatedZ = if (scaleCompensate) RegNext(pipelinedZ) else pipelinedZ
 
       outputX := compensatedX.truncated
@@ -159,7 +162,13 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
 
   override def implicitValue: (SFix, SFix, SFix) = (outputX, outputY, outputZ)
 
-  override def getDelay: Int = ???
+  val extraDelay = if (scaleCompensate) 1 else 0
+
+  override def getDelay: Int = cordicPipe match {
+    case CordicPipe.MAXIMUM => iteration + extraDelay
+    case CordicPipe.HALF => iteration / 2 + extraDelay
+    case CordicPipe.NONE => extraDelay
+  }
 
 
   def getHyperbolicSequence(iteration: Int) = {
@@ -178,7 +187,7 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
     algebricMode match {
       case AlgebricMode.CIRCULAR => atan(pow(2.0, -iteration))
       case AlgebricMode.HYPERBOLIC => atanh(pow(2.0, -getHyperbolicSequence(iteration + 1).last))
-      case AlgebricMode.LINEAR => pow(2.0, iteration)
+      case AlgebricMode.LINEAR => pow(2.0, -iteration)
     }
   }
 
@@ -186,10 +195,14 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
     require(iteration >= 1)
     algebricMode match {
       case AlgebricMode.CIRCULAR => (0 until iteration).map(i => cos(getPhaseCoeff(i))).product
-      case AlgebricMode.HYPERBOLIC => 1.0 / (0 until iteration)
+      case AlgebricMode.HYPERBOLIC => 1.0 / (1 until iteration)
         .map(i => getHyperbolicSequence(i).last)
         .map(i => sqrt(1 - pow(2.0, -2 * i))).product
       case AlgebricMode.LINEAR => 1.0
     }
   }
+}
+
+object CORDIC {
+  def apply(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfig): CORDIC = new CORDIC(inputX, inputY, inputZ, cordicConfig)
 }
