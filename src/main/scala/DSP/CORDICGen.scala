@@ -5,6 +5,7 @@ import DSP.CORDICArch._
 import DSP.RotationMode.ROTATION
 import spinal.core._
 import spinal.lib._
+import xilinx.VivadoFlow
 
 class CORDICGen(rotationMode: RotationMode = ROTATION,
                 algebricMode: AlgebricMode = CIRCULAR,
@@ -40,7 +41,16 @@ class CORDICSin(iterations: Int) extends Component with DSPGen {
   val ZERO = unitType()
   ZERO := 1.0
 
-  input.payload := CORDIC(ONE, ZERO, input.payload, ROTATION, CIRCULAR, iterations)._2
+  output.payload := CORDIC(ONE, ZERO, input.payload, ROTATION, CIRCULAR, iterations)._2.truncated
+  output.valid := Delay(input.valid, iterations, False)
 
   override def delay: Int = iterations
+}
+
+object CORDICSin {
+  def main(args: Array[String]): Unit = {
+    val report = VivadoFlow(new CORDICSin(11), "CORDICsin", "./output/CORDICSin").doit()
+    report.printFMax
+    report.printArea
+  }
 }

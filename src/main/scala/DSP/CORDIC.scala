@@ -56,15 +56,17 @@ object CORDIC {
 
     def phaseDataType = SFix(peak = inputZ.maxExp exp, width = (inputZ.bitCount) bits)
 
+    // coefficients and complements
     val phaseCoeffcients = (0 until iterations).map(i => SF(getPhase(i)(algebricMode), inputZ.maxExp exp, inputZ.bitCount bits)).toArray
     val shiftingCoeffs = if (algebricMode == HYPERBOLIC) getHyperbolicSequence(iterations) else (0 until iterations)
     phaseCoeffcients.foreach(_.setName("coeffs"))
-    val scaleComplement = SF(getScaleComplement(iterations)(algebricMode), inputX.maxExp exp, inputX.bitCount bits)
+    val scaleComplement = MySF(getScaleComplement(iterations)(algebricMode), 0.001)
     scaleComplement.setName("scaleComplement")
     //    println("phase: " + (0 until iterations).map(i => getPhase(i)(algebricMode)).mkString(" "))
     //    println("shift: " + shiftingCoeffs.mkString(" "))
     //    println("scaleComplement: " + getScaleComplement(iterations)(algebricMode).toString)
 
+    //
     val regsX = (0 until iterations).map(i => Reg(magnitudeDataType(16))).toList
     regsX.foreach(_.setName("regsX"))
     val regsY = (0 until iterations).map(i => Reg(magnitudeDataType(16))).toList
@@ -102,7 +104,9 @@ object CORDIC {
       .foreach { case ((prev, cur), (cond, coeff)) =>
         cur := Mux(cond, prev - coeff, prev + coeff).truncated
       }
-    (regsX.last * scaleComplement, regsY.last * scaleComplement, regsZ.last)
+
+    // TODO: implement this with SCM
+    (regsX.last * scaleComplement.truncated, regsY.last * scaleComplement, regsZ.last)
   }
 
   def getHyperbolicSequence(iterations: Int) = { // length = iterations
