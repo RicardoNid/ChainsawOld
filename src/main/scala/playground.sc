@@ -1,21 +1,29 @@
-import scala.util.Random
+import scala.collection.mutable.ListBuffer
 
-def randomTimeSequence(length: Int): String = {
-  val r = new Random()
-
-  def op(code: Int) = {
-    code match {
-      case 0 => "+"
-      case 1 => "-"
-      case 2 => "*"
-      case 3 => "/"
-      case 4 => "%"
-    }
-  }
-
-  "t" + (0 until length).map(_ => op(r.nextInt(5)) + r.nextInt(100).toString).mkString("")
+def getHyperbolicSequence(iteration: Int) = {
+  require(iteration < 54, "iteration times should be less than 54")
+  val sequence = (0 to 4) ++ (4 to 13) ++ (13 to 40) ++ (40 to 50)
+  sequence.slice(0, iteration)
 }
 
-(0 until 100).foreach(_ => println(randomTimeSequence(20)))
+getHyperbolicSequence(15)
 
-println((0 until 100).map(_ * 11 / 49).mkString(" "))
+def getHyperbolicSequence(iterations: Int) = { // length = iterations
+
+  require(iterations >= 1)
+
+  var currentSpecial = 1
+  var i = iterations - 1
+  val result = ListBuffer(1)
+  while (i > 0) {
+    if (result.last == (currentSpecial * 3 + 1)) {
+      result += result.last
+      currentSpecial = currentSpecial * 3 + 1
+    }
+    else result += (result.last + 1)
+    i -= 1
+  }
+  result.toIndexedSeq
+}
+
+getHyperbolicSequence(15)

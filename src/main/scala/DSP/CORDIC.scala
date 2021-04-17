@@ -1,9 +1,19 @@
 package DSP
 
 import breeze.numerics._
-import spinal.core._
+import spinal.core._ //  for digital signal processing
 
-import scala.collection.mutable.ListBuffer
+sealed trait AlgebricMode
+
+object AlgebricMode {
+
+  case object CIRCULAR extends AlgebricMode
+
+  case object HYPERBOLIC extends AlgebricMode
+
+  case object LINEAR extends AlgebricMode
+
+}
 
 sealed trait RotationMode
 
@@ -15,152 +25,171 @@ object RotationMode {
 
 }
 
-sealed trait AlgebricMode
+sealed trait CordicArch
 
-object AlgebricMode {
+object CordicArch {
 
-  case object CIRCULAR extends AlgebricMode
+  case object PARALLEL extends CordicArch
 
-  case object LINEAR extends AlgebricMode
-
-  case object HYPERBOLIC extends AlgebricMode
+  case object SERIAL extends CordicArch
 
 }
 
-sealed trait CORDICArch
+sealed trait CordicPipe
 
-object CORDICArch {
+object CordicPipe {
 
-  case object PIPELINED extends CORDICArch
+  case object MAXIMUM extends CordicPipe
 
-  case object ITERATIVE extends CORDICArch
+  case object HALF extends CordicPipe
+
+  case object NONE extends CordicPipe
 
 }
 
-import DSP.AlgebricMode._
-import DSP.RotationMode._
+/** Describe your design here
+ *
+ * @param algebricMode
+ * @param rotationMode
+ * @param cordicArch
+ * @param cordicPipe
+ * @param outputWidth
+ * @param iteration
+ * @param precision
+ * @param coarseRotation
+ * @param scaleCompensate
+ */
 
-case class CordicData() extends Bundle {
-  val x = globalType
-  val y = globalType
-  val z = phaseType()
-}
+import DSP.CordicArch._
+import DSP.CordicPipe._
 
-// TODO: algebricMode: Bits, rotationMode: Bool, pipelined: Int
-class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix,
-             rotationMode: RotationMode, algebricMode: AlgebricMode,
-             iterations: Int) extends ImplicitArea[(SFix, SFix, SFix)] with DSPDesign {
+case class CordicConfig(algebricMode: AlgebricMode, rotationMode: RotationMode,
+                        cordicArch: CordicArch = PARALLEL, cordicPipe: CordicPipe = MAXIMUM,
+                        outputWidth: Int = 16, iteration: Int = 15, precision: Int = 15,
+                        coarseRotation: Boolean = false, scaleCompensate: Boolean = true)
 
+class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfig) extends ImplicitArea[(SFix, SFix, SFix)] with DSPDesign {
 
-  def magnitudeDataType(i: Int) = SFix(peak = inputX.maxExp exp, width = (inputX.bitCount + i) bits)
+  import cordicConfig._
 
-  def phaseDataType = SFix(peak = inputZ.maxExp exp, width = (inputZ.bitCount) bits)
+  def magnitudeType(i: Int) = SFix(2 exp, -13 exp)
 
-  // coefficients and complements
-  val phaseCoeffcients = (0 until iterations).map(i => SF(getPhase(i)(algebricMode), inputZ.maxExp exp, inputZ.bitCount bits)).toArray
-  val shiftingCoeffs = if (algebricMode == HYPERBOLIC) getHyperbolicSequence(iterations) else (0 until iterations)
-  phaseCoeffcients.foreach(_.setName("coeffs"))
-  val scaleComplement = MySF(getScaleComplement(iterations)(algebricMode), 0.001)
-  scaleComplement.setName("scaleComplement")
-  //    println("phase: " + (0 until iterations).map(i => getPhase(i)(algebricMode)).mkString(" "))
-  //    println("shift: " + shiftingCoeffs.mkString(" "))
-  //    println("scaleComplement: " + getScaleComplement(iterations)(algebricMode).toString)
+  def magnitudeTypeGen(i: Int, value: Double) = SF(value, 2 exp, -13 exp)
 
-  //
-  val regsX = (0 until iterations).map(i => Reg(magnitudeDataType(16))).toList
-  regsX.foreach(_.setName("regsX"))
-  val regsY = (0 until iterations).map(i => Reg(magnitudeDataType(16))).toList
-  regsY.foreach(_.setName("regsY"))
-  val regsZ = (0 until iterations).map(i => Reg(phaseDataType)).toList
-  regsZ.foreach(_.setName("regsZ"))
+  def phaseType(i: Int) = SFix(2 exp, -13 exp)
 
-  val shiftedX = (inputX :: regsX.dropRight(1)).zip(shiftingCoeffs).map { case (regX, i) => regX >> i }
-  shiftedX.foreach(_.setName("shiftedX"))
-  val shiftedY = (inputY :: regsY.dropRight(1)).zip(shiftingCoeffs).map { case (regY, i) => regY >> i }
-  shiftedY.foreach(_.setName("shiftedY"))
+  def phaseTypeGen(i: Int, value: Double) = SF(value, 2 exp, -13 exp)
 
-  val counterClockWises =
-    rotationMode match {
-      case VECTORING => (inputY :: regsY.dropRight(1)).map(_.asBits.msb) // Y < 0
-      case ROTATION => (inputZ :: regsZ.dropRight(1)).map(~_.asBits.msb) // Z > 0
-    }
-  //    counterClockWises.foreach(_.setName("counterClockwise"))
+  val outputX = SFix(2 exp, -(outputWidth - 2 - 1) exp)
+  val outputY = SFix(2 exp, -(outputWidth - 2 - 1) exp)
+  val outputZ = SFix(2 exp, -(outputWidth - 2 - 1) exp)
 
-  (inputY :: regsY.dropRight(1)).zip(regsY).zip(counterClockWises.zip(shiftedX))
-    .foreach { case ((prev, cur), (counter, shifted)) =>
-      cur := Mux(counter, prev + shifted, prev - shifted).truncated
-    }
+  cordicArch match {
+    case CordicArch.PARALLEL => {
+      val signalXs = inputX :: (0 until iteration).map(i => magnitudeType(i)).toList
+      val signalYs = inputY :: (0 until iteration).map(i => magnitudeType(i)).toList
+      val signalZs = inputZ :: (0 until iteration).map(i => phaseType(i)).toList
 
-  (inputX :: regsX.dropRight(1)).zip(regsX).zip(counterClockWises.zip(shiftedY))
-    .foreach { case ((prev, cur), (counter, shifted)) =>
-      algebricMode match {
-        case CIRCULAR => cur := Mux(counter, prev - shifted, prev + shifted).truncated
-        case LINEAR => cur := prev.truncated
-        case HYPERBOLIC => cur := Mux(counter, prev + shifted, prev - shifted).truncated
+      val shiftingCoeffs =
+        if (algebricMode == AlgebricMode.HYPERBOLIC) getHyperbolicSequence(iteration)
+        else (0 until iteration)
+
+      val shiftedXs = signalXs.dropRight(1).zip(shiftingCoeffs).map { case (x, i) => x >> i }
+      val shiftedYs = signalYs.dropRight(1).zip(shiftingCoeffs).map { case (y, i) => y >> i }
+      val phaseCoeffs = (0 until iteration).map(i => phaseTypeGen(i, getPhaseCoeff(i)(algebricMode)))
+
+      val pipesAll = false :: (0 until iteration).map { i =>
+        cordicPipe match {
+          case CordicPipe.MAXIMUM => true
+          case CordicPipe.HALF => i % 2 == 0
+          case CordicPipe.NONE => false
+        }
+      }.toList
+      val pipes = pipesAll.dropRight(1)
+
+      val counterClockwises = rotationMode match {
+        case RotationMode.ROTATION => signalYs.dropRight(1).map(_.asBits.msb) // Y < 0
+        case RotationMode.VECTORING => signalZs.dropRight(1).map(~_.asBits.msb) // Z > 0
       }
+
+      signalXs.dropRight(1).zip(signalXs.drop(1)) // get the prev and next
+        .zip(counterClockwises.zip(pipes)) // get the control signal/conditions
+        .zip(shiftedXs) // get the increment
+        .foreach { case (((prev, next), (counterClockwise, pipe)), shifted) => // note the format of tuple
+          val combX = algebricMode match {
+            case AlgebricMode.CIRCULAR => Mux(counterClockwise, prev - shifted, prev + shifted)
+            case AlgebricMode.HYPERBOLIC => Mux(counterClockwise, prev + shifted, prev - shifted)
+            case AlgebricMode.LINEAR => prev
+          }
+          next := (if (pipe) RegNext(combX) else combX)
+        }
+
+      signalYs.dropRight(1).zip(signalYs.drop(1)) // get the prev and next
+        .zip(counterClockwises.zip(pipes)) // get the control signal/conditions
+        .zip(shiftedYs) // get the increment
+        .foreach { case (((prev, next), (counterClockwise, pipe)), shifted) => // note the format of tuple
+          val combY = Mux(counterClockwise, prev - shifted, prev + shifted)
+          next := (if (pipe) RegNext(combY) else combY)
+        }
+
+      signalZs.dropRight(1).zip(signalZs.drop(1)) // get the prev and next
+        .zip(counterClockwises.zip(pipes)) // get the control signal/conditions
+        .zip(phaseCoeffs) // get the increment
+        .foreach { case (((prev, next), (counterClockwise, pipe)), shifted) => // note the format of tuple
+          val combZ = Mux(counterClockwise, prev - shifted, prev + shifted)
+          next := (if (pipe) RegNext(combZ) else combZ)
+        }
+
+      val pipelinedX = if (pipesAll.last) RegNext(signalXs.last) else signalXs.last
+      val pipelinedY = if (pipesAll.last) RegNext(signalYs.last) else signalYs.last
+      val pipelinedZ = if (pipesAll.last) RegNext(signalZs.last) else signalZs.last
+
+      val scaleComplement = magnitudeTypeGen(iteration, getScaleComplement(iteration)(algebricMode))
+      val compensatedX = (if (scaleCompensate) RegNext(pipelinedX * scaleComplement) else pipelinedX)
+      val compensatedY = (if (scaleCompensate) RegNext(pipelinedY * scaleComplement) else pipelinedY)
+      val compensatedZ = if (scaleCompensate) RegNext(pipelinedZ) else pipelinedZ
+
+      outputX := compensatedX.truncated
+      outputY := compensatedY.truncated
+      outputZ := compensatedZ.truncated
     }
-
-  (inputZ :: regsZ.dropRight(1)).zip(regsZ).zip(counterClockWises.zip(phaseCoeffcients))
-    .foreach { case ((prev, cur), (cond, coeff)) =>
-      cur := Mux(cond, prev - coeff, prev + coeff).truncated
-    }
-
-  def getHyperbolicSequence(iterations: Int) = { // length = iterations
-
-    require(iterations >= 1)
-
-    var currentSpecial = 1
-    var i = iterations - 1
-    val result = ListBuffer(1)
-    while (i > 0) {
-      if (result.last == (currentSpecial * 3 + 1)) {
-        result += result.last
-        currentSpecial = currentSpecial * 3 + 1
-      }
-      else result += (result.last + 1)
-      i -= 1
-    }
-    result.toIndexedSeq
+    case CordicArch.SERIAL =>
   }
 
-  def getPhase(iteration: Int)(implicit algebricMode: AlgebricMode) = {
+
+  override def implicitValue: (SFix, SFix, SFix) = (outputX, outputY, outputZ)
+
+  override def getDelay: Int = ???
+
+
+  def getHyperbolicSequence(iteration: Int) = {
+    require(iteration < 54, "iteration times should be less than 54")
+    val sequence = (1 to 4) ++ (4 to 13) ++ (13 to 40) ++ (40 to 50)
+    sequence.slice(0, iteration)
+  }
+
+  /** Get the phase coefficient stored in LUT for Z iteration
+   *
+   * @param iteration current iteration
+   * @param algebricMode
+   * @return
+   */
+  def getPhaseCoeff(iteration: Int)(implicit algebricMode: AlgebricMode) = {
     algebricMode match {
-      case CIRCULAR => atan(pow(2.0, -iteration))
-      case LINEAR => pow(2.0, -iteration)
-      case HYPERBOLIC => atanh(pow(2.0, -getHyperbolicSequence(iteration + 1).last))
+      case AlgebricMode.CIRCULAR => atan(pow(2.0, -iteration))
+      case AlgebricMode.HYPERBOLIC => atanh(pow(2.0, -getHyperbolicSequence(iteration + 1).last))
+      case AlgebricMode.LINEAR => pow(2.0, iteration)
     }
   }
 
-  def getScaleComplement(iterations: Int)(implicit algebricMode: AlgebricMode): Double = {
-    require(iterations >= 1)
-
+  def getScaleComplement(iteration: Int)(implicit algebricMode: AlgebricMode) = {
+    require(iteration >= 1)
     algebricMode match {
-      case CIRCULAR => (0 until iterations).map(i => cos(getPhase(i))).product
-      case LINEAR => 1.0
-      case HYPERBOLIC => 1.0 / (1 to iterations)
+      case AlgebricMode.CIRCULAR => (0 until iteration).map(i => cos(getPhaseCoeff(i))).product
+      case AlgebricMode.HYPERBOLIC => 1.0 / (0 until iteration)
         .map(i => getHyperbolicSequence(i).last)
         .map(i => sqrt(1 - pow(2.0, -2 * i))).product
+      case AlgebricMode.LINEAR => 1.0
     }
-  }
-
-  // TODO: implement this with SCM
-  override def implicitValue: (SFix, SFix, SFix) = (regsX.last * scaleComplement.truncated, regsY.last * scaleComplement, regsZ.last)
-
-  override def getDelay: Int = iterations
-}
-
-object CORDIC {
-
-  def apply(inputX: SFix, inputY: SFix, inputZ: SFix, rotationMode: RotationMode, algebricMode: AlgebricMode, iterations: Int): CORDIC = new CORDIC(inputX, inputY, inputZ, rotationMode, algebricMode, iterations)
-
-  def sin(phase: SFix) = {
-    val x, y = globalType
-    x := 1.0
-    y := 0.0
-    new CORDIC(x, y, phase, ROTATION, CIRCULAR, 20)._2
-  }
-
-  def main(args: Array[String]): Unit = {
-
   }
 }
