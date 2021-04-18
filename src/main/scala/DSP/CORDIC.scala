@@ -146,6 +146,7 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
 
         val shiftedX = magnitudeType(0)
         shiftedX := signalX
+        shiftedX.setName("shiftedX")
         val shiftedY = magnitudeType(0)
         shiftedY := signalY
 
@@ -154,7 +155,7 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
 
         val counterClockwise = rotationMode match {
           case RotationMode.ROTATION => ~signalZ.asBits.msb // Z > 0
-          case RotationMode.VECTORING => ~signalY.asBits.msb // Y < 0
+          case RotationMode.VECTORING => signalY.asBits.msb // Y < 0
         }
 
         outputX := signalX
@@ -168,8 +169,8 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
             // TODO: implement a better fixed type with clear document
             //            shiftedX.raw := Mux(counter === U(0), signalX.raw >> counter.value, inputX.raw >> counter.value).resized
             //            shiftedY.raw := Mux(counter === U(0), signalY.raw >> counter.value, inputY.raw >> counter.value).resized
-            shiftedX.raw := (inputX.raw >> counter.value).resized
-            shiftedY.raw := (inputY.raw >> counter.value).resized
+            shiftedX.raw := (signalX.raw >> counter.value).resized
+            shiftedY.raw := (signalX.raw >> counter.value).resized
             when(counter === U(0)) {
               val nextX = algebricMode match {
                 case DSP.AlgebricMode.CIRCULAR => Mux(counterClockwise, inputX - inputY, inputX + inputY).truncated
