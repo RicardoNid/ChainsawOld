@@ -2,6 +2,7 @@ package DSP
 
 import breeze.numerics._
 import spinal.core._
+import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
 
@@ -49,7 +50,7 @@ import DSP.CordicPipe._
 case class CordicConfig(algebricMode: AlgebricMode, rotationMode: RotationMode,
                         cordicArch: CordicArch = PARALLEL, cordicPipe: CordicPipe = MAXIMUM,
                         outputWidth: Int = 16, iteration: Int = 15, precision: Int = 15,
-                        coarseRotation: Boolean = false, scaleCompensate: Boolean = true)
+                        coarseRotation: Boolean = false, scaleCompensate: Boolean = false)
 
 
 class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfig)
@@ -129,51 +130,62 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
       val pipelinedY = if (pipesAll.last) RegNext(signalYs.last) else signalYs.last
       val pipelinedZ = if (pipesAll.last) RegNext(signalZs.last) else signalZs.last
 
-      val scaleComplement = magnitudeTypeGen(iteration, getScaleComplement(iteration)(algebricMode))
-      val compensatedX = (if (scaleCompensate) RegNext(pipelinedX * scaleComplement).truncated else pipelinedX)
-      val compensatedY = (if (scaleCompensate) RegNext(pipelinedY * scaleComplement).truncated else pipelinedY)
-      val compensatedZ = if (scaleCompensate) RegNext(pipelinedZ) else pipelinedZ
-
-      outputX := compensatedX.truncated
-      outputY := compensatedY.truncated
-      outputZ := compensatedZ.truncated
+      outputX := pipelinedX.truncated
+      outputY := pipelinedY.truncated
+      outputZ := pipelinedZ.truncated
     }
     case CordicArch.SERIAL => {
       val fsm = new StateMachine {
         val working = new StateDelay(iteration) with EntryPoint
 
         val counter = Counter(iteration)
+        counter.implicitValue.simPublic()
         val signalX = Reg(magnitudeType(0))
         val signalY = Reg(magnitudeType(0))
         val signalZ = Reg(phaseType(0))
 
         val shiftedX = magnitudeType(0)
+        shiftedX := signalX
         val shiftedY = magnitudeType(0)
+        shiftedY := signalY
 
         val phaseROM = Mem((0 until iteration).map(i => phaseTypeGen(i, getPhaseCoeff(i)(algebricMode))))
+        val phaseCoeff = phaseROM.readSync(counter)
 
         val counterClockwise = rotationMode match {
           case RotationMode.ROTATION => ~signalZ.asBits.msb // Z > 0
-          case RotationMode.VECTORING => signalY.asBits.msb // Y < 0
+          case RotationMode.VECTORING => ~signalY.asBits.msb // Y < 0
         }
+
+        outputX := signalX
+        outputY := signalY
+        outputZ := signalZ
 
         working
           .whenCompleted(goto(working))
           .whenIsActive {
             counter.increment()
-            val phaseCoeff = phaseROM.readSync(counter)
             // TODO: implement a better fixed type with clear document
-            shiftedX := signalX.raw >> counter.value
-            shiftedY := signalY.raw >> counter.value
+            //            shiftedX.raw := Mux(counter === U(0), signalX.raw >> counter.value, inputX.raw >> counter.value).resized
+            //            shiftedY.raw := Mux(counter === U(0), signalY.raw >> counter.value, inputY.raw >> counter.value).resized
+            shiftedX.raw := (inputX.raw >> counter.value).resized
+            shiftedY.raw := (inputY.raw >> counter.value).resized
             when(counter === U(0)) {
-
-
+              val nextX = algebricMode match {
+                case DSP.AlgebricMode.CIRCULAR => Mux(counterClockwise, inputX - inputY, inputX + inputY).truncated
+                case DSP.AlgebricMode.HYPERBOLIC => Mux(counterClockwise, inputX + inputY, inputX - inputY).truncated
+                case DSP.AlgebricMode.LINEAR => inputX.truncated
+              }
+              signalX := nextX
+              signalY := Mux(counterClockwise, inputY + inputX, inputY - inputX).truncated
+              signalZ := Mux(counterClockwise, inputZ - phaseCoeff, inputZ + phaseCoeff).truncated
             }.otherwise {
-              signalX := algebricMode match {
+              val nextX = algebricMode match {
                 case DSP.AlgebricMode.CIRCULAR => Mux(counterClockwise, signalX - shiftedY, signalX + shiftedY).truncated
                 case DSP.AlgebricMode.HYPERBOLIC => Mux(counterClockwise, signalX + shiftedY, signalX - shiftedY).truncated
                 case DSP.AlgebricMode.LINEAR => signalX.truncated
               }
+              signalX := nextX
               signalY := Mux(counterClockwise, signalY + shiftedX, signalY - shiftedX).truncated
               signalZ := Mux(counterClockwise, signalZ - phaseCoeff, signalZ + phaseCoeff).truncated
             }
@@ -182,17 +194,28 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
     }
   }
 
+  // compensation
+  val scaleComplement = magnitudeTypeGen(iteration, getScaleComplement(iteration)(algebricMode))
+  val compensatedX = (if (scaleCompensate) RegNext(outputX * scaleComplement).truncated else outputX)
+  val compensatedY = (if (scaleCompensate) RegNext(outputY * scaleComplement).truncated else outputY)
+  val compensatedZ = if (scaleCompensate) RegNext(outputZ) else outputZ
 
-  override def implicitValue: (SFix, SFix, SFix) = (outputX, outputY, outputZ)
+  // TODO: output registration strategy
+
+  override def implicitValue: (SFix, SFix, SFix) = (compensatedX, compensatedY, compensatedZ)
 
   val extraDelay = if (scaleCompensate) 1 else 0
 
-  override def getDelay: Int = cordicPipe match {
-    case CordicPipe.MAXIMUM => iteration + extraDelay
-    case CordicPipe.HALF => iteration / 2 + extraDelay
-    case CordicPipe.NONE => extraDelay
+  override def getDelay: Int = cordicArch match {
+    case PARALLEL => {
+      cordicPipe match {
+        case CordicPipe.MAXIMUM => iteration + extraDelay
+        case CordicPipe.HALF => iteration / 2 + extraDelay
+        case CordicPipe.NONE => extraDelay
+      }
+    }
+    case SERIAL => iteration + extraDelay
   }
-
 
   def getHyperbolicSequence(iteration: Int) = {
     require(iteration < 54, "iteration times should be less than 54")

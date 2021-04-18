@@ -1,6 +1,7 @@
 package DSP
 
 import DSP.AlgebricMode._
+import DSP.CordicArch.{CordicArch, PARALLEL}
 import DSP.RotationMode._
 import spinal.core._
 import spinal.lib._
@@ -12,12 +13,13 @@ case class CordicData() extends Bundle {
 }
 
 class CORDICGen(rotationMode: RotationMode = ROTATION,
-                algebricMode: AlgebricMode = CIRCULAR) extends Component with DSPGen {
+                algebricMode: AlgebricMode = CIRCULAR,
+                cordicArch: CordicArch = PARALLEL) extends Component with DSPGen {
 
   val input = slave Flow CordicData()
   val output = master Flow CordicData()
 
-  val config = CordicConfig(algebricMode, rotationMode)
+  val config = CordicConfig(algebricMode, rotationMode, cordicArch = cordicArch)
   val cordic = CORDIC(input.payload.x, input.payload.y, input.payload.z, config)
 
   output.payload.x := cordic._1.truncated

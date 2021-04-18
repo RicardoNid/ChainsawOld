@@ -1,6 +1,7 @@
 package DSP
 
 import DSP.AlgebricMode._
+import DSP.CordicArch.{CordicArch, SERIAL}
 import DSP.RotationMode._
 import breeze.numerics._
 import breeze.numerics.constants.Pi
@@ -12,8 +13,8 @@ case class cordicTestCase(x: Double, y: Double, z: Double) extends TestCase {
   override def toString: String = s"x: $x, y: $y, z: ${z / Pi * 180.0} degree"
 }
 
-class CORDICSim(rotationMode: RotationMode, algebricMode: AlgebricMode)
-  extends CORDICGen(rotationMode = rotationMode, algebricMode = algebricMode)
+class CORDICSim(rotationMode: RotationMode, algebricMode: AlgebricMode, cordicArch: CordicArch)
+  extends CORDICGen(rotationMode = rotationMode, algebricMode = algebricMode, cordicArch = cordicArch)
     with DSPSim {
   override type TestCase = cordicTestCase
   override type ResultType = Array[Double]
@@ -160,9 +161,9 @@ object CORDICSim {
     cordicTestCase(x, y, z)
   }
 
-  def randomSim(rotationMode: RotationMode, algebricMode: AlgebricMode): Unit = {
+  def randomSim(rotationMode: RotationMode, algebricMode: AlgebricMode, cordicArch: CordicArch): Unit = {
 
-    val dut = SimConfig.withWave.compile(new CORDICSim(rotationMode, algebricMode))
+    val dut = SimConfig.withWave.compile(new CORDICSim(rotationMode, algebricMode, cordicArch))
     dut.doSim { dut =>
       dut.sim()
       for (i <- 0 until 100) dut.insertTestCase(randomCase(rotationMode, algebricMode))
@@ -172,36 +173,41 @@ object CORDICSim {
 
   def main(args: Array[String]): Unit = {
 
-    //    debug = true
+    debug = true
 
-    randomSim(VECTORING, CIRCULAR)
+    //    randomSim(VECTORING, CIRCULAR, PARALLEL)
+    //    print(Console.GREEN)
+    //    println(s"CORDIC VECTORING + CIRCULAR, PASS")
+    //    print(Console.BLACK)
+    //
+    //    randomSim(ROTATION, CIRCULAR, PARALLEL)
+    //    print(Console.GREEN)
+    //    println(s"CORDIC ROTATION + CIRCULAR, PASS")
+    //    print(Console.BLACK)
+    //
+    //    randomSim(VECTORING, HYPERBOLIC, PARALLEL)
+    //    print(Console.GREEN)
+    //    println(s"CORDIC VECTORING + HYPERBOLIC, PASS")
+    //    print(Console.BLACK)
+    //
+    //    randomSim(ROTATION, HYPERBOLIC, PARALLEL)
+    //    print(Console.GREEN)
+    //    println(s"CORDIC ROTATION + HYPERBOLIC, PASS")
+    //    print(Console.BLACK)
+    //
+    //    randomSim(ROTATION, LINEAR, PARALLEL)
+    //    print(Console.GREEN)
+    //    println(s"CORDIC ROTATION + LINEAR, PASS")
+    //    print(Console.BLACK)
+    //
+    //    randomSim(VECTORING, LINEAR, PARALLEL)
+    //    print(Console.GREEN)
+    //    println(s"CORDIC VECTORING + LINEAR, PASS")
+    //    print(Console.BLACK)
+
+    randomSim(VECTORING, CIRCULAR, SERIAL)
     print(Console.GREEN)
     println(s"CORDIC VECTORING + CIRCULAR, PASS")
-    print(Console.BLACK)
-
-    randomSim(ROTATION, CIRCULAR)
-    print(Console.GREEN)
-    println(s"CORDIC ROTATION + CIRCULAR, PASS")
-    print(Console.BLACK)
-
-    randomSim(VECTORING, HYPERBOLIC)
-    print(Console.GREEN)
-    println(s"CORDIC VECTORING + HYPERBOLIC, PASS")
-    print(Console.BLACK)
-
-    randomSim(ROTATION, HYPERBOLIC)
-    print(Console.GREEN)
-    println(s"CORDIC ROTATION + HYPERBOLIC, PASS")
-    print(Console.BLACK)
-
-    randomSim(ROTATION, LINEAR)
-    print(Console.GREEN)
-    println(s"CORDIC ROTATION + LINEAR, PASS")
-    print(Console.BLACK)
-
-    randomSim(VECTORING, LINEAR)
-    print(Console.GREEN)
-    println(s"CORDIC VECTORING + LINEAR, PASS")
     print(Console.BLACK)
   }
 }
