@@ -2,6 +2,8 @@ package DSP
 
 import breeze.numerics._
 import spinal.core._
+import spinal.lib._
+import spinal.lib.fsm._
 
 object AlgebricMode extends Enumeration {
   type AlgebricMode = Value
@@ -55,11 +57,11 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
 
   import cordicConfig._
 
-  def magnitudeType(i: Int) = SFix(2 exp, -13 exp)
+  def magnitudeType(i: Int) = SFix(2 exp, -13 exp) // TODO: 1QN
 
   def magnitudeTypeGen(i: Int, value: Double) = SF(value, 2 exp, -13 exp)
 
-  def phaseType(i: Int) = SFix(2 exp, -13 exp)
+  def phaseType(i: Int) = SFix(2 exp, -13 exp) // TODO: 2QN
 
   def phaseTypeGen(i: Int, value: Double) = SF(value, 2 exp, -13 exp)
 
@@ -137,7 +139,46 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
       outputZ := compensatedZ.truncated
     }
     case CordicArch.SERIAL => {
+      val fsm = new StateMachine {
+        val working = new StateDelay(iteration) with EntryPoint
 
+        val counter = Counter(iteration)
+        val signalX = Reg(magnitudeType(0))
+        val signalY = Reg(magnitudeType(0))
+        val signalZ = Reg(phaseType(0))
+
+        val shiftedX = magnitudeType(0)
+        val shiftedY = magnitudeType(0)
+
+        val phaseROM = Mem((0 until iteration).map(i => phaseTypeGen(i, getPhaseCoeff(i)(algebricMode))))
+
+        val counterClockwise = rotationMode match {
+          case RotationMode.ROTATION => ~signalZ.asBits.msb // Z > 0
+          case RotationMode.VECTORING => signalY.asBits.msb // Y < 0
+        }
+
+        working
+          .whenCompleted(goto(working))
+          .whenIsActive {
+            counter.increment()
+            val phaseCoeff = phaseROM.readSync(counter)
+            // TODO: implement a better fixed type with clear document
+            shiftedX := signalX.raw >> counter.value
+            shiftedY := signalY.raw >> counter.value
+            when(counter === U(0)) {
+
+
+            }.otherwise {
+              signalX := algebricMode match {
+                case DSP.AlgebricMode.CIRCULAR => Mux(counterClockwise, signalX - shiftedY, signalX + shiftedY).truncated
+                case DSP.AlgebricMode.HYPERBOLIC => Mux(counterClockwise, signalX + shiftedY, signalX - shiftedY).truncated
+                case DSP.AlgebricMode.LINEAR => signalX.truncated
+              }
+              signalY := Mux(counterClockwise, signalY + shiftedX, signalY - shiftedX).truncated
+              signalZ := Mux(counterClockwise, signalZ - phaseCoeff, signalZ + phaseCoeff).truncated
+            }
+          }
+      }
     }
   }
 
