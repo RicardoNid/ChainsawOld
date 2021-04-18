@@ -1,51 +1,32 @@
 package DSP
 
 import breeze.numerics._
-import spinal.core._ //  for digital signal processing
+import spinal.core._
 
-sealed trait AlgebricMode
-
-object AlgebricMode {
-
-  case object CIRCULAR extends AlgebricMode
-
-  case object HYPERBOLIC extends AlgebricMode
-
-  case object LINEAR extends AlgebricMode
-
+object AlgebricMode extends Enumeration {
+  type AlgebricMode = Value
+  val CIRCULAR, HYPERBOLIC, LINEAR = Value
 }
 
-sealed trait RotationMode
-
-object RotationMode {
-
-  case object ROTATION extends RotationMode
-
-  case object VECTORING extends RotationMode
-
+object RotationMode extends Enumeration {
+  type RotationMode = Value
+  val ROTATION, VECTORING = Value
 }
 
-sealed trait CordicArch
-
-object CordicArch {
-
-  case object PARALLEL extends CordicArch
-
-  case object SERIAL extends CordicArch
-
+object CordicArch extends Enumeration {
+  type CordicArch = Value
+  val PARALLEL, SERIAL = Value
 }
 
-sealed trait CordicPipe
-
-object CordicPipe {
-
-  case object MAXIMUM extends CordicPipe
-
-  case object HALF extends CordicPipe
-
-  case object NONE extends CordicPipe
-
+object CordicPipe extends Enumeration {
+  type CordicPipe = Value
+  val MAXIMUM, HALF, NONE = Value
 }
+
+import DSP.AlgebricMode.AlgebricMode
+import DSP.CordicArch.CordicArch
+import DSP.CordicPipe.CordicPipe
+import DSP.RotationMode.RotationMode
 
 /** Describe your design here
  *
@@ -68,7 +49,9 @@ case class CordicConfig(algebricMode: AlgebricMode, rotationMode: RotationMode,
                         outputWidth: Int = 16, iteration: Int = 15, precision: Int = 15,
                         coarseRotation: Boolean = false, scaleCompensate: Boolean = true)
 
-class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfig) extends ImplicitArea[(SFix, SFix, SFix)] with DSPDesign {
+
+class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfig)
+  extends ImplicitArea[(SFix, SFix, SFix)] with DSPDesign {
 
   import cordicConfig._
 
@@ -97,9 +80,6 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
       val shiftedXs = signalXs.dropRight(1).zip(shiftingCoeffs).map { case (x, i) => x >> i }
       val shiftedYs = signalYs.dropRight(1).zip(shiftingCoeffs).map { case (y, i) => y >> i }
       val phaseCoeffs = (0 until iteration).map(i => phaseTypeGen(i, getPhaseCoeff(i)(algebricMode)))
-      printlnWhenDebug((0 until iteration).map(i => getPhaseCoeff(i)(algebricMode)).mkString({
-        " "
-      }))
 
       val pipesAll = false :: (0 until iteration).map { i =>
         cordicPipe match {
@@ -156,7 +136,9 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
       outputY := compensatedY.truncated
       outputZ := compensatedZ.truncated
     }
-    case CordicArch.SERIAL =>
+    case CordicArch.SERIAL => {
+
+    }
   }
 
 
