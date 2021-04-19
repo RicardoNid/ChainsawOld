@@ -7,6 +7,7 @@ import breeze.numerics._
 import breeze.numerics.constants.Pi
 import spinal.core._
 import spinal.core.sim._
+import spinal.lib.{Delay, master, slave}
 import xilinx.VivadoFlow
 
 import scala.util.Random
@@ -16,8 +17,24 @@ case class cordicTestCase(x: Double, y: Double, z: Double) extends TestCase {
 }
 
 class CORDICSim(rotationMode: RotationMode, algebricMode: AlgebricMode, cordicArch: CordicArch)
-  extends CORDICGen(rotationMode = rotationMode, algebricMode = algebricMode, cordicArch = cordicArch)
+  extends Component
     with DSPSim {
+
+  val input = slave Flow CordicData()
+  val output = master Flow CordicData()
+
+  val config = CordicConfig(algebricMode, rotationMode, cordicArch = cordicArch)
+  val cordic = CORDIC(input.payload.x, input.payload.y, input.payload.z, config)
+
+  output.payload.x := cordic._1.truncated
+  output.payload.y := cordic._2.truncated
+  output.payload.z := cordic._3.truncated
+  output.valid := Delay(input.valid, cordic.getDelay, init = False)
+  output.valid.init(False)
+
+  if (cordicArch == SERIAL) cordic.setStart(input.valid)
+
+
   override type TestCase = cordicTestCase
   override type ResultType = Array[Double]
 
@@ -194,10 +211,11 @@ object CORDICSim {
 
     debug = true
 
-    val design = new CORDICSim(ROTATION, CIRCULAR, PARALLEL)
 
     SpinalConfig().generateSystemVerilog(new CORDICSim(ROTATION, CIRCULAR, PARALLEL))
-    VivadoFlow(design, "CORDIC", "output/CORDIC", force = true)
+    val report = VivadoFlow(new CORDICSim(ROTATION, CIRCULAR, PARALLEL), "CORDIC", "output/CORDIC", force = true).doit()
+    report.printFMax
+    report.printArea
 
     //    def doit(rotationMode: RotationMode, algebricMode: AlgebricMode, cordicArch: CordicArch) = {
     //      randomSim(rotationMode, algebricMode, cordicArch)
