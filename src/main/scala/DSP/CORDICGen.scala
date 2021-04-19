@@ -28,9 +28,8 @@ class CORDICGen(rotationMode: RotationMode = ROTATION,
   output.valid := Delay(input.valid, cordic.getDelay, init = False)
   output.valid.init(False)
 
-  if (cordicArch == SERIAL) {
-    cordic.start := input.valid
-  }
+  if (cordicArch == SERIAL) cordic.setStart(input.valid)
+
 
   //  ComputationExtrction(output.valid)
 

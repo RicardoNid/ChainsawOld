@@ -27,7 +27,7 @@ class CORDICSim(rotationMode: RotationMode, algebricMode: AlgebricMode, cordicAr
 
   override def simDone(): Unit = {
     clockDomain.waitSampling(10)
-    while (refResults.nonEmpty || dutResults.nonEmpty) clockDomain.waitSampling(10)
+    while (refResults.nonEmpty || dutResults.nonEmpty) clockDomain.waitSampling(cordic.getDelay + 10)
   }
 
   override def driver(): Unit = {
@@ -189,7 +189,7 @@ object CORDICSim {
 
   def main(args: Array[String]): Unit = {
 
-    //    debug = true
+    debug = true
 
     //    randomSim(VECTORING, CIRCULAR, PARALLEL)
     //    print(Console.GREEN)
@@ -221,10 +221,37 @@ object CORDICSim {
     //    println(s"CORDIC VECTORING + LINEAR, PASS")
     //    print(Console.BLACK)
 
+
     randomSim(VECTORING, CIRCULAR, SERIAL)
     print(Console.GREEN)
     println(s"CORDIC VECTORING + CIRCULAR, PASS")
     print(Console.BLACK)
+
+    randomSim(ROTATION, CIRCULAR, SERIAL)
+    print(Console.GREEN)
+    println(s"CORDIC ROTATION + CIRCULAR, PASS")
+    print(Console.BLACK)
+
+    randomSim(VECTORING, HYPERBOLIC, SERIAL)
+    print(Console.GREEN)
+    println(s"CORDIC VECTORING + HYPERBOLIC, PASS")
+    print(Console.BLACK)
+    //
+    randomSim(ROTATION, HYPERBOLIC, SERIAL)
+    print(Console.GREEN)
+    println(s"CORDIC ROTATION + HYPERBOLIC, PASS")
+    print(Console.BLACK)
+
+    randomSim(ROTATION, LINEAR, SERIAL)
+    print(Console.GREEN)
+    println(s"CORDIC ROTATION + LINEAR, PASS")
+    print(Console.BLACK)
+
+    randomSim(VECTORING, LINEAR, SERIAL)
+    print(Console.GREEN)
+    println(s"CORDIC VECTORING + LINEAR, PASS")
+    print(Console.BLACK)
+
   }
 }
 

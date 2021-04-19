@@ -50,7 +50,7 @@ import DSP.CordicPipe._
 case class CordicConfig(algebricMode: AlgebricMode, rotationMode: RotationMode,
                         cordicArch: CordicArch = PARALLEL, cordicPipe: CordicPipe = MAXIMUM,
                         outputWidth: Int = 16, iteration: Int = 15, precision: Int = 15,
-                        coarseRotation: Boolean = false, scaleCompensate: Boolean = false)
+                        coarseRotation: Boolean = false, scaleCompensate: Boolean = true)
 
 
 class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfig)
@@ -142,16 +142,32 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
         val WORKING = new StateDelay(iteration)
 
         val counter = Counter(iteration)
+        counter.implicitValue.setName("counter")
         counter.implicitValue.simPublic()
         val signalX = Reg(magnitudeType(iteration))
+        signalX.setName("signalX")
         val signalY = Reg(magnitudeType(iteration))
+        signalY.setName("signalY")
         val signalZ = Reg(phaseType(iteration))
+        signalZ.setName("signalZ")
 
+        // TODO: optimize this part
+        val shiftingCoeffs =
+          if (algebricMode == AlgebricMode.HYPERBOLIC) getHyperbolicSequence(iteration)
+          else (0 until iteration)
+        val shiftingROM = Mem(shiftingCoeffs.map(coeff => U(coeff, 8 bits)))
+        val shiftingCoeff = shiftingROM.readAsync(counter)
+
+        // >> U(0) is strange
+        // TODO: implement dynamic shifting for fixed type, or this would be very error-prone
         val shiftedX = magnitudeType(iteration)
-        shiftedX.raw := Mux(counter === U(0), inputX.raw >> counter.value, signalX.raw >> counter.value).resized
+        shiftedX.raw := Mux(counter === U(0), inputX.raw << 18 >> shiftingCoeff, signalX.raw >> shiftingCoeff).resized
+        //        shiftedX.raw := Mux(counter === U(0), inputX.raw << 18, signalX.raw >> counter.value).resized
         shiftedX.setName("shiftedX")
         val shiftedY = magnitudeType(iteration)
-        shiftedY.raw := Mux(counter === U(0), inputY.raw >> counter.value, signalY.raw >> counter.value).resized
+        shiftedY.raw := Mux(counter === U(0), inputY.raw << 18 >> shiftingCoeff, signalY.raw >> shiftingCoeff).resized
+        //        shiftedY.raw := Mux(counter === U(0), inputY.raw << 18, signalY.raw >> counter.value).resized
+        shiftedY.setName("shiftedY")
 
         val phaseROM = Mem((0 until iteration).map(i => phaseTypeGen(i, getPhaseCoeff(i)(algebricMode))))
         val phaseCoeff = phaseROM.readAsync(counter)
@@ -166,7 +182,10 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
         outputZ := signalZ.truncated
 
         IDLE
-          .whenIsActive(when(start)(goto(WORKING)))
+          .whenIsActive {
+            counter.clear()
+            when(start)(goto(WORKING))
+          }
 
         WORKING
           .whenCompleted(goto(IDLE))
@@ -175,12 +194,12 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
             // TODO: implement a better fixed type with clear document
             when(counter === U(0)) {
               val nextX = algebricMode match {
-                case DSP.AlgebricMode.CIRCULAR => Mux(counterClockwise, inputX - inputY, inputX + inputY).truncated
-                case DSP.AlgebricMode.HYPERBOLIC => Mux(counterClockwise, inputX + inputY, inputX - inputY).truncated
+                case DSP.AlgebricMode.CIRCULAR => Mux(counterClockwise, inputX - shiftedY, inputX + shiftedY).truncated
+                case DSP.AlgebricMode.HYPERBOLIC => Mux(counterClockwise, inputX + shiftedY, inputX - shiftedY).truncated
                 case DSP.AlgebricMode.LINEAR => inputX.truncated
               }
               signalX := nextX
-              signalY := Mux(counterClockwise, inputY + inputX, inputY - inputX).truncated
+              signalY := Mux(counterClockwise, inputY + shiftedX, inputY - shiftedX).truncated
               signalZ := Mux(counterClockwise, inputZ - phaseCoeff, inputZ + phaseCoeff).truncated
             }.otherwise {
               val nextX = algebricMode match {
@@ -199,11 +218,13 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
 
   // compensation
   val scaleComplement = magnitudeTypeGen(iteration, getScaleComplement(iteration)(algebricMode))
-  val compensatedX = (if (scaleCompensate) RegNext(outputX * scaleComplement).truncated else outputX)
-  val compensatedY = (if (scaleCompensate) RegNext(outputY * scaleComplement).truncated else outputY)
+  val compensatedX = if (scaleCompensate) RegNext(outputX * scaleComplement).truncated else outputX
+  val compensatedY = if (scaleCompensate) RegNext(outputY * scaleComplement).truncated else outputY
   val compensatedZ = if (scaleCompensate) RegNext(outputZ) else outputZ
 
   // TODO: output registration strategy
+
+  def setStart(externalStart: Bool) = start := externalStart
 
   override def implicitValue: (SFix, SFix, SFix) = (compensatedX, compensatedY, compensatedZ)
 

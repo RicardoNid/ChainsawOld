@@ -86,7 +86,7 @@ package object DSP {
 
   val testFFTLength = 8
 
-  def sameFixed(a: Double, b: Double) = (abs(a - b) / abs((a + b) / 2)) < 0.1 || scala.math.abs(a - b) < 1.0
+  def sameFixed(a: Double, b: Double) = (abs(a - b) / abs((a + b) / 2)) < 0.1 || scala.math.abs(a - b) < 0.1
 
   def sameFixedSeq(v1: IndexedSeq[Double], v2: IndexedSeq[Double]) =
     v1.zip(v2).forall { case (c1, c2) => sameFixed(c1, c2) }
