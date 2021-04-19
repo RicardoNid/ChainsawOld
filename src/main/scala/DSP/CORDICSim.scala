@@ -35,15 +35,31 @@ class CORDICSim(rotationMode: RotationMode, algebricMode: AlgebricMode, cordicAr
       while (true) {
         if (testCases.nonEmpty) {
           val testCase = testCases.dequeue()
-          //          println("test: " + testCase.toString)
-          input.valid #= true
-          input.payload.x.raw #= Double2Fix(testCase.x)
-          input.payload.y.raw #= Double2Fix(testCase.y)
-          input.payload.z.raw #= Double2Fix(testCase.z)
-          clockDomain.waitSampling()
-          input.valid #= false
-          val refResult = referenceModel(testCase)
-          refResults.enqueue(refResult)
+          cordicArch match {
+            case DSP.CordicArch.PARALLEL => {
+
+              //          println("test: " + testCase.toString)
+              input.valid #= true
+              input.payload.x.raw #= Double2Fix(testCase.x)
+              input.payload.y.raw #= Double2Fix(testCase.y)
+              input.payload.z.raw #= Double2Fix(testCase.z)
+              clockDomain.waitSampling()
+              input.valid #= false
+              val refResult = referenceModel(testCase)
+              refResults.enqueue(refResult)
+            }
+            case SERIAL => {
+              input.valid #= true
+              input.payload.x.raw #= Double2Fix(testCase.x)
+              input.payload.y.raw #= Double2Fix(testCase.y)
+              input.payload.z.raw #= Double2Fix(testCase.z)
+              clockDomain.waitSampling()
+              input.valid #= false
+              val refResult = referenceModel(testCase)
+              refResults.enqueue(refResult)
+              clockDomain.waitSampling(cordic.getDelay)
+            }
+          }
         }
         else clockDomain.waitSampling()
       }
@@ -173,7 +189,7 @@ object CORDICSim {
 
   def main(args: Array[String]): Unit = {
 
-    debug = true
+    //    debug = true
 
     //    randomSim(VECTORING, CIRCULAR, PARALLEL)
     //    print(Console.GREEN)

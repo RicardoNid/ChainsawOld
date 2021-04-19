@@ -1,7 +1,7 @@
 package DSP
 
 import DSP.AlgebricMode._
-import DSP.CordicArch.{CordicArch, PARALLEL}
+import DSP.CordicArch.{CordicArch, PARALLEL, SERIAL}
 import DSP.RotationMode._
 import spinal.core._
 import spinal.lib._
@@ -27,6 +27,10 @@ class CORDICGen(rotationMode: RotationMode = ROTATION,
   output.payload.z := cordic._3.truncated
   output.valid := Delay(input.valid, cordic.getDelay, init = False)
   output.valid.init(False)
+
+  if (cordicArch == SERIAL) {
+    cordic.start := input.valid
+  }
 
   //  ComputationExtrction(output.valid)
 

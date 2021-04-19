@@ -58,13 +58,15 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
 
   import cordicConfig._
 
-  def magnitudeType(i: Int) = SFix(2 exp, -13 exp) // TODO: 1QN
+  def magnitudeType(i: Int) = SFix(2 exp, -(13 + i) exp) // TODO: 1QN
 
-  def magnitudeTypeGen(i: Int, value: Double) = SF(value, 2 exp, -13 exp)
+  def magnitudeTypeGen(i: Int, value: Double) = SF(value, 2 exp, -(13 + i) exp)
 
   def phaseType(i: Int) = SFix(2 exp, -13 exp) // TODO: 2QN
 
   def phaseTypeGen(i: Int, value: Double) = SF(value, 2 exp, -13 exp)
+
+  val start = Bool()
 
   val outputX = SFix(2 exp, -(outputWidth - 2 - 1) exp)
   val outputY = SFix(2 exp, -(outputWidth - 2 - 1) exp)
@@ -136,41 +138,41 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
     }
     case CordicArch.SERIAL => {
       val fsm = new StateMachine {
-        val working = new StateDelay(iteration) with EntryPoint
+        val IDLE = new StateDelay(iteration) with EntryPoint
+        val WORKING = new StateDelay(iteration)
 
         val counter = Counter(iteration)
         counter.implicitValue.simPublic()
-        val signalX = Reg(magnitudeType(0))
-        val signalY = Reg(magnitudeType(0))
-        val signalZ = Reg(phaseType(0))
+        val signalX = Reg(magnitudeType(iteration))
+        val signalY = Reg(magnitudeType(iteration))
+        val signalZ = Reg(phaseType(iteration))
 
-        val shiftedX = magnitudeType(0)
-        shiftedX := signalX
+        val shiftedX = magnitudeType(iteration)
+        shiftedX.raw := Mux(counter === U(0), inputX.raw >> counter.value, signalX.raw >> counter.value).resized
         shiftedX.setName("shiftedX")
-        val shiftedY = magnitudeType(0)
-        shiftedY := signalY
+        val shiftedY = magnitudeType(iteration)
+        shiftedY.raw := Mux(counter === U(0), inputY.raw >> counter.value, signalY.raw >> counter.value).resized
 
         val phaseROM = Mem((0 until iteration).map(i => phaseTypeGen(i, getPhaseCoeff(i)(algebricMode))))
-        val phaseCoeff = phaseROM.readSync(counter)
+        val phaseCoeff = phaseROM.readAsync(counter)
 
         val counterClockwise = rotationMode match {
-          case RotationMode.ROTATION => ~signalZ.asBits.msb // Z > 0
-          case RotationMode.VECTORING => signalY.asBits.msb // Y < 0
+          case RotationMode.ROTATION => Mux(counter === U(0), ~inputZ.asBits.msb, ~signalZ.asBits.msb) // Z > 0
+          case RotationMode.VECTORING => Mux(counter === U(0), inputY.asBits.msb, signalY.asBits.msb) // Y < 0
         }
 
-        outputX := signalX
-        outputY := signalY
-        outputZ := signalZ
+        outputX := signalX.truncated
+        outputY := signalY.truncated
+        outputZ := signalZ.truncated
 
-        working
-          .whenCompleted(goto(working))
+        IDLE
+          .whenIsActive(when(start)(goto(WORKING)))
+
+        WORKING
+          .whenCompleted(goto(IDLE))
           .whenIsActive {
             counter.increment()
             // TODO: implement a better fixed type with clear document
-            //            shiftedX.raw := Mux(counter === U(0), signalX.raw >> counter.value, inputX.raw >> counter.value).resized
-            //            shiftedY.raw := Mux(counter === U(0), signalY.raw >> counter.value, inputY.raw >> counter.value).resized
-            shiftedX.raw := (signalX.raw >> counter.value).resized
-            shiftedY.raw := (signalX.raw >> counter.value).resized
             when(counter === U(0)) {
               val nextX = algebricMode match {
                 case DSP.AlgebricMode.CIRCULAR => Mux(counterClockwise, inputX - inputY, inputX + inputY).truncated
