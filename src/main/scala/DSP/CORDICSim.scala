@@ -1,7 +1,7 @@
 package DSP
 
 import DSP.AlgebricMode._
-import DSP.CordicArch.{CordicArch, SERIAL}
+import DSP.CordicArch._
 import DSP.RotationMode._
 import breeze.numerics._
 import breeze.numerics.constants.Pi
@@ -191,67 +191,14 @@ object CORDICSim {
 
     debug = true
 
-    //    randomSim(VECTORING, CIRCULAR, PARALLEL)
-    //    print(Console.GREEN)
-    //    println(s"CORDIC VECTORING + CIRCULAR, PASS")
-    //    print(Console.BLACK)
-    //
-    //    randomSim(ROTATION, CIRCULAR, PARALLEL)
-    //    print(Console.GREEN)
-    //    println(s"CORDIC ROTATION + CIRCULAR, PASS")
-    //    print(Console.BLACK)
-    //
-    //    randomSim(VECTORING, HYPERBOLIC, PARALLEL)
-    //    print(Console.GREEN)
-    //    println(s"CORDIC VECTORING + HYPERBOLIC, PASS")
-    //    print(Console.BLACK)
-    //
-    //    randomSim(ROTATION, HYPERBOLIC, PARALLEL)
-    //    print(Console.GREEN)
-    //    println(s"CORDIC ROTATION + HYPERBOLIC, PASS")
-    //    print(Console.BLACK)
-    //
-    //    randomSim(ROTATION, LINEAR, PARALLEL)
-    //    print(Console.GREEN)
-    //    println(s"CORDIC ROTATION + LINEAR, PASS")
-    //    print(Console.BLACK)
-    //
-    //    randomSim(VECTORING, LINEAR, PARALLEL)
-    //    print(Console.GREEN)
-    //    println(s"CORDIC VECTORING + LINEAR, PASS")
-    //    print(Console.BLACK)
+    def doit(rotationMode: RotationMode, algebricMode: AlgebricMode, cordicArch: CordicArch) = {
+      randomSim(rotationMode, algebricMode, cordicArch)
+      print(Console.GREEN)
+      println(s"CORDIC ${rotationMode} + ${algebricMode} + ${cordicArch}, PASS")
+      print(Console.BLACK)
+    }
 
-
-    randomSim(VECTORING, CIRCULAR, SERIAL)
-    print(Console.GREEN)
-    println(s"CORDIC VECTORING + CIRCULAR, PASS")
-    print(Console.BLACK)
-
-    randomSim(ROTATION, CIRCULAR, SERIAL)
-    print(Console.GREEN)
-    println(s"CORDIC ROTATION + CIRCULAR, PASS")
-    print(Console.BLACK)
-
-    randomSim(VECTORING, HYPERBOLIC, SERIAL)
-    print(Console.GREEN)
-    println(s"CORDIC VECTORING + HYPERBOLIC, PASS")
-    print(Console.BLACK)
-    //
-    randomSim(ROTATION, HYPERBOLIC, SERIAL)
-    print(Console.GREEN)
-    println(s"CORDIC ROTATION + HYPERBOLIC, PASS")
-    print(Console.BLACK)
-
-    randomSim(ROTATION, LINEAR, SERIAL)
-    print(Console.GREEN)
-    println(s"CORDIC ROTATION + LINEAR, PASS")
-    print(Console.BLACK)
-
-    randomSim(VECTORING, LINEAR, SERIAL)
-    print(Console.GREEN)
-    println(s"CORDIC VECTORING + LINEAR, PASS")
-    print(Console.BLACK)
-
+    for (arch <- CordicArch.values; algebric <- AlgebricMode.values; rotation <- RotationMode.values) doit(rotation, algebric, arch)
   }
 }
 
