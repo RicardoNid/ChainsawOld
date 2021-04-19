@@ -30,8 +30,8 @@ class CORDICGen(rotationMode: RotationMode = ROTATION,
 
   if (cordicArch == SERIAL) cordic.setStart(input.valid)
 
-
   //  ComputationExtrction(output.valid)
 
   override def delay: Int = cordic.getDelay
+
 }

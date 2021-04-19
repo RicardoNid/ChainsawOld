@@ -10,9 +10,10 @@ import xilinx.{VivadoFlow, VivadoReport, VivadoTask, recommended}
 
 
 /** N-point FFT by Cooley-Tukey FFT algorithm, based on Winograd DFT algorithm, DSP with FPGA, algo 6.8, fig 6.12
+ *
  * @param N length of FFT
  */
-class CooleyTukeyFFT(N: Int) extends Component {
+class CooleyTukeyFFT(N: Int) extends Component with DSPGen {
 
   val io = new Bundle {
     val input = slave Flow (Vec(globalType, N * 2))
@@ -30,6 +31,8 @@ class CooleyTukeyFFT(N: Int) extends Component {
   // TODO: find a way to determine the latency automatically
   io.output.valid := Delay(io.input.valid, 2 * factorize(N).length - 1, init = False)
   io.output.valid.init(False)
+
+  override def delay: Int = log2Up(N)
 }
 
 object CooleyTukeyFFT {

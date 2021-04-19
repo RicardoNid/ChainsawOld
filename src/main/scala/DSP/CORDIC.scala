@@ -54,7 +54,7 @@ case class CordicConfig(algebricMode: AlgebricMode, rotationMode: RotationMode,
 
 
 class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfig)
-  extends ImplicitArea[(SFix, SFix, SFix)] with DSPDesign {
+  extends ImplicitArea[(SFix, SFix, SFix)] with DSPDesign with Testable {
 
   import cordicConfig._
 
@@ -270,6 +270,23 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
         .map(i => sqrt(1 - pow(2.0, -2 * i))).product
       case AlgebricMode.LINEAR => 1.0
     }
+  }
+
+  override val getTimingInfo: TimingInfo = {
+    val inputInterval = 1
+    val outputInterval = 1
+    val workingInterval = cordicArch match {
+      case PARALLEL => {
+        cordicPipe match {
+          case CordicPipe.MAXIMUM => iteration + extraDelay
+          case CordicPipe.HALF => iteration / 2 + extraDelay
+          case CordicPipe.NONE => extraDelay
+        }
+      }
+      case SERIAL => iteration + extraDelay
+    }
+    val protectInterval = workingInterval
+    TimingInfo(inputInterval, outputInterval, workingInterval, protectInterval)
   }
 }
 

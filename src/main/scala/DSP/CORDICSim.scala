@@ -5,7 +5,9 @@ import DSP.CordicArch._
 import DSP.RotationMode._
 import breeze.numerics._
 import breeze.numerics.constants.Pi
+import spinal.core._
 import spinal.core.sim._
+import xilinx.VivadoFlow
 
 import scala.util.Random
 
@@ -129,8 +131,9 @@ class CORDICSim(rotationMode: RotationMode, algebricMode: AlgebricMode, cordicAr
     sameFixedSeq(refResult, dutResult)
 
   override def messageWhenInvalid(refResult: Array[Double], dutResult: Array[Double]): String =
-    s"\n result: ${dutResult.mkString(" ")} \n golden: ${refResult.mkString(" ")}"
+    s"[ERROR] \n result: ${dutResult.mkString(" ")} \n golden: ${refResult.mkString(" ")}"
 }
+
 
 object CORDICSim {
   private val r = Random
@@ -191,14 +194,19 @@ object CORDICSim {
 
     debug = true
 
-    def doit(rotationMode: RotationMode, algebricMode: AlgebricMode, cordicArch: CordicArch) = {
-      randomSim(rotationMode, algebricMode, cordicArch)
-      print(Console.GREEN)
-      println(s"CORDIC ${rotationMode} + ${algebricMode} + ${cordicArch}, PASS")
-      print(Console.BLACK)
-    }
+    val design = new CORDICSim(ROTATION, CIRCULAR, PARALLEL)
 
-    for (arch <- CordicArch.values; algebric <- AlgebricMode.values; rotation <- RotationMode.values) doit(rotation, algebric, arch)
+    SpinalConfig().generateSystemVerilog(new CORDICSim(ROTATION, CIRCULAR, PARALLEL))
+    VivadoFlow(design, "CORDIC", "output/CORDIC", force = true)
+
+    //    def doit(rotationMode: RotationMode, algebricMode: AlgebricMode, cordicArch: CordicArch) = {
+    //      randomSim(rotationMode, algebricMode, cordicArch)
+    //      print(Console.GREEN)
+    //      println(s"CORDIC ${rotationMode} + ${algebricMode} + ${cordicArch}, PASS")
+    //      print(Console.BLACK)
+    //    }
+    //
+    //    for (arch <- CordicArch.values; algebric <- AlgebricMode.values; rotation <- RotationMode.values) doit(rotation, algebric, arch)
   }
 }
 

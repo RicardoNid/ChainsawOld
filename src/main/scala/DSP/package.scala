@@ -40,6 +40,20 @@ package object DSP {
       ret
     }
 
+    // TODO: how to implement the range shift?
+    def >>(that: UInt) = {
+      val ret = SFix(sfix.maxExp exp, sfix.minExp exp)
+      ret.raw := sfix.raw >> that
+      ret
+    }
+
+    // TODO:
+    def <<(that: UInt) = {
+      val ret = SFix(sfix.maxExp exp, sfix.minExp exp)
+      ret.raw := (sfix.raw << that).resized
+      ret
+    }
+
   }
 
   def MySFix(maxValue: Double, minValue: Double, resolution: Double): SFix = {
