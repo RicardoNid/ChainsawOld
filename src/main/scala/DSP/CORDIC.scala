@@ -2,7 +2,6 @@ package DSP
 
 import breeze.numerics._
 import spinal.core._
-import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
 
@@ -67,6 +66,7 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
   def phaseTypeGen(i: Int, value: Double) = SF(value, 2 exp, -(13 + i) exp)
 
   val start = Bool()
+  val busy = Bool()
 
   val outputX = SFix(2 exp, -(outputWidth - 2 - 1) exp)
   val outputY = SFix(2 exp, -(outputWidth - 2 - 1) exp)
@@ -139,20 +139,22 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
     }
     case CordicArch.SERIAL => {
       val fsm = new StateMachine {
+
         val IDLE = new StateDelay(iteration) with EntryPoint
         val WORKING = new StateDelay(iteration)
 
-        val counter = Counter(iteration)
+        val counter = Counter(iteration, isActive(WORKING))
         counter.implicitValue.setName("counter")
-        counter.implicitValue.simPublic()
-        val signalX = Reg(magnitudeType(iteration))
-        signalX.setName("signalX")
-        val signalY = Reg(magnitudeType(iteration))
-        signalY.setName("signalY")
-        val signalZ = Reg(phaseType(iteration))
-        signalZ.setName("signalZ")
 
-        // TODO: optimize this part
+        IDLE.whenIsActive(when(start)(goto(WORKING)))
+        WORKING.whenCompleted(goto(IDLE))
+
+        busy := isActive(WORKING)
+
+        val signalX = Reg(magnitudeType(iteration))
+        val signalY = Reg(magnitudeType(iteration))
+        val signalZ = Reg(phaseType(iteration))
+
         val shiftingCoeffs =
           if (algebricMode == AlgebricMode.HYPERBOLIC) getHyperbolicSequence(iteration)
           else (0 until iteration)
@@ -162,13 +164,10 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
         // >> U(0) is strange
         // TODO: implement dynamic shifting for fixed type, or this would be very error-prone
         val shiftedX = magnitudeType(iteration)
-        shiftedX.raw := Mux(counter === U(0), inputX.raw << (inputX.minExp - shiftedX.minExp) >> shiftingCoeff, signalX.raw >> shiftingCoeff).resized
-        //        shiftedX.raw := Mux(counter === U(0), inputX.raw << 18, signalX.raw >> counter.value).resized
-        shiftedX.setName("shiftedX")
         val shiftedY = magnitudeType(iteration)
+
+        shiftedX.raw := Mux(counter === U(0), inputX.raw << (inputX.minExp - shiftedX.minExp) >> shiftingCoeff, signalX.raw >> shiftingCoeff).resized
         shiftedY.raw := Mux(counter === U(0), inputY.raw << inputY.minExp - shiftedY.minExp >> shiftingCoeff, signalY.raw >> shiftingCoeff).resized
-        //        shiftedY.raw := Mux(counter === U(0), inputY.raw << 18, signalY.raw >> counter.value).resized
-        shiftedY.setName("shiftedY")
 
         val phaseROM = Mem((0 until iteration).map(i => phaseTypeGen(iteration, getPhaseCoeff(i)(algebricMode))))
         val phaseCoeff = phaseROM.readAsync(counter)
@@ -182,17 +181,8 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
         outputX := signalX.truncated
         outputY := signalY.truncated
         outputZ := signalZ.truncated
-
-        IDLE
-          .whenIsActive {
-            counter.clear()
-            when(start)(goto(WORKING))
-          }
-
         WORKING
-          .whenCompleted(goto(IDLE))
           .whenIsActive {
-            counter.increment()
             // TODO: implement a better fixed type with clear document
             when(counter === U(0)) {
               val nextX = algebricMode match {
