@@ -8,7 +8,7 @@ import spinal.lib.{Delay, master, slave}
  *
  * @param N - length of DFT
  */
-class WinogradDFT(N: Int) extends Component with DSPDesign {
+class WinogradDFT(N: Int) extends Component with DSPDesignOld {
 
   require(isPrime(N), s"Winograd DFT is for prime number")
   require(Set(2).contains(N), s"$N point Winograd DFT will be supported in later release")

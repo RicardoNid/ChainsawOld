@@ -8,7 +8,7 @@ import spinal.core._
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 
-class ShiftAdderGraph(input: SFix, adderGraph: AdderGraph) extends ImplicitArea[IndexedSeq[SFix]] with DSPDesign {
+class ShiftAdderGraph(input: SFix, adderGraph: AdderGraph) extends ImplicitArea[IndexedSeq[SFix]] with DSPDesignOld {
 
   val max = input.maxValue.toDouble
   val min = input.minValue.toDouble

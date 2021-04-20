@@ -6,7 +6,7 @@ import spinal.lib._
 /** Multiplierless Single Constant Multiplication
  *
  */
-class SCM(input: SInt, constant: Int, scmArch: SCMArch) extends ImplicitArea[SInt] with DSPDesign {
+class SCM(input: SInt, constant: Int, scmArch: SCMArch) extends ImplicitArea[SInt] with DSPDesignOld {
 
   val bitGrowth = log2Up(constant)
   val result = SInt(input.getBitsWidth + bitGrowth bits)

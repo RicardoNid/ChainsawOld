@@ -49,22 +49,22 @@ import DSP.CordicPipe._
 
 case class CordicConfig(algebricMode: AlgebricMode, rotationMode: RotationMode,
                         cordicArch: CordicArch = PARALLEL, cordicPipe: CordicPipe = MAXIMUM,
-                        outputWidth: Int = 16, iteration: Int = 20, precision: Int = 15,
+                        outputWidth: Int = 16, iteration: Int = 11, precision: Int = 15,
                         coarseRotation: Boolean = false, scaleCompensate: Boolean = true)
 
 
 class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfig)
-  extends ImplicitArea[(SFix, SFix, SFix)] with DSPDesignNew with Testable {
+  extends ImplicitArea[(SFix, SFix, SFix)] with DSPDesign with Testable {
 
   import cordicConfig._
 
-  def magnitudeType(i: Int) = SFix(2 exp, -(13 + i) exp) // TODO: 1QN
+  def magnitudeType(i: Int) = SFix(1 exp, -(14 + i) exp) // TODO: 1QN
 
-  def magnitudeTypeGen(i: Int, value: Double) = SF(value, 2 exp, -(13 + i) exp)
+  def magnitudeTypeGen(i: Int, value: Double) = SF(value, 1 exp, -(14 + i) exp)
 
-  def phaseType(i: Int) = SFix(2 exp, -13 exp) // TODO: 2QN
+  def phaseType(i: Int) = SFix(2 exp, -(13 + i) exp) // TODO: 2QN
 
-  def phaseTypeGen(i: Int, value: Double) = SF(value, 2 exp, -13 exp)
+  def phaseTypeGen(i: Int, value: Double) = SF(value, 2 exp, -(13 + i) exp)
 
   val start = Bool()
 
@@ -162,16 +162,17 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
         // >> U(0) is strange
         // TODO: implement dynamic shifting for fixed type, or this would be very error-prone
         val shiftedX = magnitudeType(iteration)
-        shiftedX.raw := Mux(counter === U(0), inputX.raw << (iteration + 3) >> shiftingCoeff, signalX.raw >> shiftingCoeff).resized
+        shiftedX.raw := Mux(counter === U(0), inputX.raw << (inputX.minExp - shiftedX.minExp) >> shiftingCoeff, signalX.raw >> shiftingCoeff).resized
         //        shiftedX.raw := Mux(counter === U(0), inputX.raw << 18, signalX.raw >> counter.value).resized
         shiftedX.setName("shiftedX")
         val shiftedY = magnitudeType(iteration)
-        shiftedY.raw := Mux(counter === U(0), inputY.raw << (iteration + 3) >> shiftingCoeff, signalY.raw >> shiftingCoeff).resized
+        shiftedY.raw := Mux(counter === U(0), inputY.raw << inputY.minExp - shiftedY.minExp >> shiftingCoeff, signalY.raw >> shiftingCoeff).resized
         //        shiftedY.raw := Mux(counter === U(0), inputY.raw << 18, signalY.raw >> counter.value).resized
         shiftedY.setName("shiftedY")
 
-        val phaseROM = Mem((0 until iteration).map(i => phaseTypeGen(i, getPhaseCoeff(i)(algebricMode))))
+        val phaseROM = Mem((0 until iteration).map(i => phaseTypeGen(iteration, getPhaseCoeff(i)(algebricMode))))
         val phaseCoeff = phaseROM.readAsync(counter)
+        phaseCoeff.setName("diffZ")
 
         val counterClockwise = rotationMode match {
           case RotationMode.ROTATION => Mux(counter === U(0), ~inputZ.asBits.msb, ~signalZ.asBits.msb) // Z > 0
@@ -272,7 +273,10 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
       }
       case SERIAL => iteration + extraDelay
     }
-    val initiationInterval = latency
+    val initiationInterval = cordicArch match {
+      case PARALLEL => 1
+      case SERIAL => latency
+    }
     TimingInfo(inputInterval, outputInterval, latency, initiationInterval)
   }
 }

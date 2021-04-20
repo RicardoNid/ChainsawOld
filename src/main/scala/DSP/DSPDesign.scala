@@ -1,5 +1,9 @@
 package DSP
 
+import spinal.core._
+
 trait DSPDesign {
-  def getDelay: Int
+  val start: Bool
+
+  def setStart(externalStart: Bool) = start := externalStart
 }

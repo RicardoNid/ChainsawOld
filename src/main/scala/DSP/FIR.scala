@@ -8,7 +8,7 @@ import spinal.lib._
 
 import java.lang.Math.max
 
-class FIR(input: SFix, coefficients: IndexedSeq[Double], firArch: FIRArch) extends ImplicitArea[SFix] with DSPDesign {
+class FIR(input: SFix, coefficients: IndexedSeq[Double], firArch: FIRArch) extends ImplicitArea[SFix] with DSPDesignOld {
 
   val multBitWidthGrowth = log2Up(ceil(coefficients.map(abs(_)).max).toInt) + 1
   val accBitWidthGrowth = log2Up(coefficients.length)

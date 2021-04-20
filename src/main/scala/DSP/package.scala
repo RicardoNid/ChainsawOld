@@ -100,7 +100,7 @@ package object DSP {
 
   val testFFTLength = 8
 
-  def sameFixed(a: Double, b: Double) = (abs(a - b) / abs((a + b) / 2)) < 0.1 || scala.math.abs(a - b) < 0.1
+  def sameFixed(a: Double, b: Double) = (abs(a - b) / abs((a + b) / 2)) < 0.05 || scala.math.abs(a - b) < 0.1
 
   def sameFixedSeq(v1: IndexedSeq[Double], v2: IndexedSeq[Double]) =
     v1.zip(v2).forall { case (c1, c2) => sameFixed(c1, c2) }
@@ -108,8 +108,8 @@ package object DSP {
   def sameFixedVector(v1: DenseVector[Double], v2: DenseVector[Double]) = sameFixedSeq(v1.toArray, v2.toArray)
 
   //  def Double2Fix(value: Double) = floor(value * (1 << 4)).toInt // convert Double to valid stimulus for simulation
-  def Double2Fix(value: Double, fw: Int = fractionalWidth) = floor(value * (1 << fw)).toInt // convert Double to valid stimulus for simulation
   //  def Fix2Double(value: SFix) = value.raw.toBigInt.toDouble / pow(2, 4)
+  def Double2Fix(value: Double, fw: Int = fractionalWidth) = floor(value * (1 << fw)).toInt // convert Double to valid stimulus for simulation
   def Fix2Double(value: SFix, fw: Int = fractionalWidth) = value.raw.toBigInt.toDouble / pow(2, fw)
 
   // OPTIMIZE: implement prime & factor by table
