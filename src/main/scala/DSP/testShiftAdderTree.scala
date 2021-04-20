@@ -44,7 +44,7 @@ object ShiftAdderTreeDUT {
   }
 }
 
-class testShiftAdderTree(shifts: IndexedSeq[Int]) extends ShiftAdderTreeDUT(shifts) with DSPSim {
+class testShiftAdderTree(shifts: IndexedSeq[Int]) extends ShiftAdderTreeDUT(shifts) with DSPSimOld {
   override type TestCase = IndexedSeq[Double]
   override type ResultType = Double
 

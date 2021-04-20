@@ -8,7 +8,6 @@ import breeze.numerics.constants.Pi
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib.{Delay, master, slave}
-import xilinx.VivadoFlow
 
 import scala.util.Random
 
@@ -16,74 +15,35 @@ case class cordicTestCase(x: Double, y: Double, z: Double) extends TestCase {
   override def toString: String = s"x: $x, y: $y, z: ${z / Pi * 180.0} degree"
 }
 
+case class CordicData() extends Bundle {
+  val x = globalType
+  val y = globalType
+  val z = phaseType()
+}
+
 class CORDICSim(rotationMode: RotationMode, algebricMode: AlgebricMode, cordicArch: CordicArch)
   extends Component
     with DSPSim {
 
-  val input = slave Flow CordicData()
-  val output = master Flow CordicData()
+  override type inputType = CordicData
+  override type outputType = CordicData
+
+  override val input = slave Flow CordicData()
+  override val output = master Flow CordicData()
 
   val config = CordicConfig(algebricMode, rotationMode, cordicArch = cordicArch)
   val cordic = CORDIC(input.payload.x, input.payload.y, input.payload.z, config)
+  override val timing: TimingInfo = cordic.getTimingInfo
 
   output.payload.x := cordic._1.truncated
   output.payload.y := cordic._2.truncated
   output.payload.z := cordic._3.truncated
-  output.valid := Delay(input.valid, cordic.getDelay, init = False)
-  output.valid.init(False)
+  output.valid := Delay(input.valid, timing.latency, init = False)
 
   if (cordicArch == SERIAL) cordic.setStart(input.valid)
 
-
   override type TestCase = cordicTestCase
   override type ResultType = Array[Double]
-
-  override def simInit(): Unit = {
-    clockDomain.forkStimulus(2)
-    input.valid #= false
-    clockDomain.waitSampling(10)
-  }
-
-  override def simDone(): Unit = {
-    clockDomain.waitSampling(10)
-    while (refResults.nonEmpty || dutResults.nonEmpty) clockDomain.waitSampling(cordic.getDelay + 10)
-  }
-
-  override def driver(): Unit = {
-    val drv = fork {
-      while (true) {
-        if (testCases.nonEmpty) {
-          val testCase = testCases.dequeue()
-          cordicArch match {
-            case DSP.CordicArch.PARALLEL => {
-
-              //          println("test: " + testCase.toString)
-              input.valid #= true
-              input.payload.x.raw #= Double2Fix(testCase.x)
-              input.payload.y.raw #= Double2Fix(testCase.y)
-              input.payload.z.raw #= Double2Fix(testCase.z)
-              clockDomain.waitSampling()
-              input.valid #= false
-              val refResult = referenceModel(testCase)
-              refResults.enqueue(refResult)
-            }
-            case SERIAL => {
-              input.valid #= true
-              input.payload.x.raw #= Double2Fix(testCase.x)
-              input.payload.y.raw #= Double2Fix(testCase.y)
-              input.payload.z.raw #= Double2Fix(testCase.z)
-              clockDomain.waitSampling()
-              input.valid #= false
-              val refResult = referenceModel(testCase)
-              refResults.enqueue(refResult)
-              clockDomain.waitSampling(cordic.getDelay)
-            }
-          }
-        }
-        else clockDomain.waitSampling()
-      }
-    }
-  }
 
   override def referenceModel(testCase: TestCase) = {
 
@@ -132,25 +92,42 @@ class CORDICSim(rotationMode: RotationMode, algebricMode: AlgebricMode, cordicAr
 
   }
 
-  override def monitor(): Unit = {
-    val mon = fork {
-      while (true) {
-        if (output.valid.toBoolean) {
-          val dutResult = Array(output.payload.x, output.payload.y, output.payload.z).map(Fix2Double(_))
-          dutResults.enqueue(dutResult)
-        }
-        clockDomain.waitSampling()
-      }
-    }
-  }
-
-  override def isValid(refResult: Array[Double], dutResult: Array[Double]): Boolean =
-    sameFixedSeq(refResult, dutResult)
+  override def isValid(refResult: Array[Double], dutResult: Array[Double]): Boolean = sameFixedSeq(refResult, dutResult)
 
   override def messageWhenInvalid(refResult: Array[Double], dutResult: Array[Double]): String =
     s"[ERROR] \n result: ${dutResult.mkString(" ")} \n golden: ${refResult.mkString(" ")}"
+
+  override def poke(testCase: cordicTestCase, input: CordicData): Unit = {
+    input.x.raw #= Double2Fix(testCase.x)
+    input.y.raw #= Double2Fix(testCase.y)
+    input.z.raw #= Double2Fix(testCase.z)
+    clockDomain.waitSampling()
+  }
+
+  override def peek(output: CordicData): Array[Double] = {
+    val ret = Array(output.x, output.y, output.z).map(Fix2Double(_))
+    clockDomain.waitSampling()
+    ret
+  }
 }
 
+//class CORDICSim(cordicConfig: CordicConfig) extends Component with DSPSim{
+//  override type inputType = this.type
+//  override type outputType = this.type
+//  override val input: Flow[CORDICSim.this.type] = _
+//  override val output: Flow[CORDICSim.this.type] = _
+//  override type TestCase = this.type
+//  override type ResultType = this.type
+//  override val timing: TimingInfo = _
+//
+//  override def poke(testCase: CORDICSim.this.type, input: CORDICSim.this.type): Unit = ???
+//
+//  override def peek(output: CORDICSim.this.type): CORDICSim.this.type = ???
+//
+//  override def referenceModel(testCase: CORDICSim.this.type): CORDICSim.this.type = ???
+//
+//  override def isValid(refResult: CORDICSim.this.type, dutResult: CORDICSim.this.type): Boolean = ???
+//}
 
 object CORDICSim {
   private val r = Random
@@ -202,8 +179,13 @@ object CORDICSim {
     val dut = SimConfig.withWave.compile(new CORDICSim(rotationMode, algebricMode, cordicArch))
     dut.doSim { dut =>
       dut.sim()
-      for (i <- 0 until 100) dut.insertTestCase(randomCase(rotationMode, algebricMode))
-      dut.simDone()
+      for (i <- 0 until 200) dut.insertTestCase(randomCase(rotationMode, algebricMode))
+      val (trueCase, totalCase, log) = dut.simDone()
+      println(Console.RED)
+      println(log.mkString(" "))
+      print(Console.GREEN)
+      println(s"[RESULT] ${trueCase} / ${totalCase} passed")
+      print(Console.BLACK)
     }
   }
 
@@ -211,20 +193,19 @@ object CORDICSim {
 
     debug = true
 
+    def doit(rotationMode: RotationMode, algebricMode: AlgebricMode, cordicArch: CordicArch) = {
+      randomSim(rotationMode, algebricMode, cordicArch)
+      print(Console.GREEN)
+      println(s"CORDIC ${rotationMode} + ${algebricMode} + ${cordicArch}, sim done")
+      print(Console.BLACK)
+    }
 
-    SpinalConfig().generateSystemVerilog(new CORDICSim(ROTATION, CIRCULAR, PARALLEL))
-    val report = VivadoFlow(new CORDICSim(ROTATION, CIRCULAR, PARALLEL), "CORDIC", "output/CORDIC", force = true).doit()
-    report.printFMax
-    report.printArea
+    for (arch <- CordicArch.values; algebric <- AlgebricMode.values; rotation <- RotationMode.values) doit(rotation, algebric, arch)
 
-    //    def doit(rotationMode: RotationMode, algebricMode: AlgebricMode, cordicArch: CordicArch) = {
-    //      randomSim(rotationMode, algebricMode, cordicArch)
-    //      print(Console.GREEN)
-    //      println(s"CORDIC ${rotationMode} + ${algebricMode} + ${cordicArch}, PASS")
-    //      print(Console.BLACK)
-    //    }
-    //
-    //    for (arch <- CordicArch.values; algebric <- AlgebricMode.values; rotation <- RotationMode.values) doit(rotation, algebric, arch)
+    //    SpinalConfig().generateSystemVerilog(new CORDICSim(ROTATION, CIRCULAR, PARALLEL))
+    //    val report = VivadoFlow(new CORDICSim(ROTATION, CIRCULAR, PARALLEL), "CORDIC", "output/CORDIC", force = true).doit()
+    //    report.printFMax
+    //    report.printArea
   }
 }
 

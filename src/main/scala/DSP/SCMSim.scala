@@ -25,7 +25,7 @@ object SCMDUT {
   }
 }
 
-class SCMSim(constant: Int, bitWidth: Int, scmArch: SCMArch) extends SCMDUT(constant, bitWidth, scmArch) with DSPSim {
+class SCMSim(constant: Int, bitWidth: Int, scmArch: SCMArch) extends SCMDUT(constant, bitWidth, scmArch) with DSPSimOld {
   override type TestCase = Int
   override type ResultType = Int
 

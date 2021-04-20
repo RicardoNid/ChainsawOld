@@ -49,12 +49,12 @@ import DSP.CordicPipe._
 
 case class CordicConfig(algebricMode: AlgebricMode, rotationMode: RotationMode,
                         cordicArch: CordicArch = PARALLEL, cordicPipe: CordicPipe = MAXIMUM,
-                        outputWidth: Int = 16, iteration: Int = 15, precision: Int = 15,
+                        outputWidth: Int = 16, iteration: Int = 20, precision: Int = 15,
                         coarseRotation: Boolean = false, scaleCompensate: Boolean = true)
 
 
 class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfig)
-  extends ImplicitArea[(SFix, SFix, SFix)] with DSPDesign with Testable {
+  extends ImplicitArea[(SFix, SFix, SFix)] with DSPDesignNew with Testable {
 
   import cordicConfig._
 
@@ -72,6 +72,7 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
   val outputY = SFix(2 exp, -(outputWidth - 2 - 1) exp)
   val outputZ = SFix(2 exp, -(outputWidth - 2 - 1) exp)
 
+  // core part
   cordicArch match {
     case CordicArch.PARALLEL => {
       val signalXs = inputX :: (0 until iteration).map(i => magnitudeType(i)).toList
@@ -161,11 +162,11 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
         // >> U(0) is strange
         // TODO: implement dynamic shifting for fixed type, or this would be very error-prone
         val shiftedX = magnitudeType(iteration)
-        shiftedX.raw := Mux(counter === U(0), inputX.raw << 18 >> shiftingCoeff, signalX.raw >> shiftingCoeff).resized
+        shiftedX.raw := Mux(counter === U(0), inputX.raw << (iteration + 3) >> shiftingCoeff, signalX.raw >> shiftingCoeff).resized
         //        shiftedX.raw := Mux(counter === U(0), inputX.raw << 18, signalX.raw >> counter.value).resized
         shiftedX.setName("shiftedX")
         val shiftedY = magnitudeType(iteration)
-        shiftedY.raw := Mux(counter === U(0), inputY.raw << 18 >> shiftingCoeff, signalY.raw >> shiftingCoeff).resized
+        shiftedY.raw := Mux(counter === U(0), inputY.raw << (iteration + 3) >> shiftingCoeff, signalY.raw >> shiftingCoeff).resized
         //        shiftedY.raw := Mux(counter === U(0), inputY.raw << 18, signalY.raw >> counter.value).resized
         shiftedY.setName("shiftedY")
 
@@ -224,22 +225,7 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
 
   // TODO: output registration strategy
 
-  def setStart(externalStart: Bool) = start := externalStart
-
   override def implicitValue: (SFix, SFix, SFix) = (compensatedX, compensatedY, compensatedZ)
-
-  val extraDelay = if (scaleCompensate) 1 else 0
-
-  override def getDelay: Int = cordicArch match {
-    case PARALLEL => {
-      cordicPipe match {
-        case CordicPipe.MAXIMUM => iteration + extraDelay
-        case CordicPipe.HALF => iteration / 2 + extraDelay
-        case CordicPipe.NONE => extraDelay
-      }
-    }
-    case SERIAL => iteration + extraDelay
-  }
 
   def getHyperbolicSequence(iteration: Int) = {
     require(iteration < 54, "iteration times should be less than 54")
@@ -273,9 +259,10 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
   }
 
   override val getTimingInfo: TimingInfo = {
+    val extraDelay = if (scaleCompensate) 1 else 0
     val inputInterval = 1
     val outputInterval = 1
-    val workingInterval = cordicArch match {
+    val latency = cordicArch match {
       case PARALLEL => {
         cordicPipe match {
           case CordicPipe.MAXIMUM => iteration + extraDelay
@@ -285,8 +272,8 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
       }
       case SERIAL => iteration + extraDelay
     }
-    val protectInterval = workingInterval
-    TimingInfo(inputInterval, outputInterval, workingInterval, protectInterval)
+    val initiationInterval = latency
+    TimingInfo(inputInterval, outputInterval, latency, initiationInterval)
   }
 }
 

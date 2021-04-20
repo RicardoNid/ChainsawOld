@@ -9,7 +9,7 @@ import spinal.core.sim._
 import scala.util.Random
 
 // TODO : merge testWinoGrad and testCooleyTukey ?
-class testWinogradDFT(length: Int) extends WinogradDFT(length) with DSPSim {
+class testWinogradDFT(length: Int) extends WinogradDFT(length) with DSPSimOld {
   override type TestCase = Array[Double]
   override type ResultType = DenseVector[Complex]
 

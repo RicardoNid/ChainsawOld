@@ -34,7 +34,7 @@ class FIRDUT(coefficients: IndexedSeq[Double], firArch: FIRArch, inputMaxExp: In
 }
 
 class FIRSim(coefficients: Array[Double], FIRArch: FIRArch, inputMaxExp: Int = naturalWidth, inputMinExp: Int = -fractionalWidth)
-  extends FIRDUT(coefficients, FIRArch, inputMaxExp, inputMinExp) with DSPSim {
+  extends FIRDUT(coefficients, FIRArch, inputMaxExp, inputMinExp) with DSPSimOld {
 
   override type TestCase = Array[Double]
   override type ResultType = DenseVector[Double]

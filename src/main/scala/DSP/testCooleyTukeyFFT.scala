@@ -8,7 +8,7 @@ import spinal.core.sim._
 
 import scala.util.Random
 
-class testCooleyTukeyFFT(length: Int) extends CooleyTukeyFFT(length) with DSPSim {
+class testCooleyTukeyFFT(length: Int) extends CooleyTukeyFFT(length) with DSPSimOld {
   override type TestCase = Array[Double]
   override type ResultType = DenseVector[Complex]
 

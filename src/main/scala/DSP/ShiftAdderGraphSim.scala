@@ -6,7 +6,7 @@ import spinal.core.sim._
 import scala.io.Source
 import scala.util.Random
 
-class ShiftAdderGraphSim(adderGraph: AdderGraph, sagArch: SAGArch = NORMAL) extends ShiftAdderGraphDUT(adderGraph, sagArch) with DSPSim {
+class ShiftAdderGraphSim(adderGraph: AdderGraph, sagArch: SAGArch = NORMAL) extends ShiftAdderGraphDUT(adderGraph, sagArch) with DSPSimOld {
   override type TestCase = Double
   override type ResultType = Array[Double]
 
