@@ -16,8 +16,8 @@ import xilinx.{VivadoFlow, VivadoReport, VivadoTask, recommended}
 class CooleyTukeyFFT(N: Int) extends Component with DSPGen {
 
   val io = new Bundle {
-    val input = slave Flow (Vec(globalType, N * 2))
-    val output = master Flow (Vec(globalType, N * 2))
+    val input = slave Flow Vec(globalType, N * 2)
+    val output = master Flow Vec(globalType, N * 2)
   }
 
   val inputNumbers = (0 until N).map(i => ComplexNumber(io.input.payload(i * 2), io.input.payload(i * 2 + 1)))

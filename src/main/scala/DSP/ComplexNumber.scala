@@ -7,7 +7,7 @@ import spinal.core._
  * @param R real part of the complex number
  * @param I imaginary part of the complex number
  */
-class ComplexNumber(R: SFix, I: SFix){
+class ComplexNumber(R: SFix, I: SFix) extends Bundle {
   val real: SFix = R
   val imag: SFix = I
 
@@ -33,7 +33,11 @@ object ComplexNumber {
   private val zero = globalType
   zero := 0.0
 
-  def apply(R: SFix = zero, I: SFix= zero): ComplexNumber = {
+  def apply(): Unit = {
+
+  }
+
+  def apply(R: SFix = zero, I: SFix = zero): ComplexNumber = {
     new ComplexNumber(R, I)
   }
 

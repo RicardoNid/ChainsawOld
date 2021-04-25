@@ -8,7 +8,7 @@
 //import sysu.util._
 //import sysu.xilinx._
 //import sysu.CNN._
-//import projects.FTN.Interleave
+//import FTN.Interleave
 //
 //class ConvSeqGen(loopNestConv: LoopNestConv,
 //                 definition: Map[LoopVar, Array[Int]] = Map(

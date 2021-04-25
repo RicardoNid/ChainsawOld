@@ -155,22 +155,23 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
         val signalY = Reg(magnitudeType(iteration))
         val signalZ = Reg(phaseType(iteration))
 
+        val shiftedX = magnitudeType(iteration)
+        val shiftedY = magnitudeType(iteration)
+        val phaseCoeff = phaseType(iteration)
+
         val shiftingCoeffs =
           if (algebricMode == AlgebricMode.HYPERBOLIC) getHyperbolicSequence(iteration)
           else (0 until iteration)
-        val shiftingROM = Mem(shiftingCoeffs.map(coeff => U(coeff, 8 bits)))
+        val shiftingROM = Mem(shiftingCoeffs.map(coeff => U(coeff, log2Up(iteration + 1) bits)))
         val shiftingCoeff = shiftingROM.readAsync(counter)
 
-        // >> U(0) is strange
         // TODO: implement dynamic shifting for fixed type, or this would be very error-prone
-        val shiftedX = magnitudeType(iteration)
-        val shiftedY = magnitudeType(iteration)
 
         shiftedX.raw := Mux(counter === U(0), inputX.raw << (inputX.minExp - shiftedX.minExp) >> shiftingCoeff, signalX.raw >> shiftingCoeff).resized
         shiftedY.raw := Mux(counter === U(0), inputY.raw << inputY.minExp - shiftedY.minExp >> shiftingCoeff, signalY.raw >> shiftingCoeff).resized
 
         val phaseROM = Mem((0 until iteration).map(i => phaseTypeGen(iteration, getPhaseCoeff(i)(algebricMode))))
-        val phaseCoeff = phaseROM.readAsync(counter)
+        phaseCoeff := phaseROM.readAsync(counter)
         phaseCoeff.setName("diffZ")
 
         val counterClockwise = rotationMode match {
