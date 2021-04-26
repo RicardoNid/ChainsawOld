@@ -4,7 +4,6 @@ import DSP.ModularMultiplication.getModularInverse
 import spinal.core._
 import spinal.lib._
 
-
 /** Kernel for modular multiplication by Montgomery
  *
  * @param N modulo
@@ -29,19 +28,22 @@ class ModularMultiplication(A: UInt, B: UInt, N: Int) extends ImplicitArea[UInt]
 
   val AR = RegNext(REDC(A(innerWidth - 1 downto 0) * U(RSquare, innerWidth bits)))
   val BR = RegNext(REDC(B(innerWidth - 1 downto 0) * U(RSquare, innerWidth bits)))
-  val product = (AR * BR) (innerWidth - 1 downto 0)
+  val product = RegNext((AR * BR) (innerWidth - 1 downto 0))
   val ABR = RegNext(REDC(product))
 
   override def implicitValue = RegNext(REDC(ABR))
 
   override val getTimingInfo: TimingInfo = TimingInfo(inputInterval = 1, outputInterval = 1, latency = LatencyAnalysis(A, implicitValue), initiationInterval = 1)
+  println(s"latency: ${getTimingInfo.latency}")
 }
 
 object ModularMultiplication {
 
-  def getModularInverse(n: Int, modulo: Int) = {
-    (1 until modulo).filter(_ * n % modulo == 1).head
+  // TODO: find modualr inverse by a better method
+  def getModularInverse(n: BigInt, modulo: BigInt) = {
+    (1 until modulo.toInt).filter(_ * n % modulo == 1).head
   }
+
 
   def main(args: Array[String]): Unit = {
     println(getModularInverse(16, 13))

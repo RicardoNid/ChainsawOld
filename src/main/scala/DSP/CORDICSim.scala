@@ -48,6 +48,7 @@ class CORDICSim(cordicConfig: CordicConfig) extends Component with DSPSim {
     clockDomain.waitSampling()
   }
 
+
   override def peek(output: outputType): CordicSimData = {
     val ret = CordicSimData(Fix2Double(output.x, 14),
       Fix2Double(output.y, 14),
