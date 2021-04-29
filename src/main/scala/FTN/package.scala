@@ -6,7 +6,7 @@ package object FTN {
   val BitsPerSymbolQAM = 4
 
   val ConvConstLength = 7
-  val ConvCodeGen = Array(121, 91) // 171,133
+  val ConvCodeGen = Array(171, 133)
 
 
 }

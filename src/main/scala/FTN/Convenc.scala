@@ -13,12 +13,11 @@ import scala.math.pow //  for digital signal processing
 class Convenc(convConstLength: Int, convCodeGen: Array[Int]) extends Component {
 
   def oct2dec(oct: Int) =
-    oct.toString.toCharArray.map(_.asDigit) // get digits
+    oct.toString.toCharArray.map(_.asDigit).reverse // get digits
       .zipWithIndex.map { case (digit, i) => digit * pow(8, i) }.sum.toInt // weighted sum
   def padding(string: String, length: Int) = "0" * (length - string.length) + string
 
-  val binaryPoly = convCodeGen.map(number => padding(number.toBinaryString, convConstLength))
-  println(binaryPoly.mkString(" "))
+  val binaryPoly = convCodeGen.map(number => padding(oct2dec(number).toBinaryString, convConstLength))
 
   val input = in Bool()
   val output = out(Vec(Bool(), convCodeGen.length))
@@ -29,6 +28,7 @@ class Convenc(convConstLength: Int, convCodeGen: Array[Int]) extends Component {
 }
 
 object Convenc {
+
   def main(args: Array[String]): Unit = {
     SpinalConfig().generateSystemVerilog(new Convenc(ConvConstLength, ConvCodeGen))
   }
