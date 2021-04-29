@@ -1,7 +1,7 @@
 name := "SpinalTemplateSbt"
 version := "1.0"
 scalaVersion := "2.11.12"
-val spinalVersion = "1.4.4"
+val spinalVersion = "1.4.2"
 
 // 编译器选项
 scalacOptions ++= Seq(

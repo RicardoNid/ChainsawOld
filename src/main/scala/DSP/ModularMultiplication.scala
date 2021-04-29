@@ -13,7 +13,7 @@ class ModularMultiplication(A: UInt, B: UInt, N: Int) extends ImplicitArea[UInt]
   val start = Bool()
   val busy = Bool()
 
-  val innerWidth = log2Up(N - 1)
+  val innerWidth = log2Up(N)
   // precompute statically
   val R = 1 << log2Up(N)
   val RInverse = getModularInverse(R, N)
@@ -23,7 +23,7 @@ class ModularMultiplication(A: UInt, B: UInt, N: Int) extends ImplicitArea[UInt]
   def REDC(T: UInt) = {
     val m = RegNext((T(innerWidth - 1 downto 0) * U(NPrime, innerWidth bits)) (innerWidth - 1 downto 0))
     val t = (T + m * U(NPrime, innerWidth bits)) >> innerWidth
-    t
+    t // TR^{-1}
   }
 
   val AR = RegNext(REDC(A(innerWidth - 1 downto 0) * U(RSquare, innerWidth bits)))

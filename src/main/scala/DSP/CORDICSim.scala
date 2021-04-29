@@ -134,7 +134,7 @@ object CORDICSim {
     val dut = SimConfig.withWave.compile(new CORDICSim(cordicConfig))
     dut.doSim { dut =>
       dut.sim()
-      for (i <- 0 until 100) dut.insertTestCase(randomCase(cordicConfig))
+      for (i <- 0 until 10000) dut.insertTestCase(randomCase(cordicConfig))
       val (trueCase, totalCase, log, validLog) = dut.simDone()
       println(Console.RED)
       println(log.mkString(" "))

@@ -3,7 +3,6 @@ package DSP
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib.{Delay, Flow, master, slave}
-import xilinx.VivadoFlow
 
 import scala.util.Random
 
@@ -12,7 +11,7 @@ import scala.util.Random
  * @param N modulo
  */
 //class ModularMultiplicationSim(N: Int) extends Component {
-//  val input = slave Flow (Vec(UInt(log2Up(N - 1) bits), 2))
+//  val input = slave Flow Vec(UInt(log2Up(N - 1) bits), 2)
 //  val output = master Flow UInt(log2Up(N - 1) bits)
 //
 //  val mm = new ModularMultiplication(input.payload(0), input.payload(1), N)
@@ -61,6 +60,7 @@ class ModularMultiplicationSim(N: Int) extends Component with DSPSimLatest[Vec[U
     s"\ntestCase: ${testCase}, golden: $refResult, yours: $dutResult"
 }
 
+
 object ModularMultiplicationSim {
   def main(args: Array[String]): Unit = {
     debug = true
@@ -69,11 +69,13 @@ object ModularMultiplicationSim {
       dut.sim()
       val r = new Random
       (0 until 100).foreach(_ => dut.insertTestCase(r.nextInt(133), r.nextInt(133)))
+      val report = dut.simDone()
+      println(report._3.mkString(""))
     }
 
-    val report = VivadoFlow(design = new ModularMultiplicationSim(133), workspacePath = "output/MM", topModuleName = "MM").doit()
-    report.printArea
-    report.printFMax
+    //    val report = VivadoFlow(design = new ModularMultiplicationSim(133), workspacePath = "output/MM", topModuleName = "MM").doit()
+    //    report.printArea
+    //    report.printFMax
   }
 }
 

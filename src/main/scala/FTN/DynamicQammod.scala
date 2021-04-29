@@ -31,7 +31,6 @@ class DynamicQammod(bitAlloc: IndexedSeq[Int]) extends Component {
         }
       }
     }
-
     ret
   }
 
