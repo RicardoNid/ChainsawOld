@@ -125,3 +125,8 @@ object IntRange {
    */
   def apply(valueA: Int): RealRange = new RealRange(valueA, -valueA, 1.0)
 }
+
+object RangeShift {
+
+  def apply(value: BigDecimal): RealRange = new RealRange(value, value, 1.0)
+}
