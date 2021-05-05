@@ -17,11 +17,13 @@ class HDLBModule extends Component {
     reset = io.reset,
     config = new ClockDomainConfig(resetKind = SYNC, resetActiveLevel = HIGH))
 
-  val mainCD = new ClockingArea(CD){
-      io.output := io.input
+  val mainCD = new ClockingArea(CD) {
+    io.output := io.input
   }
 
   noIoPrefix()
+
+  when
 }
 
 object HDLBModule {

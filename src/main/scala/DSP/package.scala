@@ -1,6 +1,9 @@
 import breeze.linalg._
 import breeze.numerics._
 import breeze.numerics.constants.Pi
+import cc.redberry.rings.bigint.BigInteger
+import cc.redberry.rings.poly.multivar.MultivariatePolynomial
+import cc.redberry.rings.scaladsl.{IntZ, Monomial, MultivariateRing}
 import spinal.core._
 import spinal.core.sim._
 
@@ -196,4 +199,8 @@ package object DSP {
       }
     }.sum == num
   }
+
+  type Field = MultivariateRing[IntZ]
+  type Poly = MultivariatePolynomial[BigInteger]
+  type Term = Monomial[BigInteger]
 }

@@ -148,8 +148,9 @@ object CORDICSim {
 
   def main(args: Array[String]): Unit = {
     debug = true
-    for (algebric <- AlgebricMode.values; rotation <- RotationMode.values; arch <- IndexedSeq(SERIAL))
+    for (algebric <- AlgebricMode.values; rotation <- RotationMode.values; arch <- IndexedSeq(SERIAL)) {
       randomSim(CordicConfig(rotationMode = rotation, algebricMode = algebric, cordicArch = arch))
+    }
     //    randomSim(CordicConfig(rotationMode = ROTATION, algebricMode = CIRCULAR, cordicArch = SERIAL))
     //    randomSim(CordicConfig(rotationMode = VECTORING, algebricMode = HYPERBOLIC))
   }

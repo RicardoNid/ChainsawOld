@@ -1,7 +1,7 @@
 name := "SpinalTemplateSbt"
 version := "1.0"
 scalaVersion := "2.11.12"
-val spinalVersion = "1.4.2"
+val spinalVersion = "1.4.4"
 
 // 编译器选项
 scalacOptions ++= Seq(
@@ -28,6 +28,8 @@ libraryDependencies ++= Seq(
 libraryDependencies += "org.scalanlp" %% "breeze" % "1.0"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.8" % Test
+
+libraryDependencies += "cc.redberry" %% "rings.scaladsl" % "2.5.7"
 
 
 fork := true

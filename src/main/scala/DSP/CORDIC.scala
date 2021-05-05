@@ -101,9 +101,9 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
         case RotationMode.VECTORING => signalYs.dropRight(1).map(_.asBits.msb) // Y < 0
       }
 
-      signalXs.dropRight(1).zip(signalXs.drop(1)) // get the prev and next
-        .zip(counterClockwises.zip(pipes)) // get the control signal/conditions
-        .zip(shiftedYs) // get the increment
+      signalXs.dropRight(1).zip(signalXs.drop(1))
+        .zip(counterClockwises.zip(pipes))
+        .zip(shiftedYs)
         .foreach { case (((prev, next), (counterClockwise, pipe)), shifted) => // note the format of tuple
           val combX = algebricMode match {
             case AlgebricMode.CIRCULAR => Mux(counterClockwise, prev - shifted, prev + shifted).truncated
@@ -186,20 +186,22 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
           .whenIsActive {
             // TODO: implement a better fixed type with clear document
             when(counter === U(0)) {
-              val nextX = algebricMode match {
-                case DSP.AlgebricMode.CIRCULAR => Mux(counterClockwise, inputX - shiftedY, inputX + shiftedY).truncated
-                case DSP.AlgebricMode.HYPERBOLIC => Mux(counterClockwise, inputX + shiftedY, inputX - shiftedY).truncated
-                case DSP.AlgebricMode.LINEAR => inputX.truncated
-              }
+              val nextX =
+                algebricMode match {
+                  case DSP.AlgebricMode.CIRCULAR => Mux(counterClockwise, inputX - shiftedY, inputX + shiftedY).truncated
+                  case DSP.AlgebricMode.HYPERBOLIC => Mux(counterClockwise, inputX + shiftedY, inputX - shiftedY).truncated
+                  case DSP.AlgebricMode.LINEAR => inputX.truncated
+                }
               signalX := nextX
               signalY := Mux(counterClockwise, inputY + shiftedX, inputY - shiftedX).truncated
               signalZ := Mux(counterClockwise, inputZ - phaseCoeff, inputZ + phaseCoeff).truncated
             }.otherwise {
-              val nextX = algebricMode match {
-                case DSP.AlgebricMode.CIRCULAR => Mux(counterClockwise, signalX - shiftedY, signalX + shiftedY).truncated
-                case DSP.AlgebricMode.HYPERBOLIC => Mux(counterClockwise, signalX + shiftedY, signalX - shiftedY).truncated
-                case DSP.AlgebricMode.LINEAR => signalX.truncated
-              }
+              val nextX =
+                algebricMode match {
+                  case DSP.AlgebricMode.CIRCULAR => Mux(counterClockwise, signalX - shiftedY, signalX + shiftedY).truncated
+                  case DSP.AlgebricMode.HYPERBOLIC => Mux(counterClockwise, signalX + shiftedY, signalX - shiftedY).truncated
+                  case DSP.AlgebricMode.LINEAR => signalX.truncated
+                }
               signalX := nextX
               signalY := Mux(counterClockwise, signalY + shiftedX, signalY - shiftedX).truncated
               signalZ := Mux(counterClockwise, signalZ - phaseCoeff, signalZ + phaseCoeff).truncated
