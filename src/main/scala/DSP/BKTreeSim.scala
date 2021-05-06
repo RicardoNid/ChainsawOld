@@ -10,7 +10,7 @@ class BKTreeSim extends Component with DSPSimLatest[Vec[UInt], Vec[UInt], Array[
 
   val add = (x: UInt, y: UInt) => x + y
 
-  val bkTree = new BKTree[UInt](input.payload, add)
+  val bkTree = new BKTree[UInt](input.payload, add, 0)
   output.payload := bkTree.implicitValue
   output.valid := RegNext(input.valid)
   output.valid.init(False)
@@ -28,7 +28,8 @@ class BKTreeSim extends Component with DSPSimLatest[Vec[UInt], Vec[UInt], Array[
     ret
   }
 
-  override def referenceModel(testCase: Array[Int]): Array[Int] = (0 until testCase.length).map(i => testCase.takeRight(i + 1).sum).reverse.toArray
+  override def referenceModel(testCase: Array[Int]): Array[Int] =
+    (0 until testCase.length).map(i => testCase.takeRight(i + 1).sum).reverse.toArray
 
   override def isValid(refResult: Array[Int], dutResult: Array[Int]): Boolean =
     refResult.zip(dutResult).forall(pair => pair._1 == pair._2)
@@ -40,6 +41,8 @@ class BKTreeSim extends Component with DSPSimLatest[Vec[UInt], Vec[UInt], Array[
     s"${refResult.zip(dutResult).mkString("\n")}"
 
   override type RefOwnerType = this.type
+
+
 }
 
 object BKTreeSim {
