@@ -13,9 +13,9 @@ import spinal.core._ //  for digital signal processing
  * @see [[https://www.notion.so/SpinalHDL-Trees-9446624ca1594a41a29496cfd46f8605 Trees in Chainsaw]]
  */
 class BKTree[T <: Data](input: Vec[T], operator: (T, T) => T, BKLevel: Int = 0) extends ImplicitArea[Vec[T]] with DSPDesign with Testable {
-  val width = input.length
+  val width: Int = input.length
   require(isPow2(width))
-  val depth = log2Up(width) * 2
+  val depth: Int = log2Up(width) * 2
 
   def BuildTree(input: Vec[T], currentDepth: Int): Vec[T] = {
 
@@ -25,36 +25,37 @@ class BKTree[T <: Data](input: Vec[T], operator: (T, T) => T, BKLevel: Int = 0) 
     val isKS = !isBKForward && currentDepth < (depth - BKLevel)
     val isMid = currentDepth == depth / 2 - 1
 
-    println(s"current $currentDepth, isKS: ${isKS}")
+    println(s"current $currentDepth, isKS: $isKS")
 
     def BKForward(step: Int) = {
       val doubleStep = step << 1
       val operandsLeft = input.zipWithIndex.filter(_._2 % doubleStep == 0)
-      val operandsRight = operandsLeft.map { case (t, i) => (input(i + step), i + step) }
-      operandsLeft.zip(operandsRight).map { case ((tl, il), (tr, ir)) => (operator(tl, tr), il) }
+      val operandsRight = operandsLeft.map { case (_, i) => (input(i + step), i + step) }
+      (operandsLeft, operandsRight)
     }
 
     def BKBackword(step: Int) = {
       val doubleStep = step << 1
       val operandsRight = input.zipWithIndex.filter(_._2 % doubleStep == 0).drop(1)
-      val operandsLeft = operandsRight.map { case (t, i) => (input(i - step), i - step) }
-      operandsLeft.zip(operandsRight).map { case ((tl, il), (tr, ir)) => (operator(tl, tr), il) }
+      val operandsLeft = operandsRight.map { case (_, i) => (input(i - step), i - step) }
+      (operandsLeft, operandsRight)
     }
 
     def KoggeStone(level: Int) = { // start starts from 0, level starts from 0
       val candidateStep = 1 << BKLevel
       val candidates = input.zipWithIndex.filter(_._2 % candidateStep == 0)
-      val operatorNum = candidates.length - ((1 << level))
+      val operatorNum = candidates.length - (1 << level)
       val operandsLeft = candidates.take(operatorNum)
-      val operandsRight = candidates.take(operatorNum + 1 << level).drop(1 << level)
-      operandsLeft.zip(operandsRight).map { case ((tl, il), (tr, ir)) => (operator(tl, tr), il) }
+      val operandsRight = candidates.slice(1 << level, operatorNum + 1 << level)
+      (operandsLeft, operandsRight)
     }
 
-    val updates = {
+    val (operandsLeft, operandsRight) = {
       if (isBKForward) BKForward(1 << currentDepth)
       else if (isKS) KoggeStone((currentDepth - BKLevel) / 2)
       else BKBackword(1 << (depth - currentDepth - 1))
     }
+    val updates = operandsLeft.zip(operandsRight).map { case ((tl, il), (tr, _)) => (operator(tl, tr), il) }
 
     val updateIndexes = updates.map(_._2)
 
