@@ -11,7 +11,7 @@ object Coding {
    * @see DSP with FPGA, algo 2.4
    */
   def optimalCSD(num: Int): String = {
-    var raw = num.toBinaryString.reverse + "0"
+    val raw = num.toBinaryString.reverse + "0" // LSB -> MSB with 0 padded
 
     val pattern0 = "11+0".r
     val pattern1 = "1101".r
@@ -36,9 +36,7 @@ object Coding {
       }
     }
 
-    raw = process(raw)
-
-    raw.reverse.dropWhile(_ == '0') // MSB -> LSB, drop the leading 0s
+    process(raw).reverse.dropWhile(_ == '0') // MSB -> LSB, drop the leading 0s
   }
 
   /** Classic canonic signed digit encoding
@@ -48,8 +46,8 @@ object Coding {
    * @see DSP with FPGA, algo 2.2
    */
   def classicCSD(num: Int): String = {
-    val pattern = "11+0".r
     val raw = num.toBinaryString.reverse + "0" // LSB -> MSB with 0 padded
+    val pattern = "11+0".r
 
     @tailrec
     def process(raw: String): String = {
