@@ -26,7 +26,7 @@ import scala.util.Random
 //  }
 //}
 
-class ModularMultiplicationSim(N: Int) extends Component with DSPSimLatest[Vec[UInt], UInt, (Int, Int), Int] {
+class ModularMultiplicationSim(N: Int) extends Component with DSPSim[Vec[UInt], UInt, (Int, Int), Int] {
   val innerWidth = log2Up(N - 1)
 
   override val input: Flow[Vec[UInt]] = slave Flow Vec(UInt(innerWidth bits), 2)

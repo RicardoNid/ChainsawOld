@@ -21,7 +21,7 @@ case class CordicData() extends Bundle {
   val z: SFix = SFix(2 exp, -13 exp) // 2QN
 }
 
-class CORDICSim(cordicConfig: CordicConfig) extends Component with DSPSimLatest[CordicData, CordicData, CordicSimData, CordicSimData] {
+class CORDICSim(cordicConfig: CordicConfig) extends Component with DSPSim[CordicData, CordicData, CordicSimData, CordicSimData] {
   override val input: Flow[CordicData] = slave Flow CordicData()
   override val output: Flow[CordicData] = master Flow CordicData()
 

@@ -7,7 +7,7 @@ import DSP.RAGn.getPositiveOddFundamental
 import org.jgrapht.alg.shortestpath.AllDirectedPaths
 import org.jgrapht.graph._
 import org.jgrapht.traverse._
-import spinal.core.{log2Up, _}
+import spinal.core._
 
 import scala.collection.JavaConversions._
 
@@ -43,6 +43,10 @@ case class Shift(source: AddSubShift, des: AddSubShift, shiftLeft: Int = 0, nega
 
 case class AddSubShift(assSign: ASSSign = ADD, shiftRight: Int = 0, value: Int, assType: ASSType = ASS)
 
+/** This is an object-oriented model for shift-adder graph, based on
+ *
+ */
+//  TODO: decouple the structure and the operator(shift-adder graph should be "binary graph" + "shift adder")
 //  TODO: consider negation
 //  TODO: consider the order of parallel edges, as left / right count by SUBNEXT/SUBPREV
 class AdderGraph {

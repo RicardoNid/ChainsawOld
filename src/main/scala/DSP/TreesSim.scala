@@ -4,10 +4,10 @@ import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 
-/** Test BinaryTree by implmenting integer addtions
+/** Test BinaryTree by implmenting integer addtions and multiplications
  *
  */
-class BinaryTreeSim(length: Int, opertor: (SReal, SReal) => SReal, pipelineInterval: Int, refOperator: (Int, Int) => Int) extends Component with DSPSimLatest[Vec[SReal], SReal, Array[Int], Int] { // TODO: test it with real numbers
+class BinaryTreeSim(length: Int, opertor: (SReal, SReal) => SReal, pipelineInterval: Int, refOperator: (Int, Int) => Int) extends Component with DSPSim[Vec[SReal], SReal, Array[Int], Int] { // TODO: test it with real numbers
   override val input: Flow[Vec[SReal]] = slave Flow Vec(SReal(IntRange(0, 127)), length)
   override val output: Flow[SReal] = master Flow SReal(IntRange(0, 10000))
 

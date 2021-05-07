@@ -93,7 +93,16 @@ object FIR {
     val LUTOuts = LUTIns.map(DALUT(_, coefficients, input.minExp))
     // the real shifts should be minExp until maxExp
     val shifts = (0 until b - 1).map(_ + input.minExp)
+
+    val shiftAdd = (left: (SFix, Int), right: (SFix, Int)) => {
+      val shiftLeft = right._2 - left._2
+      require(shiftLeft >= 0)
+      (left._1 +^ (right._1 << shiftLeft), left._2)
+    }
+
     val init = ShiftAdderTree(LUTOuts.init, shifts).implicitValue
+    val sat = new BinaryTreeWithInfo(LUTOuts.init.zip(shifts), shiftAdd)
+    val init = sat.implicitValue << sat.getRemainedInfo
     LUTIns(b - 1).setName("signBit").simPublic()
     LUTOuts(b - 1).setName("signBitResult").simPublic()
     val last = RegNext(LUTOuts.last << (b - 1 + input.minExp))

@@ -6,7 +6,7 @@ import spinal.lib._
 
 // TODO: sign extension
 class WallaceTreeSim() extends Component
-  with DSPSimLatest[Vec[SReal], SReal, Array[Int], Int] {
+  with DSPSim[Vec[SReal], SReal, Array[Int], Int] {
   override val input: Flow[Vec[SReal]] = slave Flow (Vec(SReal(IntRange(0, 63)), 7))
   override val output: Flow[SReal] = master Flow SReal(IntRange(0, 63 * 7))
 

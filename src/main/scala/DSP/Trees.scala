@@ -30,7 +30,6 @@ class BinaryTree[T <: Data](input: Vec[T], operator: (T, T) => T, pipelineInterv
         val remainder = if (width % 2 == 0) IndexedSeq[T]() else IndexedSeq(input.last)
         // operating
         val result = operandsLeft.zip(operandsRight).map { case (lt, rt) => operator(lt, rt) } ++ remainder
-        result.map(_.setName(s"level$currentDepth"))
         // pipelining
         val pipelinedResult = if (doPipeline) result.map(RegNext(_)) else result
         // recursive call
@@ -44,4 +43,43 @@ class BinaryTree[T <: Data](input: Vec[T], operator: (T, T) => T, pipelineInterv
 
   private val latency = if (pipelineInterval == 0) 1 else log2Up(width) / pipelineInterval + 1
   override val getTimingInfo: TimingInfo = TimingInfo(1, 1, latency, 1)
+}
+
+// TODO: build connections between Binary Tree and Binary Tree with Info(at least, merge some part of them)
+class BinaryTreeWithInfo[T <: Data, I](input: IndexedSeq[(T, I)], operator: ((T, I), (T, I)) => (T, I), pipelineInterval: Int = 0) extends ImplicitArea[T] with Testable {
+
+  private val width = input.length
+
+  @tailrec
+  private def buildTree(input: IndexedSeq[(T, I)], currentDepth: Int = 0): Seq[(T, I)] = {
+    val width = input.length
+    val doPipeline = pipelineInterval != 0 && currentDepth % pipelineInterval == pipelineInterval - 1
+    width match {
+      case 1 => input
+      case _ =>
+        val half = width / 2
+        // extract the elements as left, right or remained operands
+        val operandsLeft = (0 until half).map(i => input(i * 2))
+        val operandsRight = (0 until half).map(i => input(i * 2 + 1))
+        val remainder = if (width % 2 == 0) IndexedSeq[(T, I)]() else IndexedSeq(input.last)
+        // operating
+        val result = operandsLeft.zip(operandsRight).map { case (lt, rt) => operator(lt, rt) } ++ remainder
+        // pipelining
+        val pipelinedResult = if (doPipeline) result.map { case (t, i) => (RegNext(t), i) } else result
+        // recursive call
+        buildTree(pipelinedResult, currentDepth + 1)
+    }
+  }
+
+  private val output = buildTree(input).head
+
+  override def implicitValue: T = RegNext(output._1)
+  def getRemainedInfo = output._2
+
+  private val latency = if (pipelineInterval == 0) 1 else log2Up(width) / pipelineInterval + 1
+  override val getTimingInfo: TimingInfo = TimingInfo(1, 1, latency, 1)
+}
+
+object CommonTrees {
+
 }
