@@ -13,7 +13,7 @@ class SCM(input: SInt, constant: Int, scmArch: SCMArch) extends ImplicitArea[SIn
 
   scmArch match {
     case SCMArch.CSD => {
-      val encoded = optimalCSD(constant).reverse
+      val encoded = Coding.optimalCSD(constant).reverse
       printlnWhenDebug(s"$constant encoded as: ${encoded} (reverse)")
       val signed = encoded.filterNot(_ == '0').map {
         case '1' => input

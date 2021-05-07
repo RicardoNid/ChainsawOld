@@ -148,54 +148,7 @@ package object DSP {
     string.reverse
   }
 
-  // ALGO 2.2
-  def optimalCSD(num: Int): String = {
-    val pattern0 = "11+0".r
-    val pattern1 = "1101".r
-    val pattern2 = "901".r
-
-    var string = num.toBinaryString.reverse + "0"
-    var done0 = false
-    var done1 = false
-    var done2 = false
-
-    while (!done0) {
-      val sub = pattern0.findFirstIn(string).getOrElse {
-        done0 = true
-        " "
-      }
-      string = string.replace(sub, "9" + "0" * (sub.length - 2) + "1")
-    }
-
-    while (!done1) {
-      val sub = pattern1.findFirstIn(string).getOrElse {
-        done1 = true
-        " "
-      }
-      string = string.replaceFirst(sub, "9011")
-
-    }
-
-    while (!done2) {
-      val sub = pattern2.findFirstIn(string).getOrElse {
-        done2 = true
-        " "
-      }
-      string = string.replaceFirst(sub, "110")
-    }
-
-    string.reverse.dropWhile(_ == '0')
-  }
-
-  def verifyCSD(res: String, num: Int): Boolean = {
-    (0 until res.length).map { i =>
-      res(i) match {
-        case '0' => 0
-        case '1' => 1 * pow(2, i)
-        case '9' => -1 * pow(2, i)
-      }
-    }.sum == num
-  }
+  val DSPRand = new Random(42) // using this as global random gen, with a fixed seed
 
   //  type Field = MultivariateRing[IntZ]
   //  type Poly = MultivariatePolynomial[BigInteger]
