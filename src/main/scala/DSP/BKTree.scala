@@ -1,6 +1,6 @@
 package DSP
 
-import spinal.core._ //  for digital signal processing
+import spinal.core._
 
 /** This is not a module, not even a module generator - this is an architecture.
  *
@@ -71,6 +71,7 @@ class BKTree[T <: Data](input: Vec[T], operator: (T, T) => T, BKLevel: Int = 0) 
 
   override def implicitValue: Vec[T] = RegNext(BuildTree(input, 0))
 
+  // TODO: fullfill this and do more on timing
   override val start: Bool = Bool()
   override val busy: Bool = Bool()
   override val getTimingInfo: TimingInfo = TimingInfo(1, 1, 1, 1)
