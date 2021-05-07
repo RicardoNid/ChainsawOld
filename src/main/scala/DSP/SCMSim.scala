@@ -9,7 +9,7 @@ class SCMSim(constant: Int, scmArch: SCMArch) extends Component with DSPSim[SInt
   override val output: Flow[SInt] = master Flow SInt(12 + log2Up(constant) bits)
 
   val scm = new SCM(input.payload, constant, scmArch)
-  output.payload := scm.implicitValue
+  output.payload := scm.implicitValue.resized
   override val timing: TimingInfo = scm.getTimingInfo
   output.valid := Delay(input.valid, timing.latency, init = False)
 

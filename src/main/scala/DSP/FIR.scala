@@ -100,7 +100,6 @@ object FIR {
       (left._1 +^ (right._1 << shiftLeft), left._2)
     }
 
-    val init = ShiftAdderTree(LUTOuts.init, shifts).implicitValue
     val sat = new BinaryTreeWithInfo(LUTOuts.init.zip(shifts), shiftAdd)
     val init = sat.implicitValue << sat.getRemainedInfo
     LUTIns(b - 1).setName("signBit").simPublic()
