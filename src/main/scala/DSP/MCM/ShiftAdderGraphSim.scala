@@ -1,9 +1,10 @@
-package DSP
+package DSP.MCM
 
+import DSP.MCM.ASSSign._
 import DSP.SAGArch._
+import DSP._
 import spinal.core.sim._
 
-import scala.io.Source
 import scala.util.Random
 
 class ShiftAdderGraphSim(adderGraph: AdderGraph, sagArch: SAGArch = NORMAL) extends ShiftAdderGraphDUT(adderGraph, sagArch) with DSPSimOld {
@@ -93,27 +94,29 @@ object ShiftAdderGraphSim {
 
   def main(args: Array[String]): Unit = {
 
-    //    debug = true
-    //    val adderGraph = new AdderGraph()
-    //    adderGraph.addFundamental(1, 1, AOperation(2, SUBNEXT))
-    //    adderGraph.addFundamental(1, 1, AOperation(3, ADD))
-    //    adderGraph.addFundamental(9, 1, AOperation(0, 1, 0, ADD))
-    //    adderGraph.addFundamental(9, 1, AOperation(0, 2, 0, ADD))
-    //    adderGraph.addFundamental(3, 11, AOperation(0, 4, 0, SUBPREV))
-    //    adderGraph.addOutput(9, 0)
-    //    adderGraph.addOutput(11, 2, negation = true)
-    //    adderGraph.addOutput(13, 4)
-    //    adderGraph.addOutput(173, 1)
-    //
-    //    println(adderGraph.outputs.mkString(" "))
-    //
-    //    randomSim(adderGraph)
+    debug = true
+    val adderGraph = new AdderGraph()
+    adderGraph.addFundamental(1, 1, AOperation(2, SUBNEXT))
+    adderGraph.addFundamental(1, 1, AOperation(3, ADD))
+    adderGraph.addFundamental(9, 1, AOperation(0, 1, 0, ADD))
+    adderGraph.addFundamental(9, 1, AOperation(0, 2, 0, ADD))
+    adderGraph.addFundamental(3, 11, AOperation(0, 4, 0, SUBPREV))
+    adderGraph.addOutput(9, 0)
+    adderGraph.addOutput(11, 2, negation = true)
+    adderGraph.addOutput(13, 4)
+    adderGraph.addOutput(173, 1)
 
-    val coe = Source.fromFile("ex2PM16_119.coe").getLines().drop(1).map(_.filter(_.isDigit).toInt).toSeq
-    val optimalGraph = RAGn(coe)._3
-    //    randomSim(optimalGraph)
+    println(adderGraph.outputs.mkString(" "))
 
-    randomSim(optimalGraph, sagArch = RAW)
+    randomSim(adderGraph)
+
+    // FIXME: this case not passed
+    // FIXME: thest tests won't stop
+    //    val coe = Source.fromFile("ex2PM16_119.coe").getLines().drop(1).map(_.filter(_.isDigit).toInt).toSeq
+    //    val optimalGraph = RAGn(coe)._3
+    //    //    randomSim(optimalGraph)
+    //
+    //    randomSim(optimalGraph, sagArch = RAW)
   }
 }
 

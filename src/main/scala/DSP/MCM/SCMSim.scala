@@ -1,5 +1,6 @@
-package DSP
+package DSP.MCM
 
+import DSP._
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._

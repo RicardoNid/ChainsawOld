@@ -1,5 +1,6 @@
-package DSP
+package DSP.MCM
 
+import DSP.{BinaryTreeWithInfo, Coding, SCMArch, Testable, TimingInfo}
 import spinal.core._
 
 // TODO: add the implementation by MAG algo

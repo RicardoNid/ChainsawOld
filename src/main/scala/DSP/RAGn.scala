@@ -1,6 +1,7 @@
 package DSP
 
-import DSP.ASSSign._
+import DSP.MCM.ASSSign._
+import DSP.MCM.{AConfigVector, AOperation}
 import breeze.numerics.abs
 import org.jgrapht.traverse.DepthFirstIterator
 import spinal.core._
@@ -290,10 +291,10 @@ object RAGn {
     println(costNcoeffs(4).map(lookupPaths(_)).head.map(_.mkString("->")).mkString("\n"))
   }
 
-  def apply(coefficients: Seq[Int]): (mutable.LinkedHashSet[Int], Boolean, AdderGraph) = {
+  def apply(coefficients: Seq[Int]): (mutable.LinkedHashSet[Int], Boolean, MCM.AdderGraph) = {
     val incompleteSet = mutable.Set[Int]()
     var graphSet = mutable.LinkedHashSet[Int](1)
-    val resultAG = new AdderGraph()
+    val resultAG = new MCM.AdderGraph()
 
     def showStatus = {
       println(s"  current incomplete set: ${incompleteSet.mkString(" ")}")

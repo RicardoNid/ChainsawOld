@@ -1,7 +1,8 @@
-package DSP
+package DSP.MCM
 
-import DSP.ASSSign._
-import DSP.ASSType._
+import DSP.MCM.ASSSign._
+import DSP.MCM.ASSType._
+import DSP._
 import org.jgrapht.traverse.BreadthFirstIterator
 import spinal.core._
 
