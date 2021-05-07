@@ -2,15 +2,11 @@ package DSP
 
 import spinal.core._
 
-/** This is not a module, not even a module generator - this is an architecture.
+/** The hybrid architecture of Brent-Kung and Kogge-Stone trees
  *
- * It implements prefix sum by a hybrid architecture of Brent-Kung and Kogge-Stone trees
- *
- * @param input    input signals
- * @param operator the associative binary operator, which is a hardware building block
- * @param BKLevel  level of Brent-Kung tree, you can trade 2 level of BK for 1 level of KS
- * @tparam T type of signals in input vector
- * @see [[https://www.notion.so/SpinalHDL-Trees-9446624ca1594a41a29496cfd46f8605 Trees in Chainsaw]]
+ * @param operator the associative binary operator
+ * @param BKLevel  level of Brent-Kung tree, the rest would be Kogge-Stone
+ * @see [[https://www.notion.so/SpinalHDL-Trees-9446624ca1594a41a29496cfd46f8605 Trees in Chainsaw]] for basic concepts about Chainsaw Trees
  */
 class BKKSTree[T <: Data](input: Vec[T], operator: (T, T) => T, BKLevel: Int = 0) extends ImplicitArea[Vec[T]] with DSPDesign with Testable {
   val width: Int = input.length

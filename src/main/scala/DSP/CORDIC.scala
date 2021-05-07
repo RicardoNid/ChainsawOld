@@ -5,8 +5,8 @@ import spinal.core._
 import spinal.lib._
 import spinal.lib.fsm._
 
-object AlgebricMode extends Enumeration {
-  type AlgebricMode = Value
+object AlgebraicMode extends Enumeration {
+  type AlgebraicMode = Value
   val CIRCULAR, HYPERBOLIC, LINEAR = Value
 }
 
@@ -25,7 +25,7 @@ object CordicPipe extends Enumeration {
   val MAXIMUM, HALF, NONE = Value
 }
 
-import DSP.AlgebricMode.AlgebricMode
+import DSP.AlgebraicMode.AlgebraicMode
 import DSP.CordicArch.CordicArch
 import DSP.CordicPipe.CordicPipe
 import DSP.RotationMode.RotationMode
@@ -46,7 +46,7 @@ import DSP.RotationMode.RotationMode
 import DSP.CordicArch._
 import DSP.CordicPipe._
 
-case class CordicConfig(algebricMode: AlgebricMode, rotationMode: RotationMode,
+case class CordicConfig(algebricMode: AlgebraicMode, rotationMode: RotationMode,
                         cordicArch: CordicArch = PARALLEL, cordicPipe: CordicPipe = MAXIMUM,
                         outputWidth: Int = 16, iteration: Int = 11, precision: Int = 15,
                         coarseRotation: Boolean = false, scaleCompensate: Boolean = true)
@@ -80,7 +80,7 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
       val signalZs = inputZ :: (0 until iteration).map(i => phaseType(i)).toList
 
       val shiftingCoeffs =
-        if (algebricMode == AlgebricMode.HYPERBOLIC) getHyperbolicSequence(iteration)
+        if (algebricMode == AlgebraicMode.HYPERBOLIC) getHyperbolicSequence(iteration)
         else (0 until iteration)
 
       val shiftedXs = signalXs.dropRight(1).zip(shiftingCoeffs).map { case (x, i) => x >> i }
@@ -106,9 +106,9 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
         .zip(shiftedYs)
         .foreach { case (((prev, next), (counterClockwise, pipe)), shifted) => // note the format of tuple
           val combX = algebricMode match {
-            case AlgebricMode.CIRCULAR => Mux(counterClockwise, prev - shifted, prev + shifted).truncated
-            case AlgebricMode.HYPERBOLIC => Mux(counterClockwise, prev + shifted, prev - shifted).truncated
-            case AlgebricMode.LINEAR => prev.truncated
+            case AlgebraicMode.CIRCULAR => Mux(counterClockwise, prev - shifted, prev + shifted).truncated
+            case AlgebraicMode.HYPERBOLIC => Mux(counterClockwise, prev + shifted, prev - shifted).truncated
+            case AlgebraicMode.LINEAR => prev.truncated
           }
           next := (if (pipe) RegNext(combX) else combX).truncated
         }
@@ -160,7 +160,7 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
         val phaseCoeff = phaseType(iteration)
 
         val shiftingCoeffs =
-          if (algebricMode == AlgebricMode.HYPERBOLIC) getHyperbolicSequence(iteration)
+          if (algebricMode == AlgebraicMode.HYPERBOLIC) getHyperbolicSequence(iteration)
           else (0 until iteration)
         val shiftingROM = Mem(shiftingCoeffs.map(coeff => U(coeff, log2Up(iteration + 1) bits)))
         val shiftingCoeff = shiftingROM.readAsync(counter)
@@ -188,9 +188,9 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
             when(counter === U(0)) {
               val nextX =
                 algebricMode match {
-                  case DSP.AlgebricMode.CIRCULAR => Mux(counterClockwise, inputX - shiftedY, inputX + shiftedY).truncated
-                  case DSP.AlgebricMode.HYPERBOLIC => Mux(counterClockwise, inputX + shiftedY, inputX - shiftedY).truncated
-                  case DSP.AlgebricMode.LINEAR => inputX.truncated
+                  case DSP.AlgebraicMode.CIRCULAR => Mux(counterClockwise, inputX - shiftedY, inputX + shiftedY).truncated
+                  case DSP.AlgebraicMode.HYPERBOLIC => Mux(counterClockwise, inputX + shiftedY, inputX - shiftedY).truncated
+                  case DSP.AlgebraicMode.LINEAR => inputX.truncated
                 }
               signalX := nextX
               signalY := Mux(counterClockwise, inputY + shiftedX, inputY - shiftedX).truncated
@@ -198,9 +198,9 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
             }.otherwise {
               val nextX =
                 algebricMode match {
-                  case DSP.AlgebricMode.CIRCULAR => Mux(counterClockwise, signalX - shiftedY, signalX + shiftedY).truncated
-                  case DSP.AlgebricMode.HYPERBOLIC => Mux(counterClockwise, signalX + shiftedY, signalX - shiftedY).truncated
-                  case DSP.AlgebricMode.LINEAR => signalX.truncated
+                  case DSP.AlgebraicMode.CIRCULAR => Mux(counterClockwise, signalX - shiftedY, signalX + shiftedY).truncated
+                  case DSP.AlgebraicMode.HYPERBOLIC => Mux(counterClockwise, signalX + shiftedY, signalX - shiftedY).truncated
+                  case DSP.AlgebraicMode.LINEAR => signalX.truncated
                 }
               signalX := nextX
               signalY := Mux(counterClockwise, signalY + shiftedX, signalY - shiftedX).truncated
@@ -233,22 +233,22 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
    * @param algebricMode
    * @return
    */
-  def getPhaseCoeff(iteration: Int)(implicit algebricMode: AlgebricMode) = {
+  def getPhaseCoeff(iteration: Int)(implicit algebricMode: AlgebraicMode) = {
     algebricMode match {
-      case AlgebricMode.CIRCULAR => atan(pow(2.0, -iteration))
-      case AlgebricMode.HYPERBOLIC => atanh(pow(2.0, -getHyperbolicSequence(iteration + 1).last))
-      case AlgebricMode.LINEAR => pow(2.0, -iteration)
+      case AlgebraicMode.CIRCULAR => atan(pow(2.0, -iteration))
+      case AlgebraicMode.HYPERBOLIC => atanh(pow(2.0, -getHyperbolicSequence(iteration + 1).last))
+      case AlgebraicMode.LINEAR => pow(2.0, -iteration)
     }
   }
 
-  def getScaleComplement(iteration: Int)(implicit algebricMode: AlgebricMode) = {
+  def getScaleComplement(iteration: Int)(implicit algebricMode: AlgebraicMode) = {
     require(iteration >= 1)
     algebricMode match {
-      case AlgebricMode.CIRCULAR => (0 until iteration).map(i => cos(getPhaseCoeff(i))).product
-      case AlgebricMode.HYPERBOLIC => 1.0 / (1 until iteration)
+      case AlgebraicMode.CIRCULAR => (0 until iteration).map(i => cos(getPhaseCoeff(i))).product
+      case AlgebraicMode.HYPERBOLIC => 1.0 / (1 until iteration)
         .map(i => getHyperbolicSequence(i).last)
         .map(i => sqrt(1 - pow(2.0, -2 * i))).product
-      case AlgebricMode.LINEAR => 1.0
+      case AlgebraicMode.LINEAR => 1.0
     }
   }
 
