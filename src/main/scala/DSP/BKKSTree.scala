@@ -12,12 +12,12 @@ import spinal.core._
  * @tparam T type of signals in input vector
  * @see [[https://www.notion.so/SpinalHDL-Trees-9446624ca1594a41a29496cfd46f8605 Trees in Chainsaw]]
  */
-class BKTree[T <: Data](input: Vec[T], operator: (T, T) => T, BKLevel: Int = 0) extends ImplicitArea[Vec[T]] with DSPDesign with Testable {
+class BKKSTree[T <: Data](input: Vec[T], operator: (T, T) => T, BKLevel: Int = 0) extends ImplicitArea[Vec[T]] with DSPDesign with Testable {
   val width: Int = input.length
   require(isPow2(width))
   val depth: Int = log2Up(width) * 2
 
-  def BuildTree(input: Vec[T], currentDepth: Int): Vec[T] = {
+  def BuildTree(input: Vec[T], currentDepth: Int = 0): Vec[T] = { // currentDepth starts from 0
 
     require(BKLevel <= depth / 2)
 

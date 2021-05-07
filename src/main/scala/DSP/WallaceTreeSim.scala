@@ -44,12 +44,11 @@ class WallaceTreeSim() extends Component
 object WallaceTreeSim {
   def main(args: Array[String]): Unit = {
     SimConfig.compile(new WallaceTreeSim).doSim { dut =>
-      dut.simInit()
       dut.sim()
       dut.insertTestCase((0 until 7).toArray)
       val report = dut.simDone()
-      println(report._3.mkString("\n"))
-      println(report._4.mkString("\n"))
+      println(report.log.mkString("\n"))
+      println(report.validLog.mkString("\n"))
     }
   }
 }

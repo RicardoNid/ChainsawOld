@@ -1,4 +1,4 @@
-package DSP
+package FTN
 
 import breeze.linalg._
 import breeze.math._
@@ -205,10 +205,8 @@ class FTNBetter {
 
   def FTN = {
     val bitsAllFrame: Array[Boolean] = RandomBits() // size = 143360, bits, 143360 = FrameNumber * BitNumber = 20 * 7168
-    printlnWhenDebug("input gen done")
     val OFDMFrame: Array[Double] = OFDMTransmitter(bitsAllFrame) // size = 171680, double, 171680 = FrameNumber * TODO
-    printlnWhenDebug("transmitting done")
-    val OFDMFrameRec: Array[Double] = Channel(OFDMFrame) // size = 171680, double, 171680 = FrameNumber * 
+    val OFDMFrameRec: Array[Double] = Channel(OFDMFrame) // size = 171680, double, 171680 = FrameNumber *
     val debitsAllFrame: Array[Boolean] = OFDMReceiver(OFDMFrameRec) // size = 143360, bits, 143360 = FrameNumber * BitNumber = 20 * 7168
     val nErrors: Int = biterr(bitsAllFrame, debitsAllFrame)
     val BER = nErrors.toDouble / bitsAllFrame.length
@@ -222,8 +220,6 @@ object FTNBetter {
   import FTNParam._
 
   def main(args: Array[String]): Unit = {
-    println(DataCarrierPositions.length)
-    println(DataCarrierPositions.mkString(" "))
     println(OFDMPositions.length)
     println(OFDMPositions.mkString(" "))
 

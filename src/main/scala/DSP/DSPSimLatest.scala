@@ -6,6 +6,8 @@ import spinal.lib._
 
 import scala.collection.mutable
 
+case class SimReport(trueCase: Int, totalCase: Int, log: mutable.Queue[String], validLog: mutable.Queue[String])
+
 //trait DSPSim extends DSPGen {
 trait DSPSimLatest[inputType <: Data, outputType <: Data, testCaseType, testResultType] extends Component {
 
@@ -34,7 +36,7 @@ trait DSPSimLatest[inputType <: Data, outputType <: Data, testCaseType, testResu
 
   def peek(output: outputType): testResultType
 
-  def simInit(): Unit = {
+  private def simInit(): Unit = {
     clockDomain.forkStimulus(2)
     input.valid #= false
     clockDomain.waitSampling(10)
@@ -45,7 +47,7 @@ trait DSPSimLatest[inputType <: Data, outputType <: Data, testCaseType, testResu
     clockDomain.waitSampling(10)
     val protect = timing.initiationInterval - timing.latency - timing.outputInterval
     while (refResults.nonEmpty || dutResults.nonEmpty) clockDomain.waitSampling(if (protect > 0) protect else 1)
-    (trueCase, totalCase, log, validLog)
+    SimReport(trueCase, totalCase, log, validLog)
   }
 
   /** The function that takes the testCase and return the ground truth

@@ -4,13 +4,13 @@ import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 
-class BKTreeSim extends Component with DSPSimLatest[Vec[UInt], Vec[UInt], Array[Int], Array[Int]] {
+class BKKSTreeSim extends Component with DSPSimLatest[Vec[UInt], Vec[UInt], Array[Int], Array[Int]] {
   override val input: Flow[Vec[UInt]] = slave Flow Vec(UInt(10 bits), 16)
   override val output: Flow[Vec[UInt]] = master Flow Vec(UInt(10 bits), 16)
 
   val add = (x: UInt, y: UInt) => x + y
 
-  val bkTree = new BKTree[UInt](input.payload, add, 0)
+  val bkTree = new BKKSTree[UInt](input.payload, add, 0)
   output.payload := bkTree.implicitValue
   output.valid := RegNext(input.valid)
   output.valid.init(False)
@@ -41,21 +41,18 @@ class BKTreeSim extends Component with DSPSimLatest[Vec[UInt], Vec[UInt], Array[
     s"${refResult.zip(dutResult).mkString("\n")}"
 
   override type RefOwnerType = this.type
-
-
 }
 
-object BKTreeSim {
+object BKKSTreeSim {
   def main(args: Array[String]): Unit = {
 
     debug = true
 
-    SimConfig.compile(new BKTreeSim).doSim { dut =>
-      dut.simInit()
-      dut.insertTestCase((0 until 16).toArray)
+    SimConfig.compile(new BKKSTreeSim).doSim { dut =>
       dut.sim()
-      val (trueCase, totalCase, log, validLog) = dut.simDone()
-      println(validLog)
+      dut.insertTestCase((0 until 16).toArray)
+      val report = dut.simDone()
+      println(report.validLog)
     }
   }
 }

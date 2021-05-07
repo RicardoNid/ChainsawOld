@@ -70,7 +70,7 @@ object ModularMultiplicationSim {
       val r = new Random
       (0 until 100).foreach(_ => dut.insertTestCase(r.nextInt(133), r.nextInt(133)))
       val report = dut.simDone()
-      println(report._3.mkString(""))
+      println(report.validLog.mkString(""))
     }
 
     //    val report = VivadoFlow(design = new ModularMultiplicationSim(133), workspacePath = "output/MM", topModuleName = "MM").doit()
