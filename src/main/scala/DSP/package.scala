@@ -153,4 +153,19 @@ package object DSP {
   //  type Field = MultivariateRing[IntZ]
   //  type Poly = MultivariatePolynomial[BigInteger]
   //  type Term = Monomial[BigInteger]
+
+  implicit class SimSRealPimper(sr: SReal) {
+
+    def #=(value: Int) = setLong(sr.raw, value)
+    def #=(value: Long) = setLong(sr.raw, value)
+    def #=(value: BigInt) = setBigInt(sr.raw, value)
+    def #=(value: Array[Byte]) = { //TODO improve perf
+      var acc = BigInt(0)
+      for (i <- value.size - 1 downto 0) {
+        acc = acc << 8
+        acc |= value(i).toInt & 0xFF
+      }
+      setBigInt(sr.raw, acc)
+    }
+  }
 }

@@ -1,8 +1,3 @@
-import scala.io.Source
+def bs2i(bs: String) = bs.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (1 << i) }.sum
 
-val filename = "/home/lsfans/LTRSpinal/src/main/scala/mag14.dat"
-val goldenCostLUT = Source.fromFile(filename).getLines().mkString("")
-  .zipWithIndex.map { case (c, i) => (i + 1) -> c }.toMap
-
-goldenCostLUT.size
-goldenCostLUT.get(1151).get
+bs2i("001")

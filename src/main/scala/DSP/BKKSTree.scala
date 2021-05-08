@@ -13,7 +13,7 @@ class BKKSTree[T <: Data](input: Vec[T], operator: (T, T) => T, BKLevel: Int = 0
   require(isPow2(width))
   val depth: Int = log2Up(width) * 2
 
-  def BuildTree(input: Vec[T], currentDepth: Int = 0): Vec[T] = { // currentDepth starts from 0
+  def BuildTree(input: Vec[T], currentDepth: Int = 0): Vec[T] = { // zcurrentDepth starts from 0
 
     require(BKLevel <= depth / 2)
 

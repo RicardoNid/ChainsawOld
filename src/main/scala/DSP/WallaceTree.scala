@@ -14,10 +14,10 @@ class WallaceTree(input: Vec[SReal]) extends ImplicitArea[SReal] {
 
   println(input.map(_.range).mkString("\n"))
   val table = ListBuffer.fill(tableMax - tableMin)(ListBuffer[Bool]())
-  input.foreach(operand => (operand.minExp - tableMin until operand.maxExp - tableMin).foreach(i => table(i) += operand.raw(i)))
+  input.foreach(operand =>
+    (operand.minExp - tableMin until operand.maxExp - tableMin)
+      .foreach(i => table(i) += operand.raw(i)))
 
-
-  //  val FA = (x: Bool, y: Bool, z: Bool) => (z & (x ^ y) | x & y, x ^ y ^ z) // carry, sum
   def FA(x: Bool, y: Bool, z: Bool) = (z & (x ^ y) | x & y, x ^ y ^ z) // carry, sum
 
   def BuildTree(table: ListBuffer[ListBuffer[Bool]]): ListBuffer[ListBuffer[Bool]] = {

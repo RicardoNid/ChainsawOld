@@ -26,7 +26,9 @@ class SCM(input: SInt, constant: Int, scmArch: SCMArch) extends ImplicitArea[SIn
       }
 
       val shifts = encoded.zipWithIndex.filter(_._1 != '0').map(_._2)
+
       val sat = new BinaryTreeWithInfo(signeds.zip(shifts), shiftAdd)
+
       sat.implicitValue << sat.getRemainedInfo
 
     case SCMArch.MULT =>
