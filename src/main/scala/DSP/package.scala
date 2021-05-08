@@ -53,7 +53,6 @@ package object DSP {
       ret.raw := (sfix.raw << that).resized
       ret
     }
-
   }
 
   def MySFix(maxValue: Double, minValue: Double, resolution: Double): SFix = {

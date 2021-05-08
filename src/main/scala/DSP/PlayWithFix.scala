@@ -31,31 +31,37 @@ class PlayWithFix extends Component {
 class PlayWithFixSim extends PlayWithFix {
 
   implicit class myBinaryString(val bs: String) {
-    /** Allocate
+    /** Allocate bits to multiple elements
      */
     def =<<[T <: BitVector](elems: T*) = {
       val prefix = (0 to elems.length).map(i => elems.map(_.getBitsWidth).take(i).sum)
       val intervals = prefix.dropRight(1).zip(prefix.drop(1))
       val slices = intervals.map { case (start, end) => bs.slice(start, end) }
-      elems.zip(slices).foreach { case (elem, slice) => elem #= bs2i(slice) }
+      if (elems.isInstanceOf[Seq[SInt]]) elems.zip(slices).foreach { case (elem, slice) => elem #= bs2i2c(slice) }
+      else elems.zip(slices).foreach { case (elem, slice) => elem #= bs2i(slice) }
     }
   }
 
   def bs2i(bs: String) = bs.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (1 << i) }.sum
+  def bs2i2c(bs: String) = {
+    val values = bs.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (1 << i) }
+    values.dropRight(1).sum - values.last
+  }
 
   def allBits(length: Int) = {
     val bs = (0 until (1 << length)).map(_.toBinaryString)
     bs.map(s => "0" * (length - s.length) + s)
   }
 
-  def traversalTest[T <: BitVector](targets: T*): Unit = {
-    val lengths = targets.map(_.getBitsWidth)
+  def traversalTest[T <: BitVector](outputs: IndexedSeq[T], inputs: IndexedSeq[T]) = {
+    val lengths = inputs.map(_.getBitsWidth)
     val caseNum = 1 << lengths.sum
     println(s"$caseNum cases would be tested")
-    allBits(lengths.sum).foreach { bs =>
-      bs =<< (targets: _*)
+    allBits(lengths.sum).map { bs =>
+      bs =<< (inputs: _*)
       sleep(1)
-      println(s"${targets.map(_.toInt).mkString(" ")} ${c.toInt}")
+      println(s"${inputs.map(_.toInt).mkString(" ")} ${outputs.map(_.toInt).mkString(" ")}")
+      assert(inputs.map(_.toInt).sum == outputs(0).toInt)
     }
   }
 
@@ -68,7 +74,11 @@ object PlayWithFix {
     //    report.printFMax
     //    report.printArea
     SimConfig.compile(new PlayWithFixSim).doSim { dut =>
-      dut.traversalTest(dut.a, dut.b)
+
+      def addAssertion[T <: BitVector](inputs: IndexedSeq[T], outputs: IndexedSeq[T]) =
+        outputs(0).toInt == inputs(0).toInt + inputs(1).toInt
+
+      dut.traversalTest(IndexedSeq(dut.d), IndexedSeq(dut.a, dut.b))
     }
   }
 }
