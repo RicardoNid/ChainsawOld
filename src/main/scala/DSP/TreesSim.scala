@@ -7,65 +7,73 @@ import spinal.lib._
 /** Test BinaryTree by implmenting integer addtions and multiplications
  *
  */
-class BinaryTreeSim(length: Int, opertor: (SReal, SReal) => SReal, pipelineInterval: Int, refOperator: (Int, Int) => Int) extends Component with DSPSim[Vec[SReal], SReal, Array[Int], Int] { // TODO: test it with real numbers
-  override val input: Flow[Vec[SReal]] = slave Flow Vec(SReal(IntRange(0, 127)), length)
-  override val output: Flow[SReal] = master Flow SReal(IntRange(0, 127 * length))
+class BinaryTreeSim(length: Int, opertor: (SReal, SReal) => SReal, pipelineInterval: Int, refOperator: (Double, Double) => Double) extends Component with DSPSim[Vec[SReal], SReal, Array[Double], Double] { // TODO: test it with real numbers
+  override val input: Flow[Vec[SReal]] = slave Flow Vec(SReal(RealRange(-1, 1, 0.001)), length)
 
-  println(output.payload.range)
+  //  val binaryTree = new BinaryTree(input.payload, opertor, pipelineInterval)
+  val binaryTree = BinaryTree(input.payload, opertor, pipelineInterval)
 
-  val binaryTree = new BinaryTree(input.payload, opertor, pipelineInterval)
-  output.payload := binaryTree.implicitValue
-  output.valid := Delay(input.valid, binaryTree.getTimingInfo.latency, init = False)
+  //  output.payload := binaryTree.implicitValue
+  val ret = binaryTree.implicitValue
 
+  override val output: Flow[SReal] = master Flow ret // CHAINSAW: you don't have to figure out the output width by yourself
+  output.payload := ret
   override val timing: TimingInfo = binaryTree.getTimingInfo
+  output.valid := Delay(input.valid, timing.latency, init = False)
 
-  override def poke(testCase: Array[Int], input: Vec[SReal]): Unit = {
-    input.zip(testCase).foreach { case (real, i) => real.raw #= i }
+  override def poke(testCase: Array[Double], input: Vec[SReal]): Unit = {
+    input.zip(testCase).foreach { case (real, d) => real #= d }
     clockDomain.waitSampling()
   }
 
-  override def peek(output: SReal): Int = {
-    val ret = output.raw.toInt
+  override def peek(output: SReal): Double = {
+    val ret = output.toDouble
     clockDomain.waitSampling()
     ret
   }
 
-  override def referenceModel(testCase: Array[Int]): Int = testCase.reduce(refOperator(_, _))
+  override def referenceModel(testCase: Array[Double]): Double = testCase.reduce(refOperator(_, _))
 
-  override def isValid(refResult: Int, dutResult: Int): Boolean = refResult == dutResult
+  override def isValid(refResult: Double, dutResult: Double): Boolean = refResult == dutResult
 
-  override def messageWhenInvalid(testCase: Array[Int], refResult: Int, dutResult: Int): String =
+  override def messageWhenInvalid(testCase: Array[Double], refResult: Double, dutResult: Double): String =
     s"testCase: ${testCase.mkString(" ")}, golden: $refResult, yours: $dutResult"
 
-  override def messageWhenValid(testCase: Array[Int], refResult: Int, dutResult: Int): String =
+  override def messageWhenValid(testCase: Array[Double], refResult: Double, dutResult: Double): String =
     s"testCase: ${testCase.mkString(" ")}, golden: $refResult, yours: $dutResult"
 }
 
 object TreesSim {
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit = { // TODO: test on Double
 
     debug = true
 
     println("start testing BinaryTree")
-    val add = (x: SReal, y: SReal) => x + y // Fixme: numeric operations in Real is currently a mess!
+    val add = (x: SReal, y: SReal) => x + y
     val mul = (x: SReal, y: SReal) => x * y
+
+    // testCase at the precision of 1/16, which is the nearest power of 2 to 0.1
+    def random(length: Int) = (0 until length).map(_ => (DSPRand.nextInt(20) - 10) / 16.0).toArray
+
     println("test with addtion")
     SimConfig.withWave.compile(new BinaryTreeSim(17, add, 0, _ + _)).doSim { dut =>
 
-      def random = (0 until 17).map(_ => DSPRand.nextInt(127)).toArray
-
       dut.sim()
-      (0 until 100).foreach(_ => dut.insertTestCase(random))
+      (0 until 100).foreach(_ => dut.insertTestCase(random(17)))
+      print(Console.GREEN)
       println(dut.simDone())
+      print(Console.BLACK)
     }
 
     println("test with multiplication")
-    SimConfig.compile(new BinaryTreeSim(9, mul, 2, _ * _)).doSim { dut =>
+    SimConfig.compile(new BinaryTreeSim(3, mul, 2, _ * _)).doSim { dut =>
       dut.sim()
-      dut.insertTestCase((0 until 9).toArray)
-      dut.insertTestCase((1 until 10).toArray)
-      dut.insertTestCase((2 until 11).toArray)
-      println(dut.simDone())
+      (0 until 100).foreach(_ => dut.insertTestCase(random(3)))
+      print(Console.GREEN)
+      val report = dut.simDone()
+      println(report)
+      println(report.validLog)
+      print(Console.BLACK)
     }
   }
 }

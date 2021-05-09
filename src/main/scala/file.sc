@@ -10,6 +10,8 @@ def toUFixed(value: Double, maxExp: Int, minExp: Int) = {
   else
     (value / BigDecimal(BigInt(1) << -shift)).toBigInt
 
+  print(value)
+
   val bs = ret.toString(2)
   "0" * (maxExp - minExp - bs.length) + bs
 }
