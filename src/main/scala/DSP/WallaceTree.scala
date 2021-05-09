@@ -12,7 +12,7 @@ class WallaceTree(input: Vec[SReal]) extends ImplicitArea[SReal] {
   val tableMax = input.map(_.maxExp).max
   val tableMin = input.map(_.minExp).min
 
-  println(input.map(_.range).mkString("\n"))
+  println(input.map(_.numericInfo).mkString("\n"))
   val table = ListBuffer.fill(tableMax - tableMin)(ListBuffer[Bool]())
   input.foreach(operand =>
     (operand.minExp - tableMin until operand.maxExp - tableMin)
@@ -61,7 +61,7 @@ class WallaceTree(input: Vec[SReal]) extends ImplicitArea[SReal] {
   val operandsRight = operands.map(lb => if (lb.length == 2) lb(1) else False).asBits().asUInt
 
   // TODO: find a better range
-  val ret = SReal(RealRange(input.map(_.range.range.upper).sum, input.map(_.range.range.lower).sum, input.map(_.range.range.resolution).min))
+  val ret = SReal(RealRange(input.map(_.numericInfo.range.upper).sum, input.map(_.numericInfo.range.lower).sum, input.map(_.numericInfo.range.resolution).min))
   ret.raw := (operandsLeft + operandsRight).asSInt.resized // TODO: need to be shifted
 
   override def implicitValue: SReal = ret

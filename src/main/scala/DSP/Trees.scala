@@ -15,8 +15,6 @@ import scala.annotation.tailrec
 class BinaryTreeWithInfo[T <: Data, I](input: IndexedSeq[(T, I)], operator: ((T, I), (T, I)) => (T, I), pipelineInterval: Int = 0) extends ImplicitArea[T] with Testable {
   // TODO: build connections between Binary Tree and Binary Tree with Info(at least, merge some part of them)
 
-  private val width = input.length
-
   @tailrec
   private def buildTree(input: IndexedSeq[(T, I)], currentDepth: Int = 0): Seq[(T, I)] = {
     val width = input.length
@@ -43,6 +41,7 @@ class BinaryTreeWithInfo[T <: Data, I](input: IndexedSeq[(T, I)], operator: ((T,
   override def implicitValue: T = RegNext(output._1)
   def getRemainedInfo = output._2
 
+  private val width = input.length
   private val latency = if (pipelineInterval == 0) 1 else log2Up(width) / pipelineInterval + 1
   override val getTimingInfo: TimingInfo = TimingInfo(1, 1, latency, 1)
 }

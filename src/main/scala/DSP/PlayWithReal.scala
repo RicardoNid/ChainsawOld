@@ -3,84 +3,96 @@ package DSP
 import spinal.core._
 import spinal.core.sim._
 
-import scala.util.Random
-
+/** The thorough test of Real type
+ *
+ */
 class PlayWithReal extends Component {
 
+  val randomRanges = (0 until 1000).map(_ => RealRange(DSPRand.nextDouble() * 10, DSPRand.nextDouble() * 10, DSPRand.nextDouble()))
+  val randomInputs = randomRanges.map(SReal(_))
+  val randomOutputs = randomRanges.map(SReal(_))
+  randomInputs.zip(randomOutputs).foreach { case (real, real1) => real1 := real }
+  in(randomInputs: _*)
+  out(randomOutputs: _*)
 
-  val a = SReal(IntRange(0, 7))
-  val b = SReal(IntRange(0, 11))
-  val c = SReal(IntRange(0, 20))
-  c := a + b
+  val a0 = SReal(5 exp, -5 exp)
+  val a1 = SReal(5 exp, -1 exp)
+  val a2 = SReal(1 exp, -5 exp)
+  val b = SReal(2 exp, -2 exp)
+  val c = SReal(7 exp, 4 exp)
+  val d = SReal(-4 exp, -7 exp)
 
-  val d = SReal(5 exp, -5 exp)
-  val e = SReal(2 exp, -2 exp)
-  val f = SReal(7 exp, 4 exp)
-  val g = SReal(-4 exp, -7 exp)
+  val tangent0 = a0 + a1
+  val tangent1 = a0 + a2
+  val contains = a0 + b
+  val overlap0 = a0 + c
+  val overlap1 = a0 + d
+  val seperated0 = b + c
+  val seperated1 = b + d
 
-  val contains = d + e
-  val overlap0 = d + f
-  val overlap1 = d + g
-  val noIntersaction0 = e + f
-  val noIntersaction1 = e + g
-
-  in(a, b, d, e, f, g)
-  out(c, contains, overlap0, overlap1, noIntersaction0, noIntersaction1)
-
+  in(a0, a1, a2, b, c, d)
+  out(contains, tangent0, tangent1, overlap0, overlap1, seperated0, seperated1)
 }
 
-class PlayWithRealSim extends PlayWithReal {
-  implicit class myBinaryString(val bs: String) {
-    /** Allocate bits to multiple elements
-     */
-    def =<<(elems: SReal*) = {
-      val prefix = (0 to elems.length).map(i => elems.map(_.getBitsWidth).take(i).sum)
-      val intervals = prefix.dropRight(1).zip(prefix.drop(1))
-      val slices = intervals.map { case (start, end) => bs.slice(start, end) }
-      elems.zip(slices).foreach { case (elem, slice) => elem #= bs2i2c(slice) }
-    }
-  }
-
-  def bs2i(bs: String) = bs.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (1 << i) }.sum
-  def bs2i2c(bs: String) = {
-    val values = bs.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (1 << i) }
-    values.dropRight(1).sum - values.last
-  }
-
-  def allBits(length: Int) = {
-    val bs = (0 until (1 << length)).map(_.toBinaryString)
-    bs.map(s => "0" * (length - s.length) + s)
-  }
-
-  def traversalTestAddtion(outputs: IndexedSeq[SReal], inputs: IndexedSeq[SReal]) = {
-    require(inputs.forall(real => real.raw.getBitsWidth == real.range.range.getMaxExp - real.range.range.getMinExp + 1))
-    //    require(outputs.forall(real => real.raw.getBitsWidth == real.range.range.getMaxExp - real.range.range.getMinExp + 1))
-
-    val lengths = inputs.map(_.raw.getBitsWidth)
-    val caseNum = 1 << lengths.sum
-    println(s"$caseNum cases would be tested")
-    allBits(lengths.sum).map { bs =>
-      bs =<< (inputs: _*)
-      sleep(1)
-      if (inputs.map(_.raw.toInt).sum != outputs(0).raw.toInt) println(s"${inputs.map(_.raw.toInt).mkString(" ")} ${outputs.map(_.raw.toInt).mkString(" ")}")
-    }
-  }
-}
 
 object PlayWithReal {
 
-  val r = new Random()
+  private def rangeToWidthTest(inputs: IndexedSeq[SReal], outputs: IndexedSeq[SReal]) = {
+    inputs.zip(outputs).foreach { case (input, output) =>
+      input.numericInfo.range.allValues.foreach { value =>
+        try {
+          input #= value
+        }
+        catch {
+          case _: AssertionError => println(s"range: ${input.numericInfo}, value: $value")
+          case _ =>
+        }
+        sleep(1)
+        if (output.toDouble != value) println(s"value: $value, output: $output")
+      }
+    }
+  }
+
+  private def traversalAdditionTest(a: SReal, b: SReal, c: SReal) = {
+    println(s"${a.numericInfo.range.allValues.length * b.numericInfo.range.allValues.length} testCases to be tested")
+    for (va <- a.numericInfo.range.allValues; vb <- b.numericInfo.range.allValues) { // TODO: better API
+      a #= va
+      b #= vb
+      sleep(1)
+      assert(c.toDouble == a.toDouble + b.toDouble, s"${c.toDouble} != ${a.toDouble} + ${b.toDouble}")
+    }
+  }
 
   def main(args: Array[String]): Unit = {
     SpinalConfig().generateSystemVerilog(new PlayWithFix)
-    SimConfig.compile(new PlayWithRealSim).doSim { dut =>
-      dut.traversalTestAddtion(IndexedSeq(dut.c), IndexedSeq(dut.a, dut.b))
-      //      dut.traversalTestAddtion(IndexedSeq(dut.contains), IndexedSeq(dut.d, dut.e))
-      //      dut.traversalTestAddtion(IndexedSeq(dut.overlap0), IndexedSeq(dut.d, dut.f))
-      //      dut.traversalTestAddtion(IndexedSeq(dut.overlap1), IndexedSeq(dut.d, dut.g))
-      //      dut.traversalTestAddtion(IndexedSeq(dut.noIntersaction0), IndexedSeq(dut.e, dut.f))
-      //      dut.traversalTestAddtion(IndexedSeq(dut.noIntersaction1), IndexedSeq(dut.e, dut.g))
+    SimConfig.compile(new PlayWithReal).doSim {
+      dut =>
+        import dut._
+
+        println("start range-width test")
+        rangeToWidthTest(randomInputs, randomOutputs)
+        println(Console.GREEN)
+        println("RANGE-WIDTH TEST PASSED !")
+        println(Console.BLACK)
+
+        val additionTests = Array(
+          (a0, a1, tangent0),
+          (a0, a2, tangent1),
+          (a0, b, contains),
+          (a0, c, overlap0),
+          (a0, d, overlap1),
+          (b, c, seperated0),
+          (b, d, seperated1)
+        )
+        additionTests.zipWithIndex.foreach { case (tuple, i) =>
+          println(s"start addition test $i")
+          traversalAdditionTest(tuple._1, tuple._2, tuple._3)
+        }
+        println(Console.GREEN)
+        println("ADDTION TEST PASSED !")
+        println(Console.BLACK)
     }
   }
+
 }
 
