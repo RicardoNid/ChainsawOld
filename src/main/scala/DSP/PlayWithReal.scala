@@ -15,15 +15,16 @@ class PlayWithReal extends Component {
   in(randomInputs: _*)
   out(randomOutputs: _*)
 
-  val a0 = SReal(5 exp, -5 exp)
-  val a1 = SReal(5 exp, -1 exp)
-  val a2 = SReal(1 exp, -5 exp)
+  val a0 = SReal(4 exp, -4 exp)
+  val a1 = SReal(4 exp, -1 exp)
+  val a2 = SReal(1 exp, -4 exp)
   val b = SReal(2 exp, -2 exp)
   val c = SReal(7 exp, 4 exp)
   val d = SReal(-4 exp, -7 exp)
-  val randomRangesForAddition = (0 until 10).map(_ => RealRange(DSPRand.nextDouble() * 10, DSPRand.nextDouble() * 10, DSPRand.nextDouble()))
+  val randomRangesForAddition = (0 until 20).map(_ => RealRange(DSPRand.nextDouble() * 10, DSPRand.nextDouble() * 10, DSPRand.nextDouble()))
   val randomInputsForAddition = randomRangesForAddition.map(SReal(_))
-  //  val randomOutputsForAddtion =
+  val randomOutputsForAddtion = (0 until randomInputsForAddition.length / 2).map(i =>
+    randomInputsForAddition(2 * i) + randomInputsForAddition(2 * i + 1))
 
   val tangent0 = a0 + a1
   val tangent1 = a0 + a2
@@ -34,7 +35,9 @@ class PlayWithReal extends Component {
   val seperated1 = b + d
 
   in(a0, a1, a2, b, c, d)
+  in(randomInputsForAddition: _*)
   out(contains, tangent0, tangent1, overlap0, overlap1, seperated0, seperated1)
+  out(randomOutputsForAddtion: _*)
 
   val f = SReal(3 exp, -3 exp)
   val g = SReal(RealRange(-0.3, 0.3, 0.1))
@@ -104,22 +107,25 @@ object PlayWithReal {
         println("RANGE-WIDTH TEST PASSED !")
         println(Console.BLACK)
 
-        //        val additionTests = Array(
-        //          (a0, a1, tangent0),
-        //          (a0, a2, tangent1),
-        //          (a0, b, contains),
-        //          (a0, c, overlap0),
-        //          (a0, d, overlap1),
-        //          (b, c, seperated0),
-        //          (b, d, seperated1)
-        //        )
-        //        additionTests.zipWithIndex.foreach { case (tuple, i) =>
-        //          println(s"start addition test $i")
-        //          traversalAdditionTest(tuple._1, tuple._2, tuple._3)
-        //        }
-        //        println(Console.GREEN)
-        //        println("ADDITION TEST PASSED !")
-        //        println(Console.BLACK)
+        val additionTests = Array(
+          (a0, a1, tangent0),
+          (a0, a2, tangent1),
+          (a0, b, contains),
+          (a0, c, overlap0),
+          (a0, d, overlap1),
+          (b, c, seperated0),
+          (b, d, seperated1)
+        ) ++ (0 until randomInputsForAddition.length / 2).map(i =>
+          (randomInputsForAddition(2 * i), randomInputsForAddition(2 * i + 1),
+            randomOutputsForAddtion(i)))
+
+        additionTests.zipWithIndex.foreach { case (tuple, i) =>
+          println(s"start addition test $i")
+          traversalAdditionTest(tuple._1, tuple._2, tuple._3)
+        }
+        println(Console.GREEN)
+        println("ADDITION TEST PASSED !")
+        println(Console.BLACK)
 
         println(s"start multiplication test")
         traversalMultiplicationTest(f, f, mul)
