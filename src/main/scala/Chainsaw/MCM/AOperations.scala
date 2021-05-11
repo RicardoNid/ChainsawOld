@@ -22,14 +22,19 @@ object AOperations {
 
   val AOpHardware = (left: SReal, right: SReal, config: AOpConfig) => {
     import config._
+    println(config)
     val shiftedLeft = left << shiftLeftLeft
     val shiftedRight = right << shiftLeftRight
+    println(shiftedLeft.numericInfo)
+    println(shiftedRight.numericInfo)
     val sum = config.aOpSign match {
       case ADD => shiftedLeft + shiftedRight
       case SUBNEXT => shiftedLeft - shiftedRight
       case SUBPREV => shiftedRight - shiftedLeft
     }
+    println(sum.numericInfo)
     val ret = sum >> shiftRight
+    println(ret.numericInfo)
     ret
   }
 
@@ -46,16 +51,16 @@ object AOperations {
 
   def AReverse(sum: Int, left: Int, right: Int): AOpConfig = {
     require(sum > 0 && left > 0 && right > 0 && sum % 2 != 0 && left % 2 != 0 && right % 2 != 0, s"$left, $right, $sum  fundamentals should be preprocessed into positive odd")
-    println(s"$sum,$left,$right")
+    println(s"rebuilding $left,$right -> $sum")
     val cond1 = sum == getPOF(left + right)
     val cond2 = (left > right) && (sum == getPOF(left - right))
     val cond3 = (left < right) && (sum == getPOF(right - left))
     val cond4 = (sum - left > 0) && ((sum - left) % right == 0) && isPow2((sum - left) / right) // w = 2 << i * v + u
     val cond5 = (sum - left < 0) && (-(sum - left) % right == 0) && isPow2((left - sum) / right) // w = u - 2 << i * v
-    val cond6 = isPow2(sum + left) && ((sum + left) % right == 0) // w = 2 << i * v - u
+    val cond6 = (sum + left > 0) && ((left + sum) % right == 0) && isPow2((left + sum) / right) // w = 2 << i * v - u
     val cond7 = (sum - right > 0) && ((sum - right) % left == 0) && isPow2((sum - right) / left) // w = 2 << i * u + v
     val cond8 = (sum - right < 0) && (-(sum - right) % left == 0) && isPow2((right - sum) / left) // w = v - 2 << i * u
-    val cond9 = isPow2(sum + right) && ((sum + right) % left == 0) // w = 2 << i * u - v
+    val cond9 = (sum + right > 0) && ((right + sum) % left == 0) && isPow2((right + sum) / left) // w = 2 << i * u - v
 
     if (cond1) AOpConfig(0, 0, log2Up((left + right) / sum), ADD)
     else if (cond2) AOpConfig(0, 0, log2Up((left + right) / sum), SUBNEXT)
@@ -70,6 +75,7 @@ object AOperations {
   }
 
   implicit class AImplicit(u: Int) {
+
     def AOp(v: Int)(implicit max: Int): mutable.Set[Int] = {
       require(u > 0 && v > 0 && u % 2 != 0 && v % 2 != 0) //  positive odd fundamentals
       val ret = mutable.Set[Int]() //  reachable coefficients

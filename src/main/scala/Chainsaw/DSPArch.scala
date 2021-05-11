@@ -14,16 +14,6 @@ object FIRArch {
 
 }
 
-sealed trait SCMArch extends DSPArch
-
-object SCMArch {
-
-  case object CSD extends SCMArch
-
-  case object MULT extends SCMArch
-
-}
-
 sealed trait SAGArch extends DSPArch
 
 object SAGArch {

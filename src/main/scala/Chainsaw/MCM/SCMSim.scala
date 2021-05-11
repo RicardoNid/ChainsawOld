@@ -1,32 +1,35 @@
 package Chainsaw.MCM
 
+import Chainsaw.MCM.SCMArch._
 import Chainsaw._
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 
-class SCMSim(constant: Int, scmArch: SCMArch) extends Component with DSPSim[SInt, SInt, Int, Int] {
-  override val input: Flow[SInt] = slave Flow SInt(12 bits)
-  override val output: Flow[SInt] = master Flow SInt(12 + log2Up(constant) bits)
+class SCMSim(constant: Int, scmArch: SCMArch) extends Component with DSPSim[SReal, SReal, Double, Double] {
+  override val input: Flow[SReal] = slave Flow SReal("x", IntRange(0, 4096))
 
   val scm = new SCM(input.payload, constant, scmArch)
-  output.payload := scm.implicitValue.resized
+  val ret = scm.implicitValue
+
+  override val output: Flow[SReal] = master Flow ret
+  output.payload := ret
   override val timing: TimingInfo = scm.getTimingInfo
   output.valid := Delay(input.valid, timing.latency, init = False)
 
-  override def poke(testCase: Int, input: SInt): Unit = {
+  override def poke(testCase: Double, input: SReal): Unit = {
     input #= testCase
     clockDomain.waitSampling()
   }
-  override def peek(output: SInt): Int = {
-    val ret = output.toInt
+  override def peek(output: SReal): Double = {
+    val ret = output.toDouble
     clockDomain.waitSampling()
     ret
   }
-  override def referenceModel(testCase: Int): Int = testCase * constant
-  override def isValid(refResult: Int, dutResult: Int): Boolean = refResult == dutResult
-  override def messageWhenInvalid(testCase: Int, refResult: Int, dutResult: Int): String = s"golden: $refResult, yours: $dutResult"
-  override def messageWhenValid(testCase: Int, refResult: Int, dutResult: Int): String = s"golden: $refResult, yours: $dutResult"
+  override def referenceModel(testCase: Double): Double = testCase * constant
+  override def isValid(refResult: Double, dutResult: Double): Boolean = refResult == dutResult
+  override def messageWhenInvalid(testCase: Double, refResult: Double, dutResult: Double): String = s"golden: $refResult, yours: $dutResult"
+  override def messageWhenValid(testCase: Double, refResult: Double, dutResult: Double): String = s"golden: $refResult, yours: $dutResult"
 }
 
 object SCMSim {
@@ -45,7 +48,8 @@ object SCMSim {
 
   def main(args: Array[String]): Unit = {
     debug = true
-    (0 until 10).foreach(_ => randomSim(DSPRand.nextInt(1023), SCMArch.CSD))
+    //    (0 until 1).foreach(_ => randomSim(DSPRand.nextInt(1023), SCMArch.CSD))
+    (0 until 1).foreach(_ => randomSim(17, SCMArch.CSD))
   }
 }
 

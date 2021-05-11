@@ -33,30 +33,14 @@ object HomogeneousBinarySFGBuilder {
   }
 
   def main(args: Array[String]): Unit = {
-
-    val sfg = new BinarySFG
-    sfg.addVertex(0)
-    sfg.addVertex(0, 0)
-    sfg.addVertex(0, 0)
-    sfg.addVertex(1, 2)
-
-    // example of addition
-    val add = (left: UInt, right: UInt) => left + right
-    SpinalConfig().generateSystemVerilog(new Component {
-      //      val x = in SReal("x", UnitRange(0.1))
-      val x = in UInt (4 bits)
-      val graph = HomogeneousBinarySFGBuilder(Seq(x), sfg, add)
-      val y = graph.implicitValue.head
-      out(y)
-    })
-
-    // example of MAG
-    import AOpSign._
-    import AOperations._
-    val infos = Seq(AOpConfig(1, 0, 0, ADD), AOpConfig(1, 0, 0, ADD), AOpConfig(2, 0, 0, ADD), AOpConfig(3, 0, 0, ADD))
+    // example of MAG, using MAG algo
+    val (mag, magInfos) = MAG(41623)
+    import AOperations.AOpHardware
+    println(mag)
+    println(magInfos.mkString("\n"))
     SpinalConfig().generateSystemVerilog(new Component {
       val x = in SReal("x", UnitRange(0.1))
-      val graph = new HomogeneousBinarySFGBuilder(Seq(x), sfg, AOpHardware, infos)
+      val graph = new HomogeneousBinarySFGBuilder(Seq(x), mag, AOpHardware, magInfos)
       val y = graph.implicitValue.head
       out(y)
     })
