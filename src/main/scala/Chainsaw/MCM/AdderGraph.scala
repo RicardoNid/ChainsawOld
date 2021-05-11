@@ -3,7 +3,7 @@ package Chainsaw.MCM
 import Chainsaw.MCM.ASSSign._
 import Chainsaw.MCM.ASSType._
 import Chainsaw.MCM.AdderGraph.AReverse
-import Chainsaw.MCM.RAGn.getPositiveOddFundamental
+import Chainsaw.MCM.old.RAGn.getPositiveOddFundamental
 import org.jgrapht.alg.shortestpath.AllDirectedPaths
 import org.jgrapht.graph._
 import org.jgrapht.traverse._

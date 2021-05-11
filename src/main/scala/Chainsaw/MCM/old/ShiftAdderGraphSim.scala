@@ -1,6 +1,7 @@
-package Chainsaw.MCM
+package Chainsaw.MCM.old
 
 import Chainsaw.MCM.ASSSign._
+import Chainsaw.MCM.{AOperation, AdderGraph}
 import Chainsaw.SAGArch._
 import Chainsaw._
 import spinal.core.sim._

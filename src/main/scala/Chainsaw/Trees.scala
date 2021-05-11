@@ -47,6 +47,8 @@ class BinaryTreeWithInfo[T <: Data, I](input: IndexedSeq[(T, I)], operator: ((T,
 }
 
 object BinaryTree {
+  /** Factory with no infos
+   */
   def apply[T <: Data](input: IndexedSeq[T], operator: (T, T) => T, pipelineInterval: Int = 0): BinaryTreeWithInfo[T, Null] = {
     val paddedInput = input.map(t => (t, null))
     val paddedOperator = (left: (T, Null), right: (T, Null)) =>

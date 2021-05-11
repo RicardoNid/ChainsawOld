@@ -1,6 +1,7 @@
-package Chainsaw.MCM
+package Chainsaw.MCM.old
 
 import Chainsaw.MCM.ASSSign.{ADD, SUBNEXT, SUBPREV}
+import Chainsaw.MCM.{AConfigVector, AOperation}
 import Chainsaw.{MCM, debug, printlnWhenDebug}
 import breeze.numerics.abs
 import org.jgrapht.traverse.DepthFirstIterator
