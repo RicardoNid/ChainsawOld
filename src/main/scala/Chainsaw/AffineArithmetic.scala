@@ -4,18 +4,20 @@ package Chainsaw
 
 import scala.math._
 
-class AffineForm(val constant: Double, val rangeTerms: Map[String, Double], val roundingTerms: Map[String, Double]) {
+class AffineForm(val constant: Double, val rangeTerms: Map[String, Double]) {
 
   def rad = rangeTerms.values.map(_.abs).sum
 
+  def upper = constant + rad
+
+  def lower = constant - rad
+
   def getRange(key: String) = rangeTerms.getOrElse(key, 0.0)
 
-  def getRounding(key: String) = roundingTerms.getOrElse(key, 0.0)
-
   def unary_-() = new AffineForm(-constant,
-    rangeTerms.map { case (str, d) => (str, -d) },
-    roundingTerms.map { case (str, d) => (str, -d) })
+    rangeTerms.map { case (str, d) => (str, -d) })
 
+  // naturally affine operations
   def doAddSub(that: AffineForm, add: Boolean) = {
     val constant = if (add) this.constant + that.constant else this.constant - that.constant
     val rangeTerms =
@@ -24,28 +26,32 @@ class AffineForm(val constant: Double, val rangeTerms: Map[String, Double], val 
           key -> (if (add) this.getRange(key) + that.getRange(key) else this.getRange(key) - that.getRange(key))
         }
         .toMap
-    val roundingTerms = this.roundingTerms ++ that.roundingTerms
-    new AffineForm(constant, rangeTerms, roundingTerms)
+    new AffineForm(constant, rangeTerms)
   }
   def +(that: AffineForm) = doAddSub(that, true)
   def -(that: AffineForm) = doAddSub(that, false)
 
   def *(thatConstnt: Double) = new AffineForm(constant * thatConstnt,
-    rangeTerms.map { case (str, d) => (str, d * thatConstnt) },
-    roundingTerms.map { case (str, d) => (str, d * thatConstnt) })
+    rangeTerms.map { case (str, d) => (str, d * thatConstnt) })
 
   def doAddSub(thatConstant: Double, add: Boolean) = new AffineForm(
     if (add) constant + thatConstant else constant - thatConstant,
-    rangeTerms.map(term => term), // copy
-    roundingTerms.map(term => term)
+    rangeTerms.map(term => term) // copy
   )
   def +(thatConstant: Double) = doAddSub(thatConstant, true)
   def -(thatConstant: Double) = doAddSub(thatConstant, false)
 
-  override def toString: String = s"$constant + " +
-    s"${rangeTerms.map { case (str, d) => s"$d$str" }.mkString(" + ")} + " +
-    s"${roundingTerms.map { case (str, d) => s"$d$str" }.mkString(" + ")}"
+  // non-affine operations
+  def *(that: AffineForm) = {
+    val a = that.constant
+    val b = this.constant
+    val c = -(this.constant * that.constant)
+    val delta = this.rad * that.rad
+    AffineForm.affine(this, that, a, b, c, delta)
+  }
 
+  override def toString: String = s"$constant + " +
+    s"${rangeTerms.map { case (str, d) => s"$d$str" }.mkString(" + ")}"
 }
 
 object AffineForm {
@@ -54,20 +60,28 @@ object AffineForm {
    *
    * @param resolution
    */
-  def affine(x: AffineForm, y: AffineForm, a: Double, b: Double, c: Double) = {
+  def affine(x: AffineForm, y: AffineForm, a: Double, b: Double, c: Double, delta: Double) = {
     val constant = a * x.constant + b * y.constant + c
     val rangeTerms =
       x.rangeTerms.keySet.union(y.rangeTerms.keySet)
         .map { key => key -> (a * x.rangeTerms.getOrElse(key, 0.0) + b * y.rangeTerms.getOrElse(key, 0.0)) }
-        .toMap
-    val roundingTerms = x.roundingTerms ++ y.roundingTerms
-    new AffineForm(constant, rangeTerms, roundingTerms)
+        .toMap + (newSym() -> delta)
+    new AffineForm(constant, rangeTerms)
+  }
+
+  var symIndex = -1
+
+  /** Global symbol name supplier
+   */
+  def newSym() = {
+    symIndex += 1
+    s"sigma$symIndex"
   }
 
   def main(args: Array[String]): Unit = {
 
-    val affineForm0 = new AffineForm(0, Map("x" -> 1.0, "y" -> 2.0), Map("r0" -> 1.0))
-    val affineForm1 = new AffineForm(2, Map("y" -> 1.0, "z" -> 2.0), Map("r1" -> 1.0))
+    val affineForm0 = new AffineForm(0, Map("x" -> 1.0, "y" -> 2.0))
+    val affineForm1 = new AffineForm(2, Map("y" -> 1.0, "z" -> 2.0))
 
     println(affineForm0)
     println(affineForm0.rad)
@@ -75,7 +89,13 @@ object AffineForm {
     println(affineForm0 + affineForm1)
     println(affineForm0 + 3)
     println(affineForm0 * 3)
-    println(affine(affineForm0, affineForm1, 2, 3, 1))
+    println(affine(affineForm0, affineForm1, 2, 3, 1, 1))
+
+    val af0 = new AffineForm(10, Map("x" -> 2.0, "r" -> 1.0))
+    val af1 = new AffineForm(10, Map("x" -> -2.0, "s" -> 1.0))
+
+    println((af0 * af1).lower)
+    println((af0 * af1).upper)
 
     implicit val resolution = 0
   }
