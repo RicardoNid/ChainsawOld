@@ -43,6 +43,7 @@ object BinarySFG {
     val reader = new StringReader(serialized)
     ret.setVertexSupplier(intSupplier)
     importer.importGraph(ret, reader)
+    intSupplier.clear()
     ret
   }
 

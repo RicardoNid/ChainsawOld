@@ -1,19 +1,10 @@
-val a = 3.14159
-BigDecimal(a)
+import scala.collection.mutable.ListBuffer
 
-scala.math.pow(2, -10)
+val a = ListBuffer(1, 2, 3)
+val b = a
+val c = a.map(i => i)
 
-def toUFixed(value: Double, maxExp: Int, minExp: Int) = {
-  val shift = -minExp
-  val ret = if (shift >= 0)
-    (value * BigDecimal(BigInt(1) << shift)).toBigInt
-  else
-    (value / BigDecimal(BigInt(1) << -shift)).toBigInt
+b += 4
+c += 5
 
-  print(value)
-
-  val bs = ret.toString(2)
-  "0" * (maxExp - minExp - bs.length) + bs
-}
-
-toUFixed(3.14, 2, -3)
+a

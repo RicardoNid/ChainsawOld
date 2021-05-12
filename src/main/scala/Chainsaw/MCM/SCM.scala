@@ -22,6 +22,8 @@ class SCM(input: SReal, constant: Int, scmArch: SCMArch) extends ImplicitArea[SR
   val result: SReal = scmArch match {
 
     case SCMArch.MAG =>
+      println(constant)
+      println(MAG.getOnePathLUT(constant))
       val (mag, magInfos) = MAG(constant)
       val graph = new HomogeneousBinarySFGBuilder(Seq(input), mag, AOpHardware, magInfos)
       graph.implicitValue.head
@@ -39,9 +41,11 @@ class SCM(input: SReal, constant: Int, scmArch: SCMArch) extends ImplicitArea[SR
         require(shiftLeft >= 0)
         println(right._1.numericInfo)
         println(left._1.numericInfo)
-        println((right._1 << shiftLeft).numericInfo)
-        println((left._1 + (right._1 << shiftLeft)).numericInfo)
-        (left._1 + (right._1 << shiftLeft), left._2)
+        val shifted = right._1 << shiftLeft
+        println((shifted).numericInfo)
+        val ret = left._1 + shifted
+        println(ret.numericInfo)
+        (ret, left._2)
       }
 
       val shifts = encoded.zipWithIndex.filter(_._1 != '0').map(_._2)

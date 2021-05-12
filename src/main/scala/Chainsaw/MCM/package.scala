@@ -7,8 +7,9 @@ package object MCM {
   val intSupplier = new Supplier[Int] {
     private var id = -1
     override def get(): Int = {
-      id += 1; id
+      id += 1;
+      id
     }
+    def clear() = id = -1
   }
-
 }

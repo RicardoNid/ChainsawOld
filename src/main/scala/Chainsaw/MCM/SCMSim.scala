@@ -7,7 +7,7 @@ import spinal.core.sim._
 import spinal.lib._
 
 class SCMSim(constant: Int, scmArch: SCMArch) extends Component with DSPSim[SReal, SReal, Double, Double] {
-  override val input: Flow[SReal] = slave Flow SReal("x", IntRange(0, 4096))
+  override val input: Flow[SReal] = slave Flow SReal(IntRange(0, 4096))
 
   val scm = new SCM(input.payload, constant, scmArch)
   val ret = scm.implicitValue
@@ -42,14 +42,20 @@ object SCMSim {
       println(dut.simDone())
     }
     print(Console.GREEN)
-    println(s"CSD with constant = $constant, PASS")
+    val mode = scmArch match {
+      case CSD => "CSD"
+      case SCMArch.MAG => "MAG"
+      case MULT => "MULT"
+    }
+    println(s"$mode with constant = $constant, PASS")
     print(Console.BLACK)
   }
 
   def main(args: Array[String]): Unit = {
     debug = true
-    //    (0 until 1).foreach(_ => randomSim(DSPRand.nextInt(1023), SCMArch.CSD))
-    (0 until 1).foreach(_ => randomSim(17, SCMArch.CSD))
+    import AOperations.getPOF
+    (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.CSD))
+    (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.MAG))
   }
 }
 
