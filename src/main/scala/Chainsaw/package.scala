@@ -9,6 +9,8 @@ import scala.util.Random
 
 package object Chainsaw {
 
+  trait BaseTypeFactory extends BoolFactory with BitsFactory with UIntFactory with SIntFactory with VecFactory with SFixFactory with UFixFactory with TypeFactory
+
   // debug mode
   var debug = false
   def printlnWhenDebug(x: Any) = if (debug) println(x)

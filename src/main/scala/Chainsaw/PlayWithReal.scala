@@ -8,42 +8,67 @@ import spinal.core.sim._
  */
 class PlayWithReal extends Component {
 
-  val randomRanges = (0 until 1000).map(_ => RealRange(DSPRand.nextDouble() * 10, DSPRand.nextDouble() * 10, DSPRand.nextDouble()))
-  val randomInputs = randomRanges.map(SReal(_))
-  val randomOutputs = randomRanges.map(SReal(_))
-  randomInputs.zip(randomOutputs).foreach { case (real, real1) => real1 := real }
+  val randomRanges = (0 until 1000).map { i =>
+    val lower = DSPRand.nextDouble() * 10
+    RealInfo(s"test$i", lower, lower + DSPRand.nextDouble() * 10)
+  }
+  val randomInputs = randomRanges.map(info => Real(info, -4 exp))
+  // more or less on LSB, check "equal to" or "close to" in the simulation
+  val randomOutputs = randomRanges.map(info => Real(info, (DSPRand.nextInt(2) - 1) - 4 exp))
+  randomInputs.zip(randomOutputs).foreach { case (real, real1) => real1 := real.truncated }
   in(randomInputs: _*)
   out(randomOutputs: _*)
 
-  val a0 = SReal(4 exp, -4 exp)
-  val a1 = SReal(4 exp, -1 exp)
-  val a2 = SReal(1 exp, -4 exp)
-  val b = SReal(2 exp, -2 exp)
-  val c = SReal(7 exp, 4 exp)
-  val d = SReal(-4 exp, -7 exp)
-  val randomRangesForAddition = (0 until 20).map(_ => RealRange(DSPRand.nextDouble() * 10, DSPRand.nextDouble() * 10, DSPRand.nextDouble()))
-  val randomInputsForAddition = randomRangesForAddition.map(SReal(_))
+
+  //  val a0 = SReal(4 exp, -4 exp)
+  //  val a1 = SReal(4 exp, -1 exp)
+  //  val a2 = SReal(1 exp, -4 exp)
+  //  val b = SReal(2 exp, -2 exp)
+
+  val a0 = QFormatReal("a0", SQ(9, 4))
+  val a1 = QFormatReal("a1", SQ(6, 1))
+  val a2 = QFormatReal("a2", SQ(6, 1))
+  val b = QFormatReal("b", SQ(5, 2))
+
+
+  val randomRangesForAddition = (0 until 20).map { i =>
+    val lower = DSPRand.nextDouble() * 10
+    RealInfo(s"addition$i", lower, lower + DSPRand.nextDouble() * 10)
+  }
+  val randomInputsForAddition = randomRangesForAddition.map(info => Real(info, -DSPRand.nextInt(5) exp))
   val randomOutputsForAddtion = (0 until randomInputsForAddition.length / 2).map(i =>
     randomInputsForAddition(2 * i) + randomInputsForAddition(2 * i + 1))
 
   val tangent0 = a0 + a1
   val tangent1 = a0 + a2
   val contains = a0 + b
-  val overlap0 = a0 + c
-  val overlap1 = a0 + d
-  val seperated0 = b + c
-  val seperated1 = b + d
 
-  in(a0, a1, a2, b, c, d)
+  // TODO: implement this part in Real
+  //  val c = SReal(7 exp, 4 exp)
+  //  val d = SReal(-4 exp, -7 exp)
+  //  val overlap0 = a0 + c
+  //  val overlap1 = a0 + d
+  //  val seperated0 = b + c
+  //  val seperated1 = b + d
+  //  in(c, d)
+  //  out(overlap0, overlap1, seperated0, seperated1)
+
+  in(a0, a1, a2, b)
   in(randomInputsForAddition: _*)
-  out(contains, tangent0, tangent1, overlap0, overlap1, seperated0, seperated1)
+  out(contains, tangent0, tangent1)
   out(randomOutputsForAddtion: _*)
 
-  val f = SReal(3 exp, -3 exp)
-  val g = SReal(RealRange(-0.3, 0.3, 0.1))
-  val h = SReal(RealRange(-0.3, 0.3, 0.1))
-  val i = SReal(RealRange(0.3, 0.8, 0.1))
-  val j = SReal(RealRange(-0.3, -0.8, 0.1))
+  //  val f = SReal(3 exp, -3 exp)
+  //  val g = SReal(RealRange(-0.3, 0.3, 0.1))
+  //  val h = SReal(RealRange(-0.3, 0.3, 0.1))
+  //  val i = SReal(RealRange(0.3, 0.8, 0.1))
+  //  val j = SReal(RealRange(-0.3, -0.8, 0.1))
+
+  val f = QFormatReal("f", SQ(7, 3))
+  val g = Real("g", -0.3, 0.3, 0.1)
+  val h = Real("h", -0.3, 0.3, 0.1)
+  val i = Real("i", 0.3, 0.8, 0.1)
+  val j = Real("j", -0.3, -0.8, 0.1)
 
   val mul = f * f
   val precisemul0 = g * h
@@ -52,30 +77,47 @@ class PlayWithReal extends Component {
 
   in(f, g, h, i, j)
   out(mul, precisemul0, precisemul1, precisemul2)
+
+  val r0 = Real("r0", -1, 1, -3 exp)
+  val r1 = Real("r1", -1, 1, -3 exp)
+  val r0mulr1 = r0 * r1
+  val truncated = Real(new RealInfo(new AffineForm(0, Map("z" -> 1.0)), 0.0), -5 exp)
+  truncated := r0mulr1.truncated
+  //  truncated := r0mulr1
+  in(r0, r1)
+  out(r0mulr1, truncated)
+
+  println(r0mulr1.realInfo)
+  println(r0mulr1.minExp)
+  println(r0mulr1.realInfo.range)
+  println(truncated.realInfo)
+
 }
 
 
 object PlayWithReal {
 
-  private def rangeToWidthTest(inputs: IndexedSeq[SReal], outputs: IndexedSeq[SReal]) = {
+  private def rangeToWidthTest(inputs: IndexedSeq[Real], outputs: IndexedSeq[Real]) = {
     inputs.zip(outputs).foreach { case (input, output) =>
-      input.numericInfo.range.allValues.foreach { value =>
+      input.allValues.foreach { value =>
         try {
           input #= value
         }
         catch {
-          case _: AssertionError => println(s"range: ${input.numericInfo}, value: $value")
+          case _: AssertionError => println(s"range: ${input.realInfo}, value: $value")
           case _ =>
         }
         sleep(1)
-        if (output.toDouble != value) println(s"value: $value, output: $output")
+        if (output.minExp <= input.minExp && output.toDouble != value || // equal to
+          !(output ~= value)) // close to
+          println(s"value: $value, output: ${output.toDouble}, ${output.realInfo}")
       }
     }
   }
 
-  private def traversalAdditionTest(a: SReal, b: SReal, c: SReal) = {
-    println(s"${a.numericInfo.range.allValues.length * b.numericInfo.range.allValues.length} testCases to be tested")
-    for (va <- a.numericInfo.range.allValues; vb <- b.numericInfo.range.allValues) { // TODO: better API
+  private def traversalAdditionTest(a: Real, b: Real, c: Real) = {
+    println(s"${a.allValues.length * b.allValues.length} testCases to be tested")
+    for (va <- a.allValues; vb <- b.allValues) {
       a #= va
       b #= vb
       sleep(1)
@@ -83,20 +125,20 @@ object PlayWithReal {
     }
   }
 
-  private def traversalMultiplicationTest(a: SReal, b: SReal, c: SReal) = {
-    println(s"${a.numericInfo.range.allValues.length * b.numericInfo.range.allValues.length} testCases to be tested")
-    for (va <- a.numericInfo.range.allValues; vb <- b.numericInfo.range.allValues) { // TODO: better API
+  private def traversalMultiplicationTest(a: Real, b: Real, c: Real) = {
+    println(s"${a.allValues.length * b.allValues.length} testCases to be tested")
+    for (va <- a.allValues; vb <- b.allValues) { // TODO: better API
       a #= va
       b #= vb
       sleep(1)
       assert(c ~= a.toDouble * b.toDouble,
         s"${c.toDouble} != ${a.toDouble} * ${b.toDouble}, " +
-          s" \na: ${a.numericInfo}, \nb: ${b.numericInfo}, \nc: ${c.numericInfo}")
+          s" \na: ${a.realInfo}, \nb: ${b.realInfo}, \nc: ${c.realInfo}")
     }
   }
 
   def main(args: Array[String]): Unit = {
-    SpinalConfig().generateSystemVerilog(new PlayWithFix)
+    SpinalConfig().generateSystemVerilog(new PlayWithReal)
     SimConfig.compile(new PlayWithReal).doSim {
       dut =>
         import dut._
@@ -107,15 +149,15 @@ object PlayWithReal {
         println("RANGE-WIDTH TEST PASSED !")
         println(Console.BLACK)
 
+        // TODO: add these tests
+        //                    (a0, c, overlap0),
+        //                    (a0, d, overlap1),
+        //                    (b, c, seperated0),
+        //                    (b, d, seperated1)
         val additionTests = Array(
           (a0, a1, tangent0),
           (a0, a2, tangent1),
-          (a0, b, contains),
-          (a0, c, overlap0),
-          (a0, d, overlap1),
-          (b, c, seperated0),
-          (b, d, seperated1)
-        ) ++ (0 until randomInputsForAddition.length / 2).map(i =>
+          (a0, b, contains)) ++ (0 until randomInputsForAddition.length / 2).map(i =>
           (randomInputsForAddition(2 * i), randomInputsForAddition(2 * i + 1),
             randomOutputsForAddtion(i)))
 
