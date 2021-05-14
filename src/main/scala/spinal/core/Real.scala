@@ -5,6 +5,9 @@ import Chainsaw._
 import scala.collection.mutable.ArrayBuffer
 import scala.math.{abs, ceil, floor, log, max, min, pow}
 
+/** Factories in this trait would be automatically visiable in the project, as the package object extends it
+ *
+ */
 trait RealFactory {
   /** Native factory
    */
@@ -57,6 +60,13 @@ trait RealFactory {
   }
 }
 
+/**
+ * @param realInfo all the numeric information of the signal(interval and error), this is a var, so it can be reassigned
+ * @param resolution
+ *
+ *                 The MSB strategy of real is independent of its LSB strategy, more specifically
+ *                 the MSB is determined by the interval,
+ */
 class Real(var realInfo: RealInfo, val resolution: ExpNumber) extends MultiData {
 
   def log2Up(value: Double) = ceil(log2(value)).toInt

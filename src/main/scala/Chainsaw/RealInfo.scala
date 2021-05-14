@@ -52,9 +52,9 @@ class RealInfo(val interval: AffineForm, val error: Double) {
   /** +/-
    */
   def doAddSub(that: RealInfo, add: Boolean): RealInfo = {
-    val range = if (add) this.interval + that.interval else this.interval - that.interval
+    val interval = if (add) this.interval + that.interval else this.interval - that.interval
     val error = this.error + that.error
-    new RealInfo(range, error)
+    new RealInfo(interval, error)
   }
   def +(that: RealInfo): RealInfo = doAddSub(that, add = true)
   def -(that: RealInfo): RealInfo = doAddSub(that, add = false)
@@ -63,32 +63,32 @@ class RealInfo(val interval: AffineForm, val error: Double) {
   /** +/- with constant
    */
   def doAddSub(thatConstant: Double, add: Boolean): RealInfo = {
-    val range = if (add) this.interval + thatConstant else this.interval - thatConstant
+    val interval = if (add) this.interval + thatConstant else this.interval - thatConstant
     val error = this.error
-    new RealInfo(range, error)
+    new RealInfo(interval, error)
   }
   def +(thatConstant: Double): RealInfo = doAddSub(thatConstant, add = true)
   def -(thatConstant: Double): RealInfo = doAddSub(thatConstant, add = false)
 
   def *(that: RealInfo): RealInfo = {
-    val range = this.interval * that.interval
+    val interval = this.interval * that.interval
     // TODO: this bound is looser than interval arithmetic, improve it
     val error = this.error * that.maxAbs +
       that.error * this.maxAbs +
       this.error * that.error
-    new RealInfo(range, error)
+    new RealInfo(interval, error)
   }
 
   def *(thatConstant: Double): RealInfo = {
-    val range = this.interval * thatConstant
+    val interval = this.interval * thatConstant
     val error = this.error * thatConstant
-    new RealInfo(range, error)
+    new RealInfo(interval, error)
   }
 
   def <<(shiftConstant: Int): RealInfo = *(pow(2, shiftConstant))
   def >>(shiftConstant: Int): RealInfo = *(pow(2, -shiftConstant))
 
-  override def toString: String = s"range: [$lower, $upper], error: $error"
+  override def toString: String = s"interval: [$lower, $upper], error: $error"
 }
 
 object RealInfo {
