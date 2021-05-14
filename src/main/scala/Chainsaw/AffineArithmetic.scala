@@ -29,15 +29,13 @@ object AffineArithmetic {
 
   /** Global symbol name supplier, implemented as java supplier
    */
-  val symbolSupplier = new Supplier[String] {
+  val symbolSupplier: Supplier[String] = new Supplier[String] {
     var symbolIndex = -1
 
     override def get(): String = {
       symbolIndex += 1
       s"sigma$symbolIndex"
     }
-
-    def clear() = symbolIndex = -1
   }
 
   /**
@@ -62,10 +60,9 @@ class AffineForm(val constant: Double, val intervalTerms: Map[String, Double]) {
    */
   def rad = intervalTerms.values.map(_.abs).sum
 
-
   /** Upper and lower bound of the interval
    *
-   * @see routine '''IA.frome.AA'''
+   * @see routine '''IA.from.AA'''
    */
   def upper = constant + rad
   def lower = constant - rad
@@ -78,18 +75,18 @@ class AffineForm(val constant: Double, val intervalTerms: Map[String, Double]) {
    *
    * '''AA.neg'''
    *
-   * addition/substraction between affine forms
+   * addition/subtraction between affine forms
    *
    * multiplication with constants
    *
-   * addition/substraction with constants
+   * addition/subtraction with constants
    *
    */
   def unary_-() = new AffineForm(-constant,
     intervalTerms.map { case (str, d) => (str, -d) })
 
   // naturally affine operations
-  def doAddSub(that: AffineForm, add: Boolean) = {
+  def doAddSub(that: AffineForm, add: Boolean): AffineForm = {
     val constant = if (add) this.constant + that.constant else this.constant - that.constant
     val intervalTerms =
       this.intervalTerms.keySet.union(that.intervalTerms.keySet)
@@ -100,25 +97,25 @@ class AffineForm(val constant: Double, val intervalTerms: Map[String, Double]) {
         .filterNot(_._2 == 0.0)
     new AffineForm(constant, intervalTerms)
   }
-  def +(that: AffineForm) = doAddSub(that, true)
-  def -(that: AffineForm) = doAddSub(that, false)
+  def +(that: AffineForm): AffineForm = doAddSub(that, add = true)
+  def -(that: AffineForm): AffineForm = doAddSub(that, add = false)
 
   def doAddSub(thatConstant: Double, add: Boolean) = new AffineForm(
     if (add) constant + thatConstant else constant - thatConstant,
     intervalTerms.map(term => term) // copy
   )
-  def +(thatConstant: Double) = doAddSub(thatConstant, true)
-  def -(thatConstant: Double) = doAddSub(thatConstant, false)
+  def +(thatConstant: Double): AffineForm = doAddSub(thatConstant, add = true)
+  def -(thatConstant: Double): AffineForm = doAddSub(thatConstant, add = false)
 
-  def *(thatConstnt: Double) = new AffineForm(constant * thatConstnt,
-    intervalTerms.map { case (str, d) => (str, d * thatConstnt) })
+  def *(thatConstant: Double) = new AffineForm(constant * thatConstant,
+    intervalTerms.map { case (str, d) => (str, d * thatConstant) })
 
   /** Operations below are non-affine operations, implemented by affine approximation
    *
    * '''AA.mul'''
    *
    */
-  def *(that: AffineForm) = {
+  def *(that: AffineForm): AffineForm = {
     val a = that.constant
     val b = this.constant
     val c = -(this.constant * that.constant)
@@ -164,9 +161,10 @@ object AffineForm {
 
     val af0 = new AffineForm(10, Map("x" -> 2.0, "r" -> 1.0))
     val af1 = new AffineForm(10, Map("x" -> -2.0, "s" -> 1.0))
-
     println((af0 * af1).lower)
     println((af0 * af1).upper)
+
+    AffineArithmetic.symbolSupplier
 
     val af2 = AffineForm(-1, 1)
     val af3 = AffineForm(-1, 1)
@@ -174,13 +172,6 @@ object AffineForm {
     println(af3)
     println(af2 * af3)
 
-    AffineArithmetic.symbolSupplier.clear()
-
-    val af4 = AffineForm(-1, 1)
-    val af5 = AffineForm(-1, 1)
-    println(af4)
-    println(af5)
-    println(af4 * af5)
   }
 }
 

@@ -236,7 +236,7 @@ class Real(var realInfo: RealInfo, val resolution: ExpNumber) extends MultiData 
         this.realInfo = t.realInfo.clone
         if (difLsb > 0) {
           this.raw compositAssignFrom((t.raw >> difLsb).resized, this.raw, kind)
-          this.realInfo = this.realInfo.errorAdded(pow(2, this.minExp))
+          this.realInfo = this.realInfo.withErrorAdded(pow(2, this.minExp))
         }
         else if (difLsb < 0)
           this.raw compositAssignFrom((t.raw << -difLsb).resized, this.raw, kind)

@@ -3,8 +3,8 @@ Reference book = Self-Validated Numerical Methods and Applications
 
 The bold parts in ScalaDoc are directly quoted from the book, which are terminologies or routines.
 
-Basically, we use AA to implement interval calculation and IA to implement AA calculation
-That is, for errors, we do not consider the correlations between them, and just accumulate them
+Basically, we use AA to implement interval calculations and IA to implement AA calculations.
+That is, for errors, we do not consider the correlations between them, and just accumulate them.
  */
 
 package Chainsaw
@@ -15,21 +15,19 @@ class RealInfo(val interval: AffineForm, val error: Double) {
 
   override def clone = new RealInfo(interval.clone, error)
 
-  /** Introduce
+  /** Introduce(and accumulate) new error
    *
-   * @param error
-   * @return
    */
-  def errorAdded(error: Double): RealInfo = {
+  def withErrorAdded(error: Double): RealInfo = {
     require(error > 0)
     new RealInfo(interval.clone, this.error + error)
   }
 
+  // expose inner attributes
   def upper = interval.upper
-
   def lower = interval.lower
 
-  def maxAbs = upper.abs max lower.abs
+  def maxAbs = max(upper.abs, lower.abs)
 
   def unary_-() = new RealInfo(-interval, error)
 
