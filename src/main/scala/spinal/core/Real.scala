@@ -233,7 +233,7 @@ class Real(var realInfo: RealInfo, val resolution: ExpNumber) extends MultiData 
           }
         }
         val difLsb = this.difLsb(t)
-        this.realInfo = t.realInfo.copy
+        this.realInfo = t.realInfo.clone
         if (difLsb > 0) {
           this.raw compositAssignFrom((t.raw >> difLsb).resized, this.raw, kind)
           this.realInfo = this.realInfo.errorAdded(pow(2, this.minExp))
@@ -249,7 +249,7 @@ class Real(var realInfo: RealInfo, val resolution: ExpNumber) extends MultiData 
   override def autoConnect(that: Data): Unit = autoConnectBaseImpl(that)
 
   // clone related
-  override def clone: Real = new Real(realInfo.copy, resolution)
+  override def clone: Real = new Real(realInfo.clone, resolution)
 
   def init(that: BigDecimal): this.type = {
     val initValue = cloneOf(this)

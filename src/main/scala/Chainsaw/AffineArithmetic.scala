@@ -1,96 +1,123 @@
+/*
+Reference book = Self-Validated Numerical Methods and Applications
+
+The bold parts in ScalaDoc are directly quoted from the book, which are terminologies or routines.
+ */
 package Chainsaw
 
-import scala.math._
+import java.util.function.Supplier
 
-class AffineArithmetic {
-
-}
-
+/** Static methods of affine arithmetic
+ *
+ * @see [[https://www.notion.so/Self-Validated-Numerical-Methods-and-Applications-30f49c20328848798c0309a32d870d65 Self-Validated Numerical Methods and Applications]]
+ */
 object AffineArithmetic {
-
-  implicit class numericOp(value: Double) {
-
-    /** Rounding up to the nearest representable value
-     *
-     * @param resolution resolution of current format
-     */
-    def roundUp(implicit resolution: Int) = {
-      val ulp = pow(2.0, resolution)
-      ceil(value / ulp) * ulp
-    }
-
-    def roundDown(implicit resolution: Int) = {
-      val ulp = pow(2.0, resolution)
-      floor(value / ulp) * ulp
-    }
-  }
 
   /** Affine operation f(x,y) = ax + by + c
    *
-   * @param resolution
+   * @see routine '''AA.affine'''
    */
-  def affine(x: AffineForm, y: AffineForm, a: Double, b: Double, c: Double, delta: Double) = {
+  def affine(x: AffineForm, y: AffineForm, a: Double, b: Double, c: Double, delta: Double): AffineForm = {
     val constant = a * x.constant + b * y.constant + c
-    val rangeTerms =
-      x.rangeTerms.keySet.union(y.rangeTerms.keySet)
-        .map { key => key -> (a * x.rangeTerms.getOrElse(key, 0.0) + b * y.rangeTerms.getOrElse(key, 0.0)) }
+    val intervalTerms =
+      x.intervalTerms.keySet.union(y.intervalTerms.keySet)
+        .map { key => key -> (a * x.intervalTerms.getOrElse(key, 0.0) + b * y.intervalTerms.getOrElse(key, 0.0)) }
         .toMap
         .filterNot(_._2 == 0.0) + (newSym() -> delta)
-    new AffineForm(constant, rangeTerms)
+    new AffineForm(constant, intervalTerms)
   }
 
-  var symIndex = -1
-
-  /** Global symbol name supplier
+  /** Global symbol name supplier, implemented as java supplier
    */
-  def newSym() = {
-    symIndex += 1
-    s"sigma$symIndex"
+  val symbolSupplier = new Supplier[String] {
+    var symbolIndex = -1
+
+    override def get(): String = {
+      symbolIndex += 1
+      s"sigma$symbolIndex"
+    }
+
+    def clear() = symbolIndex = -1
   }
+
+  /**
+   * @see routine '''newSym'''
+   */
+  def newSym() = symbolSupplier.get()
 }
 
-class AffineForm(val constant: Double, val rangeTerms: Map[String, Double]) {
+/** Representation and methods of '''affine form'''
+ *
+ * @param constant      '''central value'''
+ * @param intervalTerms each term is a '''noise symbol''' with its coefficient
+ * @see [[https://www.notion.so/Self-Validated-Numerical-Methods-and-Applications-30f49c20328848798c0309a32d870d65 Self-Validated Numerical Methods and Applications]]
+ */
+class AffineForm(val constant: Double, val intervalTerms: Map[String, Double]) {
 
-  def copy = new AffineForm(constant, rangeTerms.map(term => term))
+  override def clone = new AffineForm(constant, intervalTerms.map(term => term))
 
-  def rad = rangeTerms.values.map(_.abs).sum
+  /** Radius of the interval
+   *
+   * @see '''AA.rad'''
+   */
+  def rad = intervalTerms.values.map(_.abs).sum
 
+
+  /** Upper and lower bound of the interval
+   *
+   * @see routine '''IA.frome.AA'''
+   */
   def upper = constant + rad
-
   def lower = constant - rad
 
-  def getRange(key: String) = rangeTerms.getOrElse(key, 0.0)
+  /** Get the coefficient of a interval symbol by its name
+   */
+  def getIntervalTerm(key: String) = intervalTerms.getOrElse(key, 0.0)
 
+  /** Operations below are naturally affine operations, including
+   *
+   * '''AA.neg'''
+   *
+   * addition/substraction between affine forms
+   *
+   * multiplication with constants
+   *
+   * addition/substraction with constants
+   *
+   */
   def unary_-() = new AffineForm(-constant,
-    rangeTerms.map { case (str, d) => (str, -d) })
+    intervalTerms.map { case (str, d) => (str, -d) })
 
   // naturally affine operations
   def doAddSub(that: AffineForm, add: Boolean) = {
     val constant = if (add) this.constant + that.constant else this.constant - that.constant
-    val rangeTerms =
-      this.rangeTerms.keySet.union(that.rangeTerms.keySet)
+    val intervalTerms =
+      this.intervalTerms.keySet.union(that.intervalTerms.keySet)
         .map { key =>
-          key -> (if (add) this.getRange(key) + that.getRange(key) else this.getRange(key) - that.getRange(key))
+          key -> (if (add) this.getIntervalTerm(key) + that.getIntervalTerm(key) else this.getIntervalTerm(key) - that.getIntervalTerm(key))
         }
         .toMap
         .filterNot(_._2 == 0.0)
-    new AffineForm(constant, rangeTerms)
+    new AffineForm(constant, intervalTerms)
   }
-
   def +(that: AffineForm) = doAddSub(that, true)
-
   def -(that: AffineForm) = doAddSub(that, false)
 
   def doAddSub(thatConstant: Double, add: Boolean) = new AffineForm(
     if (add) constant + thatConstant else constant - thatConstant,
-    rangeTerms.map(term => term) // copy
+    intervalTerms.map(term => term) // copy
   )
-
   def +(thatConstant: Double) = doAddSub(thatConstant, true)
-
   def -(thatConstant: Double) = doAddSub(thatConstant, false)
 
-  // non-affine operations
+  def *(thatConstnt: Double) = new AffineForm(constant * thatConstnt,
+    intervalTerms.map { case (str, d) => (str, d * thatConstnt) })
+
+  /** Operations below are non-affine operations, implemented by affine approximation
+   *
+   * '''AA.mul'''
+   *
+   */
   def *(that: AffineForm) = {
     val a = that.constant
     val b = this.constant
@@ -99,38 +126,27 @@ class AffineForm(val constant: Double, val rangeTerms: Map[String, Double]) {
     AffineArithmetic.affine(this, that, a, b, c, delta)
   }
 
-  def *(thatConstnt: Double) = new AffineForm(constant * thatConstnt,
-    rangeTerms.map { case (str, d) => (str, d * thatConstnt) })
-
-  override def toString: String = s"$constant + " +
-    s"${rangeTerms.map { case (str, d) => s"$d$str" }.mkString(" + ")}"
+  override def toString: String = s"AffineForm $constant + " +
+    s"${intervalTerms.map { case (str, d) => s"$d$str" }.mkString(" + ")}"
 }
 
 object AffineForm {
 
-  /** Native factory, corresponding to the definition of AffineForm in reference
-   *
-   * @param constant   the constant, which is the mid point of the range
-   * @param rangeTerms range terms which comes from different independent variables
+  /** Native factory
    */
-  def apply(constant: Double, rangeTerms: Map[String, Double] = Map[String, Double]()): AffineForm =
-    new AffineForm(constant, rangeTerms)
+  def apply(constant: Double, intervalTerms: Map[String, Double]): AffineForm =
+    new AffineForm(constant, intervalTerms)
 
-  def apply(name: String, lower: Double, upper: Double): AffineForm = {
-    require(upper >= lower, "upper should be greater or equal to lower")
-    require(!name.contains("sigma"), "name \"sigma\" should be reserved for auto-naming")
-    val constant = (upper + lower) / 2
-    val rad = (upper - lower) / 2
-    new AffineForm(constant, Map(name -> rad))
-  }
+  def apply(constant: Double): AffineForm =
+    AffineForm(constant, Map[String, Double]())
 
-  /** The most important factory which initialize an affine form from a range [lower, upper]
+  /** The most commonly used factory which initialize an affine form from a interval [lower, upper]
    */
   def apply(lower: Double, upper: Double): AffineForm = {
     require(upper >= lower, "upper should be greater or equal to lower")
     val constant = (upper + lower) / 2
     val rad = (upper - lower) / 2
-    new AffineForm(constant, Map(AffineArithmetic.newSym() -> rad))
+    AffineForm(constant, Map(AffineArithmetic.newSym() -> rad))
   }
 
   def main(args: Array[String]): Unit = {
@@ -152,7 +168,19 @@ object AffineForm {
     println((af0 * af1).lower)
     println((af0 * af1).upper)
 
-    implicit val resolution = 0
+    val af2 = AffineForm(-1, 1)
+    val af3 = AffineForm(-1, 1)
+    println(af2)
+    println(af3)
+    println(af2 * af3)
+
+    AffineArithmetic.symbolSupplier.clear()
+
+    val af4 = AffineForm(-1, 1)
+    val af5 = AffineForm(-1, 1)
+    println(af4)
+    println(af5)
+    println(af4 * af5)
   }
 }
 

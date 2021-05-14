@@ -7,7 +7,7 @@ import spinal.core.sim._
 import spinal.sim._
 
 import scala.collection.mutable.ArrayBuffer
-import scala.math.{ceil, floor}
+import scala.math.{ceil, floor, pow}
 import scala.util.Random
 
 package object Chainsaw extends ChainsawTypeFactory {

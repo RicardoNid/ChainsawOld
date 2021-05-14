@@ -94,7 +94,7 @@ class PlayWithReal extends Component {
 
   println(r0mulr1.realInfo)
   println(r0mulr1.minExp)
-  println(r0mulr1.realInfo.range)
+  println(r0mulr1.realInfo.interval)
   println(truncated.realInfo)
 
 

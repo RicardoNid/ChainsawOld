@@ -1,26 +1,40 @@
+/*
+Reference book = Self-Validated Numerical Methods and Applications
+
+The bold parts in ScalaDoc are directly quoted from the book, which are terminologies or routines.
+
+Basically, we use AA to implement interval calculation and IA to implement AA calculation
+That is, for errors, we do not consider the correlations between them, and just accumulate them
+ */
+
 package Chainsaw
 
 import scala.math._
 
-class RealInfo(val range: AffineForm, val error: Double) {
+class RealInfo(val interval: AffineForm, val error: Double) {
 
-  def copy = new RealInfo(range.copy, error)
+  override def clone = new RealInfo(interval.clone, error)
 
-  def errorAdded(error: Double) = {
+  /** Introduce
+   *
+   * @param error
+   * @return
+   */
+  def errorAdded(error: Double): RealInfo = {
     require(error > 0)
-    new RealInfo(range.copy, this.error + error)
+    new RealInfo(interval.clone, this.error + error)
   }
 
-  def upper = range.upper
+  def upper = interval.upper
 
-  def lower = range.lower
+  def lower = interval.lower
 
   def maxAbs = upper.abs max lower.abs
 
-  def unary_-() = new RealInfo(-range, error)
+  def unary_-() = new RealInfo(-interval, error)
 
   def doAddSub(that: RealInfo, add: Boolean) = {
-    val range = if (add) this.range + that.range else this.range - that.range
+    val range = if (add) this.interval + that.interval else this.interval - that.interval
     val error = this.error + that.error
     new RealInfo(range, error)
   }
@@ -30,7 +44,7 @@ class RealInfo(val range: AffineForm, val error: Double) {
   def -(that: RealInfo) = doAddSub(that, false)
 
   def doAddSub(thatConstant: Double, add: Boolean) = {
-    val range = if (add) this.range + thatConstant else this.range - thatConstant
+    val range = if (add) this.interval + thatConstant else this.interval - thatConstant
     val error = this.error
     new RealInfo(range, error)
   }
@@ -40,7 +54,7 @@ class RealInfo(val range: AffineForm, val error: Double) {
   def -(thatConstant: Double) = doAddSub(thatConstant, false)
 
   def *(that: RealInfo) = {
-    val range = this.range * that.range
+    val range = this.interval * that.interval
     // this bound is looser than interval arithmetic
     val error = this.error * that.maxAbs +
       that.error * this.maxAbs +
@@ -49,20 +63,20 @@ class RealInfo(val range: AffineForm, val error: Double) {
   }
 
   def *(thatConstant: Double) = {
-    val range = this.range * thatConstant
+    val range = this.interval * thatConstant
     val error = this.error * thatConstant
     new RealInfo(range, error)
   }
 
   def <<(shiftConstant: Int) = {
-    val range = this.range * (1 << shiftConstant)
+    val range = this.interval * (1 << shiftConstant)
     val error = this.error * (1 << shiftConstant)
     new RealInfo(range, error)
   }
 
   def >>(shiftConstant: Int) = {
     val scale = pow(2, -shiftConstant)
-    val range = this.range * scale
+    val range = this.interval * scale
     val error = this.error * scale
     new RealInfo(range, error)
   }
