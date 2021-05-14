@@ -5,6 +5,7 @@ import spinal.core._
 import spinal.core.sim._
 
 import scala.collection.mutable.ArrayBuffer
+import scala.math.floor
 import scala.util.Random
 
 package object Chainsaw {
@@ -111,4 +112,6 @@ package object Chainsaw {
     val values = bs.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (1 << i) }
     values.dropRight(1).sum - values.last
   }
+
+  def NewType = new NewType
 }

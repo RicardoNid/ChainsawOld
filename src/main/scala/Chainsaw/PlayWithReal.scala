@@ -24,6 +24,7 @@ class PlayWithReal extends Component {
   //  val a1 = SReal(4 exp, -1 exp)
   //  val a2 = SReal(1 exp, -4 exp)
   //  val b = SReal(2 exp, -2 exp)
+  //  val b = SReal(2 exp, -2 exp)
 
   val a0 = QFormatReal("a0", SQ(9, 4))
   val a1 = QFormatReal("a1", SQ(6, 1))
@@ -58,6 +59,10 @@ class PlayWithReal extends Component {
   out(contains, tangent0, tangent1)
   out(randomOutputsForAddtion: _*)
 
+  val constantsForAddtion = (0 until 100).map(_ => DSPRand.nextDouble() * 10 - 5)
+  val outputsOfConstantAddition = constantsForAddtion.map(constant => a0 + constant.roundAsScala(a0.ulp))
+  out(outputsOfConstantAddition: _*)
+
   //  val f = SReal(3 exp, -3 exp)
   //  val g = SReal(RealRange(-0.3, 0.3, 0.1))
   //  val h = SReal(RealRange(-0.3, 0.3, 0.1))
@@ -68,7 +73,7 @@ class PlayWithReal extends Component {
   val g = Real("g", -0.3, 0.3, 0.1)
   val h = Real("h", -0.3, 0.3, 0.1)
   val i = Real("i", 0.3, 0.8, 0.1)
-  val j = Real("j", -0.3, -0.8, 0.1)
+  val j = Real("j", -0.8, -0.3, 0.1)
 
   val mul = f * f
   val precisemul0 = g * h
@@ -91,6 +96,7 @@ class PlayWithReal extends Component {
   println(r0mulr1.minExp)
   println(r0mulr1.realInfo.range)
   println(truncated.realInfo)
+
 
 }
 
@@ -124,6 +130,19 @@ object PlayWithReal {
       assert(c.toDouble == a.toDouble + b.toDouble, s"${c.toDouble} != ${a.toDouble} + ${b.toDouble}")
     }
   }
+
+  private def traversalAdditionTest(a: Real, b: Double, c: Real) = {
+    println(s"${a.allValues.length} testCases to be tested")
+    for (va <- a.allValues) {
+      a #= va
+      sleep(1)
+
+      if (b.abs > a.ulp)
+        assert(c.toDouble == a.toDouble + b.roundAsScala(a.ulp),
+          s"ulp: ${a.ulp} ${c.toDouble} != ${a.toDouble} + ${b.roundAsScala(a.ulp)}")
+    }
+  }
+
 
   private def traversalMultiplicationTest(a: Real, b: Real, c: Real) = {
     println(s"${a.allValues.length * b.allValues.length} testCases to be tested")
@@ -168,6 +187,11 @@ object PlayWithReal {
         println(Console.GREEN)
         println("ADDITION TEST PASSED !")
         println(Console.BLACK)
+
+        println(s"start constant addition test")
+        constantsForAddtion.zip(outputsOfConstantAddition).foreach { case (d, real) =>
+          traversalAdditionTest(a0, d, real)
+        }
 
         println(s"start multiplication test")
         traversalMultiplicationTest(f, f, mul)
