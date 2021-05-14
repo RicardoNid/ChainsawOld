@@ -3,7 +3,7 @@ package spinal.core
 import Chainsaw._
 
 import scala.collection.mutable.ArrayBuffer
-import scala.math.{abs, ceil, floor, log, max, min, pow}
+import scala.math.{abs, ceil, log, max, min, pow}
 
 /** Factories in this trait would be automatically visiable in the project, as the package object extends it
  *
@@ -11,50 +11,48 @@ import scala.math.{abs, ceil, floor, log, max, min, pow}
 trait RealFactory {
   /** Native factory
    */
-  def Real(realInfo: RealInfo, resolution: ExpNumber) =
+  def Real(realInfo: RealInfo, resolution: ExpNumber): Real =
     new Real(realInfo, resolution)
 
-  def Real(lower: Double, upper: Double, resolution: ExpNumber) =
-    new Real(RealInfo(lower, upper), resolution)
+  def Real(lower: Double, upper: Double, resolution: ExpNumber): Real =
+    Real(RealInfo(lower, upper), resolution)
 
-  def Real(lower: Double, upper: Double, decimalResolution: Double) =
-    new Real(RealInfo(lower, upper), -log2Up(ceil(1 / decimalResolution).toInt) exp)
+  def Real(lower: Double, upper: Double, decimalResolution: Double): Real =
+    Real(lower, upper, -log2Up(ceil(1 / decimalResolution).toInt) exp)
 
-  def RealWithError(lower: Double, upper: Double, resolution: ExpNumber)(implicit error: Double) =
-    new Real(RealInfo(lower, upper, error), resolution)
+  def RealWithError(lower: Double, upper: Double, resolution: ExpNumber)(implicit error: Double): Real =
+    Real(RealInfo(lower, upper, error), resolution)
 
-  /**
-   */
-  def UIntReal(upper: Int) = new Real(RealInfo(0.0, upper), 0 exp)
+  def UIntReal(upper: Int): Real = Real(0.0, upper, 0 exp)
 
-  /**
-   */
-  def SIntReal(upper: Int) = new Real(RealInfo(-upper, upper), 0 exp)
+  def SIntReal(upper: Int): Real = Real(-upper, upper, 0 exp)
 
-  def SIntReal(lower: Int, upper: Int) = {
+  def SIntReal(lower: Int, upper: Int): Real = {
     println(s"SIntReal is unnecessary as lower = $lower")
-    new Real(RealInfo(lower, upper), 0 exp)
+    Real(lower, upper, 0 exp)
   }
 
   //  https://en.wikipedia.org/wiki/Q_(number_format)
-  def QFormatReal(qFormat: QFormat) = {
+  def QFormatReal(qFormat: QFormat): Real = {
     import qFormat._
     val lower = if (signed) -pow(2, nonFraction - 1) else 0.0
     val upper = if (signed) pow(2, nonFraction - 1) else pow(2, nonFraction)
     new Real(RealInfo(lower, upper), -qFormat.fraction exp)
   }
 
-  def Real(value: Double, resolution: ExpNumber) = {
-    val ret = new Real(RealInfo(value), resolution)
+  /** Constant factory
+   */
+  def ConstantReal(value: Double, resolution: ExpNumber): Real = {
+    val ret = Real(RealInfo(value), resolution)
     println(s"initial: ${ret.realInfo}")
     ret := value
     println(s"after assignment: ${ret.realInfo}")
     ret
   }
 
-  def RealWithError(value: Double, resolution: ExpNumber) = {
+  def RealWithError(value: Double, resolution: ExpNumber): Real = {
     val error = abs(value - value.roundAsScala(pow(2.0, resolution.value)))
-    val ret = new Real(RealInfo(value, error), resolution)
+    val ret = Real(RealInfo(value, error), resolution)
     ret := value
     ret
   }
@@ -63,18 +61,31 @@ trait RealFactory {
 /**
  * @param realInfo all the numeric information of the signal(interval and error), this is a var, so it can be reassigned
  * @param resolution
+ * @note The MSB strategy of real is independent of its LSB strategy, more specifically
  *
- *                 The MSB strategy of real is independent of its LSB strategy, more specifically
- *                 the MSB is determined by the interval,
+ *       the MSBs are determined by the intervals
+ *
+ *       the LSBs are determinde by the resolutions
+ *
+ *       firstly, they are introduced by the user
+ *
+ *       then, they are generated through numeric operation and assignments
+ *
+ *       the basic resolution generating strategy is based on '''significant figures''', which does not allow to lose any of them
+ *
+ *       a slightly more complex strategy is "lower bound", which drops the bits after a specific resolution
+ *
+ *       the most complex strategy is
+ *
  */
-class Real(var realInfo: RealInfo, val resolution: ExpNumber) extends MultiData {
+class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withError: Boolean = false) extends MultiData {
 
+  // TODO: mix signed and unsigned in this type
+  // numeric methods for word length determination
   def log2Up(value: Double) = ceil(log2(value)).toInt
 
   def log2(value: Double) = {
-    require(value >= 0.0)
-    // situation 0.0 is contained here
-    // TODO: a better solution
+    require(value >= 0.0, s"operand of log2 should >= 0.0, fix it")
     if (value == 0.0) 0.0 else log(value) / log(2.0)
   }
 
@@ -82,45 +93,64 @@ class Real(var realInfo: RealInfo, val resolution: ExpNumber) extends MultiData 
 
     /** The range is of the format [a, b]
      *
+     * @note Considering the following situations where
+     *
+     *       a, b < 0
+     *
+     *       a < 0 && b > 0
+     *
+     *       a, b > 0
+     *
+     *       theoretically, the best situation is that the resolution/LSB has nothing to do with the MSB
+     *
+     *       however, as 2's complement is asymmetric, without involving ulp, our estimation for MSB would be very pessimistic
+     * @example for upper = 1.9, without knowledge on ulp, only 2 bits(rather than 1) would be safe to include it, as max value of 1Q2 is 1.75
      */
-    def getMaxExp = {
-      val upperBits = if (info.upper > 0) floor(log2(info.upper) + 1).toInt else log2Up(info.upper.abs)
-      max(upperBits, log2Up(info.lower.abs))
+    def getMaxExp(implicit ulp: Double) = {
+      def bitsForBound(bound: Double) = if (bound >= 0.0) log2Up(bound + ulp) else log2Up(-bound)
+
+      max(bitsForBound(info.upper), bitsForBound(info.lower))
     }
   }
 
-  // expose the numeric infos
-  val lower = realInfo.lower
-  val upper = realInfo.upper
-  val error = realInfo.error
-
+  // resolution is determined by the argument at the very begining
   val minExp = resolution.value
-  val ulp = pow(2, minExp)
-  val maxExp = realInfo.getMaxExp
+  implicit val ulp = pow(2, minExp)
+
+  val lower = inputRealInfo.lower.roundDown
+  val upper = inputRealInfo.upper.roundUp
+  val error = if (withError) ulp else 0.0
+  var realInfo = RealInfo(lower, upper, error)
+
+  // determine the inner representation
+  val maxExp = inputRealInfo.getMaxExp
+  // TODO: pleases notice that this is for signed number only
   val bitCount = maxExp - minExp + 1
-
-  def maxValue: BigDecimal = pow(2, maxExp) - ulp
-
-  def minValue: BigDecimal = -pow(2, maxExp)
-
   val raw = SInt(bitCount bits)
 
-  // TODO: delete after verification
-  assert(ceil(lower / ulp).toInt >= raw.minValue, s"insufficient width at $name, " +
-    s"maxExp = $maxExp, minExp = $minExp, range = ${realInfo}, lower = $lower, representable = ${raw.minValue.toDouble * ulp}, ulp = $ulp")
-  //  val upperRepresentable = if (floor(upper / ulp).toInt > 0) floor(upper / ulp).toInt - 1 else floor(upper / ulp).toInt
-  assert(floor(upper / ulp).toInt <= raw.maxValue, s"insufficient width at $name, " +
-    s"maxExp = $maxExp, minExp = $minExp, range = ${realInfo}, upper = $upper, representable = ${raw.maxValue.toDouble * ulp}, ulp = $ulp")
+  // attributes determined after maxExp
+  def maxValue: BigDecimal = raw.maxValue.toDouble * ulp
+  def minValue: BigDecimal = raw.minValue.toDouble * ulp
 
+  // TODO: delete after verification
+  // assertions
+  assert(maxExp > minExp,
+    s"minExp $minExp >= maxExp $maxExp, " +
+      s"as you try to represent $realInfo with a resolution of $resolution, " +
+      s"please try to fix it")
+
+  assert(realInfo.lower >= minValue && realInfo.upper <= maxValue,
+    s"part of the interval is not presentable, " +
+      s"infos: minExp $minExp, maxExp $maxExp, $realInfo, representable [$minValue, $maxValue]")
+
+  // copy from SFix template
+  // TODO: figure them out
   raw.setRefOwner(this)
   raw.setPartialName("", weak = true)
+  override def elements: ArrayBuffer[(String, Data)] = ArrayBuffer("" -> raw)
 
-  override def elements: ArrayBuffer[(String, Data)] = {
-    ArrayBuffer("" -> raw)
-  }
-
+  // alignment
   def difLsb(that: Real) = this.minExp - that.minExp
-
   def alignLsb(that: Real): (SInt, SInt) = {
     val lsbDif = difLsb(that)
     val left: SInt = if (lsbDif > 0) this.raw << lsbDif else this.raw
@@ -128,6 +158,19 @@ class Real(var realInfo: RealInfo, val resolution: ExpNumber) extends MultiData 
     (left, right)
   }
 
+  /** Operations
+   *
+   * @note  operations on Real are defined in the follwing aspects
+   *
+   *        1. LSB strategy, so the resolution should be determined at the very beginning
+   *
+   *        2. MSB strategy
+   *
+   *        3. error introduction and propagation
+   *
+   *        4. implementation
+   *
+   */
   def unary_-() = new Real(-realInfo, minExp exp)
 
   def doAddSub(that: Real, add: Boolean): Real = {
@@ -166,7 +209,7 @@ class Real(var realInfo: RealInfo, val resolution: ExpNumber) extends MultiData 
       ret
     }
     else {
-      val that = Real(thatConstant, this.resolution)
+      val that = ConstantReal(thatConstant, this.resolution)
       println(s"operands: ${this.realInfo}, ${that.realInfo}")
       println(doAddSub(that, add).realInfo)
       doAddSub(that, add)
@@ -178,7 +221,7 @@ class Real(var realInfo: RealInfo, val resolution: ExpNumber) extends MultiData 
   def -(thatConstant: Double): Real = doAddSub(thatConstant, false)
 
   def *(thatConstant: Double): Real = {
-    val that = Real(thatConstant, this.resolution)
+    val that = ConstantReal(thatConstant, this.resolution)
     *(that)
   }
 

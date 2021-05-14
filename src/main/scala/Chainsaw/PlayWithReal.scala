@@ -14,7 +14,7 @@ class PlayWithReal extends Component {
   }
   val randomInputs = randomRanges.map(info => Real(info, -4 exp))
   // more or less on LSB, check "equal to" or "close to" in the simulation
-  val randomOutputs = randomRanges.map(info => Real(info, (DSPRand.nextInt(2) - 1) - 4 exp))
+  val randomOutputs = randomRanges.map(info => Real(info + 1, (DSPRand.nextInt(2) - 1) - 4 exp))
   randomInputs.zip(randomOutputs).foreach { case (real, real1) => real1 := real.truncated }
   in(randomInputs: _*)
   out(randomOutputs: _*)

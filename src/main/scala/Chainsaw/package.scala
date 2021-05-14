@@ -10,7 +10,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math.{ceil, floor, pow}
 import scala.util.Random
 
-package object Chainsaw extends ChainsawTypeFactory {
+package object Chainsaw extends RealFactory {
 
   // btToSignal and getDouble are copied from spinal.core.sim package object, as they are private
   private def btToSignal(manager: SimManager, bt: BaseNode) = {
