@@ -41,6 +41,8 @@ class RealInfo(val interval: AffineForm, val error: Double) {
   // expose inner attributes on intervals and errors
   def upper = interval.upper
   def lower = interval.lower
+  def isConstant = interval.isConstant
+  def constant = interval.constant
 
   def maxAbs = max(upper.abs, lower.abs)
 
@@ -96,24 +98,26 @@ object RealInfo {
   // In factories, error should be a secondary parameter which will seldomly introduced by factories
   /** Native factory
    */
-  def apply(interval: AffineForm, error: Double): RealInfo =
-    new RealInfo(interval, error)
+  def apply(interval: AffineForm, error: ErrorNumber): RealInfo =
+    new RealInfo(interval, error.value)
 
   def apply(value: Double) =
     new RealInfo(AffineForm(value), 0.0)
 
+  def apply(value: Double, error: ErrorNumber) =
+    new RealInfo(AffineForm(value), error.value)
 
   /** The most commonly used factory which initialize an affine form from a interval [lower, upper]
    */
   def apply(lower: Double, upper: Double): RealInfo =
     new RealInfo(AffineForm(lower, upper), 0.0)
 
-  def apply(lower: Double, upper: Double, error: Double): RealInfo =
-    new RealInfo(AffineForm(lower, upper), error)
+  def apply(lower: Double, upper: Double, error: ErrorNumber): RealInfo =
+    new RealInfo(AffineForm(lower, upper), error.value)
 
 
   def main(args: Array[String]): Unit = {
-    val x = RealInfo(-1.0, 1.0, 0.01)
+    val x = RealInfo(-1.0, 1.0, 0.01 err)
 
     val x5 = (x << 2) + x
     val x39 = (x5 << 3) - x

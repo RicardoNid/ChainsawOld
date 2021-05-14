@@ -59,6 +59,7 @@ class AffineForm(val constant: Double, val intervalTerms: Map[String, Double]) {
    * @see '''AA.rad'''
    */
   def rad = intervalTerms.values.map(_.abs).sum
+  def isConstant = rad == 0.0
 
   /** Upper and lower bound of the interval
    *

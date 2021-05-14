@@ -5,7 +5,7 @@ import Chainsaw._
 import scala.collection.mutable.ArrayBuffer
 import scala.math.{abs, ceil, log, max, min, pow}
 
-/** Factories in this trait would be automatically visiable in the project, as the package object extends it
+/** Factories in this trait would be automatically visible in the project, as the package object extends it
  *
  */
 trait RealFactory {
@@ -14,19 +14,29 @@ trait RealFactory {
   def Real(realInfo: RealInfo, resolution: ExpNumber): Real =
     new Real(realInfo, resolution)
 
+  def RealWithError(realInfo: RealInfo, resolution: ExpNumber): Real = {
+    val ret = new Real(realInfo, resolution, withRoundingError = true)
+    printlnWhenDebug(s"rounding error ${ret.ulp} introduced")
+    ret
+  }
+
+  /** The most commonly used factory which initialize a Real from a interval [lower, upper] and a resolution
+   */
   def Real(lower: Double, upper: Double, resolution: ExpNumber): Real =
     Real(RealInfo(lower, upper), resolution)
+
+  def RealWithError(lower: Double, upper: Double, resolution: ExpNumber): Real =
+    RealWithError(RealInfo(lower, upper), resolution)
 
   def Real(lower: Double, upper: Double, decimalResolution: Double): Real =
     Real(lower, upper, -log2Up(ceil(1 / decimalResolution).toInt) exp)
 
-  def RealWithError(lower: Double, upper: Double, resolution: ExpNumber)(implicit error: Double): Real =
-    Real(RealInfo(lower, upper, error), resolution)
+  def RealWithError(lower: Double, upper: Double, decimalResolution: Double): Real =
+    RealWithError(lower, upper, -log2Up(ceil(1 / decimalResolution).toInt) exp)
 
+  // Integer factories, which will never introduce error
   def UIntReal(upper: Int): Real = Real(0.0, upper, 0 exp)
-
   def SIntReal(upper: Int): Real = Real(-upper, upper, 0 exp)
-
   def SIntReal(lower: Int, upper: Int): Real = {
     println(s"SIntReal is unnecessary as lower = $lower")
     Real(lower, upper, 0 exp)
@@ -37,35 +47,40 @@ trait RealFactory {
     import qFormat._
     val lower = if (signed) -pow(2, nonFraction - 1) else 0.0
     val upper = if (signed) pow(2, nonFraction - 1) else pow(2, nonFraction)
-    new Real(RealInfo(lower, upper), -qFormat.fraction exp)
+    Real(RealInfo(lower, upper), -qFormat.fraction exp)
+  }
+
+  def QFormatRealWithError(qFormat: QFormat): Real = {
+    import qFormat._
+    val lower = if (signed) -pow(2, nonFraction - 1) else 0.0
+    val upper = if (signed) pow(2, nonFraction - 1) else pow(2, nonFraction)
+    RealWithError(RealInfo(lower, upper), -qFormat.fraction exp)
   }
 
   /** Constant factory
    */
   def ConstantReal(value: Double, resolution: ExpNumber): Real = {
     val ret = Real(RealInfo(value), resolution)
-    println(s"initial: ${ret.realInfo}")
     ret := value
-    println(s"after assignment: ${ret.realInfo}")
     ret
   }
 
-  def RealWithError(value: Double, resolution: ExpNumber): Real = {
-    val error = abs(value - value.roundAsScala(pow(2.0, resolution.value)))
-    val ret = Real(RealInfo(value, error), resolution)
+  def ConstantRealWithError(value: Double, resolution: ExpNumber): Real = {
+    val ret = RealWithError(RealInfo(value), resolution)
     ret := value
     ret
   }
 }
 
 /**
- * @param realInfo all the numeric information of the signal(interval and error), this is a var, so it can be reassigned
- * @param resolution
+ * @param inputRealInfo     all the numeric information of the signal(interval and error), this is a var, so it can be reassigned, determines MSB
+ * @param resolution        the number of bits used for fractional part, determines LSB
+ * @param withRoundingError if enabled, the signal will be initialized with rounding error, which is determined by the resolution
  * @note The MSB strategy of real is independent of its LSB strategy, more specifically
  *
  *       the MSBs are determined by the intervals
  *
- *       the LSBs are determinde by the resolutions
+ *       the LSBs are determined by the resolutions
  *
  *       firstly, they are introduced by the user
  *
@@ -78,7 +93,7 @@ trait RealFactory {
  *       the most complex strategy is
  *
  */
-class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withError: Boolean = false) extends MultiData {
+class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError: Boolean = false) extends MultiData {
 
   // TODO: mix signed and unsigned in this type
   // numeric methods for word length determination
@@ -113,14 +128,19 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withError: Boolea
     }
   }
 
-  // resolution is determined by the argument at the very begining
+  override def clone: Real = new Real(realInfo.clone, resolution)
+
+  // resolution is determined by the argument at the very beginning
   val minExp = resolution.value
-  implicit val ulp = pow(2, minExp)
+  implicit val ulp: Double = pow(2, minExp)
 
   val lower = inputRealInfo.lower.roundDown
   val upper = inputRealInfo.upper.roundUp
-  val error = if (withError) ulp else 0.0
-  var realInfo = RealInfo(lower, upper, error)
+  val roundingError =
+    if (inputRealInfo.isConstant) abs(inputRealInfo.constant - inputRealInfo.constant.roundAsScala) // when initialized by a constant
+    else ulp
+  val error = if (withRoundingError) roundingError else 0.0
+  var realInfo = RealInfo(lower, upper, error err)
 
   // determine the inner representation
   val maxExp = inputRealInfo.getMaxExp
@@ -144,12 +164,12 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withError: Boolea
       s"infos: minExp $minExp, maxExp $maxExp, $realInfo, representable [$minValue, $maxValue]")
 
   // copy from SFix template
-  // TODO: figure them out
+  // TODO: figure these out
   raw.setRefOwner(this)
   raw.setPartialName("", weak = true)
   override def elements: ArrayBuffer[(String, Data)] = ArrayBuffer("" -> raw)
 
-  // alignment
+  // alignment of raws
   def difLsb(that: Real) = this.minExp - that.minExp
   def alignLsb(that: Real): (SInt, SInt) = {
     val lsbDif = difLsb(that)
@@ -160,84 +180,92 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withError: Boolea
 
   /** Operations
    *
-   * @note  operations on Real are defined in the follwing aspects
+   * @note operations on Real are defined in the following aspects
    *
-   *        1. LSB strategy, so the resolution should be determined at the very beginning
+   *       1.LSB strategy, so the resolution should be determined at the very beginning
    *
-   *        2. MSB strategy
+   *       2.MSB strategy
    *
-   *        3. error introduction and propagation
+   *       3.error introduction and propagation
    *
-   *        4. implementation
+   *       4.implementation
    *
    */
   def unary_-() = new Real(-realInfo, minExp exp)
 
   def doAddSub(that: Real, add: Boolean): Real = {
+    val minExp = min(this.minExp, that.minExp) // LSB strategy, no rounding error introduced
+    val realInfo = if (add) this.realInfo + that.realInfo else this.realInfo - that.realInfo // MSB strategy
+    val ret = new Real(realInfo, minExp exp)
+    // implementation
     val (rawLeft, rawRight) = alignLsb(that)
-    val realInfo = if (add) this.realInfo + that.realInfo else this.realInfo - that.realInfo
-    val ret = new Real(realInfo, min(this.minExp, that.minExp) exp)
-    val maxExpEnlarged = realInfo.getMaxExp > max(this.maxExp, that.maxExp)
+    val maxExpEnlarged = ret.maxExp > max(this.maxExp, that.maxExp)
     val retRaw =
       if (maxExpEnlarged) if (add) rawLeft +^ rawRight else rawLeft -^ rawRight
       else if (add) rawLeft + rawRight else rawLeft - rawRight
     ret.raw := retRaw
     ret
   }
-
-  def +(that: Real) = doAddSub(that, true)
-
-  def -(that: Real) = doAddSub(that, true)
+  def +(that: Real) = doAddSub(that, add = true)
+  def -(that: Real) = doAddSub(that, add = true)
 
   def *(that: Real): Real = {
-    val realInfo = this.realInfo * that.realInfo
-    val ret = new Real(realInfo, this.minExp + that.minExp exp)
+    val minExp = this.minExp + that.minExp // LSB strategy, no rounding error introduced
+    val realInfo = this.realInfo * that.realInfo // MSB strategy
+    val ret = new Real(realInfo, minExp exp)
+    // implementation
     val retRaw = this.raw * that.raw
     ret.raw := retRaw.resized
     ret
   }
 
-  /** Arithmetic operation with constant
+  /** Operation with constant
    *
-   * @param thatConstant the constant share the same resolution as the signal, for customized resolution, use Real() or RealWithError() to declare
+   * @param thatConstant the constant which share the same resolution as the signal,
+   *
+   *                     for customized resolutions, use RealConstant() or RealConstantWithError() to declare them first
    */
   def doAddSub(thatConstant: Double, add: Boolean): Real = {
     if (thatConstant.abs <= ulp) {
-      println(s"the constant $thatConstant is absorbed as signal $name has ulp = $ulp")
+      println(s"the constant $thatConstant is absorbed through addition/subtraction as signal $name has ulp = $ulp")
+      // implementation
       val ret = this.clone
       ret := this
       ret
     }
     else {
-      val that = ConstantReal(thatConstant, this.resolution)
-      println(s"operands: ${this.realInfo}, ${that.realInfo}")
-      println(doAddSub(that, add).realInfo)
+      val that = ConstantRealWithError(thatConstant, this.resolution)
       doAddSub(that, add)
     }
   }
-
-  def +(thatConstant: Double): Real = doAddSub(thatConstant, true)
-
-  def -(thatConstant: Double): Real = doAddSub(thatConstant, false)
+  def +(thatConstant: Double): Real = doAddSub(thatConstant, add = true)
+  def -(thatConstant: Double): Real = doAddSub(thatConstant, add = false)
 
   def *(thatConstant: Double): Real = {
-    val that = ConstantReal(thatConstant, this.resolution)
+    val that = ConstantRealWithError(thatConstant, this.resolution)
     *(that)
   }
 
+  /** << and >>, they won't introduce new error/significant figures
+   */
   def <<(shiftConstant: Int): Real = {
-    val ret = new Real(realInfo << shiftConstant, minExp + shiftConstant exp)
+    val minExp = this.minExp + shiftConstant // LSB strategy
+    val realInfo = this.realInfo << shiftConstant // MSB strategy
+    val ret = new Real(realInfo, minExp exp)
     ret.raw := this.raw
     ret
   }
-
   def >>(shiftConstant: Int): Real = {
-    val ret = new Real(realInfo >> shiftConstant, minExp - shiftConstant exp)
+    val minExp = this.minExp - shiftConstant // LSB strategy
+    val realInfo = this.realInfo >> shiftConstant // MSB strategy
+    val ret = new Real(realInfo, minExp exp)
     ret.raw := this.raw
     ret
   }
 
-  // comparsions
+
+  /** Comparisons
+   */
   def <(that: Real): Bool = {
     val (rawLeft, rawRight) = alignLsb(that)
     rawLeft < rawRight
@@ -253,24 +281,23 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withError: Boolea
   def >=(that: Real) = that <= this
 
 
-  // assignments, all based on BigDecimal method
-  def :=(that: BigDecimal): Unit = {
-    assert(that <= this.maxValue, s"Literal $that is to big to be assigned in $this")
-    assert(that >= this.minValue, s"Literal $that is to negative to be assigned in this $this")
-    val intValue = that.toDouble.roundAsScalaInt(ulp)
+  /** Assignments from constants, the BigDecimal version is the base of other versions
+   */
+  def :=(thatConstant: BigDecimal): Unit = {
+    assert(thatConstant <= this.maxValue, s"Literal $thatConstant is to big to be assigned in $this")
+    assert(thatConstant >= this.minValue, s"Literal $thatConstant is to negative to be assigned in this $this")
+    val intValue = thatConstant.toDouble.roundAsScalaInt(ulp)
     this.raw := intValue
   }
 
-  def :=(that: Float): Unit = this := BigDecimal(that.toDouble)
+  def :=(thatConstant: Float): Unit = this := BigDecimal(thatConstant)
+  def :=(thatConstant: Double): Unit = this := BigDecimal(thatConstant)
+  def :=(thatConstant: BigInt): Unit = this := BigDecimal(thatConstant)
+  def :=(thatConstant: Int): Unit = this := BigInt(thatConstant)
+  def :=(thatConstant: Long): Unit = this := BigInt(thatConstant)
 
-  def :=(that: Double): Unit = this := BigDecimal(that)
-
-  def :=(that: BigInt): Unit = this := BigDecimal(that)
-
-  def :=(that: Int): Unit = this := BigInt(that)
-
-  def :=(that: Long): Unit = this := BigInt(that)
-
+  /** Assignment from signal, which is implemented by overriding assignFromImpl
+   */
   override private[spinal] def assignFromImpl(that: AnyRef, target: AnyRef, kind: AnyRef): Unit = {
     that match {
       case that if this.getClass.isAssignableFrom(that.getClass) =>
@@ -287,7 +314,7 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withError: Boolea
         }
         val difLsb = this.difLsb(t)
         this.realInfo = t.realInfo.clone
-        if (difLsb > 0) {
+        if (difLsb > 0) { // that is, when this has fewer fractional bits than that
           this.raw compositAssignFrom((t.raw >> difLsb).resized, this.raw, kind)
           this.realInfo = this.realInfo.withErrorAdded(pow(2, this.minExp))
         }
@@ -301,13 +328,10 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withError: Boolea
 
   override def autoConnect(that: Data): Unit = autoConnectBaseImpl(that)
 
-  // clone related
-  override def clone: Real = new Real(realInfo.clone, resolution)
-
   def init(that: BigDecimal): this.type = {
     val initValue = cloneOf(this)
     initValue := that
-    this init (initValue)
+    this init initValue
     this
   }
 

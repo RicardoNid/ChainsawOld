@@ -178,4 +178,12 @@ package object Chainsaw extends RealFactory {
 
     def roundAsScalaInt(implicit ulp: Double) = (value / ulp).toInt
   }
+
+  case class ErrorNumber(value: Double)
+
+  implicit class MoreDoubleBuilder(value: Double) {
+
+    def err = ErrorNumber(value)
+
+  }
 }
