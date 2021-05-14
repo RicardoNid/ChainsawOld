@@ -18,7 +18,7 @@ trait RealFactory {
     new Real(RealInfo(lower, upper), -log2Up(ceil(1 / decimalResolution).toInt) exp)
 
   def RealWithError(lower: Double, upper: Double, resolution: ExpNumber)(implicit error: Double) =
-    new Real(RealInfo(lower, upper)(error), resolution)
+    new Real(RealInfo(lower, upper, error), resolution)
 
   /**
    */
