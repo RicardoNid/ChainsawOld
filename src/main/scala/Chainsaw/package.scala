@@ -2,15 +2,85 @@ import breeze.linalg._
 import breeze.numerics._
 import breeze.numerics.constants.Pi
 import spinal.core._
+import spinal.core.internals.BaseNode
 import spinal.core.sim._
+import spinal.sim._
 
 import scala.collection.mutable.ArrayBuffer
-import scala.math.floor
+import scala.math.{ceil, floor}
 import scala.util.Random
 
-package object Chainsaw {
+package object Chainsaw extends ChainsawTypeFactory {
 
-  trait BaseTypeFactory extends BoolFactory with BitsFactory with UIntFactory with SIntFactory with VecFactory with SFixFactory with UFixFactory with TypeFactory
+  // btToSignal and getDouble are copied from spinal.core.sim package object, as they are private
+  private def btToSignal(manager: SimManager, bt: BaseNode) = {
+    if (bt.algoIncrementale != -1) {
+      SimError(s"UNACCESSIBLE SIGNAL : $bt isn't accessible during the simulation.\n- To fix it, call simPublic() on it durring the elaboration.")
+    }
+
+    manager.raw.userData.asInstanceOf[ArrayBuffer[Signal]](bt.algoInt)
+  }
+
+  def getDouble(r: Real): Double = {
+    if (r.getBitsWidth == 0) return 0
+    val manager = SimManagerContext.current.manager
+    val signal = btToSignal(manager, r.raw)
+    manager.getLong(signal) * scala.math.pow(2, r.minExp)
+  }
+
+  implicit class SimRealPimper(r: Real) {
+
+    import r._
+
+    def toDouble = getDouble(r)
+
+    def toBigDecimal = BigDecimal(toDouble)
+
+    def #=(value: BigDecimal): Unit = {
+      assert(value <= r.maxValue, s"Literal $value is too big to be assigned in $this")
+      assert(value >= r.minValue, s"Literal $value is too small to be assigned in this $this")
+
+      // TODO
+      val shift = -r.minExp
+      val ret = if (shift >= 0) // ret this is the "binary string" of value at specific precision
+        (value * BigDecimal(BigInt(1) << shift)).toBigInt
+      else
+        (value / BigDecimal(BigInt(1) << -shift)).toBigInt
+      setLong(r.raw, ret.toLong)
+    }
+
+    def #=(value: Double): Unit = #=(BigDecimal(value))
+
+    private val lowerRepresentable = ceil(lower / ulp).toInt
+    //    private val upperRepresentable = {
+    //        val temp = floor(upper / ulp).toInt
+    //        if (temp > 0) temp - 1 else temp
+    //      }
+    private val upperRepresentable = floor(upper / ulp).toInt
+
+
+    /** Generate all possible value under current range, for simulation
+     *
+     * @example for (-0.3,0.4,0.1) whose ulp = 0.0625, numbers generated are
+     */
+    def allValues = (lowerRepresentable to upperRepresentable).map(_ * ulp)
+
+
+    /** Use a random value in all values for simulation
+     *
+     */
+    def randomize() = r #= (Random.nextInt(upperRepresentable - lowerRepresentable + 1) + lowerRepresentable) * ulp
+
+    /** Judge whether the value is "close to" this, that is, the difference is within the error
+     *
+     * @param that
+     */
+    def ~=(that: Double) = (r.toDouble - that).abs <= r.error
+
+    def !~=(that: Double) = ! ~=(that)
+
+  }
+
 
   // debug mode
   var debug = false
@@ -85,27 +155,8 @@ package object Chainsaw {
     }
   }
 
-  // ALGO 2.1
-  def classicCSD(num: Int): String = {
-    val pattern = "11+0".r
-
-    var string = num.toBinaryString.reverse + "0"
-    var done = false
-    while (!done) {
-      val sub: Option[String] = pattern.findFirstIn(string)
-      sub match {
-        case Some(x) => string = string.replaceFirst(x, "9" + "0" * (x.length - 2) + "1")
-        case None => done = true
-      }
-    }
-    string.reverse
-  }
 
   val DSPRand = new Random(42) // using this as global random gen, with a fixed seed
-
-  //  type Field = MultivariateRing[IntZ]
-  //  type Poly = MultivariatePolynomial[BigInteger]
-  //  type Term = Monomial[BigInteger]
 
   def bs2i(bs: String) = bs.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (1 << i) }.sum
   def bs2i2c(bs: String) = {
@@ -113,5 +164,18 @@ package object Chainsaw {
     values.dropRight(1).sum - values.last
   }
 
-  def NewType = new NewType
+  implicit class numericOp(value: Double) {
+
+    /** Rounding up to the nearest representable value
+     *
+     * @param ulp
+     */
+    def roundUp(implicit ulp: Double) = ceil(value / ulp) * ulp
+
+    def roundDown(implicit ulp: Double) = floor(value / ulp) * ulp
+
+    def roundAsScala(implicit ulp: Double) = (value / ulp).toInt * ulp
+
+    def roundAsScalaInt(implicit ulp: Double) = (value / ulp).toInt
+  }
 }

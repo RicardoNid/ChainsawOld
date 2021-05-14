@@ -9,8 +9,8 @@ import spinal.core.sim._
 class PlayWithReal extends Component {
 
   val randomRanges = (0 until 1000).map { i =>
-    val lower = DSPRand.nextDouble() * 10
-    RealInfo(s"test$i", lower, lower + DSPRand.nextDouble() * 10)
+    val lower = DSPRand.nextDouble() * 10 + 0.5
+    RealInfo(lower, lower + DSPRand.nextDouble() * 10)
   }
   val randomInputs = randomRanges.map(info => Real(info, -4 exp))
   // more or less on LSB, check "equal to" or "close to" in the simulation
@@ -19,22 +19,22 @@ class PlayWithReal extends Component {
   in(randomInputs: _*)
   out(randomOutputs: _*)
 
-
   //  val a0 = SReal(4 exp, -4 exp)
   //  val a1 = SReal(4 exp, -1 exp)
   //  val a2 = SReal(1 exp, -4 exp)
   //  val b = SReal(2 exp, -2 exp)
   //  val b = SReal(2 exp, -2 exp)
 
-  val a0 = QFormatReal("a0", SQ(9, 4))
-  val a1 = QFormatReal("a1", SQ(6, 1))
-  val a2 = QFormatReal("a2", SQ(6, 1))
-  val b = QFormatReal("b", SQ(5, 2))
+  val a0 = QFormatReal(SQ(9, 4))
+  println(a0.realInfo)
+  val a1 = QFormatReal(SQ(6, 1))
+  val a2 = QFormatReal(SQ(6, 1))
+  val b = QFormatReal(SQ(5, 2))
 
 
   val randomRangesForAddition = (0 until 20).map { i =>
     val lower = DSPRand.nextDouble() * 10
-    RealInfo(s"addition$i", lower, lower + DSPRand.nextDouble() * 10)
+    RealInfo(lower, lower + DSPRand.nextDouble() * 10)
   }
   val randomInputsForAddition = randomRangesForAddition.map(info => Real(info, -DSPRand.nextInt(5) exp))
   val randomOutputsForAddtion = (0 until randomInputsForAddition.length / 2).map(i =>
@@ -59,9 +59,9 @@ class PlayWithReal extends Component {
   out(contains, tangent0, tangent1)
   out(randomOutputsForAddtion: _*)
 
-  val constantsForAddtion = (0 until 100).map(_ => DSPRand.nextDouble() * 10 - 5)
-  val outputsOfConstantAddition = constantsForAddtion.map(constant => a0 + constant.roundAsScala(a0.ulp))
-  out(outputsOfConstantAddition: _*)
+  //  val constantsForAddtion = (0 until 100).map(_ => DSPRand.nextDouble() * 10 - 5)
+  //  val outputsOfConstantAddition = constantsForAddtion.map(constant => a0 + constant.roundAsScala(a0.ulp))
+  //  out(outputsOfConstantAddition: _*)
 
   //  val f = SReal(3 exp, -3 exp)
   //  val g = SReal(RealRange(-0.3, 0.3, 0.1))
@@ -69,11 +69,11 @@ class PlayWithReal extends Component {
   //  val i = SReal(RealRange(0.3, 0.8, 0.1))
   //  val j = SReal(RealRange(-0.3, -0.8, 0.1))
 
-  val f = QFormatReal("f", SQ(7, 3))
-  val g = Real("g", -0.3, 0.3, 0.1)
-  val h = Real("h", -0.3, 0.3, 0.1)
-  val i = Real("i", 0.3, 0.8, 0.1)
-  val j = Real("j", -0.8, -0.3, 0.1)
+  val f = QFormatReal(SQ(7, 3))
+  val g = Real(-0.3, 0.3, 0.1)
+  val h = Real(-0.3, 0.3, 0.1)
+  val i = Real(0.3, 0.8, 0.1)
+  val j = Real(-0.8, -0.3, 0.1)
 
   val mul = f * f
   val precisemul0 = g * h
@@ -83,8 +83,8 @@ class PlayWithReal extends Component {
   in(f, g, h, i, j)
   out(mul, precisemul0, precisemul1, precisemul2)
 
-  val r0 = Real("r0", -1, 1, -3 exp)
-  val r1 = Real("r1", -1, 1, -3 exp)
+  val r0 = Real(-1, 1, -3 exp)
+  val r1 = Real(-1, 1, -3 exp)
   val r0mulr1 = r0 * r1
   val truncated = Real(new RealInfo(new AffineForm(0, Map("z" -> 1.0)), 0.0), -5 exp)
   truncated := r0mulr1.truncated
@@ -122,6 +122,7 @@ object PlayWithReal {
   }
 
   private def traversalAdditionTest(a: Real, b: Real, c: Real) = {
+    println(s"${a.realInfo}, ${b.realInfo}")
     println(s"${a.allValues.length * b.allValues.length} testCases to be tested")
     for (va <- a.allValues; vb <- b.allValues) {
       a #= va
@@ -188,10 +189,10 @@ object PlayWithReal {
         println("ADDITION TEST PASSED !")
         println(Console.BLACK)
 
-        println(s"start constant addition test")
-        constantsForAddtion.zip(outputsOfConstantAddition).foreach { case (d, real) =>
-          traversalAdditionTest(a0, d, real)
-        }
+        //        println(s"start constant addition test")
+        //        constantsForAddtion.zip(outputsOfConstantAddition).foreach { case (d, real) =>
+        //          traversalAdditionTest(a0, d, real)
+        //        }
 
         println(s"start multiplication test")
         traversalMultiplicationTest(f, f, mul)

@@ -4,8 +4,8 @@ import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 
-//override val input: Flow[Vec[SReal]] = slave Flow (Vec(SReal(IntRange(0, 63)), 7))
-//override val output: Flow[SReal] = master Flow SReal(IntRange(0, 63 * 7))
+//override val input: Flow[Vec[Real]] = slave Flow (Vec(Real(IntRange(0, 63)), 7))
+//override val output: Flow[Real] = master Flow Real(IntRange(0, 63 * 7))
 //
 //val wallaceTree = new WallaceTree(input.payload)
 //output.payload := wallaceTree.implicitValue
@@ -14,12 +14,12 @@ import spinal.lib._
 //
 //override val timing: TimingInfo = TimingInfo(1, 1, 1, 1)
 //
-//override def poke(testCase: Array[Int], input: Vec[SReal]): Unit = {
+//override def poke(testCase: Array[Int], input: Vec[Real]): Unit = {
 //input.zip(testCase).foreach { case (real, i) => real.raw #= i }
 //clockDomain.waitSampling()
 //}
 //
-//override def peek(output: SReal): Int = {
+//override def peek(output: Real): Int = {
 //val ret = output.raw.toInt
 //clockDomain.waitSampling()
 //ret
@@ -39,9 +39,9 @@ import spinal.lib._
 
 // TODO: sign extension
 class WallaceTreeSim() extends Component
-  with DSPSim[Vec[SReal], SReal, Array[Int], Int] {
-  override val input: Flow[Vec[SReal]] = slave Flow (Vec(SReal(IntRange(0, 63)), 7))
-  override val output: Flow[SReal] = master Flow SReal(IntRange(0, 63 * 7))
+  with DSPSim[Vec[Real], Real, Array[Int], Int] {
+  override val input: Flow[Vec[Real]] = slave Flow Vec(UIntReal(63), 7)
+  override val output: Flow[Real] = master Flow UIntReal(63)
 
   val wallaceTree = new WallaceTree(input.payload)
   output.payload := wallaceTree.implicitValue
@@ -50,11 +50,11 @@ class WallaceTreeSim() extends Component
 
   override val timing: TimingInfo = TimingInfo(1, 1, 1, 1)
 
-  override def poke(testCase: Array[Int], input: Vec[SReal]): Unit = {
+  override def poke(testCase: Array[Int], input: Vec[Real]): Unit = {
     input.zip(testCase).foreach { case (real, i) => real.raw #= i }
     clockDomain.waitSampling(1)
   }
-  override def peek(output: SReal): Int = {
+  override def peek(output: Real): Int = {
     val ret = output.raw.toInt
     clockDomain.waitSampling(1)
     ret

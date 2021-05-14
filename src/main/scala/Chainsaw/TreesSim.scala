@@ -7,8 +7,8 @@ import spinal.lib._
 /** Test BinaryTree by implmenting integer addtions and multiplications
  *
  */
-class BinaryTreeSim(length: Int, opertor: (SReal, SReal) => SReal, pipelineInterval: Int, refOperator: (Double, Double) => Double) extends Component with DSPSim[Vec[SReal], SReal, Array[Double], Double] { // TODO: test it with real numbers
-  override val input: Flow[Vec[SReal]] = slave Flow Vec(SReal(RealRange(-1, 1, 0.001)), length)
+class BinaryTreeSim(length: Int, opertor: (Real, Real) => Real, pipelineInterval: Int, refOperator: (Double, Double) => Double) extends Component with DSPSim[Vec[Real], Real, Array[Double], Double] { // TODO: test it with real numbers
+  override val input: Flow[Vec[Real]] = slave Flow Vec(Real(-1, 1, 0.001), length)
 
   //  val binaryTree = new BinaryTree(input.payload, opertor, pipelineInterval)
   val binaryTree = BinaryTree(input.payload, opertor, pipelineInterval)
@@ -16,17 +16,17 @@ class BinaryTreeSim(length: Int, opertor: (SReal, SReal) => SReal, pipelineInter
   //  output.payload := binaryTree.implicitValue
   val ret = binaryTree.implicitValue
 
-  override val output: Flow[SReal] = master Flow ret // CHAINSAW: you don't have to figure out the output width by yourself
+  override val output: Flow[Real] = master Flow ret // CHAINSAW: you don't have to figure out the output width by yourself
   output.payload := ret
   override val timing: TimingInfo = binaryTree.getTimingInfo
   output.valid := Delay(input.valid, timing.latency, init = False)
 
-  override def poke(testCase: Array[Double], input: Vec[SReal]): Unit = {
+  override def poke(testCase: Array[Double], input: Vec[Real]): Unit = {
     input.zip(testCase).foreach { case (real, d) => real #= d }
     clockDomain.waitSampling()
   }
 
-  override def peek(output: SReal): Double = {
+  override def peek(output: Real): Double = {
     val ret = output.toDouble
     clockDomain.waitSampling()
     ret
@@ -49,8 +49,8 @@ object TreesSim {
     debug = true
 
     println("start testing BinaryTree")
-    val add = (x: SReal, y: SReal) => x + y
-    val mul = (x: SReal, y: SReal) => x * y
+    val add = (x: Real, y: Real) => x + y
+    val mul = (x: Real, y: Real) => x * y
 
     // testCase at the precision of 1/16, which is the nearest power of 2 to 0.1
     def random(length: Int) = (0 until length).map(_ => (DSPRand.nextInt(20) - 10) / 16.0).toArray

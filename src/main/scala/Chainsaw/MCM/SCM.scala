@@ -17,9 +17,9 @@ import Chainsaw.MCM.SCMArch._
 /** Single Constant Multiplication by multiplier/CSD
  *
  */
-class SCM(input: SReal, constant: Int, scmArch: SCMArch) extends ImplicitArea[SReal] with Testable {
+class SCM(input: Real, constant: Int, scmArch: SCMArch) extends ImplicitArea[Real] with Testable {
 
-  val result: SReal = scmArch match {
+  val result: Real = scmArch match {
 
     case SCMArch.MAG =>
       println(constant)
@@ -36,15 +36,15 @@ class SCM(input: SReal, constant: Int, scmArch: SCMArch) extends ImplicitArea[SR
         case '9' => -input
       }
 
-      val shiftAdd = (left: (SReal, Int), right: (SReal, Int)) => {
+      val shiftAdd = (left: (Real, Int), right: (Real, Int)) => {
         val shiftLeft = right._2 - left._2
         require(shiftLeft >= 0)
-        println(right._1.numericInfo)
-        println(left._1.numericInfo)
+        println(right._1.realInfo)
+        println(left._1.realInfo)
         val shifted = right._1 << shiftLeft
-        println((shifted).numericInfo)
+        println((shifted).realInfo)
         val ret = left._1 + shifted
-        println(ret.numericInfo)
+        println(ret.realInfo)
         (ret, left._2)
       }
 
@@ -58,9 +58,9 @@ class SCM(input: SReal, constant: Int, scmArch: SCMArch) extends ImplicitArea[SR
     //      input * constant
   }
 
-  println(s"result: ${result.numericInfo}")
+  println(s"result: ${result.realInfo}")
 
-  override def implicitValue: SReal = scmArch match {
+  override def implicitValue: Real = scmArch match {
     case SCMArch.MAG => RegNext(result)
     case SCMArch.CSD => result
     //    case SCMArch.MULT =>
@@ -71,5 +71,5 @@ class SCM(input: SReal, constant: Int, scmArch: SCMArch) extends ImplicitArea[SR
 }
 
 object SCM {
-  def apply(input: SReal, constant: Int, scmArch: SCMArch): SCM = new SCM(input, constant, scmArch)
+  def apply(input: Real, constant: Int, scmArch: SCMArch): SCM = new SCM(input, constant, scmArch)
 }

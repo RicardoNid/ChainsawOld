@@ -6,13 +6,13 @@ import spinal.lib._
 import scala.collection.mutable.ListBuffer
 
 // TODO: sign extension
-class WallaceTree(input: Vec[SReal]) extends ImplicitArea[SReal] {
+class WallaceTree(input: Vec[Real]) extends ImplicitArea[Real] {
 
   // build the bit table
   val tableMax = input.map(_.maxExp).max
   val tableMin = input.map(_.minExp).min
 
-  println(input.map(_.numericInfo).mkString("\n"))
+  println(input.map(_.realInfo).mkString("\n"))
   val table = ListBuffer.fill(tableMax - tableMin)(ListBuffer[Bool]())
   input.foreach(operand =>
     (operand.minExp - tableMin until operand.maxExp - tableMin)
@@ -61,17 +61,17 @@ class WallaceTree(input: Vec[SReal]) extends ImplicitArea[SReal] {
   val operandsRight = operands.map(lb => if (lb.length == 2) lb(1) else False).asBits().asUInt
 
   // TODO: find a better range
-  val ret = SReal(RealRange(input.map(_.numericInfo.range.upper).sum, input.map(_.numericInfo.range.lower).sum, input.map(_.numericInfo.range.resolution).min))
+  val ret = Real(input.map(_.upper).sum, input.map(_.lower).sum, input.map(_.minExp).min exp)
   ret.raw := (operandsLeft + operandsRight).asSInt.resized // TODO: need to be shifted
 
-  override def implicitValue: SReal = ret
+  override def implicitValue: Real = ret
 }
 
 object WallaceTree {
   def main(args: Array[String]): Unit = {
     SpinalConfig().generateSystemVerilog(new Component {
-      //      val input = in Vec (3 until 8).map(i => SReal(IntRange(0, (1 << i) - 1)))
-      val input = in Vec(SReal(IntRange(0, 63)), 7)
+      //      val input = in Vec (3 until 8).map(i => Real(IntRange(0, (1 << i) - 1)))
+      val input = in Vec(UIntReal(63), 7)
       val output = new WallaceTree(input).implicitValue
       out(output)
     })

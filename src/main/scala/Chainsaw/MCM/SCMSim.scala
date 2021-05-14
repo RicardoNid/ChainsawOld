@@ -6,22 +6,22 @@ import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 
-class SCMSim(constant: Int, scmArch: SCMArch) extends Component with DSPSim[SReal, SReal, Double, Double] {
-  override val input: Flow[SReal] = slave Flow SReal(IntRange(0, 4096))
+class SCMSim(constant: Int, scmArch: SCMArch) extends Component with DSPSim[Real, Real, Double, Double] {
+  override val input: Flow[Real] = slave Flow UIntReal(4095)
 
   val scm = new SCM(input.payload, constant, scmArch)
   val ret = scm.implicitValue
 
-  override val output: Flow[SReal] = master Flow ret
+  override val output: Flow[Real] = master Flow ret
   output.payload := ret
   override val timing: TimingInfo = scm.getTimingInfo
   output.valid := Delay(input.valid, timing.latency, init = False)
 
-  override def poke(testCase: Double, input: SReal): Unit = {
+  override def poke(testCase: Double, input: Real): Unit = {
     input #= testCase
     clockDomain.waitSampling()
   }
-  override def peek(output: SReal): Double = {
+  override def peek(output: Real): Double = {
     val ret = output.toDouble
     clockDomain.waitSampling()
     ret

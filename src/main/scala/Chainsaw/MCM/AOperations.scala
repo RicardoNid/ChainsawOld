@@ -1,6 +1,6 @@
 package Chainsaw.MCM
 
-import spinal.core.{SReal, isPow2, log2Up}
+import spinal.core._
 
 import scala.collection.mutable
 
@@ -20,21 +20,21 @@ object AOperations {
     println(AReverse(5, 3, 7))
   }
 
-  val AOpHardware = (left: SReal, right: SReal, config: AOpConfig) => {
+  val AOpHardware = (left: Real, right: Real, config: AOpConfig) => {
     import config._
     println(config)
     val shiftedLeft = left << shiftLeftLeft
     val shiftedRight = right << shiftLeftRight
-    println(shiftedLeft.numericInfo)
-    println(shiftedRight.numericInfo)
+    println(shiftedLeft.realInfo)
+    println(shiftedRight.realInfo)
     val sum = config.aOpSign match {
       case ADD => shiftedLeft + shiftedRight
       case SUBNEXT => shiftedLeft - shiftedRight
       case SUBPREV => shiftedRight - shiftedLeft
     }
-    println(sum.numericInfo)
+    println(sum.realInfo)
     val ret = sum >> shiftRight
-    println(ret.numericInfo)
+    println(ret.realInfo)
     ret
   }
 

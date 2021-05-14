@@ -1,5 +1,6 @@
 package Chainsaw.MCM
 
+import Chainsaw._
 import spinal.core._
 
 import scala.collection.mutable.ListBuffer
@@ -39,7 +40,7 @@ object HomogeneousBinarySFGBuilder {
     println(mag)
     println(magInfos.mkString("\n"))
     SpinalConfig().generateSystemVerilog(new Component {
-      val x = in SReal("x", UnitRange(0.1))
+      val x = in(Real(-1.0, 1.0, 0.1))
       val graph = new HomogeneousBinarySFGBuilder(Seq(x), mag, AOpHardware, magInfos)
       val y = graph.implicitValue.head
       out(y)
