@@ -24,14 +24,19 @@ class SCMSim(constant: Int, scmArch: SCMArch) extends Component with DSPSim[Real
     input #= testCase
     clockDomain.waitSampling()
   }
+
   override def peek(output: Real): Double = {
     val ret = output.toDouble
     clockDomain.waitSampling()
     ret
   }
+
   override def referenceModel(testCase: Double): Double = testCase * constant
+
   override def isValid(refResult: Double, dutResult: Double): Boolean = abs(refResult - dutResult) <= ret.error
+
   override def messageWhenInvalid(testCase: Double, refResult: Double, dutResult: Double): String = s"golden: $refResult, yours: $dutResult"
+
   override def messageWhenValid(testCase: Double, refResult: Double, dutResult: Double): String = s"golden: $refResult, yours: $dutResult"
 }
 
@@ -58,9 +63,9 @@ object SCMSim {
   def main(args: Array[String]): Unit = {
     //    debug = true
     import AOperations.getPOF
-    (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.CSD))
+    //    (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.CSD))
     (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.MAG))
-    (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.MULT))
+    //    (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.MULT))
   }
 }
 

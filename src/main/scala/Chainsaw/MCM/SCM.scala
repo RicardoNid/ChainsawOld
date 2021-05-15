@@ -1,6 +1,6 @@
 package Chainsaw.MCM
 
-import Chainsaw.Architectures.HomogeneousBinarySFGBuilder
+import Chainsaw.Architectures.{BinarySFG, HomogeneousBinarySFGBuilder}
 import Chainsaw._
 import spinal.core._
 
@@ -23,8 +23,7 @@ class SCM(input: Real, constant: Int, scmArch: SCMArch) extends ImplicitArea[Rea
   val result: Real = scmArch match {
 
     case SCMArch.MAG =>
-      println(constant)
-      println(MAG.getOnePathLUT(constant))
+      printlnYellow(BinarySFG.fromSerialized(MAG.getOnePathLUT(constant)._2))
       val (mag, magInfos) = MAG(constant)
       val graph = new HomogeneousBinarySFGBuilder(Seq(input), mag, AOpHardware, magInfos)
       graph.implicitValue.head

@@ -15,12 +15,7 @@ import Chainsaw.MCM.AOpSign._
 case class AOpConfig(shiftLeftLeft: Int, shiftLeftRight: Int, shiftRight: Int, aOpSign: AOpSign)
 
 object AOperations {
-
-  def main(args: Array[String]): Unit = {
-    // some examples
-    println(AReverse(5, 3, 7))
-  }
-
+  
   val AOpHardware = (left: Real, right: Real, config: AOpConfig) => {
     import config._
     printlnWhenDebug(config)

@@ -32,6 +32,7 @@ object MAG {
     }
 
     def des = fundamentals.last
+
     def cost = fundamentals.length - 1
 
     override def toString: String = fundamentals.mkString(" -> ")
@@ -185,5 +186,7 @@ object MAG {
 
   def main(args: Array[String]): Unit = {
     println(MAG(1859))
+    println(getOnePathLUT(13)._1)
+    println(getPathLUT(13))
   }
 }
