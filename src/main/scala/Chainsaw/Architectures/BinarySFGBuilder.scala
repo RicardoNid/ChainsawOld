@@ -1,5 +1,6 @@
-package Chainsaw.MCM
+package Chainsaw.Architectures
 
+import Chainsaw.MCM.{AOperations, MAG}
 import Chainsaw.Real
 import spinal.core._
 

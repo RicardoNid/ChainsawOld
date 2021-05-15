@@ -13,6 +13,7 @@ class WallaceTree(input: Vec[Real]) extends ImplicitArea[Real] {
   val tableMin = input.map(_.minExp).min
 
   println(input.map(_.realInfo).mkString("\n"))
+  // alignment
   val table = ListBuffer.fill(tableMax - tableMin)(ListBuffer[Bool]())
   input.foreach(operand =>
     (operand.minExp - tableMin until operand.maxExp - tableMin)
@@ -56,15 +57,19 @@ class WallaceTree(input: Vec[Real]) extends ImplicitArea[Real] {
     else BuildTree(ret)
   }
 
+  import spinal.core.sim._
+
   val operands = BuildTree(table)
   val operandsLeft = operands.map(lb => lb(0)).asBits().asUInt
   val operandsRight = operands.map(lb => if (lb.length == 2) lb(1) else False).asBits().asUInt
+  operandsLeft.simPublic()
+  operandsRight.simPublic()
 
   // TODO: find a better range
-  val ret = Real(input.map(_.upper).sum, input.map(_.lower).sum, input.map(_.minExp).min exp)
-  ret.raw := (operandsLeft + operandsRight).asSInt.resized // TODO: need to be shifted
+  val ret = Real(input.map(_.lower).sum, input.map(_.upper).sum, input.map(_.minExp).min exp)
+  ret.raw := (operandsLeft +^ operandsRight).intoSInt.resized // TODO: need to be shifted
 
-  override def implicitValue: Real = ret
+  override def implicitValue: Real = RegNext(ret)
 }
 
 object WallaceTree {

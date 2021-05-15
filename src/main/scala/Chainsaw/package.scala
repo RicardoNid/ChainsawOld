@@ -65,11 +65,12 @@ package object Chainsaw extends RealFactory {
      */
     def allValues = (lowerRepresentable to upperRepresentable).map(_ * ulp)
 
+    def randomValue() = (Random.nextInt(upperRepresentable - lowerRepresentable + 1) + lowerRepresentable) * ulp
 
     /** Use a random value in all values for simulation
      *
      */
-    def randomize() = r #= (Random.nextInt(upperRepresentable - lowerRepresentable + 1) + lowerRepresentable) * ulp
+    def randomize() = r #= randomValue()
 
     /** Judge whether the value is "close to" this, that is, the difference is within the error
      *
@@ -84,7 +85,15 @@ package object Chainsaw extends RealFactory {
 
   // debug mode
   var debug = false
-  def printlnWhenDebug(x: Any) = if (debug) println(x)
+  def printlnWhenDebug(content: Any) = if (debug) println(content)
+  def printlnColored(content: Any)(color: String) = {
+    print(color)
+    println(content)
+    print(Console.BLACK)
+  }
+  def printlnGreen(content: Any) = printlnColored(content)(Console.GREEN)
+  def printlnRed(content: Any) = printlnColored(content)(Console.RED)
+  def printlnYellow(content: Any) = printlnColored(content)(Console.YELLOW)
 
   def MySFix(maxValue: Double, minValue: Double, resolution: Double): SFix = {
     require(maxValue >= 0)

@@ -38,7 +38,7 @@ trait RealFactory {
   def UIntReal(upper: Int): Real = Real(0.0, upper, 0 exp)
   def SIntReal(upper: Int): Real = Real(-upper, upper, 0 exp)
   def SIntReal(lower: Int, upper: Int): Real = {
-    println(s"SIntReal is unnecessary as lower = $lower")
+    if (lower >= 0) printlnYellow(s"SIntReal is unnecessary as lower = $lower")
     Real(lower, upper, 0 exp)
   }
 
@@ -136,10 +136,11 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
 
   val lower = inputRealInfo.lower.roundDown
   val upper = inputRealInfo.upper.roundUp
+  val propagatedError = inputRealInfo.error
   val roundingError =
     if (inputRealInfo.isConstant) abs(inputRealInfo.constant - inputRealInfo.constant.roundAsScala) // when initialized by a constant
     else ulp
-  val error = if (withRoundingError) roundingError else 0.0
+  val error = if (withRoundingError) propagatedError + roundingError else propagatedError
   var realInfo = RealInfo(lower, upper, error err)
 
   // determine the inner representation
@@ -191,7 +192,11 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
    *       4.implementation
    *
    */
-  def unary_-() = new Real(-realInfo, minExp exp)
+  def unary_-() = {
+    val ret = new Real(-realInfo, minExp exp)
+    ret.raw := -this.raw
+    ret
+  }
 
   def doAddSub(that: Real, add: Boolean): Real = {
     val minExp = min(this.minExp, that.minExp) // LSB strategy, no rounding error introduced
@@ -207,7 +212,7 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
     ret
   }
   def +(that: Real) = doAddSub(that, add = true)
-  def -(that: Real) = doAddSub(that, add = true)
+  def -(that: Real) = doAddSub(that, add = false)
 
   def *(that: Real): Real = {
     val minExp = this.minExp + that.minExp // LSB strategy, no rounding error introduced
@@ -304,7 +309,9 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
         val t = that.asInstanceOf[Real]
         if (this.maxExp < t.maxExp) { // overflow is not allowed
           val trace = ScalaLocated.long
-          globalData.pendingErrors += (() => s"$this can't be assigned by $t because of overflow. please redesign.\n $trace")
+          globalData.pendingErrors += (() => s"$this can't be assigned by \n" +
+            s"$t because of overflow. please redesign.\n " +
+            s"$trace")
         }
         if (this.minExp > t.minExp) { // underflow is allowed when tagTruncated is on
           if (!t.hasTag(tagTruncated)) {
@@ -341,4 +348,5 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
     copy.addTag(tagTruncated)
     copy.asInstanceOf[this.type]
   }
+  override def toString() = s"$name minExp $minExp, maxExp $maxExp, $realInfo, representable [$minValue, $maxValue]"
 }

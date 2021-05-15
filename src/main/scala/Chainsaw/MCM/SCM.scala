@@ -1,5 +1,6 @@
 package Chainsaw.MCM
 
+import Chainsaw.Architectures.HomogeneousBinarySFGBuilder
 import Chainsaw._
 import spinal.core._
 
@@ -39,12 +40,12 @@ class SCM(input: Real, constant: Int, scmArch: SCMArch) extends ImplicitArea[Rea
       val shiftAdd = (left: (Real, Int), right: (Real, Int)) => {
         val shiftLeft = right._2 - left._2
         require(shiftLeft >= 0)
-        println(right._1.realInfo)
-        println(left._1.realInfo)
+        printlnWhenDebug(right._1.realInfo)
+        printlnWhenDebug(left._1.realInfo)
         val shifted = right._1 << shiftLeft
-        println((shifted).realInfo)
+        printlnWhenDebug(shifted.realInfo)
         val ret = left._1 + shifted
-        println(ret.realInfo)
+        printlnWhenDebug(ret.realInfo)
         (ret, left._2)
       }
 
@@ -54,18 +55,18 @@ class SCM(input: Real, constant: Int, scmArch: SCMArch) extends ImplicitArea[Rea
 
       sat.implicitValue << sat.getRemainedInfo
 
-    //    case SCMArch.MULT =>
-    //      input * constant
+    case SCMArch.MULT =>
+      input * constant
   }
 
-  println(s"result: ${result.realInfo}")
+  printlnGreen(s"SCM result: ${result.realInfo}")
 
   override def implicitValue: Real = scmArch match {
     case SCMArch.MAG => RegNext(result)
     case SCMArch.CSD => result
-    //    case SCMArch.MULT =>
-    //      result.addAttribute("use_dsp = \"no\"")
-    //      RegNext(result)
+    case SCMArch.MULT =>
+      result.addAttribute("use_dsp = \"no\"")
+      RegNext(result)
   }
   override val getTimingInfo: TimingInfo = TimingInfo(1, 1, 1, 1)
 }

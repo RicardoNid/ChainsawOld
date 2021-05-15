@@ -1,5 +1,6 @@
-package Chainsaw.MCM
+package Chainsaw.Architectures
 
+import Chainsaw.MCM.intSupplier
 import org.jgrapht.graph._
 import org.jgrapht.nio.dot.{DOTExporter, DOTImporter}
 

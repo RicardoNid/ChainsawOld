@@ -1,5 +1,6 @@
 package Chainsaw.MCM
 
+import Chainsaw.printlnWhenDebug
 import spinal.core._
 
 import scala.collection.mutable
@@ -22,19 +23,19 @@ object AOperations {
 
   val AOpHardware = (left: Real, right: Real, config: AOpConfig) => {
     import config._
-    println(config)
+    printlnWhenDebug(config)
     val shiftedLeft = left << shiftLeftLeft
     val shiftedRight = right << shiftLeftRight
-    println(shiftedLeft.realInfo)
-    println(shiftedRight.realInfo)
+    printlnWhenDebug(shiftedLeft.realInfo)
+    printlnWhenDebug(shiftedRight.realInfo)
     val sum = config.aOpSign match {
       case ADD => shiftedLeft + shiftedRight
       case SUBNEXT => shiftedLeft - shiftedRight
       case SUBPREV => shiftedRight - shiftedLeft
     }
-    println(sum.realInfo)
+    printlnWhenDebug(sum.realInfo)
     val ret = sum >> shiftRight
-    println(ret.realInfo)
+    printlnWhenDebug(ret.realInfo)
     ret
   }
 
@@ -51,7 +52,7 @@ object AOperations {
 
   def AReverse(sum: Int, left: Int, right: Int): AOpConfig = {
     require(sum > 0 && left > 0 && right > 0 && sum % 2 != 0 && left % 2 != 0 && right % 2 != 0, s"$left, $right, $sum  fundamentals should be preprocessed into positive odd")
-    println(s"rebuilding $left,$right -> $sum")
+    printlnWhenDebug(s"rebuilding $left,$right -> $sum")
     val cond1 = sum == getPOF(left + right)
     val cond2 = (left > right) && (sum == getPOF(left - right))
     val cond3 = (left < right) && (sum == getPOF(right - left))
