@@ -31,6 +31,8 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.8" % Test
 
 libraryDependencies += "cc.redberry" %% "rings.scaladsl" % "2.5.7"
 
+// https://mvnrepository.com/artifact/net.java.dev.jna/jna
+libraryDependencies += "net.java.dev.jna" % "jna" % "4.2.2"
 
 
 fork := true
