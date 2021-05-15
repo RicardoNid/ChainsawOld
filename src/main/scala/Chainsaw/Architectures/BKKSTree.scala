@@ -1,5 +1,6 @@
-package Chainsaw
+package Chainsaw.Architectures
 
+import Chainsaw.{DSPDesign, Testable, TimingInfo}
 import spinal.core._
 
 /** The hybrid architecture of Brent-Kung and Kogge-Stone trees

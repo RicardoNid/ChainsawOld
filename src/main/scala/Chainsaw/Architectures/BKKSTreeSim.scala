@@ -1,5 +1,6 @@
-package Chainsaw
+package Chainsaw.Architectures
 
+import Chainsaw.{DSPSim, TimingInfo, debug}
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._

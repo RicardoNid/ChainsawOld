@@ -1,5 +1,6 @@
-package Chainsaw
+package Chainsaw.Architectures
 
+import Chainsaw.{DSPDesign, Testable, TimingInfo}
 import spinal.core._ //  for digital signal processing
 
 /** This is not a module, not even a module generator - this is an architecture, implementing prefix sum by Brent-Kung Tree
