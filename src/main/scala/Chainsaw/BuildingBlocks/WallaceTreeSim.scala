@@ -1,5 +1,6 @@
-package Chainsaw
+package Chainsaw.BuildingBlocks
 
+import Chainsaw.{DSPRand, DSPSim, TimingInfo, UIntReal, debug, printlnGreen}
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
@@ -46,6 +47,7 @@ object WallaceTreeSim {
       //      dut.insertTestCase((0 until 7).toArray)
       (0 until 10).foreach(_ => dut.insertTestCase((0 until 7).map(_ => DSPRand.nextInt(64)).toArray))
       val report = dut.simDone()
+      printlnGreen(report.validLog.mkString("\n"))
     }
   }
 }

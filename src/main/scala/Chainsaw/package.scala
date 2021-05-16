@@ -145,25 +145,6 @@ package object Chainsaw extends RealFactory {
   def Fix2Double(value: SFix, fw: Int = fractionalWidth) = value.raw.toBigInt.toDouble / pow(2, fw)
 
   // OPTIMIZE: implement prime & factor by table
-  def isPrime(n: Int): Boolean = {
-    if (n <= 1)
-      false
-    else if (n == 2)
-      true
-    else
-      !(2 until n).exists(n % _ == 0)
-  }
-
-  def factorize(N: Int): ArrayBuffer[Int] = {
-    if (isPrime(N)) ArrayBuffer(N)
-    else {
-      val factor = (2 until N).find(N % _ == 0).get
-      val result = factorize(N / factor)
-      result.insert(0, factor)
-      result
-    }
-  }
-
 
   val DSPRand = new Random(42) // using this as global random gen, with a fixed seed
 

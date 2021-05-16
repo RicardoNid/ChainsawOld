@@ -1,9 +1,12 @@
-package Chainsaw
+package Chainsaw.DSP
 
 import breeze.numerics._
 import spinal.core._
+import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
+import Chainsaw.Real
+import Chainsaw._
 
 object AlgebraicMode extends Enumeration {
   type AlgebraicMode = Value
@@ -25,26 +28,10 @@ object CordicPipe extends Enumeration {
   val MAXIMUM, HALF, NONE = Value
 }
 
-import Chainsaw.AlgebraicMode.AlgebraicMode
-import Chainsaw.CordicArch.CordicArch
-import Chainsaw.CordicPipe.CordicPipe
-import Chainsaw.RotationMode.RotationMode
-
-/** Describe your design here
- *
- * @param algebricMode
- * @param rotationMode
- * @param cordicArch
- * @param cordicPipe
- * @param outputWidth
- * @param iteration
- * @param precision
- * @param coarseRotation
- * @param scaleCompensate
- */
-
-import Chainsaw.CordicArch._
-import Chainsaw.CordicPipe._
+import AlgebraicMode._
+import CordicArch._
+import CordicPipe._
+import RotationMode._
 
 case class CordicConfig(algebricMode: AlgebraicMode, rotationMode: RotationMode,
                         cordicArch: CordicArch = PARALLEL, cordicPipe: CordicPipe = MAXIMUM,
@@ -188,9 +175,9 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
             when(counter === U(0)) {
               val nextX =
                 algebricMode match {
-                  case Chainsaw.AlgebraicMode.CIRCULAR => Mux(counterClockwise, inputX - shiftedY, inputX + shiftedY).truncated
-                  case Chainsaw.AlgebraicMode.HYPERBOLIC => Mux(counterClockwise, inputX + shiftedY, inputX - shiftedY).truncated
-                  case Chainsaw.AlgebraicMode.LINEAR => inputX.truncated
+                  case DSP.AlgebraicMode.CIRCULAR => Mux(counterClockwise, inputX - shiftedY, inputX + shiftedY).truncated
+                  case DSP.AlgebraicMode.HYPERBOLIC => Mux(counterClockwise, inputX + shiftedY, inputX - shiftedY).truncated
+                  case DSP.AlgebraicMode.LINEAR => inputX.truncated
                 }
               signalX := nextX
               signalY := Mux(counterClockwise, inputY + shiftedX, inputY - shiftedX).truncated
@@ -198,9 +185,9 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
             }.otherwise {
               val nextX =
                 algebricMode match {
-                  case Chainsaw.AlgebraicMode.CIRCULAR => Mux(counterClockwise, signalX - shiftedY, signalX + shiftedY).truncated
-                  case Chainsaw.AlgebraicMode.HYPERBOLIC => Mux(counterClockwise, signalX + shiftedY, signalX - shiftedY).truncated
-                  case Chainsaw.AlgebraicMode.LINEAR => signalX.truncated
+                  case DSP.AlgebraicMode.CIRCULAR => Mux(counterClockwise, signalX - shiftedY, signalX + shiftedY).truncated
+                  case DSP.AlgebraicMode.HYPERBOLIC => Mux(counterClockwise, signalX + shiftedY, signalX - shiftedY).truncated
+                  case DSP.AlgebraicMode.LINEAR => signalX.truncated
                 }
               signalX := nextX
               signalY := Mux(counterClockwise, signalY + shiftedX, signalY - shiftedX).truncated

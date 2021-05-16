@@ -1,5 +1,6 @@
-package Chainsaw
+package Chainsaw.Crypto
 
+import Chainsaw.{DSPSim, TimingInfo, debug}
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib.{Delay, Flow, master, slave}

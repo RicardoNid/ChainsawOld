@@ -1,8 +1,9 @@
-package Chainsaw
+package Chainsaw.DSP
 
-import Chainsaw.AlgebraicMode._
-import Chainsaw.CordicArch._
-import Chainsaw.RotationMode._
+import Chainsaw.DSP.AlgebraicMode._
+import Chainsaw.DSP.CordicArch._
+import Chainsaw.DSP.RotationMode._
+import Chainsaw.{DSPSim, Double2Fix, Fix2Double, TimingInfo, debug, sameFixedSeq}
 import breeze.numerics._
 import breeze.numerics.constants.Pi
 import spinal.core._

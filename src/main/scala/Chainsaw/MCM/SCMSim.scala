@@ -1,5 +1,6 @@
 package Chainsaw.MCM
 
+import spinal.lib.bus.avalon.AvalonMM
 import Chainsaw.MCM.SCMArch._
 import Chainsaw._
 import spinal.core._
@@ -9,8 +10,8 @@ import spinal.lib._
 import scala.math.abs
 
 class SCMSim(constant: Int, scmArch: SCMArch) extends Component with DSPSim[Real, Real, Double, Double] {
-  //  override val input: Flow[Real] = slave Flow RealWithError(-1.5, 1, -15 exp)
-  override val input: Flow[Real] = slave Flow SIntReal(-3, 6)
+  override val input: Flow[Real] = slave Flow RealWithError(-1.5, 1, -15)
+  //  override val input: Flow[Real] = slave Flow SIntReal(-3, 6)
 
   val scm = new SCM(input.payload, constant, scmArch)
   val ret = scm.implicitValue
@@ -56,16 +57,14 @@ object SCMSim {
       if (report.totalCase == report.trueCase) printlnGreen(s"$mode with constant = $constant, PASS")
       else printlnRed(s"$mode with constant = $constant, FAIL")
     }
-
-
   }
 
   def main(args: Array[String]): Unit = {
-    //    debug = true
+    debug = true
     import AOperations.getPOF
-    //    (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.CSD))
+    (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.CSD))
     (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.MAG))
-    //    (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.MULT))
+    (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.MULT))
   }
 }
 

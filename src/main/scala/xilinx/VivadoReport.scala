@@ -50,9 +50,9 @@ class VivadoReport(workspacePath: String,
   val Frequency = 1.0 / (targetPeriod.toDouble - slack * 1e-9)
 
 
-  def printArea = println(s"LUT: ${LUT}\nFF: ${FF}\nDSP: ${DSP}\nBRAM: ${BRAM}\n")
+  def printArea() = println(s"LUT: ${LUT}\nFF: ${FF}\nDSP: ${DSP}\nBRAM: ${BRAM}\n")
 
-  def printFMax = println(s"Frequency: ${Frequency / 1E6} MHz\n")
+  def printFMax() = println(s"Frequency: ${Frequency / 1E6} MHz\n")
 
   // fixme : not working now
   def getReport = Array(LUT.toString, FF.toString, DSP.toString, BRAM.toString, Frequency.toString)

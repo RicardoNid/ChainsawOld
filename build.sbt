@@ -1,5 +1,5 @@
-name := "SpinalTemplateSbt"
-version := "1.0"
+name := "Chainsaw"
+version := "0.1"
 scalaVersion := "2.11.12"
 val spinalVersion = "1.4.3"
 
@@ -31,9 +31,7 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.8" % Test
 
 libraryDependencies += "cc.redberry" %% "rings.scaladsl" % "2.5.7"
 
-// https://mvnrepository.com/artifact/net.java.dev.jna/jna
 libraryDependencies += "net.java.dev.jna" % "jna" % "4.2.2"
-
 
 fork := true
 EclipseKeys.withSource := true

@@ -44,7 +44,7 @@ object MAG {
     vertices.foreach { vertex =>
       val drivers = graph.driversOf(vertex)
       require(drivers.length == 2)
-      paths = paths.map(path => (path(drivers(0)) AOp path(drivers(1))).toSeq.map(path + _)).flatten
+      paths = paths.flatMap(path => (path(drivers(0)) AOp path(drivers(1))).toSeq.map(path + _))
     }
     paths
   }
@@ -137,7 +137,7 @@ object MAG {
     val costLUT = mutable.Map[Int, Int]()
 
     def buildCostLUT(graphs: ListBuffer[BinarySFG], cost: Int) = {
-      graphs.map(searchMAG).flatten
+      graphs.flatMap(searchMAG)
         .foreach(path => costLUT.getOrElseUpdate(path.des, cost))
     }
 

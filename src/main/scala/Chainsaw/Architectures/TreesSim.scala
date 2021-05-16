@@ -1,10 +1,12 @@
-package Chainsaw
+package Chainsaw.Architectures
 
+import Chainsaw._
+import Chainsaw.Real
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 
-/** Test BinaryTree by implmenting integer addtions and multiplications
+/** Test BinaryTree by implementing integer addtions and multiplications
  *
  */
 class BinaryTreeSim(length: Int, opertor: (Real, Real) => Real, pipelineInterval: Int, refOperator: (Double, Double) => Double) extends Component with DSPSim[Vec[Real], Real, Array[Double], Double] { // TODO: test it with real numbers

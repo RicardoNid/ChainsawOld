@@ -1,5 +1,6 @@
-package Chainsaw
+package Chainsaw.Architectures
 
+import Chainsaw.{Testable, TimingInfo}
 import spinal.core._
 
 import scala.annotation.tailrec

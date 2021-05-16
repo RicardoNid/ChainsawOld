@@ -1,6 +1,8 @@
 package spinal.core
 
+// template of implementing new types
 import scala.collection.mutable.ArrayBuffer
+import scala.language.postfixOps
 
 object NewTypeFactory extends TypeFactory {
   def NewType = new NewType
@@ -14,7 +16,7 @@ class NewType extends MultiData {
   val raw = SInt(4 bits)
 
   override def elements: ArrayBuffer[(String, Data)] = ArrayBuffer("" -> raw)
-  override private[core] def assignFromImpl(that: AnyRef, target: AnyRef, kind: AnyRef) = {
+  override private[core] def assignFromImpl(that: AnyRef, target: AnyRef, kind: AnyRef): Unit = {
     this.raw := that.asInstanceOf[NewType].raw
   }
 }

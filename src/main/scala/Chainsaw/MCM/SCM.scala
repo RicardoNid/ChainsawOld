@@ -1,6 +1,6 @@
 package Chainsaw.MCM
 
-import Chainsaw.Architectures.{BinarySFG, HomogeneousBinarySFGBuilder}
+import Chainsaw.Architectures.{BinarySFG, BinaryTreeWithInfo, HomogeneousBinarySFGBuilder}
 import Chainsaw._
 import spinal.core._
 

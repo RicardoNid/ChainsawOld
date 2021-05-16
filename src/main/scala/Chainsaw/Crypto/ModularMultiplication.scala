@@ -1,8 +1,11 @@
-package Chainsaw
+package Chainsaw.Crypto
 
-import Chainsaw.ModularMultiplication.getModularInverse
+import Chainsaw.Crypto.ModularMultiplication.getModularInverse
+import Chainsaw.{DSPDesign, Testable, TimingInfo}
 import spinal.core._
 import spinal.lib._
+
+import javax.crypto.spec.GCMParameterSpec
 
 /** Kernel for modular multiplication by Montgomery
  *

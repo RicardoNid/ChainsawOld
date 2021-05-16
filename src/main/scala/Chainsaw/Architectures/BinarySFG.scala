@@ -15,7 +15,7 @@ class BinarySFG extends DirectedMultigraph[Int, DefaultEdge](classOf[DefaultEdge
 
   def apply(n: Int) = this.vertexSet().filter(_ == n).head
 
-  def driversOf(v: Int) = this.incomingEdgesOf(v).toSeq.map(this.getEdgeSource(_))
+  def driversOf(v: Int) = this.incomingEdgesOf(v).toSeq.map(this.getEdgeSource)
 
   def inputs = this.vertexSet().filter(this.inDegreeOf(_) == 0)
 

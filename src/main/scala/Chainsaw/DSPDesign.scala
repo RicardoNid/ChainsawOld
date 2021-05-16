@@ -8,5 +8,5 @@ trait DSPDesign {
 
   def setStart(externalStart: Bool) = start := externalStart
 
-  def isBusy() = busy
+  def isBusy = busy
 }

@@ -1,5 +1,6 @@
-package Chainsaw
+package Chainsaw.BuildingBlocks
 
+import Chainsaw.{Real, UIntReal}
 import spinal.core._
 import spinal.lib._
 

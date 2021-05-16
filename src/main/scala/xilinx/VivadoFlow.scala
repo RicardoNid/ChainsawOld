@@ -71,7 +71,7 @@ class VivadoFlow[T <: Component](
     script
   }
 
-  def getXdc() = {
+  def getXdc = {
     val targetPeriod = frequencyTarget.toTime
     s"""create_clock -period ${(targetPeriod * 1e9) toBigDecimal} [get_ports clk]"""
   }
@@ -97,7 +97,7 @@ class VivadoFlow[T <: Component](
     source.close();
 
     writeFile("doit.tcl", getScript(vivadoConfig))
-    writeFile("doit.xdc", getXdc())
+    writeFile("doit.xdc", getXdc)
 
     doCmd(s"$vivadoPath/vivado -nojournal -log doit.log -mode batch -source doit.tcl", workspacePath)
 
