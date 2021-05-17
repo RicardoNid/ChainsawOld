@@ -18,31 +18,31 @@ case class SimReport(trueCase: Int, totalCase: Int, log: mutable.Queue[String], 
 }
 
 //trait DSPSim extends DSPGen {
-trait DSPSim[inputType <: Data, outputType <: Data, testCaseType, testResultType] extends Component {
-
-  val input: Flow[inputType]
-  val output: Flow[outputType]
+trait DSPSim[inputType <: Data, outputType <: Data, testCaseType, testResultType] extends Component with DSPDUT[inputType, outputType] {
 
   private val testCases = mutable.Queue[testCaseType]()
   private val lastCase = mutable.Queue[testCaseType]()
   private val refResults = mutable.Queue[testResultType]()
   private val dutResults = mutable.Queue[testResultType]()
+  private val monitorPoints = mutable.Queue[Long]()
 
   def insertTestCase(testCase: testCaseType): Unit = testCases.enqueue(testCase)
 
   var trueCase = 0
   var totalCase = 0
-  private var log = mutable.Queue[String]() // logs when is invalid
-  private var validLog = mutable.Queue[String]() // logs when is valid
+  private val log = mutable.Queue[String]() // logs when is invalid
+  private val validLog = mutable.Queue[String]() // logs when is valid
 
-  val timing: TimingInfo
+  val period = 2
+
+  def simCycle = simTime() / period
 
   def poke(testCase: testCaseType, input: inputType)
 
   def peek(output: outputType): testResultType
 
   private def simInit(): Unit = {
-    clockDomain.forkStimulus(2)
+    clockDomain.forkStimulus(period)
     input.valid #= false
     clockDomain.waitSampling(10)
   }
@@ -89,12 +89,15 @@ trait DSPSim[inputType <: Data, outputType <: Data, testCaseType, testResultType
     fork {
       while (true) {
         if (testCases.nonEmpty) {
+          println(s"poke at $simCycle")
+          monitorPoints.enqueue(simCycle + timing.latency + 1)
           val testCase = testCases.dequeue()
           lastCase.enqueue(testCase)
           val refResult = referenceModel(testCase)
           refResults.enqueue(refResult)
           input.valid #= true
           poke(testCase, input.payload)
+          clockDomain.waitSampling() // input interval >= 1
           input.valid #= false
           clockDomain.waitSampling(timing.initiationInterval - timing.inputInterval)
         }
@@ -108,9 +111,12 @@ trait DSPSim[inputType <: Data, outputType <: Data, testCaseType, testResultType
   def monitor(): Unit = {
     fork {
       while (true) {
-        if (output.valid.toBoolean) {
+        if (monitorPoints.nonEmpty && simCycle == monitorPoints.head) {
+          monitorPoints.dequeue()
+          println(s"peek from $simCycle to $simCycle")
           val dutResult = peek(output.payload)
           dutResults.enqueue(dutResult)
+          clockDomain.waitSampling() // output interval >= 1
         }
         else clockDomain.waitSampling()
       }

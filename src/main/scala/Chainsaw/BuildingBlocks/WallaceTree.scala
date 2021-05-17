@@ -1,19 +1,22 @@
 package Chainsaw.BuildingBlocks
 
-import Chainsaw.{Real, UIntReal}
 import spinal.core._
+import spinal.core.sim._
 import spinal.lib._
+import spinal.lib.fsm._
+import Chainsaw.Real
+import Chainsaw._
 
 import scala.collection.mutable.ListBuffer
 
 // TODO: sign extension
-class WallaceTree(input: Vec[Real]) extends ImplicitArea[Real] {
+class WallaceTree(input: Vec[Real]) extends ImplicitArea[Real] with Testable {
 
   // build the bit table
   val tableMax = input.map(_.maxExp).max
   val tableMin = input.map(_.minExp).min
 
-  println(input.map(_.realInfo).mkString("\n"))
+  println(input.mkString("\n"))
   // alignment
   val table = ListBuffer.fill(tableMax - tableMin)(ListBuffer[Bool]())
   input.foreach(operand =>
@@ -68,12 +71,18 @@ class WallaceTree(input: Vec[Real]) extends ImplicitArea[Real] {
 
   // TODO: find a better range
   val ret = Real(input.map(_.lower).sum, input.map(_.upper).sum, input.map(_.minExp).min exp)
+  println(ret)
   ret.raw := (operandsLeft +^ operandsRight).intoSInt.resized // TODO: need to be shifted
 
   override def implicitValue: Real = RegNext(ret)
+
+  override val getTimingInfo = TimingInfo(1, 1, 1, 2)
 }
 
 object WallaceTree {
+
+  def apply(input: Vec[Real]): WallaceTree = new WallaceTree(input)
+
   def main(args: Array[String]): Unit = {
     SpinalConfig().generateSystemVerilog(new Component {
       //      val input = in Vec (3 until 8).map(i => Real(IntRange(0, (1 << i) - 1)))

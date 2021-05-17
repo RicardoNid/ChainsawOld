@@ -82,17 +82,35 @@ package object Chainsaw extends RealFactory {
 
   }
 
+  implicit class SimRealVectorPimper(rv: Vec[Real]) {
+
+    def #=(value: Seq[Double]): Unit = {
+      require(value.length == rv.length, "length of the vector and the stimulus shoul be the same")
+      rv.zip(value).foreach{ case (real, d) => real #= d}
+    }
+
+    def toDouble = rv.map(_.toDouble)
+
+    def toBigDecimal = rv.map(_.toBigDecimal)
+
+    def randomValue = rv.map(_.randomValue())
+  }
 
   // debug mode
   var debug = false
+
   def printlnWhenDebug(content: Any) = if (debug) println(content)
+
   def printlnColored(content: Any)(color: String) = {
     print(color)
     println(content)
     print(Console.BLACK)
   }
+
   def printlnGreen(content: Any) = printlnColored(content)(Console.GREEN)
+
   def printlnRed(content: Any) = printlnColored(content)(Console.RED)
+
   def printlnYellow(content: Any) = printlnColored(content)(Console.YELLOW)
 
   def MySFix(maxValue: Double, minValue: Double, resolution: Double): SFix = {
@@ -124,6 +142,7 @@ package object Chainsaw extends RealFactory {
   val bitWidth = naturalWidth + fractionalWidth
 
   def phaseType(resolution: Double = 0.001) = MySFix(Pi, -Pi, resolution) // [-Pi, Pi] for phase
+
   def unitType(resolution: Double = 0.001) = MySFix(1, -1, resolution)
 
   def globalType = SFix(peak = naturalWidth exp, resolution = -fractionalWidth exp)
@@ -142,6 +161,7 @@ package object Chainsaw extends RealFactory {
   //  def Double2Fix(value: Double) = floor(value * (1 << 4)).toInt // convert Double to valid stimulus for simulation
   //  def Fix2Double(value: SFix) = value.raw.toBigInt.toDouble / pow(2, 4)
   def Double2Fix(value: Double, fw: Int = fractionalWidth) = floor(value * (1 << fw)).toInt // convert Double to valid stimulus for simulation
+
   def Fix2Double(value: SFix, fw: Int = fractionalWidth) = value.raw.toBigInt.toDouble / pow(2, fw)
 
   // OPTIMIZE: implement prime & factor by table
@@ -149,6 +169,7 @@ package object Chainsaw extends RealFactory {
   val DSPRand = new Random(42) // using this as global random gen, with a fixed seed
 
   def bs2i(bs: String) = bs.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (1 << i) }.sum
+
   def bs2i2c(bs: String) = {
     val values = bs.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (1 << i) }
     values.dropRight(1).sum - values.last
