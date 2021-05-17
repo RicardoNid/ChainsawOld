@@ -1,6 +1,6 @@
 package Chainsaw
 
-import spinal.core.sim.{fork, simTime}
+import spinal.core.sim.{fork, simTime, _}
 import spinal.core.{Component, Data, assert}
 
 import scala.collection.mutable

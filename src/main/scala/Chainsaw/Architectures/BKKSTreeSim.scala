@@ -11,7 +11,7 @@ class BKKSTreeSim extends Component with DSPSimTiming[Vec[UInt], Vec[UInt], Arra
   override val input: Vec[UInt] = in Vec(UInt(10 bits), 16)
   val add = (x: UInt, y: UInt) => x + y
   val bkTree = new BKKSTree[UInt](input, add, 0)
-  override val output = bkTree.implicitValue
+  override val output = out(bkTree.implicitValue)
 
   override val timing: TimingInfo = bkTree.getTimingInfo
 
