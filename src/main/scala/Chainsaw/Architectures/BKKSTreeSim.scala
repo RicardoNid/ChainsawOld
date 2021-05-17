@@ -1,22 +1,17 @@
 package Chainsaw.Architectures
 
-import Chainsaw.{DSPSim, TimingInfo, debug}
+import Chainsaw.{DSPSimTiming, TimingInfo, debug}
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 
 import scala.language.postfixOps
 
-class BKKSTreeSim extends Component with DSPSim[Vec[UInt], Vec[UInt], Array[Int], Array[Int]] {
-  override val input: Flow[Vec[UInt]] = slave Flow Vec(UInt(10 bits), 16)
-  override val output: Flow[Vec[UInt]] = master Flow Vec(UInt(10 bits), 16)
-
+class BKKSTreeSim extends Component with DSPSimTiming[Vec[UInt], Vec[UInt], Array[Int], Array[Int]] {
+  override val input: Vec[UInt] = in Vec(UInt(10 bits), 16)
   val add = (x: UInt, y: UInt) => x + y
-
-  val bkTree = new BKKSTree[UInt](input.payload, add, 0)
-  output.payload := bkTree.implicitValue
-  output.valid := RegNext(input.valid)
-  output.valid.init(False)
+  val bkTree = new BKKSTree[UInt](input, add, 0)
+  override val output = bkTree.implicitValue
 
   override val timing: TimingInfo = bkTree.getTimingInfo
 

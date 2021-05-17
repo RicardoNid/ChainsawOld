@@ -1,8 +1,7 @@
 package Chainsaw
 
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
+import spinal.core.sim.{fork, simTime}
+import spinal.core.{Component, Data, assert}
 
 import scala.collection.mutable
 
@@ -17,21 +16,19 @@ case class SimReport(trueCase: Int, totalCase: Int, log: mutable.Queue[String], 
   override def toString: String = s"$trueCase/$totalCase passed, ${if (trueCase != totalCase) s"failed at: \n${log.mkString("\n")}" else "Perfect!"}"
 }
 
-//trait DSPSim extends DSPGen {
-trait DSPSim[inputType <: Data, outputType <: Data, testCaseType, testResultType] extends Component with DSPDUT[inputType, outputType] {
+trait DSPSim[inputType <: Data, outputType <: Data, testCaseType, testResultType] extends Component {
 
-  private val testCases = mutable.Queue[testCaseType]()
-  private val lastCase = mutable.Queue[testCaseType]()
-  private val refResults = mutable.Queue[testResultType]()
-  private val dutResults = mutable.Queue[testResultType]()
-  private val monitorPoints = mutable.Queue[Long]()
+  val testCases = mutable.Queue[testCaseType]()
+  val lastCase = mutable.Queue[testCaseType]()
+  val refResults = mutable.Queue[testResultType]()
+  val dutResults = mutable.Queue[testResultType]()
 
   def insertTestCase(testCase: testCaseType): Unit = testCases.enqueue(testCase)
 
   var trueCase = 0
   var totalCase = 0
-  private val log = mutable.Queue[String]() // logs when is invalid
-  private val validLog = mutable.Queue[String]() // logs when is valid
+  val log = mutable.Queue[String]() // logs when is invalid
+  val validLog = mutable.Queue[String]() // logs when is valid
 
   val period = 2
 
@@ -41,22 +38,23 @@ trait DSPSim[inputType <: Data, outputType <: Data, testCaseType, testResultType
 
   def peek(output: outputType): testResultType
 
-  private def simInit(): Unit = {
-    clockDomain.forkStimulus(period)
-    input.valid #= false
-    clockDomain.waitSampling(10)
-  }
+  // folloing method defines the simulation flow
+  def simInit(): Unit
 
   /** Thread that terminates the simulation, if no result was generated during the last protect period
    *
    * @return The report of simulation
    */
-  def simDone(): SimReport = {
-    clockDomain.waitSampling(10)
-    val protect = timing.initiationInterval - timing.latency - timing.outputInterval
-    while (refResults.nonEmpty || dutResults.nonEmpty) clockDomain.waitSampling(if (protect > 0) protect else 1)
-    SimReport(trueCase, totalCase, log, validLog)
+  def simDone(): SimReport
+
+  def sim(): Unit = {
+    simInit()
+    driver()
+    monitor()
+    scoreBoard()
   }
+
+  // following methods define validation and log strategy
 
   /** The function that takes the testCase and return the ground truth
    *
@@ -85,43 +83,11 @@ trait DSPSim[inputType <: Data, outputType <: Data, testCaseType, testResultType
 
   /** Define when and how the testCase is passed to the DUT and the reference model
    */
-  def driver(): Unit = {
-    fork {
-      while (true) {
-        if (testCases.nonEmpty) {
-          println(s"poke at $simCycle")
-          monitorPoints.enqueue(simCycle + timing.latency + 1)
-          val testCase = testCases.dequeue()
-          lastCase.enqueue(testCase)
-          val refResult = referenceModel(testCase)
-          refResults.enqueue(refResult)
-          input.valid #= true
-          poke(testCase, input.payload)
-          clockDomain.waitSampling() // input interval >= 1
-          input.valid #= false
-          clockDomain.waitSampling(timing.initiationInterval - timing.inputInterval)
-        }
-        else clockDomain.waitSampling()
-      }
-    }
-  }
+  def driver(): Unit
 
   /** Define when and how the testResult is fetched from the DUT
    */
-  def monitor(): Unit = {
-    fork {
-      while (true) {
-        if (monitorPoints.nonEmpty && simCycle == monitorPoints.head) {
-          monitorPoints.dequeue()
-          println(s"peek from $simCycle to $simCycle")
-          val dutResult = peek(output.payload)
-          dutResults.enqueue(dutResult)
-          clockDomain.waitSampling() // output interval >= 1
-        }
-        else clockDomain.waitSampling()
-      }
-    }
-  }
+  def monitor(): Unit
 
   /** Thread that compares ref and dut results, does assertion under test mode, and logs them under debug mode
    *
@@ -149,10 +115,4 @@ trait DSPSim[inputType <: Data, outputType <: Data, testCaseType, testResultType
     }
   }
 
-  def sim(): Unit = {
-    simInit()
-    driver()
-    monitor()
-    scoreBoard()
-  }
 }

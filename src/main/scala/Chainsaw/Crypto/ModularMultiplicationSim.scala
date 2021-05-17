@@ -1,6 +1,6 @@
 package Chainsaw.Crypto
 
-import Chainsaw.{DSPSim, TimingInfo, debug}
+import Chainsaw.{DSPSimTiming, TimingInfo, debug}
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib.{Delay, Flow, master, slave}
@@ -11,32 +11,13 @@ import scala.util.Random
  *
  * @param N modulo
  */
-//class ModularMultiplicationSim(N: Int) extends Component {
-//  val input = slave Flow Vec(UInt(log2Up(N - 1) bits), 2)
-//  val output = master Flow UInt(log2Up(N - 1) bits)
-//
-//  val mm = new ModularMultiplication(input.payload(0), input.payload(1), N)
-//  output.payload := mm.implicitValue
-//  val timing: TimingInfo = mm.getTimingInfo
-//  output.valid := Delay(input.valid, timing.latency, False)
-//}
-//
-//object ModularMultiplicationSim {
-//  def main(args: Array[String]): Unit = {
-//    SpinalConfig().generateSystemVerilog(new ModularMultiplicationSim(13))
-//  }
-//}
-
-class ModularMultiplicationSim(N: Int) extends Component with DSPSim[Vec[UInt], UInt, (Int, Int), Int] {
+class ModularMultiplicationSim(N: Int) extends Component with DSPSimTiming[Vec[UInt], UInt, (Int, Int), Int] {
   val innerWidth = log2Up(N - 1)
 
-  override val input: Flow[Vec[UInt]] = slave Flow Vec(UInt(innerWidth bits), 2)
-  override val output: Flow[UInt] = master Flow UInt(innerWidth bits)
-
-  val mm = new ModularMultiplication(input.payload(0), input.payload(1), N)
+  override val input = in Vec(UInt(innerWidth bits), 2)
+  val mm = new ModularMultiplication(input(0), input(1), N)
+  override val output = out(mm.implicitValue)
   override val timing: TimingInfo = mm.getTimingInfo
-  output.payload := mm.implicitValue
-  output.valid := Delay(input.valid, timing.latency, init = False)
 
   override def poke(testCase: (Int, Int), input: Vec[UInt]): Unit = {
     input(0) #= testCase._1

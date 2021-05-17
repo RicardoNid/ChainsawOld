@@ -7,14 +7,14 @@ import spinal.lib._
 import Chainsaw.Real
 
 // TODO: sign extension
-class WallaceTreeDUT extends Component with DSPDUT[Vec[Real], Real] {
+class WallaceTreeDUT extends Component with DSPDUTTiming[Vec[Real], Real] {
   override val input = in Vec(Real(1, 2.5, -5 exp), 7)
   val wallaceTree = WallaceTree(input)
-  override val output = wallaceTree.implicitValue
+  override val output = out(wallaceTree.implicitValue)
   override val timing = wallaceTree.getTimingInfo
 }
 
-class WallaceTreeSim() extends WallaceTreeDUT with DSPSim[Vec[Real], Real, Seq[Double], Double] {
+class WallaceTreeSim() extends WallaceTreeDUT with DSPSimTiming[Vec[Real], Real, Seq[Double], Double] {
 
   override def poke(testCase: Seq[Double], input: Vec[Real]): Unit = input #= testCase
 

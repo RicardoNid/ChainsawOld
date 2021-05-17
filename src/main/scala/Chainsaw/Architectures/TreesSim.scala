@@ -9,19 +9,11 @@ import spinal.lib._
 /** Test BinaryTree by implementing integer addtions and multiplications
  *
  */
-class BinaryTreeSim(length: Int, opertor: (Real, Real) => Real, pipelineInterval: Int, refOperator: (Double, Double) => Double) extends Component with DSPSim[Vec[Real], Real, Array[Double], Double] { // TODO: test it with real numbers
-  override val input: Flow[Vec[Real]] = slave Flow Vec(Real(-1, 1, 0.001), length)
-
-  //  val binaryTree = new BinaryTree(input.payload, opertor, pipelineInterval)
-  val binaryTree = BinaryTree(input.payload, opertor, pipelineInterval)
-
-  //  output.payload := binaryTree.implicitValue
-  val ret = binaryTree.implicitValue
-
-  override val output: Flow[Real] = master Flow ret // CHAINSAW: you don't have to figure out the output width by yourself
-  output.payload := ret
+class BinaryTreeSim(length: Int, opertor: (Real, Real) => Real, pipelineInterval: Int, refOperator: (Double, Double) => Double) extends Component with DSPSimTiming[Vec[Real], Real, Array[Double], Double] { // TODO: test it with real numbers
+  override val input = in Vec(Real(-1, 1, 0.001), length)
+  val binaryTree = BinaryTree(input, opertor, pipelineInterval)
+  override val output = out(binaryTree.implicitValue)
   override val timing: TimingInfo = binaryTree.getTimingInfo
-  output.valid := Delay(input.valid, timing.latency, init = False)
 
   override def poke(testCase: Array[Double], input: Vec[Real]): Unit = {
     input.zip(testCase).foreach { case (real, d) => real #= d }

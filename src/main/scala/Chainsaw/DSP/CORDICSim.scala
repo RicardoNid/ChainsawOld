@@ -3,7 +3,7 @@ package Chainsaw.DSP
 import Chainsaw.DSP.AlgebraicMode._
 import Chainsaw.DSP.CordicArch._
 import Chainsaw.DSP.RotationMode._
-import Chainsaw.{DSPSim, Double2Fix, Fix2Double, TimingInfo, debug, sameFixedSeq}
+import Chainsaw.{DSPSimTiming, Double2Fix, Fix2Double, TimingInfo, debug, sameFixedSeq}
 import breeze.numerics._
 import breeze.numerics.constants.Pi
 import spinal.core._
@@ -22,19 +22,19 @@ case class CordicData() extends Bundle {
   val z: SFix = SFix(2 exp, -13 exp) // 2QN
 }
 
-class CORDICSim(cordicConfig: CordicConfig) extends Component with DSPSim[CordicData, CordicData, CordicSimData, CordicSimData] {
-  override val input: Flow[CordicData] = slave Flow CordicData()
-  override val output: Flow[CordicData] = master Flow CordicData()
-
-  val cordic: CORDIC = CORDIC(input.payload.x, input.payload.y, input.payload.z, cordicConfig)
-
-  output.payload.x := cordic._1.truncated
-  output.payload.y := cordic._2.truncated
-  output.payload.z := cordic._3.truncated
+class CORDICSim(cordicConfig: CordicConfig) extends Component with DSPSimTiming[CordicData, CordicData, CordicSimData, CordicSimData] {
+  override val input = in(CordicData())
+  val cordic: CORDIC = CORDIC(input.x, input.y, input.z, cordicConfig)
+  override val output = out(CordicData())
+  output.x := cordic._1.truncated
+  output.y := cordic._2.truncated
+  output.z := cordic._3.truncated
   override val timing: TimingInfo = cordic.getTimingInfo
-  output.valid := Delay(input.valid, timing.latency, init = False)
 
-  cordic.setStart(input.valid)
+  cordic.start := True
+
+  // TODO: implement a DSPSim for handshake
+  //  cordic.setStart(input.valid)
 
   override def poke(testCase: CordicSimData, input: CordicData): Unit = {
     input.x.raw #= Double2Fix(testCase.x, 14)
@@ -132,7 +132,7 @@ object CORDICSim {
 
   def main(args: Array[String]): Unit = {
     debug = true
-    for (algebraic <- AlgebraicMode.values; rotation <- RotationMode.values; arch <- IndexedSeq(SERIAL)) {
+    for (algebraic <- AlgebraicMode.values; rotation <- RotationMode.values; arch <- IndexedSeq(PARALLEL)) {
       randomSim(CordicConfig(rotationMode = rotation, algebricMode = algebraic, cordicArch = arch))
     }
   }

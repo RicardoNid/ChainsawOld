@@ -34,9 +34,12 @@ trait RealFactory {
   def RealWithError(lower: Double, upper: Double, decimalResolution: Double): Real =
     RealWithError(lower, upper, -log2Up(ceil(1 / decimalResolution).toInt) exp)
 
+
   // Integer factories, which will never introduce error
   def UIntReal(upper: Int): Real = Real(0.0, upper, 0 exp)
+
   def SIntReal(upper: Int): Real = Real(-upper, upper, 0 exp)
+
   def SIntReal(lower: Int, upper: Int): Real = {
     if (lower >= 0) printlnYellow(s"SIntReal is unnecessary as lower = $lower")
     Real(lower, upper, 0 exp)
@@ -151,6 +154,7 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
 
   // attributes determined after maxExp
   def maxValue: BigDecimal = raw.maxValue.toDouble * ulp
+
   def minValue: BigDecimal = raw.minValue.toDouble * ulp
 
   // TODO: delete after verification
@@ -168,10 +172,12 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
   // TODO: figure these out
   raw.setRefOwner(this)
   raw.setPartialName("", weak = true)
+
   override def elements: ArrayBuffer[(String, Data)] = ArrayBuffer("" -> raw)
 
   // alignment of raws
   def difLsb(that: Real) = this.minExp - that.minExp
+
   def alignLsb(that: Real): (SInt, SInt) = {
     val lsbDif = difLsb(that)
     val left: SInt = if (lsbDif > 0) this.raw << lsbDif else this.raw
@@ -194,6 +200,8 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
    */
   def unary_-() = {
     val ret = new Real(-realInfo, minExp exp)
+    println(this)
+    println(ret)
     ret.raw := -this.raw
     ret
   }
@@ -205,13 +213,16 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
     // implementation
     val (rawLeft, rawRight) = alignLsb(that)
     val maxExpEnlarged = ret.maxExp > max(this.maxExp, that.maxExp)
+    println(s"maxEnlarged: $maxExpEnlarged")
     val retRaw =
       if (maxExpEnlarged) if (add) rawLeft +^ rawRight else rawLeft -^ rawRight
       else if (add) rawLeft + rawRight else rawLeft - rawRight
     ret.raw := retRaw
     ret
   }
+
   def +(that: Real) = doAddSub(that, add = true)
+
   def -(that: Real) = doAddSub(that, add = false)
 
   def *(that: Real): Real = {
@@ -243,7 +254,9 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
       doAddSub(that, add)
     }
   }
+
   def +(thatConstant: Double): Real = doAddSub(thatConstant, add = true)
+
   def -(thatConstant: Double): Real = doAddSub(thatConstant, add = false)
 
   def *(thatConstant: Double): Real = {
@@ -260,6 +273,7 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
     ret.raw := this.raw
     ret
   }
+
   def >>(shiftConstant: Int): Real = {
     val minExp = this.minExp - shiftConstant // LSB strategy
     val realInfo = this.realInfo >> shiftConstant // MSB strategy
@@ -296,9 +310,13 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
   }
 
   def :=(thatConstant: Float): Unit = this := BigDecimal(thatConstant)
+
   def :=(thatConstant: Double): Unit = this := BigDecimal(thatConstant)
+
   def :=(thatConstant: BigInt): Unit = this := BigDecimal(thatConstant)
+
   def :=(thatConstant: Int): Unit = this := BigInt(thatConstant)
+
   def :=(thatConstant: Long): Unit = this := BigInt(thatConstant)
 
   /** Assignment from signal, which is implemented by overriding assignFromImpl
@@ -308,10 +326,13 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
       case that if this.getClass.isAssignableFrom(that.getClass) =>
         val t = that.asInstanceOf[Real]
         if (this.maxExp < t.maxExp) { // overflow is not allowed
-          val trace = ScalaLocated.long
-          globalData.pendingErrors += (() => s"$this can't be assigned by \n" +
-            s"$t because of overflow. please redesign.\n " +
-            s"$trace")
+          if (!t.hasTag(tagTruncated)) {
+            val trace = ScalaLocated.long
+            globalData.pendingErrors += (() => s"$this can't be assigned by \n" +
+              s"$t because of overflow. please redesign.\n " +
+              s"$trace")
+          }
+          else println(s"$this is being assigned by $t which may leads overflow, make sure that it is fine")
         }
         if (this.minExp > t.minExp) { // underflow is allowed when tagTruncated is on
           if (!t.hasTag(tagTruncated)) {
@@ -348,5 +369,6 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
     copy.addTag(tagTruncated)
     copy.asInstanceOf[this.type]
   }
+
   override def toString() = s"$name minExp $minExp, maxExp $maxExp, $realInfo, representable [$minValue, $maxValue]"
 }

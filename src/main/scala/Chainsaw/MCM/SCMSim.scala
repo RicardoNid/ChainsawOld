@@ -9,17 +9,13 @@ import spinal.lib._
 
 import scala.math.abs
 
-class SCMSim(constant: Int, scmArch: SCMArch) extends Component with DSPSim[Real, Real, Double, Double] {
-  override val input: Flow[Real] = slave Flow RealWithError(-1.5, 1, -15)
+class SCMSim(constant: Int, scmArch: SCMArch) extends Component with DSPSimTiming[Real, Real, Double, Double] {
+  override val input = in (RealWithError(-1.5, 1, -15 exp))
   //  override val input: Flow[Real] = slave Flow SIntReal(-3, 6)
-
-  val scm = new SCM(input.payload, constant, scmArch)
+  val scm = new SCM(input, constant, scmArch)
   val ret = scm.implicitValue
-
-  override val output: Flow[Real] = master Flow ret
-  output.payload := ret
+  override val output = out (scm.implicitValue)
   override val timing: TimingInfo = scm.getTimingInfo
-  output.valid := Delay(input.valid, timing.latency, init = False)
 
   override def poke(testCase: Double, input: Real): Unit = {
     input #= testCase
@@ -47,7 +43,7 @@ object SCMSim {
     val dut = SimConfig.withWave.compile(new SCMSim(constant, scmArch))
     dut.doSim { dut =>
       dut.sim()
-      for (_ <- 0 until 100) dut.insertTestCase(dut.input.payload.randomValue())
+      for (_ <- 0 until 100) dut.insertTestCase(dut.input.randomValue())
       val report = dut.simDone()
       val mode = scmArch match {
         case CSD => "CSD"
@@ -67,4 +63,3 @@ object SCMSim {
     (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.MULT))
   }
 }
-
