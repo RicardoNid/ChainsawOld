@@ -31,6 +31,8 @@ object MAG {
       ret
     }
 
+    def indexOf(fundamental: Int) = fundamentals.indexOf(fundamental)
+
     def des = fundamentals.last
 
     def cost = fundamentals.length - 1

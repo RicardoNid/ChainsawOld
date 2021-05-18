@@ -7,6 +7,7 @@ import spinal.lib.fsm._
 import Chainsaw.Real
 import Chainsaw._
 
+@unchecked // TODO: develop this in the future
 class HandShakeExample extends Component with DSPDUTHandShake[UInt, UInt] {
 
   val input = slave Stream UInt(2 bits)

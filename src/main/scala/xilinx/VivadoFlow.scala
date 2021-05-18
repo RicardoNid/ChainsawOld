@@ -5,6 +5,7 @@ import spinal.core._
 
 import java.io.File
 import java.nio.file.Paths
+import scala.collection.mutable
 import scala.io.Source
 import scala.sys.process._
 
@@ -45,8 +46,18 @@ class VivadoFlow[T <: Component](
 
   val isWindows = System.getProperty("os.name").toLowerCase().contains("win")
 
-  def getScript(vivadoConfig: VivadoConfig) = {
-    var script = s"read_verilog -sv ${topModuleName}.sv\n read_xdc doit.xdc\n"
+  def getScript(vivadoConfig: VivadoConfig, rtlSources: mutable.LinkedHashSet[String]) = {
+    var script = ""
+
+    rtlSources.foreach { path =>
+      if (path.endsWith(".sv")) script += s"read_verilog -sv $path \n"
+      else if (path.endsWith(".v")) script += s"read_verilog $path \n"
+      else if (path.endsWith(".vhdl")) script += s"read_vhdl $path \n"
+      else throw new IllegalArgumentException(s"invalid RTL source path $path")
+    }
+
+    script += s"read_xdc doit.xdc\n"
+
     var taskName = ""
     taskType match {
       case ELABO => {
@@ -86,7 +97,7 @@ class VivadoFlow[T <: Component](
     }
     workspacePathFile.mkdir()
     // generate systemverilog and do post processing
-    SpinalConfig(targetDirectory = workspacePath).generateSystemVerilog(design.setDefinitionName(topModuleName))
+    val report = SpinalConfig(targetDirectory = workspacePath).generateSystemVerilog(design.setDefinitionName(topModuleName))
     val verilogContent = Source.fromFile(Paths.get(workspacePath, s"${topModuleName}.sv").toFile).getLines.mkString("\n")
     val newVerilogContent = verilogPostProcess(verilogContent)
     writeFile(s"${topModuleName}.sv", newVerilogContent)
@@ -96,7 +107,7 @@ class VivadoFlow[T <: Component](
     source.flush();
     source.close();
 
-    writeFile("doit.tcl", getScript(vivadoConfig))
+    writeFile("doit.tcl", getScript(vivadoConfig, report.rtlSourcesPaths))
     writeFile("doit.xdc", getXdc)
 
     doCmd(s"$vivadoPath/vivado -nojournal -log doit.log -mode batch -source doit.tcl", workspacePath)

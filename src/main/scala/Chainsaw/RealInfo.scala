@@ -55,6 +55,7 @@ class RealInfo(val interval: AffineForm, val error: Double) {
    */
   def doAddSub(that: RealInfo, add: Boolean): RealInfo = {
     val interval = if (add) this.interval + that.interval else this.interval - that.interval
+    println(s"when it comes to RealInfo ${interval.intervalTerms.keySet.mkString(" ")}")
     val error = this.error + that.error
     new RealInfo(interval, error)
   }

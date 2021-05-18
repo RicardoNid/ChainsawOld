@@ -137,14 +137,21 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
   val minExp = resolution.value
   implicit val ulp: Double = pow(2, minExp)
 
-  val lower = inputRealInfo.lower.roundDown
-  val upper = inputRealInfo.upper.roundUp
+  // realInfo refinement by rounding error
+  // TODO: reconsider here
+  //  var realInfo = RealInfo(lower, upper, error err)
+  // adjust the realInfo by rounding strategy
+  //  val upper = inputRealInfo.upper.roundUp
+  //  val lower = inputRealInfo.lower.roundDown
   val propagatedError = inputRealInfo.error
   val roundingError =
     if (inputRealInfo.isConstant) abs(inputRealInfo.constant - inputRealInfo.constant.roundAsScala) // when initialized by a constant
     else ulp
   val error = if (withRoundingError) propagatedError + roundingError else propagatedError
-  var realInfo = RealInfo(lower, upper, error err)
+
+  var realInfo = inputRealInfo.clone
+  val upper = realInfo.upper
+  val lower = realInfo.lower
 
   // determine the inner representation
   val maxExp = inputRealInfo.getMaxExp
@@ -209,7 +216,9 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
   def doAddSub(that: Real, add: Boolean): Real = {
     val minExp = min(this.minExp, that.minExp) // LSB strategy, no rounding error introduced
     val realInfo = if (add) this.realInfo + that.realInfo else this.realInfo - that.realInfo // MSB strategy
+    println(s"when it comes to Real ${realInfo.interval.intervalTerms.keySet.mkString(" ")}")
     val ret = new Real(realInfo, minExp exp)
+    println(s"when it comes to Real later ${ret.realInfo.interval.intervalTerms.keySet.mkString(" ")}")
     // implementation
     val (rawLeft, rawRight) = alignLsb(that)
     val maxExpEnlarged = ret.maxExp > max(this.maxExp, that.maxExp)

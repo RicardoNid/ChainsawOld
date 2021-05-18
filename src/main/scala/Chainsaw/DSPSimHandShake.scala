@@ -3,6 +3,7 @@ package Chainsaw
 import spinal.core.Data
 import spinal.core.sim.{fork, _}
 
+@unchecked // TODO: develop this in the futer
 trait DSPSimHandShake[inputType <: Data, outputType <: Data, testCaseType, testResultType]
   extends DSPSim[inputType, outputType, testCaseType, testResultType] with DSPDUTHandShake[inputType, outputType] {
 
