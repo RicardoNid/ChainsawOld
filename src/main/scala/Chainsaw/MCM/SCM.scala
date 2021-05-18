@@ -72,4 +72,8 @@ class SCM(input: Real, constant: Int, scmArch: SCMArch) extends ImplicitArea[Rea
 
 object SCM {
   def apply(input: Real, constant: Int, scmArch: SCMArch): SCM = new SCM(input, constant, scmArch)
+
+  def main(args: Array[String]): Unit = {
+    println(MAG.getOnePathLUT(12345))
+  }
 }

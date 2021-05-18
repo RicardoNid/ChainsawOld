@@ -3,7 +3,7 @@ package Chainsaw.DSP
 import Chainsaw.DSP.AlgebraicMode._
 import Chainsaw.DSP.CordicArch._
 import Chainsaw.DSP.RotationMode._
-import Chainsaw.{DSPSimTiming, Double2Fix, Fix2Double, TimingInfo, debug, sameFixedSeq}
+import Chainsaw.{DSPSimTiming, Double2Fix, Fix2Double, TimingInfo, ChainsawDebug, sameFixedSeq}
 import breeze.numerics._
 import breeze.numerics.constants.Pi
 import spinal.core._
@@ -131,7 +131,7 @@ object CORDICSim {
   }
 
   def main(args: Array[String]): Unit = {
-    debug = true
+    ChainsawDebug = true
     for (algebraic <- AlgebraicMode.values; rotation <- RotationMode.values; arch <- IndexedSeq(PARALLEL)) {
       randomSim(CordicConfig(rotationMode = rotation, algebricMode = algebraic, cordicArch = arch))
     }

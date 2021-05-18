@@ -97,9 +97,9 @@ package object Chainsaw extends RealFactory {
   }
 
   // debug mode
-  var debug = false
+  var ChainsawDebug = false
 
-  def printlnWhenDebug(content: Any) = if (debug) println(content)
+  def printlnWhenDebug(content: Any) = if (ChainsawDebug) println(content)
 
   def printlnColored(content: Any)(color: String) = {
     print(color)

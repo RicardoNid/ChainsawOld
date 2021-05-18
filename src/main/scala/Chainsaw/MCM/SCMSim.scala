@@ -56,7 +56,7 @@ object SCMSim {
   }
 
   def main(args: Array[String]): Unit = {
-    debug = true
+    ChainsawDebug = true
     import AOperations.getPOF
     (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.CSD))
     (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.MAG))

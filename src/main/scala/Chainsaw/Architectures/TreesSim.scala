@@ -40,7 +40,7 @@ class BinaryTreeSim(length: Int, opertor: (Real, Real) => Real, pipelineInterval
 object TreesSim {
   def main(args: Array[String]): Unit = { // TODO: test on Double
 
-    debug = true
+    ChainsawDebug = true
 
     println("start testing BinaryTree")
     val add = (x: Real, y: Real) => x + y

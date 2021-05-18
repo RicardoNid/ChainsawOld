@@ -1,6 +1,6 @@
 package Chainsaw.Crypto
 
-import Chainsaw.{DSPSimTiming, TimingInfo, debug}
+import Chainsaw.{DSPSimTiming, TimingInfo, ChainsawDebug}
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib.{Delay, Flow, master, slave}
@@ -45,7 +45,7 @@ class ModularMultiplicationSim(N: Int) extends Component with DSPSimTiming[Vec[U
 
 object ModularMultiplicationSim {
   def main(args: Array[String]): Unit = {
-    debug = true
+    ChainsawDebug = true
     val dut = SimConfig.withWave.compile(new ModularMultiplicationSim(133))
     dut.doSim { dut =>
       dut.sim()

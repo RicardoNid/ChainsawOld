@@ -4,7 +4,7 @@ import Chainsaw.Architectures.BinarySFG
 import Chainsaw.MCM.AOperations._
 
 import java.io._
-import scala.collection.mutable
+import scala.collection.{immutable, mutable}
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
 
@@ -112,8 +112,7 @@ object MAG {
       .readObject.asInstanceOf[mutable.Map[Int, (Path, String)]]
     else buildLUTs()._3
 
-  def rebuildMAG(path: Path, graphString: String) = {
-    val mag = BinarySFG.fromSerialized(graphString)
+  def rebuildMAG(path: Path, mag: BinarySFG) = {
     val magInfos = (0 until mag.size).map { vertex =>
       import AOpSign.ADD
       val drivers = mag.driversOf(vertex)
@@ -126,7 +125,9 @@ object MAG {
     (mag, magInfos)
   }
 
-  def buildLUTs() = {
+  def rebuildMAG(path: Path, graphString: String): (BinarySFG, immutable.IndexedSeq[AOpConfig]) = rebuildMAG(path, BinarySFG.fromSerialized(graphString))
+
+  def buildLUTs(): (mutable.Map[Int, Int], mutable.Map[Int, ListBuffer[(Path, String)]], mutable.Map[Int, (Path, String)]) = {
 
     val goldenCostLUT = Source.fromFile("src/main/resources/mag14.dat").getLines().mkString("").zipWithIndex
       .map { case (char, i) => (i + 1) -> char.asDigit }
@@ -161,6 +162,7 @@ object MAG {
     (0 to 4).foreach { i =>
       println(s"building cost-$i graphs")
       buildCostLUT(topologies(i), i)
+      println(s"${costLUT.size} coeffs found")
       buildPathLUT(topologies(i), i)
     }
 
@@ -187,6 +189,6 @@ object MAG {
   def main(args: Array[String]): Unit = {
     println(MAG(1859))
     println(getOnePathLUT(13)._1)
-    println(getPathLUT(13))
+    println(getPathLUT(12345))
   }
 }

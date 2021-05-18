@@ -1,6 +1,6 @@
 package Chainsaw.Architectures
 
-import Chainsaw.{DSPSimTiming, TimingInfo, debug}
+import Chainsaw.{DSPSimTiming, TimingInfo, ChainsawDebug}
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
@@ -44,7 +44,7 @@ class BKKSTreeSim extends Component with DSPSimTiming[Vec[UInt], Vec[UInt], Arra
 object BKKSTreeSim {
   def main(args: Array[String]): Unit = {
 
-    debug = true
+    ChainsawDebug = true
 
     SimConfig.compile(new BKKSTreeSim).doSim { dut =>
       dut.sim()

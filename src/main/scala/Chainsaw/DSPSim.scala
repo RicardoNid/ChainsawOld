@@ -108,7 +108,7 @@ trait DSPSim[inputType <: Data, outputType <: Data, testCaseType, testResultType
             validLog += messageWhenValid(testCase, refResult, dutResult)
           }
           totalCase += 1
-          assert(isValid(refResult, dutResult) || debug, messageWhenInvalid(testCase, refResult, dutResult))
+          assert(isValid(refResult, dutResult) || ChainsawDebug, messageWhenInvalid(testCase, refResult, dutResult))
         }
         clockDomain.waitSampling()
       }

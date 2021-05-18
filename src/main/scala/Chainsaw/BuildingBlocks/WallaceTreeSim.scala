@@ -33,7 +33,7 @@ class WallaceTreeSim() extends WallaceTreeDUT with DSPSimTiming[Vec[Real], Real,
 
 object WallaceTreeSim {
   def main(args: Array[String]): Unit = {
-    debug = true
+    ChainsawDebug = true
     SimConfig.withWave.compile(new WallaceTreeSim).doSim { dut =>
       dut.sim()
       //      (0 until 10).foreach(_ => dut.insertTestCase(dut.input.payload.randomValue))
