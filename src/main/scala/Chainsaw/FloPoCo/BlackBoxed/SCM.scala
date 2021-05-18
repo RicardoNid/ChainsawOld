@@ -1,61 +1,41 @@
 package Chainsaw.FloPoCo.BlackBoxed
 
-import Chainsaw.FloPoCo._
-import Chainsaw.FloPoCo.{defaultOutputDir, defaultOutputPath, flopocoPath}
+import Chainsaw.FloPoCo.{flopocoPath, _}
 import Chainsaw.QFormatReal
-import spinal.core.{BlackBox, Bundle, Component, SQ, in, log2Up, out}
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.sim._
-import spinal.lib.fsm._
-import Chainsaw._
-import Chainsaw.Real
+import spinal.core.{BlackBox, SQ, in, log2Up, out, _}
+import scala.reflect.runtime.{universe => ru}
 
-import scala.io.Source
 import scala.sys.process.Process
 
 class SCM(val wIn: Int, val n: Int) extends FloPoCoBlackBox[Real, Real] {
 
-  val fileds = this.getClass.getDeclaredFields.map(_.getName)
-  val argNumber = this.getClass.getConstructors.head.getParameters.length
-  val argNames = fileds.take(argNumber)
-  val argValues = argNames.map(getArgValueString)
+  override val operatorName = "IntConstMult"
 
-  println(argNames.mkString(" "))
+  override def ruType = ru.typeOf[this.type] // this is a must-be
 
-  case class Purchase(name: String, orderNumber: Int, var shipped: Boolean)
-
-  val p = Purchase("Jeff Lebowski", 23819, false)
-
-  import scala.reflect.runtime.{universe => ru}
-
-  def getArgValueString(argName: String) = {
-    val m = ru.runtimeMirror(this.getClass.getClassLoader)
-    val im = m.reflect(this)
-    val termSymb = ru.typeOf[SCM].decl(ru.TermName("wIn")).asTerm
-    val termMirror = im.reflectField(termSymb)
-    termMirror.get.toString
-  }
-
-  // name & path settings
-  val operatorName = "IntConstMult"
-  val blackBoxName = (operatorName +: argNames).reduce(_ + "_" + _) + "_F400_uid2"
-  println(blackBoxName)
-  setBlackBoxName(blackBoxName)
-  addRTLPath(rtlPath)
-  // interface
   val clk = in Bool()
-  override val input = in(QFormatReal(SQ(wIn, 0)))
-  override val output = out(QFormatReal(SQ(wIn + log2Up(n), 0)))
-  // clock mapping
+  val input = in(QFormatReal(SQ(wIn, 0)))
+  val output = out(QFormatReal(SQ(wIn + log2Up(n), 0)))
   mapCurrentClockDomain(clk)
-  // prefix
   noIoPrefix()
-  // RTL generation
-  val operatorCommand = operatorName + " " +  argNames.zip(argValues).map { case (name, value) => name + "=" + value }.mkString(" ")
+
+  invokeFloPoCo() // a must-be
+}
+
+class FPConstMult(val wE_in: Int, val wF_in: Int, val wE_out: Int, val wF_out: Int, val constant: String, val cst_width: Int) extends FloPoCoBlackBox[Real, Real] {
+
+  override val operatorName = "FPConstMult"
+
+  override def ruType = ru.typeOf[this.type] // this is a must-be
+
+  val clk = in Bool()
+  val input = in(QFormatReal(SQ(10, 0)))
+  val output = out(QFormatReal(SQ(10, 0)))
   println(operatorCommand)
-  Process(s"./flopoco outputFile=$rtlPath $operatorCommand", new java.io.File(flopocoPath)) !
+  mapCurrentClockDomain(clk)
+  noIoPrefix()
+
+  invokeFloPoCo() // a must-be
 }
 
 class SCMWrapper(wIn: Int, constant: Int) extends FloPoCoBlackBoxWrapper[Real, Real] {
@@ -65,9 +45,20 @@ class SCMWrapper(wIn: Int, constant: Int) extends FloPoCoBlackBoxWrapper[Real, R
   connect() // A must-be
 }
 
+class SomethingElseWrapper(a: Int, b: Int, c: Int) extends FloPoCoBlackBoxWrapper[Real, Real] {
+  val input = in(QFormatReal(SQ(a, 0)))
+  val output = out(QFormatReal(SQ(b + log2Up(c), 0)))
+  override val blackBox: BlackBox with FloPoCoBlackBox[Real, Real] = new FPConstMult(1, 2, 3, 4, "1", 5)
+  connect() // A must-be
+}
+
 object SCMWrapper {
   def main(args: Array[String]): Unit = {
-    val report = SpinalConfig().generateSystemVerilog(new SCMWrapper(15, 15))
-    println(report.rtlSourcesPaths.mkString("\n"))
+    //    val report = SpinalConfig().generateSystemVerilog(new SCMWrapper(15, 17))
+    //    println(report.rtlSourcesPaths.mkString("\n"))
+    //    println(report.getRtlString())
+    //        new SomethingElse(3,4,5)
+    //        new SomethingElseWrapper(3,4,5)
+    val report1 = SpinalConfig().generateSystemVerilog(new SomethingElseWrapper(3, 4, 5))
   }
 }
