@@ -1,11 +1,11 @@
 package Chainsaw.Architectures
 
-import Chainsaw.{DSPSimTiming, TimingInfo, ChainsawDebug}
+import Chainsaw.{ChainsawDebug, DSPSimTiming, TimingInfo}
 import spinal.core._
 import spinal.core.sim._
-import spinal.lib._
 
 import scala.language.postfixOps
+import org.scalatest.FunSuite
 
 class BKKSTreeSim extends Component with DSPSimTiming[Vec[UInt], Vec[UInt], Array[Int], Array[Int]] {
   override val input: Vec[UInt] = in Vec(UInt(10 bits), 16)
@@ -41,11 +41,8 @@ class BKKSTreeSim extends Component with DSPSimTiming[Vec[UInt], Vec[UInt], Arra
   override type RefOwnerType = this.type
 }
 
-object BKKSTreeSim {
-  def main(args: Array[String]): Unit = {
-
-    ChainsawDebug = true
-
+class testBKKSSim extends FunSuite{
+  test("BKKSSim"){
     SimConfig.compile(new BKKSTreeSim).doSim { dut =>
       dut.sim()
       dut.insertTestCase((0 until 16).toArray)

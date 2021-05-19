@@ -138,18 +138,25 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
   implicit val ulp: Double = pow(2, minExp)
 
   // realInfo refinement by rounding error
-  // TODO: reconsider here
-  //  var realInfo = RealInfo(lower, upper, error err)
-  // adjust the realInfo by rounding strategy
-  //  val upper = inputRealInfo.upper.roundUp
-  //  val lower = inputRealInfo.lower.roundDown
+
+  // TODO: no it will not exceed?
+  /** The reason of adjusting realInfo is that,
+   * because of the rounding error, the interval of realInfo may exceed the actual representable interval,
+   * when this accumulates, a signal may have a insufficient width for its interval
+   */
+  def adjustingRealInfoInterval(realInfo: RealInfo): Unit = {
+    val upper = inputRealInfo.upper.roundUp
+    val lower = inputRealInfo.lower.roundDown
+    RealInfo(lower, upper, error err)
+  }
+
   val propagatedError = inputRealInfo.error
   val roundingError =
     if (inputRealInfo.isConstant) abs(inputRealInfo.constant - inputRealInfo.constant.roundAsScala) // when initialized by a constant
     else ulp
   val error = if (withRoundingError) propagatedError + roundingError else propagatedError
 
-  var realInfo = inputRealInfo.clone
+  var realInfo = new RealInfo(inputRealInfo.interval.clone, error)
   val upper = realInfo.upper
   val lower = realInfo.lower
 

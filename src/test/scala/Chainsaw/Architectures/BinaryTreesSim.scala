@@ -1,10 +1,9 @@
 package Chainsaw.Architectures
 
-import Chainsaw._
-import Chainsaw.Real
+import Chainsaw.{Real, _}
+import org.scalatest.FunSuite
 import spinal.core._
 import spinal.core.sim._
-import spinal.lib._
 
 /** Test BinaryTree by implementing integer addtions and multiplications
  *
@@ -37,10 +36,8 @@ class BinaryTreeSim(length: Int, opertor: (Real, Real) => Real, pipelineInterval
     s"testCase: ${testCase.mkString(" ")}, golden: $refResult, yours: $dutResult"
 }
 
-object TreesSim {
-  def main(args: Array[String]): Unit = { // TODO: test on Double
-
-    ChainsawDebug = true
+class testBinaryTree extends FunSuite {
+  test("testBinaryTree") { // TODO: test on Double
 
     println("start testing BinaryTree")
     val add = (x: Real, y: Real) => x + y
