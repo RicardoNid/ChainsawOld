@@ -1,6 +1,7 @@
 package Chainsaw.FloPoCo.Transplanted
 
 import Chainsaw.{Real, _}
+import org.scalatest.FunSuite
 import spinal.core._
 import spinal.core.sim._
 
@@ -29,8 +30,7 @@ class SCMSim(constant: Int) extends SCMDUT(constant) with DSPSimTiming[Real, Rea
     s"testCase: $testCase, golden: $refResult, yours: $dutResult"
 }
 
-object SCMSim {
-
+class testSCM extends FunSuite{
   def randomSim(constant: Int, traversal: Boolean = false): Unit = {
     val dut = SimConfig.withWave.compile(new SCMSim(constant))
     dut.doSim { dut =>
@@ -46,7 +46,7 @@ object SCMSim {
     }
   }
 
-  def main(args: Array[String]): Unit = {
+  test("testTranplantedSCM") {
     ChainsawDebug = true
     //    randomSim(957) // by this, the pattern match is fixed
     // in this case, we noticed that sometimes, +/- leads to a narrower interval and should be processed
