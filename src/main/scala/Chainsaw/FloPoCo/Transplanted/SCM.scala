@@ -67,26 +67,5 @@ object SCM {
       val sag = new SCM(input, 31)
       val output = out(sag.implicitValue)
     })
-
-//    val mine = VivadoFlow(
-//      new Component {
-//        val input = in(UIntReal((1 << 14) - 1))
-//        val sag = new SCM(input, 31)
-//        val output = out(sag.implicitValue)
-//      },
-//      "SCMMine",
-//      "synthWorkspace/SCMMine",
-//      force = true
-//    ).doit()
-
-    val flo = VivadoFlow(
-      new SCMWrapper(15,31),
-      "SCMFlo",
-      "synthWorkspace/SCMFlo",
-      force = true
-    ).doit()
-
-//    mine.printArea()
-    flo.printArea()
   }
 }

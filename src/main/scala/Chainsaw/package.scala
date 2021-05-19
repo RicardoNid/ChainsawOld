@@ -195,6 +195,5 @@ package object Chainsaw extends RealFactory {
   implicit class MoreDoubleBuilder(value: Double) {
 
     def err = ErrorNumber(value)
-
   }
 }
