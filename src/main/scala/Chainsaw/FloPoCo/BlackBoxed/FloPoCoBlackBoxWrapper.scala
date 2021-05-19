@@ -1,4 +1,4 @@
-package Chainsaw.FloPoCo
+package Chainsaw.FloPoCo.BlackBoxed
 
 import spinal.core._
 

@@ -126,7 +126,6 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
      */
     def getMaxExp(implicit ulp: Double) = {
       def bitsForBound(bound: Double) = if (bound >= 0.0) log2Up(bound + ulp) else log2Up(-bound)
-
       max(bitsForBound(info.upper), bitsForBound(info.lower))
     }
   }
@@ -140,15 +139,16 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
   // realInfo refinement by rounding error
 
   // TODO: no it will not exceed?
+
   /** The reason of adjusting realInfo is that,
    * because of the rounding error, the interval of realInfo may exceed the actual representable interval,
    * when this accumulates, a signal may have a insufficient width for its interval
    */
-  def adjustingRealInfoInterval(realInfo: RealInfo): Unit = {
-    val upper = inputRealInfo.upper.roundUp
-    val lower = inputRealInfo.lower.roundDown
-    RealInfo(lower, upper, error err)
-  }
+  //  def adjustingRealInfoInterval(realInfo: RealInfo): Unit = {
+  //    val upper = inputRealInfo.upper.roundUp
+  //    val lower = inputRealInfo.lower.roundDown
+  //    RealInfo(lower, upper, error err)
+  //  }
 
   val propagatedError = inputRealInfo.error
   val roundingError =
@@ -229,11 +229,14 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
     // implementation
     val (rawLeft, rawRight) = alignLsb(that)
     val maxExpEnlarged = ret.maxExp > max(this.maxExp, that.maxExp)
+    val maxExpReduced = ret.maxExp < max(this.maxExp, that.maxExp)
     println(s"maxEnlarged: $maxExpEnlarged")
+    println(s"maxReduced: $maxExpReduced")
     val retRaw =
       if (maxExpEnlarged) if (add) rawLeft +^ rawRight else rawLeft -^ rawRight
       else if (add) rawLeft + rawRight else rawLeft - rawRight
-    ret.raw := retRaw
+    if (maxExpReduced) ret.raw := retRaw.resized // sometimes, because of cancellation, the interval may be narrower
+    else ret.raw := retRaw
     ret
   }
 

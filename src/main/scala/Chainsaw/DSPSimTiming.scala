@@ -24,7 +24,7 @@ trait DSPSimTiming[inputType <: Data, outputType <: Data, testCaseType, testResu
         if (testCases.nonEmpty) {
           monitorPoints.enqueue(simCycle + timing.latency + 1)
           val testCase = testCases.dequeue()
-          printlnWhenDebug(s"testCase deque at $simCycle")
+          //          printlnWhenDebug(s"testCase deque at $simCycle")
           lastCase.enqueue(testCase)
           val refResult = referenceModel(testCase)
           refResults.enqueue(refResult)
@@ -62,7 +62,7 @@ trait DSPSimTiming[inputType <: Data, outputType <: Data, testCaseType, testResu
     // the time needed at most to finish a single testCase
     val protect = timing.latency + timing.outputInterval + 5
     while (testCases.nonEmpty) {
-      printlnWhenDebug(s"check at $simCycle")
+      //      printlnWhenDebug(s"check at $simCycle")
       clockDomain.waitSampling(timing.initiationInterval)
     }
     clockDomain.waitSampling(protect)

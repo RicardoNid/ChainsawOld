@@ -18,23 +18,21 @@ object AOperations {
   
   val AOpHardware = (left: Real, right: Real, config: AOpConfig) => {
     import config._
+    printlnWhenDebug("-----------------AOp begins----------------")
     printlnWhenDebug(config)
     val shiftedLeft = left << shiftLeftLeft
     val shiftedRight = right << shiftLeftRight
-    printlnWhenDebug(shiftedLeft)
-    printlnWhenDebug(shiftedLeft.realInfo.interval)
-    printlnWhenDebug(shiftedRight)
-    printlnWhenDebug(shiftedRight.realInfo.interval)
+    printlnWhenDebug("left", shiftedLeft,shiftedLeft.realInfo.interval)
+    printlnWhenDebug("right", shiftedRight,shiftedRight.realInfo.interval)
     val sum = config.aOpSign match {
       case ADD => shiftedLeft + shiftedRight
       case SUBNEXT => shiftedLeft - shiftedRight
       case SUBPREV => shiftedRight - shiftedLeft
     }
-    printlnWhenDebug(sum)
-    printlnWhenDebug(sum.realInfo.interval)
+    printlnWhenDebug("sum", sum,sum.realInfo.interval)
     val ret = sum >> shiftRight
-    printlnWhenDebug(ret)
-    printlnWhenDebug(ret.realInfo.interval)
+    printlnWhenDebug("right-shifted", ret,ret.realInfo.interval)
+    printlnWhenDebug("-----------------AOp ends----------------")
     ret
   }
 

@@ -1,11 +1,9 @@
 package Chainsaw.MCM
 
-import spinal.lib.bus.avalon.AvalonMM
 import Chainsaw.MCM.SCMArch._
 import Chainsaw._
 import spinal.core._
 import spinal.core.sim._
-import spinal.lib._
 
 import scala.math.abs
 

@@ -1,5 +1,7 @@
-package Chainsaw.FloPoCo
+package Chainsaw.FloPoCo.BlackBoxed
 
+import Chainsaw.FloPoCo.{defaultOutputDir, flopocoPath}
+import Chainsaw._
 import spinal.core._
 
 import scala.reflect.runtime.{universe => ru}
@@ -31,13 +33,15 @@ abstract class FloPoCoBlackBox[inputType <: Data, outputType <: Data] extends Bl
   val fileds = this.getClass.getDeclaredFields.map(_.getName)
   val argNumber = this.getClass.getConstructors.head.getParameters.length
   val argNames = fileds.take(argNumber)
-  val blackBoxName = (operatorName +: argNames).reduce(_ + "_" + _) + "_F400_uid2"
-  setBlackBoxName(blackBoxName)
-  val rtlPath = defaultOutputDir + s"/$blackBoxName.vhdl"
-  addRTLPath(rtlPath)
-  println(argNames.mkString(" "))
   val argValues = argNames.map(getArgValueString)
+  def blackBoxName = (operatorName +: argValues).reduce(_ + "_" + _) + "_F400_uid2"
+  def rtlPath = defaultOutputDir + s"/$blackBoxName.vhdl"
   def operatorCommand = operatorName + " " + argNames.zip(argValues).map { case (name, value) => name + "=" + value }.mkString(" ")
 
-  def invokeFloPoCo() = Process(s"./flopoco outputFile=$rtlPath $operatorCommand", new java.io.File(flopocoPath)) !
+  def invokeFloPoCo() = {
+    setBlackBoxName(blackBoxName)
+    addRTLPath(rtlPath)
+    printlnYellow(s"invoke flopoco: $operatorCommand")
+    Process(s"./flopoco outputFile=$rtlPath $operatorCommand", new java.io.File(flopocoPath)) !
+  }
 }

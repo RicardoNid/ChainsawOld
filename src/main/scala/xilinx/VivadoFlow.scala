@@ -49,7 +49,7 @@ class VivadoFlow[T <: Component](
   def getScript(vivadoConfig: VivadoConfig, rtlSources: mutable.LinkedHashSet[String]) = {
     var script = ""
 
-    rtlSources.foreach { path =>
+    rtlSources.map(_.replace(workspacePath + "/", "")).foreach { path =>
       if (path.endsWith(".sv")) script += s"read_verilog -sv $path \n"
       else if (path.endsWith(".v")) script += s"read_verilog $path \n"
       else if (path.endsWith(".vhdl")) script += s"read_vhdl $path \n"
@@ -98,6 +98,7 @@ class VivadoFlow[T <: Component](
     workspacePathFile.mkdir()
     // generate systemverilog and do post processing
     val report = SpinalConfig(targetDirectory = workspacePath).generateSystemVerilog(design.setDefinitionName(topModuleName))
+    //    val report = SpinalConfig().generateSystemVerilog(design.setDefinitionName(topModuleName))
     val verilogContent = Source.fromFile(Paths.get(workspacePath, s"${topModuleName}.sv").toFile).getLines.mkString("\n")
     val newVerilogContent = verilogPostProcess(verilogContent)
     writeFile(s"${topModuleName}.sv", newVerilogContent)
@@ -126,6 +127,4 @@ object VivadoFlow {
                              vivadoTask: VivadoTask = VivadoTask(),
                              force: Boolean = false
                            ) = new VivadoFlow(design, topModuleName, workspacePath, vivadoConfig, vivadoTask, force)
-
-
 }
