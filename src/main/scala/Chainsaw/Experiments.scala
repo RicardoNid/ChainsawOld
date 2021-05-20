@@ -12,7 +12,7 @@ object Experiments {
 
   def main(args: Array[String]): Unit = {
     //    testAddtion
-    testMultiplicationSignedness
+    //    testMultiplicationSignedness
     //    Seq(179106)
     //    Seq(190730) this is a testCase of with only additions
 
@@ -22,12 +22,17 @@ object Experiments {
     //      val output = out(sag.implicitValue)
     //    })
 
-    //    (0 until 1).map(_ => DSPRand.nextInt(1 << 18) + 4)
-    //    Seq(85).foreach { constant =>
-    //      testSCM(constant, (1 << 14) - 1, mine = true) // max interval leads to 15 bits
-    //      testSCM(constant, (1 << 13) + 1, mine = true) // min interval leads to 15 bits
-    //      testSCM(constant, 0, mine = false) // flopoco design at 15 bits
-    //    }
+
+    //    GenRTL(new FloPoCo.BlackBoxed.SCMWrapper(15, 44))
+    testSCMs
+  }
+
+  private def testSCMs = {
+    (0 until 1).map(_ => DSPRand.nextInt(1 << 18) + 4).foreach { constant =>
+      testSCM(constant, (1 << 14) - 1, mine = true) // max interval leads to 15 bits
+      testSCM(constant, (1 << 13) + 1, mine = true) // min interval leads to 15 bits
+      testSCM(constant, 0, mine = false) // flopoco design at 15 bits
+    }
   }
 
   def writeFile(fileName: String, content: String) = {
@@ -42,38 +47,39 @@ object Experiments {
   val rtlFile = "RTLs.txt"
 
   def testSCM(constant: Int, range: Int, mine: Boolean) = {
-    //    try {
-    ChainsawDebug = true
-    val report = if (mine)
-      VivadoFlow(
-        new Component {
-          val input = in(UIntReal(range - 1))
-          val sag = new SCM(input, constant)
-          val output = out(sag.implicitValue)
-        },
-        "SCMMine",
-        "synthWorkspace/SCMMine",
-        force = true
-      ).doit()
-    else {
-      VivadoFlow(
-        new SCMWrapper(15, constant),
-        "SCMMine",
-        "synthWorkspace/SCMMine",
-        force = true
-      ).doit()
+    def doTest = {
+      ChainsawDebug = true
+      val report = if (mine)
+        VivadoFlow(
+          new Component {
+            val input = in(UIntReal(range - 1))
+            val sag = new SCM(input, constant)
+            val output = out(sag.implicitValue)
+          },
+          "SCMMine",
+          "synthWorkspace/SCMMine",
+          force = true
+        ).doit()
+      else {
+        VivadoFlow(
+          new SCMWrapper(15, constant),
+          "SCMMine",
+          "synthWorkspace/SCMMine",
+          force = true
+        ).doit()
+      }
+
+      val handle = Source.fromFile("/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/SCMMine/SCMMine.sv")
+      val rtl = handle.getLines()
+      writeFile(rtlFile, s"constant=$constant \n ${rtl.mkString("\n")}")
+      writeFile(areaFile, s"${if (mine) "mine:" else "theirs"} constant=$constant LUT=${report.LUT}, FF=${report.FF}")
+      handle.close()
     }
 
-    val handle = Source.fromFile("/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/SCMMine/SCMMine.sv")
-    //    val handle = Source.fromFile("/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/SCMMine/SCMMine.vhd")
-    val rtl = handle.getLines()
-    writeFile(rtlFile, s"constant=$constant \n ${rtl.mkString("\n")}")
-    writeFile(areaFile, s"${if (mine) "mine:" else "theirs"} constant=$constant LUT=${report.LUT}, FF=${report.FF}")
-    handle.close()
-    //    }
-    //    catch {
-    //      case _ => writeFile(areaFile, s"failed at constant = $constant")
-    //    }
+    try doTest
+    catch {
+      case _ => writeFile(areaFile, s"failed at constant = $constant")
+    }
   }
 
   def testAddtion = {
@@ -94,9 +100,7 @@ object Experiments {
       val output = out(a * b).addAttribute("use_dsp = \"no\"")
     },
       topModuleName = "testAddtion",
-      workspacePath = synthWorkspace + "/temp",
-        force = true
-    ).doit()
+      workspacePath = synthWorkspace + "/temp").doit()
 
     val signed = VivadoFlow(new Component {
       val a = in SInt (16 bits)
@@ -104,9 +108,7 @@ object Experiments {
       val output = out(a * b).addAttribute("use_dsp = \"no\"")
     },
       topModuleName = "testAddtion",
-      workspacePath = synthWorkspace + "/temp",
-      force = true
-    ).doit()
+      workspacePath = synthWorkspace + "/temp").doit()
     unsigned.printArea()
     signed.printArea()
   }

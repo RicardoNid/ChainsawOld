@@ -1,14 +1,13 @@
 package Chainsaw.FloPoCo.Transplanted
 
 import Chainsaw.Architectures.HomogeneousBinarySFGBuilder
-import Chainsaw.FloPoCo.BlackBoxed.SCMWrapper
 import Chainsaw.FloPoCo.flopocoPath
 import Chainsaw.MCM.AOperations.AOpHardware
-import Chainsaw.MCM.MAG
+import Chainsaw.MCM.{AOpConfig, AOperations, MAG}
 import Chainsaw._
 import spinal.core._
-import xilinx.VivadoFlow
 
+import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.sys.process.Process
 
@@ -16,44 +15,70 @@ class SCM(input: Real, constant: Int) extends ImplicitArea[Real] with Testable {
   // invoke flopoco and get source
   val command = s"IntConstMult wIn=${input.bitCount} n=$constant"
   Process(s"./flopoco $command", new java.io.File(flopocoPath)) !
-  val rtl = Source.fromFile(flopocoPath + "/flopoco.vhdl")
+  //  val rtl = Source.fromFile(flopocoPath + "/flopoco.vhdl")
+  val rtl = Source.fromFile(flopocoPath + "/flopoco.vhdl").getLines()
 
-  val patternShiftAdd = "-- [P|M]".r
   // extract the design from the source
-  val opStrings = rtl.getLines().toSeq.filter(patternShiftAdd.findFirstIn(_).nonEmpty).drop(1)
+  val patternShiftAdd = "([P|M]?[0-9]*)X <-  ([P|M]?[0-9]*)X<<([0-9]+)  \\+ ([P|M]?[0-9]*)X".r.unanchored
+  val opStrings = rtl.filter(line => patternShiftAdd.findAllIn(line).nonEmpty).toSeq
   println(opStrings.mkString("\n"))
-  val patternVariable = "[P|M]?[0-9]*X".r
-  val patternDigit = "[0-9]+".r
 
-  def toInt(string: String) = {
-    if (string.forall(!_.isDigit)) 1
-    else (string.filter(_.isDigit).toInt)
-  }
+  import MCM.AOpSign._
 
-  val operands: Seq[Seq[Int]] =
-    opStrings.map(patternVariable.findAllIn(_).toSeq // get patterns like P101X, X
-      .map(patternDigit.findFirstIn(_).getOrElse("1").toInt)) // P101X -> 101, X -> 1
-
-  println(operands.map(_.mkString(" ")).mkString("\n"))
-
-  // rebuild the design by Chainsaw
   val mag = new Chainsaw.Architectures.BinarySFG
   mag.addVertex(0)
   val path = MAG.Path()
-  operands.foreach { number =>
-    path += number(0)
-    println(path)
-    mag.addVertex(path.indexOf(number(1)), path.indexOf(number(2)))
+  val AOpConfigs = ListBuffer[AOpConfig](AOpConfig(0, 0, 0, ADD))
+
+  opStrings.foreach { line =>
+    println(s"rebuilding $line")
+    val patternShiftAdd(sum, left, shift, right) = line
+
+    def toInt(string: String): Int = {
+      val digits = string.filter(_.isDigit)
+      val abs = if (digits.nonEmpty) digits.toInt else 1
+      if (string.startsWith("M")) -abs else abs
+    }
+
+    val coeffSum = toInt(sum)
+    val tempLeft = toInt(left)
+    val tempRight = toInt(right)
+    val (coeffLeft, coeffRight, slLeft, slRight) =
+      if (tempLeft.abs <= tempRight.abs) (tempLeft, tempRight, shift.toInt, 0)
+      else (tempRight, tempLeft, 0, shift.toInt)
+
+    val sign =
+      if (coeffLeft >= 0 && coeffRight >= 0) ADD
+      else if (!(coeffLeft >= 0) && !(coeffRight >= 0)) ADD
+      else if (coeffLeft >= 0 && !(coeffRight >= 0)) if (coeffSum >= 0) SUBNEXT else SUBPREV
+      else if (coeffSum >= 0) SUBPREV else SUBNEXT
+
+    if (!path.contains(coeffSum.abs)) {
+      println(coeffSum, coeffLeft, coeffRight)
+      path += coeffSum.abs
+      println(path)
+      mag.addVertex(path.indexOf(coeffLeft.abs), path.indexOf(coeffRight.abs))
+      println(AOpConfig(shift.toInt, 0, 0, sign))
+      AOpConfigs += AOpConfig(slLeft, slRight, 0, sign)
+    }
   }
+
   println(mag)
   println(path)
 
   val (graph, magInfos) = MAG.rebuildMAG(path, mag)
-  val SAG = new HomogeneousBinarySFGBuilder(Seq(input), graph, AOpHardware, magInfos)
+  val SAG = new HomogeneousBinarySFGBuilder(Seq(input), graph, AOpHardware, AOpConfigs)
 
-  override def implicitValue = RegNext(SAG.implicitValue.head)
+  // post-processing, as current result is POF of the constant
+  val complement = constant / AOperations.getPOF(constant)
+  require(isPow2(complement.abs))
+  val retPOF = SAG.implicitValue.head
+  val retAbs = retPOF << log2Up(complement.abs)
+  val ret = if (complement < 0) -retAbs else retAbs
 
-  override val getTimingInfo: TimingInfo = TimingInfo(1,1,1,1)
+  override def implicitValue = RegNext(ret)
+
+  override val getTimingInfo: TimingInfo = TimingInfo(1, 1, 1, 1)
 }
 
 object SCM {

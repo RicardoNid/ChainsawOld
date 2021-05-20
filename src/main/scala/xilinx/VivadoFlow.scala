@@ -76,6 +76,7 @@ class VivadoFlow[T <: Component](
         taskName = "impl"
       }
     }
+    // util & timing can't be reported before synthesis
     if (reportUtil && taskType != ELABO) script += s"report_utilization\n"
     if (reportTiming && taskType != ELABO) script += s"report_timing\n"
     if (writeCheckpoint && taskType != ELABO) script += s"write_checkpoint ${topModuleName}_${taskName}.dcp\n"
@@ -112,9 +113,9 @@ class VivadoFlow[T <: Component](
     writeFile("doit.tcl", getScript(vivadoConfig, spinalReport.rtlSourcesPaths))
     writeFile("doit.xdc", getXdc)
 
-    doCmd(s"$vivadoPath/vivado -nojournal -log doit.log -mode batch -source doit.tcl", workspacePath)
+    doCmd(s"${vivadoPath}/vivado -nojournal -log doit.log -mode batch -source doit.tcl", workspacePath)
 
-    new VivadoReport(workspacePath, deviceFamily, frequencyTarget)
+    new VivadoReport(workspacePath, xilinxDeviceFamily, frequencyTarget)
   }
 }
 
@@ -124,7 +125,7 @@ object VivadoFlow {
                              design: => T,
                              topModuleName: String,
                              workspacePath: String,
-                             vivadoConfig: VivadoConfig = recommended.vivadoConfig,
+                             vivadoConfig: VivadoConfig = defaultVivadoConfig,
                              vivadoTask: VivadoTask = VivadoTask(),
                              force: Boolean = true
                            ) = new VivadoFlow(design, topModuleName, workspacePath, vivadoConfig, vivadoTask, force)

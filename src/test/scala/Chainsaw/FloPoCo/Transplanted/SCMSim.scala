@@ -50,14 +50,15 @@ class testSCM extends FunSuite {
   test("testTranplantedSCM") {
     //    randomSim(957) // by this, the pattern match is fixed
     // in this case, we noticed that sometimes, +/- leads to a narrower interval and should be processed
-    (0 until 5).foreach(_ => randomSim(-1.5, 2.5, Chainsaw.MCM.AOperations.getPOF(DSPRand.nextInt(1023))))
-    (0 until 5).foreach(_ => randomSim(0.0, 2.5, Chainsaw.MCM.AOperations.getPOF(DSPRand.nextInt(1023))))
+    randomSim(0.0, 2.5, 179106, traversal = true)
+    randomSim(0.0, 2.5, 171, traversal = true)
+    (0 until 5).foreach(_ => randomSim(-1.5, 2.5, DSPRand.nextInt(1023)))
+    (0 until 5).foreach(_ => randomSim(0.0, 2.5, DSPRand.nextInt(1023)))
   }
 
   //   full test
   def main(args: Array[String]): Unit = {
-    randomSim(0.0, 2.5, 171, traversal = true)
-    (0 until 100).foreach(_ => randomSim(0.0, 2.5, Chainsaw.MCM.AOperations.getPOF(DSPRand.nextInt(1023))))
-    (0 until 100).foreach(_ => randomSim(-1.5, 2.5, Chainsaw.MCM.AOperations.getPOF(DSPRand.nextInt(1023))))
+    (0 until 100).foreach(_ => randomSim(0.0, 2.5, DSPRand.nextInt(1023)))
+    (0 until 100).foreach(_ => randomSim(-1.5, 2.5, DSPRand.nextInt(1023)))
   }
 }

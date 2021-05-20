@@ -6,6 +6,7 @@ import spinal.core.internals.BaseNode
 import spinal.core.sim._
 import spinal.sim._
 
+import java.nio.file.Paths
 import scala.collection.mutable.ArrayBuffer
 import scala.math.{ceil, floor, pow}
 import scala.util.Random
@@ -195,6 +196,15 @@ package object Chainsaw extends RealFactory {
   implicit class MoreDoubleBuilder(value: Double) {
 
     def err = ErrorNumber(value)
+  }
+
+  def GenRTL[T <: Component](gen: => T, print: Boolean = false) = {
+    val report = SpinalConfig().generateSystemVerilog(gen)
+    println(report.rtlSourcesPaths
+      .map(Paths.get(_))
+      .map(path => if (path.isAbsolute) path else path.toAbsolutePath)
+      .mkString("\n"))
+    if (print) println(report.getRtlString())
   }
 
   val synthWorkspace = "/home/ltr/IdeaProjects/Chainsaw/synthWorkspace"

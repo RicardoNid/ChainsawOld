@@ -4,9 +4,10 @@ import spinal.core._
 
 import java.nio.file.Paths
 import scala.io.Source
+import XilinxDeviceFamily._
 
 class VivadoReport(workspacePath: String,
-                   deviceFamily: DeviceFamily,
+                   deviceFamily: XilinxDeviceFamily,
                    frequencyTarget: HertzNumber = null
                   ) {
   private val report = Source.fromFile(Paths.get(workspacePath, "doit.log").toFile).getLines.mkString

@@ -1,6 +1,6 @@
 package Chainsaw.FloPoCo.BlackBoxed
 
-import Chainsaw.QFormatReal
+import Chainsaw.{GenRTL, QFormatReal}
 import spinal.core.{BlackBox, SQ, in, log2Up, out, _}
 
 import scala.reflect.runtime.{universe => ru}
@@ -20,6 +20,8 @@ class SCM(val wIn: Int, val n: Int) extends FloPoCoBlackBox[Real, Real] {
   noIoPrefix()
 
   invokeFloPoCo() // a must-be
+
+
 }
 
 class SCMWrapper(wIn: Int, constant: Int) extends FloPoCoBlackBoxWrapper[Real, Real] {
@@ -31,6 +33,6 @@ class SCMWrapper(wIn: Int, constant: Int) extends FloPoCoBlackBoxWrapper[Real, R
 
 object SCMWrapper {
   def main(args: Array[String]): Unit = {
-    val report = SpinalConfig().generateSystemVerilog(new SCMWrapper(15, 31))
+    GenRTL(new SCMWrapper(15, 31))
   }
 }
