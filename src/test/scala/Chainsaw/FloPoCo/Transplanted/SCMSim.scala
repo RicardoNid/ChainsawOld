@@ -7,14 +7,14 @@ import spinal.core.sim._
 
 import scala.math.abs
 
-class SCMDUT(constant: Int) extends Component with DSPDUTTiming[Real, Real] {
-  override val input: Real = in(Real(-1.5, 2.5, 0.1))
+class SCMDUT(lower: Double, upper: Double, constant: Int) extends Component with DSPDUTTiming[Real, Real] {
+  override val input: Real = in(Real(lower, upper, 0.1))
   val scm = new SCM(input, constant)
   override val output: Real = out(scm.implicitValue)
   override val timing: TimingInfo = scm.getTimingInfo
 }
 
-class SCMSim(constant: Int) extends SCMDUT(constant) with DSPSimTiming[Real, Real, Double, Double] {
+class SCMSim(lower: Double, upper: Double, constant: Int) extends SCMDUT(lower, upper, constant) with DSPSimTiming[Real, Real, Double, Double] {
   override def poke(testCase: Double, input: Real): Unit = input #= testCase
 
   override def peek(output: Real): Double = output.toDouble
@@ -30,9 +30,9 @@ class SCMSim(constant: Int) extends SCMDUT(constant) with DSPSimTiming[Real, Rea
     s"testCase: $testCase, golden: $refResult, yours: $dutResult"
 }
 
-class testSCM extends FunSuite{
-  def randomSim(constant: Int, traversal: Boolean = false): Unit = {
-    val dut = SimConfig.withWave.compile(new SCMSim(constant))
+class testSCM extends FunSuite {
+  def randomSim(lower: Double, upper: Double, constant: Int, traversal: Boolean = false): Unit = {
+    val dut = SimConfig.withWave.compile(new SCMSim(lower, upper, constant))
     dut.doSim { dut =>
       dut.sim()
       if (traversal) {
@@ -46,11 +46,18 @@ class testSCM extends FunSuite{
     }
   }
 
+  // quick test
   test("testTranplantedSCM") {
-    ChainsawDebug = true
     //    randomSim(957) // by this, the pattern match is fixed
     // in this case, we noticed that sometimes, +/- leads to a narrower interval and should be processed
-    randomSim(171, traversal = true)
-    (0 until 100).foreach(_ => randomSim(Chainsaw.MCM.AOperations.getPOF(DSPRand.nextInt(1023))))
+    (0 until 5).foreach(_ => randomSim(-1.5, 2.5, Chainsaw.MCM.AOperations.getPOF(DSPRand.nextInt(1023))))
+    (0 until 5).foreach(_ => randomSim(0.0, 2.5, Chainsaw.MCM.AOperations.getPOF(DSPRand.nextInt(1023))))
+  }
+
+  //   full test
+  def main(args: Array[String]): Unit = {
+    randomSim(0.0, 2.5, 171, traversal = true)
+    (0 until 100).foreach(_ => randomSim(0.0, 2.5, Chainsaw.MCM.AOperations.getPOF(DSPRand.nextInt(1023))))
+    (0 until 100).foreach(_ => randomSim(-1.5, 2.5, Chainsaw.MCM.AOperations.getPOF(DSPRand.nextInt(1023))))
   }
 }

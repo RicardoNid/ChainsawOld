@@ -40,8 +40,8 @@ class VivadoFlow[T <: Component](
   private def writeFile(fileName: String, content: String) = {
     val tcl = new java.io.FileWriter(Paths.get(workspacePath, fileName).toFile)
     tcl.write(content)
-    tcl.flush();
-    tcl.close();
+    tcl.flush()
+    tcl.close()
   }
 
   val isWindows = System.getProperty("os.name").toLowerCase().contains("win")
@@ -52,7 +52,7 @@ class VivadoFlow[T <: Component](
     rtlSources.map(_.replace(workspacePath + "/", "")).foreach { path =>
       if (path.endsWith(".sv")) script += s"read_verilog -sv $path \n"
       else if (path.endsWith(".v")) script += s"read_verilog $path \n"
-      else if (path.endsWith(".vhdl")) script += s"read_vhdl $path \n"
+      else if (path.endsWith(".vhdl") || path.endsWith(".vhd")) script += s"read_vhdl $path \n"
       else throw new IllegalArgumentException(s"invalid RTL source path $path")
     }
 
@@ -97,18 +97,19 @@ class VivadoFlow[T <: Component](
     }
     workspacePathFile.mkdir()
     // generate systemverilog and do post processing
-    val report = SpinalConfig(targetDirectory = workspacePath).generateSystemVerilog(design.setDefinitionName(topModuleName))
-    //    val report = SpinalConfig().generateSystemVerilog(design.setDefinitionName(topModuleName))
-    val verilogContent = Source.fromFile(Paths.get(workspacePath, s"${topModuleName}.sv").toFile).getLines.mkString("\n")
-    val newVerilogContent = verilogPostProcess(verilogContent)
-    writeFile(s"${topModuleName}.sv", newVerilogContent)
+    //    val spinalReport = SpinalConfig(targetDirectory = workspacePath).generateVhdl(design.setDefinitionName(topModuleName))
+    val spinalReport = SpinalConfig(targetDirectory = workspacePath).generateSystemVerilog(design.setDefinitionName(topModuleName))
 
-    val source = new java.io.FileWriter(Paths.get(workspacePath, s"${topModuleName}.sv").toFile)
-    source.write(newVerilogContent)
-    source.flush();
-    source.close();
+    // FIXME: posprocess
+    //    val verilogContent = Source.fromFile(Paths.get(workspacePath, s"${topModuleName}.sv").toFile).getLines.mkString("\n")
+    //    val newVerilogContent = verilogPostProcess(verilogContent)
+    //    writeFile(s"${topModuleName}.sv", newVerilogContent)
+    //    val source = new java.io.FileWriter(Paths.get(workspacePath, s"${topModuleName}.sv").toFile)
+    //    source.write(newVerilogContent)
+    //    source.flush();
+    //    source.close();
 
-    writeFile("doit.tcl", getScript(vivadoConfig, report.rtlSourcesPaths))
+    writeFile("doit.tcl", getScript(vivadoConfig, spinalReport.rtlSourcesPaths))
     writeFile("doit.xdc", getXdc)
 
     doCmd(s"$vivadoPath/vivado -nojournal -log doit.log -mode batch -source doit.tcl", workspacePath)
@@ -125,6 +126,6 @@ object VivadoFlow {
                              workspacePath: String,
                              vivadoConfig: VivadoConfig = recommended.vivadoConfig,
                              vivadoTask: VivadoTask = VivadoTask(),
-                             force: Boolean = false
+                             force: Boolean = true
                            ) = new VivadoFlow(design, topModuleName, workspacePath, vivadoConfig, vivadoTask, force)
 }

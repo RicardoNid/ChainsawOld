@@ -196,4 +196,6 @@ package object Chainsaw extends RealFactory {
 
     def err = ErrorNumber(value)
   }
+
+  val synthWorkspace = "/home/ltr/IdeaProjects/Chainsaw/synthWorkspace"
 }

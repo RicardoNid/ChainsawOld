@@ -126,6 +126,7 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
      */
     def getMaxExp(implicit ulp: Double) = {
       def bitsForBound(bound: Double) = if (bound >= 0.0) log2Up(bound + ulp) else log2Up(-bound)
+
       max(bitsForBound(info.upper), bitsForBound(info.lower))
     }
   }
@@ -199,6 +200,17 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
     (left, right)
   }
 
+  def alignLsbAndDivide(that: Real) = {
+    val lowerCount = difLsb(that).abs
+    //    val (left, right) = alignLsb(that)
+    val highLeft: SInt = if (difLsb(that) > 0) this.raw else this.raw(this.raw.getBitsWidth - 1 downto lowerCount)
+    val highRight: SInt = if (difLsb(that) > 0) that.raw(that.raw.getBitsWidth - 1 downto lowerCount) else that.raw
+    val lower: Bits =
+      (if (difLsb(that) > 0) that.raw(lowerCount - 1 downto 0)
+      else this.raw(lowerCount - 1 downto 0)).asBits
+    (highLeft, highRight, lower)
+  }
+
   /** Operations
    *
    * @note operations on Real are defined in the following aspects
@@ -226,15 +238,33 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
     println(s"when it comes to Real ${realInfo.interval.intervalTerms.keySet.mkString(" ")}")
     val ret = new Real(realInfo, minExp exp)
     println(s"when it comes to Real later ${ret.realInfo.interval.intervalTerms.keySet.mkString(" ")}")
-    // implementation
-    val (rawLeft, rawRight) = alignLsb(that)
+
     val maxExpEnlarged = ret.maxExp > max(this.maxExp, that.maxExp)
     val maxExpReduced = ret.maxExp < max(this.maxExp, that.maxExp)
     println(s"maxEnlarged: $maxExpEnlarged")
     println(s"maxReduced: $maxExpReduced")
-    val retRaw =
-      if (maxExpEnlarged) if (add) rawLeft +^ rawRight else rawLeft -^ rawRight
-      else if (add) rawLeft + rawRight else rawLeft - rawRight
+
+    // implementation
+    val (rawLeft, rawRight) = alignLsb(that)
+    val retRaw = // TODO: improve the performance of this part
+      if (this.lower >= 0 && that.lower >= 0) {
+        println("do uint arith")
+        if (maxExpEnlarged) if (add) rawLeft.asUInt +^ rawRight.asUInt else rawLeft.asUInt -^ rawRight.asUInt
+        else if (add) rawLeft.asUInt + rawRight.asUInt else rawLeft.asUInt - rawRight.asUInt
+      }.asSInt
+      else {
+        if (maxExpEnlarged) if (add) rawLeft +^ rawRight else rawLeft -^ rawRight
+        else if (add) rawLeft + rawRight else rawLeft - rawRight
+      }
+
+
+
+    // TODO: fix sub
+    //    val (highLeft, highRight, lower) = alignLsbAndDivide(that)
+    //    val retRaw =
+    //      (if (maxExpEnlarged) if (add) (highLeft +^ highRight) ## lower else (highLeft -^ highRight) ## lower
+    //      else if (add) (highLeft + highRight) ## lower else (highLeft - highRight) ## lower).asSInt
+
     if (maxExpReduced) ret.raw := retRaw.resized // sometimes, because of cancellation, the interval may be narrower
     else ret.raw := retRaw
     ret

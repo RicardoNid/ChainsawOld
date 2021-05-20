@@ -1,0 +1,46 @@
+	   2 Input     32 Bit       Adders := 1
+	   2 Input     26 Bit       Adders := 1
+	   2 Input     20 Bit       Adders := 1
+	   2 Input     19 Bit       Adders := 1
+	   2 Input     18 Bit       Adders := 1
+	   2 Input     17 Bit       Adders := 1
+
+	   2 Input     31 Bit       Adders := 1
+	   2 Input     25 Bit       Adders := 1
+	   2 Input     19 Bit       Adders := 1
+	   2 Input     18 Bit       Adders := 1
+	   2 Input     17 Bit       Adders := 1
+	   2 Input     16 Bit       Adders := 1
+
+	   2 Input     20 Bit       Adders := 1
+	   2 Input     19 Bit       Adders := 1
+	   2 Input     18 Bit       Adders := 1
+	   2 Input     16 Bit       Adders := 3
+
+	   +------+-------+------+
+       |      |Cell   |Count |
+       +------+-------+------+
+       |1     |BUFG   |     1|
+       |2     |CARRY8 |     5|
+       |3     |LUT1   |     1|
+       |4     |LUT2   |    33|
+       |5     |FDRE   |    22|
+       |6     |IBUF   |    16|
+       |7     |OBUF   |    22|
+       +------+-------+------+
+
+       Report Cell Usage:
+       +------+-------+------+
+       |      |Cell   |Count |
+       +------+-------+------+
+       |1     |BUFG   |     1|
+       |2     |CARRY8 |     5|
+       |3     |LUT2   |    27|
+       |4     |FDRE   |    18|
+       |5     |IBUF   |    16|
+       |6     |OBUF   |    22|
+       +------+-------+------+
+
+
+
+

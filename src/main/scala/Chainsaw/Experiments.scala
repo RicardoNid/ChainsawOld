@@ -2,21 +2,32 @@ package Chainsaw
 
 import Chainsaw.FloPoCo.BlackBoxed.SCMWrapper
 import Chainsaw.FloPoCo.Transplanted.SCM
-import spinal.core.{Component, in, out}
+import spinal.core.{Component, in, out, _}
 import xilinx.VivadoFlow
 
-import java.nio.file.Paths
-import scala.io.Source
 import java.io._
+import scala.io.Source
 
 object Experiments {
 
   def main(args: Array[String]): Unit = {
-    (0 until 100).map(_ => DSPRand.nextInt(1 << 18) + 4).foreach { constant =>
-      testMine(constant, (1 << 14) - 1) // max interval leads to 15 bits
-      testMine(constant, (1 << 13) + 1) // min interval leads to 15 bits
-      testTheirs(constant) // flopoco design at 15 bits
-    }
+    //    testAddtion
+    testMultiplicationSignedness
+    //    Seq(179106)
+    //    Seq(190730) this is a testCase of with only additions
+
+    //    SpinalConfig().generateVhdl(new Component {
+    //      val input = in(UIntReal((1 << 14) - 1))
+    //      val sag = new SCM(input, 190730)
+    //      val output = out(sag.implicitValue)
+    //    })
+
+    //    (0 until 1).map(_ => DSPRand.nextInt(1 << 18) + 4)
+    //    Seq(85).foreach { constant =>
+    //      testSCM(constant, (1 << 14) - 1, mine = true) // max interval leads to 15 bits
+    //      testSCM(constant, (1 << 13) + 1, mine = true) // min interval leads to 15 bits
+    //      testSCM(constant, 0, mine = false) // flopoco design at 15 bits
+    //    }
   }
 
   def writeFile(fileName: String, content: String) = {
@@ -27,14 +38,16 @@ object Experiments {
     pw.close
   }
 
-  val mineFile = "mineAreaReport.txt"
-  val theirFile = "theirAreaReport.txt"
+  val areaFile = "AreaReport.txt"
+  val rtlFile = "RTLs.txt"
 
-  def testMine(constant: Int, range: Int) = {
-    try {
-      val mine = VivadoFlow(
+  def testSCM(constant: Int, range: Int, mine: Boolean) = {
+    //    try {
+    ChainsawDebug = true
+    val report = if (mine)
+      VivadoFlow(
         new Component {
-          val input = in(UIntReal((1 << 14) - 1))
+          val input = in(UIntReal(range - 1))
           val sag = new SCM(input, constant)
           val output = out(sag.implicitValue)
         },
@@ -42,25 +55,59 @@ object Experiments {
         "synthWorkspace/SCMMine",
         force = true
       ).doit()
-      writeFile(mineFile, s"constant=$constant LUT=${mine.LUT}, FF=${mine.FF}")
-    }
-    catch {
-      case _ => writeFile(mineFile, s"failed at constant = $constant")
-    }
-  }
-
-  def testTheirs(constant: Int) = {
-    try {
-      val flo = VivadoFlow(
+    else {
+      VivadoFlow(
         new SCMWrapper(15, constant),
-        "SCMFlo",
-        "synthWorkspace/SCMFlo",
+        "SCMMine",
+        "synthWorkspace/SCMMine",
         force = true
       ).doit()
-      writeFile(theirFile, s"constant=$constant LUT=${flo.LUT}, FF=${flo.FF}")
     }
-    catch {
-      case _ => writeFile(theirFile, s"failed at constant = $constant")
-    }
+
+    val handle = Source.fromFile("/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/SCMMine/SCMMine.sv")
+    //    val handle = Source.fromFile("/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/SCMMine/SCMMine.vhd")
+    val rtl = handle.getLines()
+    writeFile(rtlFile, s"constant=$constant \n ${rtl.mkString("\n")}")
+    writeFile(areaFile, s"${if (mine) "mine:" else "theirs"} constant=$constant LUT=${report.LUT}, FF=${report.FF}")
+    handle.close()
+    //    }
+    //    catch {
+    //      case _ => writeFile(areaFile, s"failed at constant = $constant")
+    //    }
+  }
+
+  def testAddtion = {
+    VivadoFlow(new Component {
+      val a = in UInt (4 bits)
+      val b = in UInt (5 bits)
+      val output = out((a << 6) + b)
+    },
+      topModuleName = "testAddtion",
+      workspacePath = synthWorkspace + "/testAddition"
+    ).doit().printArea()
+  }
+
+  def testMultiplicationSignedness = {
+    val unsigned = VivadoFlow(new Component {
+      val a = in UInt (15 bits)
+      val b = in UInt (15 bits)
+      val output = out(a * b).addAttribute("use_dsp = \"no\"")
+    },
+      topModuleName = "testAddtion",
+      workspacePath = synthWorkspace + "/temp",
+        force = true
+    ).doit()
+
+    val signed = VivadoFlow(new Component {
+      val a = in SInt (16 bits)
+      val b = in SInt (16 bits)
+      val output = out(a * b).addAttribute("use_dsp = \"no\"")
+    },
+      topModuleName = "testAddtion",
+      workspacePath = synthWorkspace + "/temp",
+      force = true
+    ).doit()
+    unsigned.printArea()
+    signed.printArea()
   }
 }
