@@ -28,7 +28,7 @@ object Experiments {
   }
 
   private def testSCMs = {
-    (0 until 1).map(_ => DSPRand.nextInt(1 << 18) + 4).foreach { constant =>
+    (0 until 100).map(_ => DSPRand.nextInt(1 << 18) + 4).foreach { constant =>
       testSCM(constant, (1 << 14) - 1, mine = true) // max interval leads to 15 bits
       testSCM(constant, (1 << 13) + 1, mine = true) // min interval leads to 15 bits
       testSCM(constant, 0, mine = false) // flopoco design at 15 bits

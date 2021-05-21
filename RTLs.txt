@@ -326,10 +326,10 @@ module SCMMine (
 );
   wire       [17:0]   _zz_2;
   wire   
-constant=190730 
+constant=143701 
  // Generator : SpinalHDL v1.4.3    git head : adf552d8f500e7419fff395b7049228e4bc5de26
 // Component : SCMMine
-// Git hash  : 5d0021f2e3a6f6a702bdbc7c5651a86ed8a5682b
+// Git hash  : 27ba0cc27bc9e08f6526a3c3a74585d50ce86f4d
 
 
 
@@ -340,7 +340,7 @@ module SCMMine (
 );
   wire       [32:0]   blackBox_R;
 
-  IntConstMult_15_190730_F400_uid2 blackBox (
+  IntConstMult_15_143701_F400_uid2 blackBox (
     .clk    (clk               ), //i
     .X      (input_1[14:0]     ), //i
     .R      (blackBox_R[32:0]  )  //o
