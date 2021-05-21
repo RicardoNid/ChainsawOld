@@ -1,11 +1,11 @@
 package Chainsaw.Architectures
 
-import Chainsaw.{ChainsawDebug, DSPSimTiming, TimingInfo}
+import Chainsaw.{DSPSimTiming, TimingInfo}
+import org.scalatest.FunSuite
 import spinal.core._
 import spinal.core.sim._
 
 import scala.language.postfixOps
-import org.scalatest.FunSuite
 
 class BKKSTreeSim extends Component with DSPSimTiming[Vec[UInt], Vec[UInt], Array[Int], Array[Int]] {
   override val input: Vec[UInt] = in Vec(UInt(10 bits), 16)

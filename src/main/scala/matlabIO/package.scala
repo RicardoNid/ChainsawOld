@@ -3,7 +3,7 @@ import scala.io.Source
 
 package object matlabIO {
 
-  var matlabWorkingSpace = java.nio.file.Paths.get("~/").toAbsolutePath
+  var matlabWorkingSpace = java.nio.file.Paths.get("/home/ltr").toAbsolutePath
 
   def writeFile(fileName: String, content: String) = {
     val filepath = Paths.get(matlabWorkingSpace.toString, fileName)
