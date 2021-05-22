@@ -9,6 +9,14 @@ import breeze.numerics.constants.Pi
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib.{Delay, Flow, master, slave}
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.sim._
+import spinal.lib.fsm._
+
+import Chainsaw._
+import Chainsaw.Real
 
 import scala.util.Random
 
@@ -22,7 +30,8 @@ case class CordicData() extends Bundle {
   val z: SFix = SFix(2 exp, -13 exp) // 2QN
 }
 
-class CORDICSim(cordicConfig: CordicConfig) extends Component with DSPSimTiming[CordicData, CordicData, CordicSimData, CordicSimData] {
+
+class CORDICDUT(cordicConfig: CordicConfig) extends DSPDUTTiming[CordicData, CordicData]{
   override val input = in(CordicData())
   val cordic: CORDIC = CORDIC(input.x, input.y, input.z, cordicConfig)
   override val output = out(CordicData())
@@ -30,7 +39,9 @@ class CORDICSim(cordicConfig: CordicConfig) extends Component with DSPSimTiming[
   output.y := cordic._2.truncated
   output.z := cordic._3.truncated
   override val timing: TimingInfo = cordic.getTimingInfo
+}
 
+class CORDICSim(cordicConfig: CordicConfig) extends CORDICDUT(cordicConfig) with DSPSimTiming[CordicData, CordicData, CordicSimData, CordicSimData] {
   cordic.start := True
 
   // TODO: implement a DSPSim for handshake

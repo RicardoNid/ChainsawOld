@@ -8,7 +8,7 @@ import spinal.lib.fsm._
 import Chainsaw.Real
 import Chainsaw._
 
-trait DSPDUTTiming[inputType <: Data, outputType <: Data] {
+abstract class DSPDUTTiming[inputType <: Data, outputType <: Data] extends Component {
   val input: inputType
   val output: outputType
   val timing: TimingInfo

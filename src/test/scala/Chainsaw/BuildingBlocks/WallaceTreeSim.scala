@@ -6,7 +6,7 @@ import spinal.core._
 import spinal.core.sim._
 
 // TODO: sign extension
-class WallaceTreeDUT extends Component with DSPDUTTiming[Vec[Real], Real] {
+class WallaceTreeDUT extends DSPDUTTiming[Vec[Real], Real] {
   override val input = in Vec(Real(1, 2.5, -5 exp), 7)
   val wallaceTree = WallaceTree(input)
   override val output = out(wallaceTree.implicitValue)

@@ -7,17 +7,31 @@ import spinal.lib.{Delay, Flow, master, slave}
 
 import scala.util.Random
 
-/** Kernel for modular multiplication by Montgomery
- *
- * @param N modulo
- */
-class ModularMultiplicationSim(N: Int) extends Component with DSPSimTiming[Vec[UInt], UInt, (Int, Int), Int] {
-  val innerWidth = log2Up(N - 1)
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.sim._
+import spinal.lib.fsm._
 
+import Chainsaw._
+import Chainsaw.Real
+
+
+
+
+class ModularMultiplicationDUT(N: Int) extends DSPDUTTiming[Vec[UInt], UInt]{
+  val innerWidth = log2Up(N - 1)
   override val input = in Vec(UInt(innerWidth bits), 2)
   val mm = new ModularMultiplication(input(0), input(1), N)
   override val output = out(mm.implicitValue)
   override val timing: TimingInfo = mm.getTimingInfo
+}
+
+/** Kernel for modular multiplication by Montgomery
+ *
+ * @param N modulo
+ */
+class ModularMultiplicationSim(N: Int) extends ModularMultiplicationDUT(N) with DSPSimTiming[Vec[UInt], UInt, (Int, Int), Int] {
 
   override def poke(testCase: (Int, Int), input: Vec[UInt]): Unit = {
     input(0) #= testCase._1

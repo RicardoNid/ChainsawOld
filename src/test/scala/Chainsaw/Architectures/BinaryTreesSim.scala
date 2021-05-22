@@ -5,14 +5,29 @@ import org.scalatest.FunSuite
 import spinal.core._
 import spinal.core.sim._
 
-/** Test BinaryTree by implementing integer addtions and multiplications
- *
- */
-class BinaryTreeSim(length: Int, opertor: (Real, Real) => Real, pipelineInterval: Int, refOperator: (Double, Double) => Double) extends Component with DSPSimTiming[Vec[Real], Real, Array[Double], Double] { // TODO: test it with real numbers
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.sim._
+import spinal.lib.fsm._
+
+import Chainsaw._
+import Chainsaw.Real
+
+class BinaryTreeDUT(length: Int, opertor: (Real, Real) => Real, pipelineInterval: Int, refOperator: (Double, Double) => Double)
+  extends DSPDUTTiming[Vec[Real], Real] {
   override val input = in Vec(Real(-1, 1, 0.001), length)
   val binaryTree = BinaryTree(input, opertor, pipelineInterval)
   override val output = out(binaryTree.implicitValue)
   override val timing: TimingInfo = binaryTree.getTimingInfo
+}
+
+/** Test BinaryTree by implementing integer addtions and multiplications
+ *
+ */
+class BinaryTreeSim(length: Int, opertor: (Real, Real) => Real, pipelineInterval: Int, refOperator: (Double, Double) => Double)
+  extends BinaryTreeDUT(length, opertor, pipelineInterval, refOperator)
+    with DSPSimTiming[Vec[Real], Real, Array[Double], Double] { // TODO: test it with real numbers
 
   override def poke(testCase: Array[Double], input: Vec[Real]): Unit = {
     input.zip(testCase).foreach { case (real, d) => real #= d }

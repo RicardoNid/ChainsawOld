@@ -5,16 +5,27 @@ import org.scalatest.FunSuite
 import spinal.core._
 import spinal.core.sim._
 
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.sim._
+import spinal.lib.fsm._
+
+import Chainsaw._
+import Chainsaw.Real
+
 import scala.language.postfixOps
 
-class BKKSTreeSim extends Component with DSPSimTiming[Vec[UInt], Vec[UInt], Array[Int], Array[Int]] {
+class BKKSTreeDUT extends DSPDUTTiming[Vec[UInt], Vec[UInt]]{
   override val input: Vec[UInt] = in Vec(UInt(10 bits), 16)
   val add = (x: UInt, y: UInt) => x + y
   val bkTree = new BKKSTree[UInt](input, add, 0)
   override val output = out(bkTree.implicitValue)
 
   override val timing: TimingInfo = bkTree.getTimingInfo
+}
 
+class BKKSTreeSim extends BKKSTreeDUT with DSPSimTiming[Vec[UInt], Vec[UInt], Array[Int], Array[Int]] {
   override def poke(testCase: Array[Int], input: Vec[UInt]): Unit = {
     testCase.zip(input).foreach { case (data, port) => port #= data }
     clockDomain.waitSampling()

@@ -4,8 +4,8 @@ import spinal.core.Data
 import spinal.core.sim.{fork, _}
 
 @unchecked // TODO: develop this in the futer
-trait DSPSimHandShake[inputType <: Data, outputType <: Data, testCaseType, testResultType]
-  extends DSPSim[inputType, outputType, testCaseType, testResultType] with DSPDUTHandShake[inputType, outputType] {
+trait DSPSimHandShake[inputType <: Data, outputType <: Data, testCaseType, testResultType] extends
+  DSPDUTHandShake[inputType, outputType] with DSPSim[inputType, outputType, testCaseType, testResultType] {
 
   def simInit(): Unit = {
     clockDomain.forkStimulus(period)

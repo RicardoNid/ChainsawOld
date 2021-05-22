@@ -6,8 +6,8 @@ import spinal.lib._
 
 import scala.collection.mutable
 
-trait DSPSimTiming[inputType <: Data, outputType <: Data, testCaseType, testResultType]
-  extends DSPSim[inputType, outputType, testCaseType, testResultType] with DSPDUTTiming[inputType, outputType] {
+trait DSPSimTiming[inputType <: Data, outputType <: Data, testCaseType, testResultType] extends DSPDUTTiming[inputType, outputType]
+  with DSPSim[inputType, outputType, testCaseType, testResultType] {
 
   val monitorPoints = mutable.Queue[Long]()
 

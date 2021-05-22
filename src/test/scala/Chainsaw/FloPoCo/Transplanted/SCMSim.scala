@@ -7,7 +7,7 @@ import spinal.core.sim._
 
 import scala.math.abs
 
-class SCMDUT(lower: Double, upper: Double, constant: Int) extends Component with DSPDUTTiming[Real, Real] {
+class SCMDUT(lower: Double, upper: Double, constant: Int) extends  DSPDUTTiming[Real, Real] {
   override val input: Real = in(Real(lower, upper, 0.1))
   val scm = new SCM(input, constant)
   override val output: Real = out(scm.implicitValue)
