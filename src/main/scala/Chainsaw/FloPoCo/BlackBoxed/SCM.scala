@@ -20,8 +20,6 @@ class SCM(val wIn: Int, val n: Int) extends FloPoCoBlackBox[Real, Real] {
   noIoPrefix()
 
   invokeFloPoCo() // a must-be
-
-
 }
 
 class SCMWrapper(wIn: Int, constant: Int) extends FloPoCoBlackBoxWrapper[Real, Real] {

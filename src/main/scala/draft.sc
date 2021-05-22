@@ -1,18 +1,17 @@
-import scala.io.Source
-//val patternShiftAdd = "([P|M]?[0-9]*X).*([P|M]?[0-9]*X)<<([0-9]+).*([P|M]?[0-9]*X)".r
-//val line1 = "P31X <-  X<<5  + M1X"
-//val line2 = ""
-//val patternShiftAdd(sum, left, shift, right) = line1
-//val patternShiftAdd(sum, left, shift, right) = line2
+import scala.collection.mutable.ListBuffer
 
-val patternLUT = "LUT=([0-9]*)".r.unanchored
+val temp = Seq(1,2,3,4)
+val temp1 = temp :+ 5
 
-val records = Source.fromFile("/home/ltr/IdeaProjects/Chainsaw/AreaReport.txt").getLines().take(225).toSeq
-def getLUT(string: String) = {
-  val patternLUT(digits) = string
-  digits.toInt
-}
+temp
+temp1
 
-val mine0 = (0 until 225).filter(_ % 3 == 0).map(i => records(i)).map(getLUT).sum
-val mine1 = (0 until 225).filter(_ % 3 == 1).map(i => records(i)).map(getLUT).sum
-val theirs = (0 until 225).filter(_ % 3 == 2).map(i => records(i)).map(getLUT).sum
+temp ++ temp1
+
+val temp2 = ListBuffer(1,2,3,4)
+temp2 += 5
+temp2
+val temp3 = ListBuffer(1,2,3)
+temp2 ++= temp3
+temp3
+

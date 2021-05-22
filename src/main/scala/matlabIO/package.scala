@@ -26,4 +26,11 @@ package object matlabIO {
     writeFileIncrementally("globals.m", s"global $name; $name = $value")
   }
 
+  implicit class MatlabArray[T](array: Array[T]) {
+    def asMatlab = "[" + array.mkString(", ") + "]"
+  }
+
+  implicit class MatlabArray2[T](array: Array[Array[T]]) {
+    def asMatlab = "[" + array.map(_.mkString(", ")).mkString("; ") + "]"
+  }
 }

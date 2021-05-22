@@ -101,11 +101,12 @@ trait DSPSim[inputType <: Data, outputType <: Data, testCaseType, testResultType
           val testCase = lastCase.dequeue()
           if (!isValid(refResult, dutResult)) {
             log += messageWhenInvalid(testCase, refResult, dutResult)
-            println(messageWhenInvalid(testCase, refResult, dutResult))
+            printlnRed(messageWhenInvalid(testCase, refResult, dutResult))
           }
           else {
             trueCase += 1
             validLog += messageWhenValid(testCase, refResult, dutResult)
+            if(ChainsawDebug) printlnGreen(messageWhenValid(testCase, refResult, dutResult))
           }
           totalCase += 1
           assert(isValid(refResult, dutResult) || ChainsawDebug, messageWhenInvalid(testCase, refResult, dutResult))

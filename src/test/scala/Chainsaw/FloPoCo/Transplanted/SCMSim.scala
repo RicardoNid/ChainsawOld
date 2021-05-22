@@ -56,9 +56,9 @@ class testSCM extends FunSuite {
     (0 until 5).foreach(_ => randomSim(0.0, 2.5, DSPRand.nextInt(1023)))
   }
 
-  //   full test
-  def main(args: Array[String]): Unit = {
-    (0 until 100).foreach(_ => randomSim(0.0, 2.5, DSPRand.nextInt(1023)))
-    (0 until 100).foreach(_ => randomSim(-1.5, 2.5, DSPRand.nextInt(1023)))
-  }
+//  //   full test
+//  def main(args: Array[String]): Unit = {
+//    (0 until 100).foreach(_ => randomSim(0.0, 2.5, DSPRand.nextInt(1023)))
+//    (0 until 100).foreach(_ => randomSim(-1.5, 2.5, DSPRand.nextInt(1023)))
+//  }
 }

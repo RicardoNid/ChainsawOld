@@ -49,8 +49,8 @@ class PlayWithReal extends Component {
   //  val d = SReal(-4 exp, -7 exp)
   //  val overlap0 = a0 + c
   //  val overlap1 = a0 + d
-  //  val seperated0 = b + c
-  //  val seperated1 = b + d
+  //  val separated0 = b + c
+  //  val separated1 = b + d
   //  in(c, d)
   //  out(overlap0, overlap1, seperated0, seperated1)
 
@@ -85,18 +85,16 @@ class PlayWithReal extends Component {
 
   val r0 = Real(-1, 1, -3 exp)
   val r1 = Real(-1, 1, -3 exp)
-  val r0mulr1 = r0 * r1
+  val r0mult1 = r0 * r1
   val truncated = Real(new RealInfo(new AffineForm(0, Map("z" -> 1.0)), 0.0), -5 exp)
-  truncated := r0mulr1.truncated
-  //  truncated := r0mulr1
+  truncated := r0mult1.truncated
   in(r0, r1)
-  out(r0mulr1, truncated)
+  out(r0mult1, truncated)
 
-  println(r0mulr1.realInfo)
-  println(r0mulr1.minExp)
-  println(r0mulr1.realInfo.interval)
+  println(r0mult1.realInfo)
+  println(r0mult1.minExp)
+  println(r0mult1.realInfo.interval)
   println(truncated.realInfo)
-
 
 }
 
