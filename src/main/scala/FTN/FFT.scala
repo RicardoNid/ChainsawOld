@@ -22,7 +22,7 @@ class FFT(input: Vec[Real]) extends DSPArea[Vec[Real], Array[Complex], Array[Com
     ret
   }
 
-  val N = input.length
+  val N = input.length / 2
 
   def coeffW(k: Int, n: Int) = {
     import breeze.numerics._
@@ -39,7 +39,7 @@ class FFT(input: Vec[Real]) extends DSPArea[Vec[Real], Array[Complex], Array[Com
     val ret = if (isPow2(N)) { // using butterfly
       val layer = log2Up(N)
 
-      def build(input: Vec[Real], layerRemained: Int): Vec[Real] = {
+      def build(input: Seq[Real], layerRemained: Int): Seq[Real] = {
         require(layerRemained >= 1)
 
         layerRemained match {
@@ -53,7 +53,7 @@ class FFT(input: Vec[Real]) extends DSPArea[Vec[Real], Array[Complex], Array[Com
             val mid = midUpper ++ midLower
             // TODO:
             val ret = mid.map(_ * 1.0)
-            build(Vec(ret), layerRemained - 1)
+            build(ret.take(half), layerRemained - 1) ++ build(ret.takeRight(half), layerRemained - 1)
           }
         }
       }
@@ -64,7 +64,7 @@ class FFT(input: Vec[Real]) extends DSPArea[Vec[Real], Array[Complex], Array[Com
       // TODO
       throw new IllegalArgumentException("not implemented yet")
     }
-    RegNext(ret)
+    RegNext(Vec(ret))
   }
 }
 
