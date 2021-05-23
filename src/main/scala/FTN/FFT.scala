@@ -24,10 +24,10 @@ class FFT(input: Vec[Real]) extends DSPArea[Vec[Real], Array[Complex], Array[Com
 
   val N = input.length / 2
 
-  def coeffW(k: Int, n: Int) = {
+  def coeffW(kn: Int) = {
     import breeze.numerics._
     import breeze.numerics.constants.Pi
-    val exp = (-2) * Pi * k * n / N
+    val exp = (-2) * Pi * kn / N
     val real = cos(exp)
     val imag = sin(exp)
     new Complex(real, imag)
@@ -50,9 +50,12 @@ class FFT(input: Vec[Real]) extends DSPArea[Vec[Real], Array[Complex], Array[Com
             val lower = input.takeRight(half)
             val midUpper = upper.zip(lower).map { case (up, low) => up + low }
             val midLower = upper.zip(lower).map { case (up, low) => up - low }
-            val mid = midUpper ++ midLower
-            // TODO:
-            val ret = mid.map(_ * 1.0)
+            val midLowerMultiplied = midLower.zipWithIndex.map { case (real, i) =>
+              val kn = i / 2 * (1 << (layer - layerRemained + 1))
+              if (i % 2 == 0) real * coeffW(kn).real
+              else real * coeffW(kn).imag
+            }
+            val ret = midUpper ++ midLowerMultiplied
             build(ret.take(half), layerRemained - 1) ++ build(ret.takeRight(half), layerRemained - 1)
           }
         }

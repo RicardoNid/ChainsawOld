@@ -277,6 +277,7 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
   def *(that: Real): Real = {
     val minExp = this.minExp + that.minExp // LSB strategy, no rounding error introduced
     val realInfo = this.realInfo * that.realInfo // MSB strategy
+    printlnGreen(s"multiplication this: ${this.realInfo}, that: ${that.realInfo}, result: $realInfo")
     val ret = new Real(realInfo, minExp exp)
     // implementation
     val retRaw = this.raw * that.raw
@@ -309,7 +310,9 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
   def -(thatConstant: Double): Real = doAddSub(thatConstant, add = false)
 
   def *(thatConstant: Double): Real = {
+    println(s"try to multiply $thatConstant")
     val that = ConstantRealWithError(thatConstant, this.resolution)
+    printlnGreen(s"auto-implemented constant $thatConstant, $that")
     *(that)
   }
 
