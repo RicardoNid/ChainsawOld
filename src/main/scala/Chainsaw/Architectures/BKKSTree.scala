@@ -9,7 +9,7 @@ import spinal.core._
  * @param BKLevel  level of Brent-Kung tree, the rest would be Kogge-Stone
  * @see [[https://www.notion.so/SpinalHDL-Trees-9446624ca1594a41a29496cfd46f8605 Trees in Chainsaw]] for basic concepts about Chainsaw Trees
  */
-class BKKSTree[T <: Data](input: Vec[T], operator: (T, T) => T, BKLevel: Int = 0) extends ImplicitArea[Vec[T]] with DSPDesign with Testable {
+class BKKSTree[T <: Data](input: Vec[T], operator: (T, T) => T, BKLevel: Int = 0) extends ImplicitArea[Vec[T]] with Testable {
   val width: Int = input.length
   require(isPow2(width))
   val depth: Int = log2Up(width) * 2
@@ -69,8 +69,6 @@ class BKKSTree[T <: Data](input: Vec[T], operator: (T, T) => T, BKLevel: Int = 0
   override def implicitValue: Vec[T] = RegNext(BuildTree(input, 0))
 
   // TODO: fullfill this and do more on timing
-  override val start: Bool = Bool()
-  override val busy: Bool = Bool()
   override val getTimingInfo: TimingInfo = TimingInfo(1, 1, 1, 1)
 }
 

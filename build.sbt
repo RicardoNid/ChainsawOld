@@ -35,3 +35,12 @@ libraryDependencies += "net.java.dev.jna" % "jna" % "4.2.2"
 
 fork := true
 EclipseKeys.withSource := true
+
+// https://mvnrepository.com/artifact/ai.djl/api
+libraryDependencies += "ai.djl" % "api" % "0.11.0"
+// https://mvnrepository.com/artifact/ai.djl/model-zoo
+libraryDependencies += "ai.djl" % "model-zoo" % "0.11.0"
+// https://mvnrepository.com/artifact/ai.djl/basicdataset
+libraryDependencies += "ai.djl" % "basicdataset" % "0.11.0"
+
+

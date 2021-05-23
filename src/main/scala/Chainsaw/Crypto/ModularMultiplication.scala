@@ -11,10 +11,7 @@ import javax.crypto.spec.GCMParameterSpec
  *
  * @param N modulo
  */
-class ModularMultiplication(A: UInt, B: UInt, N: Int) extends ImplicitArea[UInt] with DSPDesign with Testable {
-
-  val start = Bool()
-  val busy = Bool()
+class ModularMultiplication(A: UInt, B: UInt, N: Int) extends ImplicitArea[UInt] with Testable {
 
   val innerWidth = log2Up(N)
   // precompute statically
