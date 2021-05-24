@@ -11,7 +11,7 @@ class FFT(input: Vec[Real], inverse: Boolean = false) extends DSPArea[Vec[Real],
   override def timing: TimingInfo = TimingInfo(1, 1, 1, 1)
 
   override def referenceModel(testCase: Array[Complex]): Array[Complex] = {
-    val functionName = if(inverse) "ifft" else "fft"
+    val functionName = if (inverse) "ifft" else "fft"
     eng.feval(functionName, testCase).asInstanceOf[Array[Complex]]
   }
 
@@ -72,7 +72,7 @@ class FFT(input: Vec[Real], inverse: Boolean = false) extends DSPArea[Vec[Real],
       val disorded = build(inputComplexes, layer)
       (0 until N).map(i => disorded(indexReverse(i)))
         .flatMap(complexReal => Vec(complexReal.real, complexReal.imag))
-        .map(real => if (inverse) real << layer else real)
+        .map(real => if (inverse) real >> layer else real)
     }
     else {
       // TODO
@@ -84,14 +84,15 @@ class FFT(input: Vec[Real], inverse: Boolean = false) extends DSPArea[Vec[Real],
   }
 }
 
-class FFTDUT(N: Int) extends DSPDUTTiming[Vec[Real], Vec[Real]] {
-  override val input: Vec[Real] = in Vec(RealWithError(-1.5, 2.5, -15 exp), N * 2)
-  val fft = new FFT(input)
+class FFTDUT(N: Int, inverse: Boolean) extends DSPDUTTiming[Vec[Real], Vec[Real]] {
+  override val input: Vec[Real] = if (inverse) in(in Vec(RealWithError(-1.5 * N, 2.5 * N, (-15 + log2Up(N)) exp), N * 2))
+  else in Vec(RealWithError(-1.5, 2.5, -15 exp), N * 2)
+  val fft = new FFT(input, inverse)
   override val output: Vec[Real] = out(fft.implicitValue)
   override val timing: TimingInfo = fft.timing
 }
 
-class FFTSim(N: Int) extends FFTDUT(N) with DSPSimTiming[Vec[Real], Vec[Real], Array[Complex], Array[Complex]] {
+class FFTSim(N: Int, inverse: Boolean) extends FFTDUT(N, inverse) with DSPSimTiming[Vec[Real], Vec[Real], Array[Complex], Array[Complex]] {
   override def poke(testCase: Array[Complex], input: Vec[Real]): Unit = {
     testCase.indices.foreach { i =>
       input(2 * i) #= testCase(i).real
@@ -141,10 +142,18 @@ class FFTSim(N: Int) extends FFTDUT(N) with DSPSimTiming[Vec[Real], Vec[Real], A
 
 object FFTSim {
   def main(args: Array[String]): Unit = {
+    ChainsawDebug = true
     ChainsawExpLowerBound = -16
-    SimConfig.withWave.compile(new FFTSim(512)).doSim { dut =>
+    val testFFTLength = 8
+//    SimConfig.withWave.compile(new FFTSim(testFFTLength, inverse = false)).doSim { dut =>
+    //      dut.sim()
+    //      (0 until 20).foreach(_ => dut.insertTestCase((0 until testFFTLength).map(_ => new Complex(DSPRand.nextDouble(), DSPRand.nextDouble())).toArray))
+    //      dut.simDone()
+    //    }
+    //    printlnGreen(s"FFT test at length $testFFTLength passed")
+    SimConfig.withWave.compile(new FFTSim(testFFTLength, inverse = true)).doSim { dut =>
       dut.sim()
-      (0 until 20).foreach(_ => dut.insertTestCase((0 until 512).map(_ => new Complex(DSPRand.nextDouble(), DSPRand.nextDouble())).toArray))
+      (0 until 20).foreach(_ => dut.insertTestCase((0 until testFFTLength).map(_ => new Complex(DSPRand.nextDouble(), DSPRand.nextDouble())).toArray))
       dut.simDone()
     }
     eng.close()

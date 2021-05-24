@@ -279,7 +279,11 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
   def -(that: Real) = doAddSub(that, add = false)
 
   def *(that: Real): Real = {
-    val minExp = max(this.minExp + that.minExp, ChainsawExpLowerBound) // LSB strategy, no rounding error introduced
+
+    val minExpByVerilog = this.minExp + that.minExp
+    val truncated = ChainsawExpLowerBound - minExpByVerilog
+    val minExp = if (truncated > 0) ChainsawExpLowerBound else minExpByVerilog // LSB strategy, no rounding error introduced
+
     val realInfo = this.realInfo * that.realInfo // MSB strategy
     printlnGreen(s"multiplication this: ${this.realInfo}, that: ${that.realInfo}, result: $realInfo")
     val ret = new Real(realInfo, minExp exp)
@@ -287,8 +291,8 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
     // TODO: consider all the effects of user-defined lowerBound
     val retRaw = this.raw * that.raw
     ret.raw :=
-    (if (ChainsawExpLowerBound > this.minExp + that.minExp) retRaw(retRaw.getBitsWidth - 1 downto ChainsawExpLowerBound - (this.minExp + that.minExp)).resized
-    else retRaw.resized)
+      (if (truncated > 0) retRaw(retRaw.getBitsWidth - 1 downto truncated).resized
+      else retRaw.resized)
     ret
   }
 
@@ -334,10 +338,14 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
   }
 
   def >>(shiftConstant: Int): Real = {
-    val minExp = this.minExp - shiftConstant // LSB strategy
+    val minExpByVerilog = this.minExp - shiftConstant
+    val truncated = ChainsawExpLowerBound - minExpByVerilog
+    val minExp = if (truncated > 0) ChainsawExpLowerBound else minExpByVerilog // LSB strategy, no rounding error introduced
     val realInfo = this.realInfo >> shiftConstant // MSB strategy
     val ret = new Real(realInfo, minExp exp)
-    ret.raw := this.raw
+    ret.raw :=
+    (if (truncated > 0) this.raw(this.raw.getBitsWidth - 1 downto truncated).resized
+    else this.raw)
     ret
   }
 
