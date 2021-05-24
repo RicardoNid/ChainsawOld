@@ -88,7 +88,7 @@ class AffineForm(val constant: Double, val intervalTerms: Map[String, Double]) {
 
   // naturally affine operations
   def doAddSub(that: AffineForm, add: Boolean): AffineForm = {
-    println(s"invoke here")
+    println(s"addSub here: $this, $that")
     val constant = if (add) this.constant + that.constant else this.constant - that.constant
     val intervalTerms =
       this.intervalTerms.keySet.union(that.intervalTerms.keySet)

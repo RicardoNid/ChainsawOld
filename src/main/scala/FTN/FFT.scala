@@ -1,18 +1,15 @@
 package FTN
 
+import Chainsaw._
+import breeze.numerics.abs
 import com.mathworks.engine.MatlabEngine
 import com.mathworks.matlab.types.Complex
 import spinal.core._
 import spinal.core.sim._
-import spinal.lib._
-import spinal.sim._
-import spinal.lib.fsm._
-import Chainsaw._
-import Chainsaw.Real
-import breeze.numerics.abs
 
 class FFT(input: Vec[Real]) extends DSPArea[Vec[Real], Array[Complex], Array[Complex]] {
   // TODO: implement
+
   override def timing: TimingInfo = TimingInfo(1, 1, 1, 1)
 
   override def referenceModel(testCase: Array[Complex]): Array[Complex] = {
@@ -24,36 +21,48 @@ class FFT(input: Vec[Real]) extends DSPArea[Vec[Real], Array[Complex], Array[Com
 
   val N = input.length / 2
 
+  val inputComplexes = (0 until N).map(i => ComplexReal(input(2 * i), input(2 * i + 1)))
+
   def coeffW(kn: Int) = {
     import breeze.numerics._
     import breeze.numerics.constants.Pi
+    printlnYellow(s"coeffW($kn) being invoked")
     val exp = (-2) * Pi * kn / N
     val real = cos(exp)
     val imag = sin(exp)
-    new Complex(real, imag)
+    printlnYellow(s"real: $real, imag: $imag")
+    val realReal = QFormatReal(SQ(16, 15))
+    realReal := real
+    val imagReal = QFormatReal(SQ(16, 15))
+    imagReal := imag
+    ComplexReal(realReal, imagReal)
   }
-
 
   // TODO: Implement
   override def implicitValue: Vec[Real] = {
     val ret = if (isPow2(N)) { // using butterfly
       val layer = log2Up(N)
 
-      def build(input: Seq[Real], layerRemained: Int): Seq[Real] = {
+      def indexReverse(index: Int): Int = index
+        .toBinaryString.reverse.padTo(layer, '0').reverse
+        .zipWithIndex.map { case (c, i) => c.asDigit * (1 << i) }.sum
+
+      def build(input: Seq[ComplexReal], layerRemained: Int): Seq[ComplexReal] = {
         require(layerRemained >= 1)
 
+        printlnGreen(s"${input.length / 2}")
         layerRemained match {
-          case 1 => Vec(input(0) + input(2), input(1) + input(3), input(0) - input(2), input(1) - input(3))
+          case 1 => Seq(input(0) + input(1), (input(0) - input(1)) * coeffW(0))
           case _ => {
             val half = input.length / 2
             val upper = input.take(half)
             val lower = input.takeRight(half)
             val midUpper = upper.zip(lower).map { case (up, low) => up + low }
             val midLower = upper.zip(lower).map { case (up, low) => up - low }
-            val midLowerMultiplied = midLower.zipWithIndex.map { case (real, i) =>
-              val kn = i / 2 * (1 << (layer - layerRemained + 1))
-              if (i % 2 == 0) real * coeffW(kn).real
-              else real * coeffW(kn).imag
+            printlnRed(s"lower length ${midLower.length}")
+            val midLowerMultiplied = midLower.zipWithIndex.map { case (complexReal, i) =>
+              val kn = i * (1 << (layer - layerRemained))
+              complexReal * coeffW(kn)
             }
             val ret = midUpper ++ midLowerMultiplied
             build(ret.take(half), layerRemained - 1) ++ build(ret.takeRight(half), layerRemained - 1)
@@ -61,24 +70,28 @@ class FFT(input: Vec[Real]) extends DSPArea[Vec[Real], Array[Complex], Array[Com
         }
       }
 
-      build(input, layer)
+      printlnRed(s"N is $N")
+      val disorded = build(inputComplexes, layer)
+      (0 until N).map(i => disorded(indexReverse(i)))
+        .flatMap(complexReal => Vec(complexReal.real, complexReal.imag))
     }
     else {
       // TODO
       throw new IllegalArgumentException("not implemented yet")
     }
+
     RegNext(Vec(ret))
   }
 }
 
-class FFTDUT extends DSPDUTTiming[Vec[Real], Vec[Real]] {
-  override val input: Vec[Real] = in Vec(RealWithError(-1.5, 2.5, -15 exp), 4 * 2)
+class FFTDUT(N: Int) extends DSPDUTTiming[Vec[Real], Vec[Real]] {
+  override val input: Vec[Real] = in Vec(RealWithError(-1.5, 2.5, -15 exp), N * 2)
   val fft = new FFT(input)
   override val output: Vec[Real] = out(fft.implicitValue)
   override val timing: TimingInfo = fft.timing
 }
 
-class FFTSim extends FFTDUT with DSPSimTiming[Vec[Real], Vec[Real], Array[Complex], Array[Complex]] {
+class FFTSim(N: Int) extends FFTDUT(N) with DSPSimTiming[Vec[Real], Vec[Real], Array[Complex], Array[Complex]] {
   override def poke(testCase: Array[Complex], input: Vec[Real]): Unit = {
     testCase.indices.foreach { i =>
       input(2 * i) #= testCase(i).real
@@ -119,7 +132,7 @@ class FFTSim extends FFTDUT with DSPSimTiming[Vec[Real], Vec[Real], Array[Comple
   override def messageWhenInvalid(testCase: Array[Complex], refResult: Array[Complex], dutResult: Array[Complex]): String = {
     val refDoubles = refResult.flatMap(complex => Array(complex.real, complex.imag))
     val dutDoubles = dutResult.flatMap(complex => Array(complex.real, complex.imag))
-    s"golden: ${refDoubles.mkString(" ")}, yours: ${dutDoubles.mkString(" ")}"
+    s"golden: ${refDoubles.mkString(" ")}\nyours : ${dutDoubles.mkString(" ")}"
   }
 
   override def messageWhenValid(testCase: Array[Complex], refResult: Array[Complex], dutResult: Array[Complex]): String =
@@ -128,10 +141,11 @@ class FFTSim extends FFTDUT with DSPSimTiming[Vec[Real], Vec[Real], Array[Comple
 
 object FFTSim {
   def main(args: Array[String]): Unit = {
-    SimConfig.withWave.compile(new FFTSim).doSim { dut =>
+    ChainsawDebug = true
+    ChainsawExpLowerBound = -16
+    SimConfig.withWave.compile(new FFTSim(512)).doSim { dut =>
       dut.sim()
-      dut.insertTestCase((0 until 4).map(i => new Complex(i, i)).toArray)
-      dut.insertTestCase((0 until 4).map(i => new Complex(i, i)).toArray)
+      dut.insertTestCase((0 until 512).map(_ => new Complex(DSPRand.nextDouble(), DSPRand.nextDouble())).toArray)
       dut.simDone()
     }
   }

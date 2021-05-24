@@ -99,6 +99,8 @@ package object Chainsaw extends RealFactory {
 
   // debug mode
   var ChainsawDebug = false
+  // ronding mode
+  var ChainsawExpLowerBound = -65536
 
   def printlnWhenDebug(content: Any) = if (ChainsawDebug) println(content)
 

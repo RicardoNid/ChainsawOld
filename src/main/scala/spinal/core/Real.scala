@@ -135,6 +135,7 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
 
   // resolution is determined by the argument at the very beginning
   val minExp = resolution.value
+  assert(minExp >= ChainsawExpLowerBound)
   implicit val ulp: Double = pow(2, minExp)
 
   // realInfo refinement by rounding error
@@ -174,10 +175,13 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
 
   // TODO: delete after verification
   // assertions
-  assert(maxExp > minExp,
-    s"minExp $minExp >= maxExp $maxExp, " +
-      s"as you try to represent $realInfo with a resolution of $resolution, " +
-      s"please try to fix it")
+  if (maxExp <= minExp) printlnYellow(s"minExp $minExp >= maxExp $maxExp, " +
+    s"as you try to represent $realInfo with a resolution of $resolution, " +
+    s"so this becomes zero and absorbed")
+  //  assert(maxExp > minExp,
+  //    s"minExp $minExp >= maxExp $maxExp, " +
+  //      s"as you try to represent $realInfo with a resolution of $resolution, " +
+  //      s"please try to fix it")
 
   assert(realInfo.lower >= minValue && realInfo.upper <= maxValue,
     s"part of the interval is not presentable, " +
@@ -275,13 +279,16 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
   def -(that: Real) = doAddSub(that, add = false)
 
   def *(that: Real): Real = {
-    val minExp = this.minExp + that.minExp // LSB strategy, no rounding error introduced
+    val minExp = max(this.minExp + that.minExp, ChainsawExpLowerBound) // LSB strategy, no rounding error introduced
     val realInfo = this.realInfo * that.realInfo // MSB strategy
     printlnGreen(s"multiplication this: ${this.realInfo}, that: ${that.realInfo}, result: $realInfo")
     val ret = new Real(realInfo, minExp exp)
     // implementation
+    // TODO: consider all the effects of user-defined lowerBound
     val retRaw = this.raw * that.raw
-    ret.raw := retRaw.resized
+    ret.raw :=
+    (if (ChainsawExpLowerBound > this.minExp + that.minExp) retRaw(retRaw.getBitsWidth - 1 downto ChainsawExpLowerBound - (this.minExp + that.minExp)).resized
+    else retRaw.resized)
     ret
   }
 
