@@ -87,7 +87,7 @@ package object Chainsaw extends RealFactory {
 
     def #=(value: Seq[Double]): Unit = {
       require(value.length == rv.length, "length of the vector and the stimulus shoul be the same")
-      rv.zip(value).foreach{ case (real, d) => real #= d}
+      rv.zip(value).foreach { case (real, d) => real #= d }
     }
 
     def toDouble = rv.map(_.toDouble)
@@ -101,6 +101,16 @@ package object Chainsaw extends RealFactory {
   var ChainsawDebug = false
   // ronding mode
   var ChainsawExpLowerBound = -65536
+
+  import com.mathworks.engine.MatlabEngine
+
+  lazy val eng = try {
+    println(s"Matlab Engine Started")
+    MatlabEngine.startMatlab
+  }
+  catch {
+    case _ => throw new IllegalAccessError("matlab is not available in current enviroment, have you set correctly?")
+  }
 
   def printlnWhenDebug(content: Any) = if (ChainsawDebug) println(content)
 

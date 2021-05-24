@@ -79,6 +79,7 @@ class RealInfo(val interval: AffineForm, val error: Double) {
     val error = this.error * that.maxAbs +
       that.error * this.maxAbs +
       this.error * that.error
+    println(s"error after multipication: $error")
     new RealInfo(interval, error)
   }
 

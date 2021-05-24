@@ -43,25 +43,24 @@ class Convenc(input: Bool, config: ConvencConfig) extends ImplicitArea[Vec[Bool]
   override def implicitValue: Vec[Bool] = Vec(rets)
 
   def referenceModel(bits: Array[Boolean]) = {
-    val eng = MatlabEngine.startMatlab
+    //    val eng = MatlabEngine.startMatlab
     eng.putVariable("bits", bits)
     eng.eval(s"trellis = poly2trellis(${config.length}, ${config.gens.asMatlab})")
     eng.eval(s"convenc(bits, trellis)")
     val ret = eng.getVariable("ans").asInstanceOf[Array[Boolean]]
-    eng.close()
+    //    eng.close()
     ret
   }
 
   override val getTimingInfo: TimingInfo = TimingInfo(11, 11, 1, 18)
 }
 
-class ConvencDUT(config: ConvencConfig) extends  DSPDUTTiming[Bool, Vec[Bool]] {
+class ConvencDUT(config: ConvencConfig) extends DSPDUTTiming[Bool, Vec[Bool]] {
   override val input: Bool = in Bool
   val convenc = new Convenc(input, config)
   override val output: Vec[Bool] = out(convenc.implicitValue)
   override val timing: TimingInfo = convenc.getTimingInfo
 }
-
 
 
 class ConvencSim(config: ConvencConfig) extends ConvencDUT(config) with DSPSimTiming[Bool, Vec[Bool], Array[Boolean], Array[Boolean]] {
@@ -113,5 +112,6 @@ object Convenc {
       dut.insertTestCase(Array(true, false, true, false, true, false, true, false, true, false) :+ false)
       val report = dut.simDone()
     }
+    eng.close()
   }
 }
