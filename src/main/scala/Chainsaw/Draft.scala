@@ -1,21 +1,18 @@
 package Chainsaw
 
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.sim._
+import spinal.lib.fsm._
+
+import Chainsaw._
+import Chainsaw.Real
+
 object Draft {
 
   def main(args: Array[String]): Unit = {
-    import com.mathworks.engine
-    import com.mathworks.engine.MatlabEngine
-    import com.mathworks.matlab.types.Complex
-
-    val testCase = (0 until 16).map(_.toDouble).toArray
-    val testCase1 = Array.fill(16)(new Complex(1.0,1.0))
-    val eng = MatlabEngine.startMatlab
-    val ret = eng.feval("fft", testCase).asInstanceOf[Array[Double]]
-    val ret1 = eng.feval("fft", testCase1).asInstanceOf[Array[Complex]]
-    eng.close()
-    println(ret.mkString(" "))
-    println(ret1.mkString(" "))
-//    println(ret.flatMap(complex => Array(complex.real, complex.imag)).mkString(" "))
+    Bits"010"
   }
 
 }
