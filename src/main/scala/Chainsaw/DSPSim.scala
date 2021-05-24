@@ -115,5 +115,4 @@ trait DSPSim[inputType <: Data, outputType <: Data, testCaseType, testResultType
       }
     }
   }
-
 }

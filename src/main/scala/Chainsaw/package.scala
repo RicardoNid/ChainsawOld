@@ -108,9 +108,9 @@ package object Chainsaw extends RealFactory {
     println(s"Matlab Engine Started")
     MatlabEngine.startMatlab
   }
-  catch {
-    case _ => throw new IllegalAccessError("matlab is not available in current enviroment, have you set correctly?")
-  }
+//  catch {
+//    case _ => throw new IllegalAccessError("matlab is not available in current enviroment, have you set it correctly?")
+//  }
 
   def printlnWhenDebug(content: Any) = if (ChainsawDebug) println(content)
 
