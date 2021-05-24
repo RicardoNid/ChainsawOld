@@ -1,5 +1,6 @@
 package Chainsaw
 
+import org.scalatest.FunSuite
 import spinal.core._
 import spinal.core.sim._
 
@@ -99,7 +100,7 @@ class PlayWithReal extends Component {
 }
 
 
-object PlayWithReal {
+class testPlayWithReal extends FunSuite {
 
   private def rangeToWidthTest(inputs: IndexedSeq[Real], outputs: IndexedSeq[Real]) = {
     inputs.zip(outputs).foreach { case (input, output) =>
@@ -155,7 +156,7 @@ object PlayWithReal {
     }
   }
 
-  def main(args: Array[String]): Unit = {
+  test("testPlayWithReal") {
     SpinalConfig().generateSystemVerilog(new PlayWithReal)
     SimConfig.compile(new PlayWithReal).doSim {
       dut =>
