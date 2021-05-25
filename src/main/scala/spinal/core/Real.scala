@@ -87,7 +87,7 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
   val roundingError =
     if (inputRealInfo.isConstant) abs(inputRealInfo.constant - inputRealInfo.constant.roundAsScala) // when initialized by a constant
     else ulp
-  val error = if (withRoundingError) propagatedError + roundingError else propagatedError
+  var error = if (withRoundingError) propagatedError + roundingError else propagatedError
 
   var realInfo = new RealInfo(inputRealInfo.interval.clone, error)
   val upper = realInfo.upper
@@ -123,6 +123,7 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
   assert(realInfo.lower >= minValue && realInfo.upper <= maxValue,
     s"part of the interval is not presentable, " +
       s"infos: minExp $minExp, maxExp $maxExp, $realInfo, representable [$minValue, $maxValue]")
+
 
   // copy from SFix template
   // TODO: figure these out

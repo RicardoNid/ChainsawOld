@@ -99,6 +99,7 @@ package object Chainsaw extends RealFactory {
 
   // debug mode
   var ChainsawDebug = false
+  var ChainsawNumericDebug = false
   // ronding mode
   var ChainsawExpLowerBound = -65536
 
@@ -111,6 +112,8 @@ package object Chainsaw extends RealFactory {
 //  catch {
 //    case _ => throw new IllegalAccessError("matlab is not available in current enviroment, have you set it correctly?")
 //  }
+
+  def printlnWhenNumericDebug(content:Any) = if(ChainsawNumericDebug) printlnYellow(content)
 
   def printlnWhenDebug(content: Any) = if (ChainsawDebug) println(content)
 
