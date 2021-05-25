@@ -27,88 +27,34 @@ import scala.math.{abs, ceil, log, max, min, pow}
  *       the most complex strategy is
  *
  */
-class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError: Boolean = false) extends MultiData {
+class Real(var realInfo: RealInfo, val qWidths: QWidths) extends MultiData {
 
-  // TODO: mix signed and unsigned in this type
-  // numeric methods for word length determination
-  def log2Up(value: Double) = ceil(log2(value)).toInt
+  // TODO:
+  override def clone: Real = new Real(realInfo.clone(), qWidths.copy())
 
-  def log2(value: Double) = {
-    require(value >= 0.0, s"operand of log2 should >= 0.0, fix it")
-    if (value == 0.0) 0.0 else log(value) / log(2.0)
-  }
+  // attribute accessors
+  def error = realInfo.error
+  def upper = realInfo.upper
+  def lower = realInfo.lower
+  def maxExp = qWidths.maxExp
+  def minExp = qWidths.minExp
+  def resolution = qWidths.minExp exp
+  def ulp: Double = pow(2, minExp)
 
-  implicit class realInfo2Bits(info: RealInfo) {
-
-    /** The range is of the format [a, b]
-     *
-     * @note Considering the following situations where
-     *
-     *       a, b < 0
-     *
-     *       a < 0 && b > 0
-     *
-     *       a, b > 0
-     *
-     *       theoretically, the best situation is that the resolution/LSB has nothing to do with the MSB
-     *
-     *       however, as 2's complement is asymmetric, without involving ulp, our estimation for MSB would be very pessimistic
-     * @example for upper = 1.9, without knowledge on ulp, only 2 bits(rather than 1) would be safe to include it, as max value of 1Q2 is 1.75
-     */
-    def getMaxExp(implicit ulp: Double) = {
-      def bitsForBound(bound: Double) = if (bound >= 0.0) log2Up(bound + ulp) else log2Up(-bound)
-
-      max(bitsForBound(info.upper), bitsForBound(info.lower))
-    }
-  }
-
-  override def clone: Real = new Real(realInfo.clone, resolution)
-
-  // resolution is determined by the argument at the very beginning
-  val minExp = resolution.value
-  assert(minExp >= ChainsawExpLowerBound)
-  implicit val ulp: Double = pow(2, minExp)
-
-  // realInfo refinement by rounding error
-
-  // TODO: no it will not exceed?
-
-  /** The reason of adjusting realInfo is that,
-   * because of the rounding error, the interval of realInfo may exceed the actual representable interval,
-   * when this accumulates, a signal may have a insufficient width for its interval
-   */
-  //  def adjustingRealInfoInterval(realInfo: RealInfo): Unit = {
-  //    val upper = inputRealInfo.upper.roundUp
-  //    val lower = inputRealInfo.lower.roundDown
-  //    RealInfo(lower, upper, error err)
-  //  }
-
-  val propagatedError = inputRealInfo.error
-  val roundingError =
-    if (inputRealInfo.isConstant) abs(inputRealInfo.constant - inputRealInfo.constant.roundAsScala) // when initialized by a constant
-    else ulp
-  var error = if (withRoundingError) propagatedError + roundingError else propagatedError
-
-  var realInfo = new RealInfo(inputRealInfo.interval.clone, error)
-  val upper = realInfo.upper
-  val lower = realInfo.lower
-
-  // determine the inner representation
-  val maxExp = inputRealInfo.getMaxExp
-  // TODO: pleases notice that this is for signed number only
+  // implement raw
   val bitCount = maxExp - minExp + 1
   val raw = SInt(bitCount bits)
+  def maxValue: BigDecimal = raw.maxValue.toDouble * ulp
+  def minValue: BigDecimal = raw.minValue.toDouble * ulp
 
-  // constraints
+  assert(minExp >= ChainsawExpLowerBound)
+  // validators
   // TODO: improve this
   //  assert(maxExp <= 24 && minExp >= -25 && maxExp >= minExp,
   //    "currently, we do not allow exponents outside of [-25, 24], " +
   //      "because of the limitation of double-precision backend")
 
   // attributes determined after maxExp
-  def maxValue: BigDecimal = raw.maxValue.toDouble * ulp
-
-  def minValue: BigDecimal = raw.minValue.toDouble * ulp
 
   // TODO: delete after verification
   // assertions
@@ -120,10 +66,9 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
   //      s"as you try to represent $realInfo with a resolution of $resolution, " +
   //      s"please try to fix it")
 
-  assert(realInfo.lower >= minValue && realInfo.upper <= maxValue,
+  assert(lower >= minValue && upper <= maxValue,
     s"part of the interval is not presentable, " +
       s"infos: minExp $minExp, maxExp $maxExp, $realInfo, representable [$minValue, $maxValue]")
-
 
   /** Error is generally a tag, so we implement it in a var style
    */
@@ -174,7 +119,7 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
    *
    */
   def unary_-() = {
-    val ret = new Real(-realInfo, minExp exp)
+    val ret = Real(-realInfo, minExp exp)
     println(this)
     println(ret)
     ret.raw := -this.raw
@@ -185,7 +130,7 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
     val minExp = min(this.minExp, that.minExp) // LSB strategy, no rounding error introduced
     val realInfo = if (add) this.realInfo + that.realInfo else this.realInfo - that.realInfo // MSB strategy
     println(s"when it comes to Real ${realInfo.interval.intervalTerms.keySet.mkString(" ")}")
-    val ret = new Real(realInfo, minExp exp)
+    val ret = Real(realInfo, minExp exp)
     println(s"when it comes to Real later ${ret.realInfo.interval.intervalTerms.keySet.mkString(" ")}")
 
     val maxExpEnlarged = ret.maxExp > max(this.maxExp, that.maxExp)
@@ -231,7 +176,7 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
 
     val realInfo = this.realInfo * that.realInfo // MSB strategy
     printlnGreen(s"multiplication this: ${this.realInfo}, that: ${that.realInfo}, result: $realInfo")
-    val ret = new Real(realInfo, minExp exp)
+    val ret = Real(realInfo, minExp exp)
     // implementation
     // TODO: consider all the effects of user-defined lowerBound
     val retRaw = this.raw * that.raw
@@ -256,7 +201,7 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
       ret
     }
     else {
-      val that = ConstantRealWithError(thatConstant, this.resolution)
+      val that = R(thatConstant, this.resolution)
       doAddSub(that, add)
     }
   }
@@ -267,7 +212,7 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
 
   def *(thatConstant: Double): Real = {
     println(s"try to multiply $thatConstant")
-    val that = ConstantRealWithError(thatConstant, this.resolution)
+    val that = R(thatConstant, this.resolution)
     printlnGreen(s"auto-implemented constant $thatConstant, $that")
     *(that)
   }
@@ -277,7 +222,7 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
   def <<(shiftConstant: Int): Real = {
     val minExp = this.minExp + shiftConstant // LSB strategy
     val realInfo = this.realInfo << shiftConstant // MSB strategy
-    val ret = new Real(realInfo, minExp exp)
+    val ret = Real(realInfo, minExp exp)
     ret.raw := this.raw
     ret
   }
@@ -287,7 +232,7 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
     val truncated = ChainsawExpLowerBound - minExpByVerilog
     val minExp = if (truncated > 0) ChainsawExpLowerBound else minExpByVerilog // LSB strategy, no rounding error introduced
     val realInfo = this.realInfo >> shiftConstant // MSB strategy
-    val ret = new Real(realInfo, minExp exp)
+    val ret = Real(realInfo, minExp exp)
     ret.raw :=
       (if (truncated > 0) this.raw(this.raw.getBitsWidth - 1 downto truncated).resized
       else this.raw)

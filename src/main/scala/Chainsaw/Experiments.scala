@@ -52,7 +52,7 @@ object Experiments {
       val report = if (mine)
         VivadoFlow(
           new Component {
-            val input = in(UIntReal(range - 1))
+            val input = in(IntReal(0.0, range - 1))
             val sag = new SCM(input, constant)
             val output = out(sag.implicitValue)
           },

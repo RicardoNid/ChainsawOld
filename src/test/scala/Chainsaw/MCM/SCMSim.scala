@@ -8,7 +8,7 @@ import spinal.core.sim._
 import scala.math.abs
 
 class SCMDUT(constant: Int, scmArch: SCMArch) extends DSPDUTTiming[Real, Real] {
-  override val input = in(RealWithError(-1.5, 1, -15 exp))
+  override val input = in(Real(-1.5, 1, -15 exp).withRoundingError)
   //  override val input: Flow[Real] = slave Flow SIntReal(-3, 6)
   val scm = new SCM(input, constant, scmArch)
   val ret = scm.implicitValue

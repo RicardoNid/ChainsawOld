@@ -88,7 +88,7 @@ object SCM {
   def main(args: Array[String]): Unit = {
     ChainsawDebug = true
     SpinalConfig().generateVhdl(new Component {
-      val input = in(UIntReal((1 << 14) - 1))
+      val input = in(IntReal(0, (1 << 14) - 1))
       val sag = new SCM(input, 31)
       val output = out(sag.implicitValue)
     })

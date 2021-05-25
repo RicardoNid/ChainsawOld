@@ -86,7 +86,7 @@ object WallaceTree {
   def main(args: Array[String]): Unit = {
     SpinalConfig().generateSystemVerilog(new Component {
       //      val input = in Vec (3 until 8).map(i => Real(IntRange(0, (1 << i) - 1)))
-      val input = in Vec(UIntReal(63), 7)
+      val input = in Vec(IntReal(0, 63), 7)
       val output = new WallaceTree(input).implicitValue
       out(output)
     })

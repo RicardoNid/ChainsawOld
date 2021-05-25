@@ -44,7 +44,7 @@ object BlackBoxExample {
 
     val genreport = SpinalConfig().generateSystemVerilog(
       new Component {
-        val input = in(UIntReal(1 << 14))
+        val input = in(UIntReal(14 bits))
         val scm = SCM(input, 101)
         val output = out(scm.implicitValue)
       })
