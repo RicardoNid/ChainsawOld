@@ -13,11 +13,23 @@ import scala.math.{ceil, log, max, pow}
 
 def log2(value: Double) = log(value) / log(2.0)
 def log2Up(value: Double) = ceil(log2(value)).toInt
-def maxExp(max: Int, min: Int) = log2Up((1 << max) + pow(2, min))
+def maxExp(max: Int, min: Int) = log2Up(pow(2, max) + pow(2, min))
 
 
 (0 until 100).map(max => maxExp(max, 0))
 
-Array.tabulate(64, 64)(_ + _).map(_.mkString(" ")).mkString("\n")
+val matrix = Array.tabulate(50, 50) { case (max, min) =>
+  val maxValue = max - 25
+  val minValue = min - 25
+  if (maxValue <= minValue) " "
+  else if (maxExp(maxValue, minValue) != maxValue + 1) "x"
+  else "o"
+}
+
+println(matrix.zipWithIndex
+  .map{ case (strings, i) => (i-25).toString.padTo(4, ' ') + strings.mkString("")}
+  .mkString("\n"))
 
 
+SQ(16, 5).nonFraction
+SQ(16, 5).fraction

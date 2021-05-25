@@ -6,7 +6,6 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math.{abs, ceil, log, max, min, pow}
 
 
-
 /**
  * @param inputRealInfo     all the numeric information of the signal(interval and error), this is a var, so it can be reassigned, determines MSB
  * @param resolution        the number of bits used for fractional part, determines LSB
@@ -99,6 +98,12 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
   // TODO: pleases notice that this is for signed number only
   val bitCount = maxExp - minExp + 1
   val raw = SInt(bitCount bits)
+
+  // constraints
+  // TODO: improve this
+  //  assert(maxExp <= 24 && minExp >= -25 && maxExp >= minExp,
+  //    "currently, we do not allow exponents outside of [-25, 24], " +
+  //      "because of the limitation of double-precision backend")
 
   // attributes determined after maxExp
   def maxValue: BigDecimal = raw.maxValue.toDouble * ulp
@@ -276,8 +281,8 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
     val realInfo = this.realInfo >> shiftConstant // MSB strategy
     val ret = new Real(realInfo, minExp exp)
     ret.raw :=
-    (if (truncated > 0) this.raw(this.raw.getBitsWidth - 1 downto truncated).resized
-    else this.raw)
+      (if (truncated > 0) this.raw(this.raw.getBitsWidth - 1 downto truncated).resized
+      else this.raw)
     ret
   }
 

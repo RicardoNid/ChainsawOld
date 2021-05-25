@@ -48,7 +48,7 @@ trait RealFactory {
   def QFormatReal(qFormat: QFormat): Real = {
     import qFormat._
     val lower = if (signed) -pow(2, nonFraction - 1) else 0.0
-    val upper = if (signed) pow(2, nonFraction - 1) else pow(2, nonFraction)
+    val upper = (if (signed) pow(2, nonFraction - 1) else pow(2, nonFraction)) - pow(2, -fraction)
     Real(RealInfo(lower, upper), -qFormat.fraction exp)
   }
 

@@ -5,15 +5,6 @@ import org.scalatest.funsuite.AnyFunSuite
 import spinal.core._
 import spinal.core.sim._
 
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.sim._
-import spinal.lib.fsm._
-
-import Chainsaw._
-import Chainsaw.Real
-
 class BinaryTreeDUT(length: Int, opertor: (Real, Real) => Real, pipelineInterval: Int, refOperator: (Double, Double) => Double)
   extends DSPDUTTiming[Vec[Real], Real] {
   override val input = in Vec(Real(-1, 1, 0.001), length)

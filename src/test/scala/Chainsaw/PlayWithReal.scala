@@ -14,15 +14,22 @@ import org.scalatest.matchers.should.Matchers
 class PlayWithReal extends Component {
 
   // API test
-  val UQparams = (0 until 100).map(_ => (DSPRand.nextInt(32), DSPRand.nextInt(32)))
-  val UQs = UQparams.map { case (i, f) => QFormatReal(UQ(i + f, f)) }
-  UQparams.zip(UQs).foreach{ case (tuple, real) => assert(real.maxExp == tuple._1 && real.minExp == tuple._2,
-    s"bad UQ: $tuple lead to ${real.maxExp} & ${real.minExp}")}
+  // random exponents in [-25, 24]
+  val SQs = (0 until 100).map(_ => (DSPRand.nextInt(24), DSPRand.nextInt(25))).map{ case (i, f) => SQ(i + f + 1, f)}
+  val SQReals = SQs.map(QFormatReal)
+  SQs.zip(SQReals).foreach{ case (sq, real) => assert(
+    real.maxExp == sq.nonFraction - 1 // maxExp == i
+      && real.minExp.abs == sq.fraction, // minExp == f
+    s"bad SQ: $sq lead to ${real.maxExp} & ${real.minExp}")}
+  printlnGreen("SQFormat API passed")
 
-  val SQparams = (0 until 100).map(_ => (DSPRand.nextInt(32), DSPRand.nextInt(32)))
-  val SQs = SQparams.map { case (i, f) => QFormatReal(SQ(i + f + 1, f)) }
-  SQparams.zip(SQs).foreach{ case (tuple, real) => assert(real.maxExp == tuple._1 && real.minExp == tuple._2,
-    s"bad SQ: $tuple lead to ${real.maxExp} & ${real.minExp}")}
+  val UQs = (0 until 100).map(_ => (DSPRand.nextInt(24), DSPRand.nextInt(25))).map{ case (i, f) => UQ(i + f, f)}
+  val UQReals = UQs.map(QFormatReal)
+  UQs.zip(UQReals).foreach{ case (uq, real) => assert(
+    real.maxExp == uq.nonFraction // maxExp == i
+      && real.minExp.abs == uq.fraction, // minExp == f
+    s"bad UQ: $uq lead to ${real.maxExp} & ${real.minExp}")}
+  printlnGreen("UQFormat API passed")
 
   val randomRanges = (0 until 1000).map { i =>
     val lower = DSPRand.nextDouble() * 10 + 0.5
