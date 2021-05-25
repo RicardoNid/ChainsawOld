@@ -1,7 +1,7 @@
 package Chainsaw.Architectures
 
 import Chainsaw.{Real, _}
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 import spinal.core._
 import spinal.core.sim._
 
@@ -51,7 +51,7 @@ class BinaryTreeSim(length: Int, opertor: (Real, Real) => Real, pipelineInterval
     s"testCase: ${testCase.mkString(" ")}, golden: $refResult, yours: $dutResult"
 }
 
-class testBinaryTree extends FunSuite {
+class testBinaryTree extends AnyFunSuite {
   test("testBinaryTree") { // TODO: test on Double
 
     println("start testing BinaryTree")

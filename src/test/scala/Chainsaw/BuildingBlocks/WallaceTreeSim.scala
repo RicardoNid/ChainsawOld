@@ -1,7 +1,7 @@
 package Chainsaw.BuildingBlocks
 
 import Chainsaw.{Real, _}
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 import spinal.core._
 import spinal.core.sim._
 
@@ -30,7 +30,7 @@ class WallaceTreeSim() extends WallaceTreeDUT with DSPSimTiming[Vec[Real], Real,
     s"testCase: $testCase, golden: $refResult, yours: $dutResult "
 }
 
-class testWallaceTree extends FunSuite {
+class testWallaceTree extends AnyFunSuite {
   test("testWallaceTree") {
     SimConfig.withWave.compile(new WallaceTreeSim).doSim { dut =>
       dut.sim()

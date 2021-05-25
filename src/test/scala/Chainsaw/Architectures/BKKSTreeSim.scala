@@ -1,7 +1,7 @@
 package Chainsaw.Architectures
 
 import Chainsaw.{DSPSimTiming, TimingInfo}
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 import spinal.core._
 import spinal.core.sim._
 
@@ -52,7 +52,7 @@ class BKKSTreeSim extends BKKSTreeDUT with DSPSimTiming[Vec[UInt], Vec[UInt], Ar
   override type RefOwnerType = this.type
 }
 
-class testBKKSSim extends FunSuite{
+class testBKKSSim extends AnyFunSuite {
   test("BKKSSim"){
     SimConfig.compile(new BKKSTreeSim).doSim { dut =>
       dut.sim()

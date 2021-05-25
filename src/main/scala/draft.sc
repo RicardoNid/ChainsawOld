@@ -1,4 +1,5 @@
-import scala.math.{ceil, log, max, pow}
+implicit val ulp = 0.001
+
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
@@ -7,18 +8,16 @@ import spinal.lib.fsm._
 import Chainsaw._
 import Chainsaw.Real
 
-def log2(value: Double) = {
-  require(value >= 0.0, s"operand of log2 should >= 0.0, fix it")
-  if (value == 0.0) 0.0 else log(value) / log(2.0)
-}
 
+import scala.math.{ceil, log, max, pow}
+
+def log2(value: Double) = log(value) / log(2.0)
 def log2Up(value: Double) = ceil(log2(value)).toInt
+def maxExp(max: Int, min: Int) = log2Up((1 << max) + pow(2, min))
 
-def getMaxExp(implicit ulp: Double) = {
-  println(ulp)
-  def bitsForBound(bound: Double) = if (bound >= 0.0) log2Up(bound + ulp) else log2Up(-bound)
 
-  max(bitsForBound(256.0), bitsForBound(-256.0))
-}
+(0 until 100).map(max => maxExp(max, 0))
 
-getMaxExp(pow(2, -45))
+Array.tabulate(64, 64)(_ + _).map(_.mkString(" ")).mkString("\n")
+
+

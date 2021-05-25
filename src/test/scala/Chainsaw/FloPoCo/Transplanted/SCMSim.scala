@@ -1,7 +1,7 @@
 package Chainsaw.FloPoCo.Transplanted
 
 import Chainsaw.{Real, _}
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 import spinal.core._
 import spinal.core.sim._
 
@@ -30,7 +30,7 @@ class SCMSim(lower: Double, upper: Double, constant: Int) extends SCMDUT(lower, 
     s"testCase: $testCase, golden: $refResult, yours: $dutResult"
 }
 
-class testSCM extends FunSuite {
+class testSCM extends AnyFunSuite {
   def randomSim(lower: Double, upper: Double, constant: Int, traversal: Boolean = false): Unit = {
     val dut = SimConfig.withWave.compile(new SCMSim(lower, upper, constant))
     dut.doSim { dut =>

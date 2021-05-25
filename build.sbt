@@ -27,7 +27,9 @@ libraryDependencies ++= Seq(
 
 libraryDependencies += "org.scalanlp" %% "breeze" % "1.0"
 
-libraryDependencies += "org.scalatest" % "scalatest_2.10" % "1.9.1" % "test"
+//libraryDependencies += "org.scalatest" % "scalatest_2.10" % "1.9.1" % "test"
+libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.9"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.9" % "test"
 
 libraryDependencies += "cc.redberry" %% "rings.scaladsl" % "2.5.7"
 

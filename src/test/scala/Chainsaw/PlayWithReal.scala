@@ -1,13 +1,28 @@
 package Chainsaw
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 import spinal.core._
 import spinal.core.sim._
+
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
 /** The thorough test of Real type
  *
  */
 class PlayWithReal extends Component {
+
+  // API test
+  val UQparams = (0 until 100).map(_ => (DSPRand.nextInt(32), DSPRand.nextInt(32)))
+  val UQs = UQparams.map { case (i, f) => QFormatReal(UQ(i + f, f)) }
+  UQparams.zip(UQs).foreach{ case (tuple, real) => assert(real.maxExp == tuple._1 && real.minExp == tuple._2,
+    s"bad UQ: $tuple lead to ${real.maxExp} & ${real.minExp}")}
+
+  val SQparams = (0 until 100).map(_ => (DSPRand.nextInt(32), DSPRand.nextInt(32)))
+  val SQs = SQparams.map { case (i, f) => QFormatReal(SQ(i + f + 1, f)) }
+  SQparams.zip(SQs).foreach{ case (tuple, real) => assert(real.maxExp == tuple._1 && real.minExp == tuple._2,
+    s"bad SQ: $tuple lead to ${real.maxExp} & ${real.minExp}")}
 
   val randomRanges = (0 until 1000).map { i =>
     val lower = DSPRand.nextDouble() * 10 + 0.5
@@ -100,7 +115,7 @@ class PlayWithReal extends Component {
 }
 
 
-class testPlayWithReal extends FunSuite {
+class testPlayWithReal extends AnyFunSuite {
 
   private def rangeToWidthTest(inputs: IndexedSeq[Real], outputs: IndexedSeq[Real]) = {
     inputs.zip(outputs).foreach { case (input, output) =>
@@ -156,8 +171,13 @@ class testPlayWithReal extends FunSuite {
     }
   }
 
-  test("testPlayWithReal") {
+
+
+  test("testPlayWithRealElaboration") {
     SpinalConfig().generateSystemVerilog(new PlayWithReal)
+  }
+
+  test("testPlayWithRealSim") {
     SimConfig.compile(new PlayWithReal).doSim {
       dut =>
         import dut._

@@ -6,7 +6,7 @@ import Chainsaw.DSP.RotationMode.{ROTATION, VECTORING}
 import Chainsaw.{DSPSimTiming, Double2Fix, Fix2Double, sameFixedSeq, _}
 import breeze.numerics._
 import breeze.numerics.constants.Pi
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 import spinal.core._
 import spinal.core.sim._
 
@@ -61,7 +61,7 @@ class CORDICSim(cordicConfig: CordicConfig) extends CORDICDUT(cordicConfig) with
   }
 }
 
-class testCORDIC extends FunSuite {
+class testCORDIC extends AnyFunSuite {
   private def randomCase(cordicConfig: CordicConfig) = {
     val theta = (DSPRand.nextDouble() * 0.5 - 0.25) * Pi
     val unit = DSPRand.nextDouble() * 2 - 1

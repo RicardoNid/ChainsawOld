@@ -3,7 +3,7 @@ package FTN
 import Chainsaw.{DSPSimTiming, _}
 import breeze.numerics.{abs, pow}
 import com.mathworks.matlab.types.Complex
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 import spinal.core.sim._
 import spinal.core.{Real, Vec}
 
@@ -55,7 +55,7 @@ class FFTSim(N: Int, inverse: Boolean) extends FFTDUT(N, inverse) with DSPSimTim
     messageWhenInvalid(testCase, refResult, dutResult)
 }
 
-class testFFT extends FunSuite {
+class testFFT extends AnyFunSuite {
   test("testFFT") {
     ChainsawDebug = true
     ChainsawExpLowerBound = -16

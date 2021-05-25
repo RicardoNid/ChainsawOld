@@ -1,7 +1,7 @@
 package FTN
 
 import Chainsaw.{ChainsawDebug, DSPSimTiming, eng}
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 import spinal.core.sim._
 import spinal.core.{Bool, Vec}
 
@@ -44,7 +44,7 @@ class ConvencSim(config: ConvencConfig) extends ConvencDUT(config) with DSPSimTi
   }
 }
 
-class testConvenc extends FunSuite {
+class testConvenc extends AnyFunSuite {
 
   test("testConvenc") {
 //    SimConfig.withWave.compile(new ConvencSim(ConvencConfig(7, Array(145, 133)))).doSim { dut =>
