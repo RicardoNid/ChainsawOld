@@ -1,8 +1,8 @@
 package Chainsaw
 
-import spinal.core.{ExpNumber, QFormat, Real, log2Up}
+import spinal.core.{ExpNumber, QFormat, log2Up, _}
 
-import scala.math.{ceil, pow}
+import scala.math.ceil
 
 /** Factories in this trait would be automatically visible in the project, as the package object extends it
  *
@@ -18,70 +18,64 @@ trait NewRealFactory {
     (realInfo, qWidths)
   }
 
-
   /** Basic factory that starts from the QWidths
    */
-  def Real(QWidths: QWidths) = {
-    val realInfo = width2Interval(QWidths)
+  def Real(QWidths: QWidths, signed: Boolean = true) = {
+    val realInfo = width2Interval(QWidths, signed)
     (realInfo, QWidths)
   }
 
-  def RealWithError(realInfo: RealInfo, resolution: ExpNumber): Real = {
-    val ret = new Real(realInfo, resolution, withRoundingError = true)
-    printlnWhenDebug(s"rounding error ${ret.ulp} introduced")
-    ret
-  }
+  //  User-oriented factories that start from the interval
 
-  /** The most commonly used factory which initialize a Real from a interval [lower, upper] and a resolution
+  /** Lower + upper + resolution
    */
-  def Real(lower: Double, upper: Double, resolution: ExpNumber): Real =
+  def Real(lower: Double, upper: Double, resolution: ExpNumber) =
     Real(RealInfo(lower, upper), resolution)
 
-  def RealWithError(lower: Double, upper: Double, resolution: ExpNumber): Real =
-    RealWithError(RealInfo(lower, upper), resolution)
-
-  def Real(lower: Double, upper: Double, decimalResolution: Double): Real =
+  /** Lower + upper + resolution
+   */
+  def Real(lower: Double, upper: Double, decimalResolution: Double) =
     Real(lower, upper, -log2Up(ceil(1 / decimalResolution).toInt) exp)
 
-  def RealWithError(lower: Double, upper: Double, decimalResolution: Double): Real =
-    RealWithError(lower, upper, -log2Up(ceil(1 / decimalResolution).toInt) exp)
-
-
-  // Integer factories, which will never introduce error
-  def UIntReal(upper: Int): Real = Real(0.0, upper, 0 exp)
-
-  def SIntReal(upper: Int): Real = Real(-upper, upper, 0 exp)
-
-  def SIntReal(lower: Int, upper: Int): Real = {
-    if (lower >= 0) printlnYellow(s"SIntReal is unnecessary as lower = $lower")
-    Real(lower, upper, 0 exp)
-  }
-
-  //  https://en.wikipedia.org/wiki/Q_(number_format)
-  def QFormatReal(qFormat: QFormat): Real = {
-    import qFormat._
-    val lower = if (signed) -pow(2, nonFraction - 1) else 0.0
-    val upper = (if (signed) pow(2, nonFraction - 1) else pow(2, nonFraction)) - pow(2, -fraction)
-    Real(RealInfo(lower, upper), -qFormat.fraction exp)
-  }
-
-  def QFormatRealWithError(qFormat: QFormat): Real = {
-    import qFormat._
-    val lower = if (signed) -pow(2, nonFraction - 1) else 0.0
-    val upper = if (signed) pow(2, nonFraction - 1) else pow(2, nonFraction)
-    RealWithError(RealInfo(lower, upper), -qFormat.fraction exp)
-  }
-
-  /** Constant factory
+  /** Lower + upper + resolution for integer
    */
-  def ConstantReal(value: Double, resolution: ExpNumber): Real = {
-    val ret = Real(RealInfo(value), resolution)
-    ret := value
-    ret
+  def IntReal(lower: Double, upper: Double) =
+    Real(lower, upper, 0 exp)
+
+  /** Fixed-like API
+   */
+  // User-oriented factories that start from the QWidths
+  def Real(maxExp: ExpNumber, minExp: ExpNumber) = {
+    Real(QWidths(maxExp.value, minExp.value))
   }
 
-  def ConstantRealWithError(value: Double, resolution: ExpNumber): Real = {
-    val ret = RealWithError(RealInfo(value), resolution)
+  /** UInt-like API
+   */
+  def UIntReal(bits: BitCount) =
+    Real(QWidths(bits.value, 0), signed = false)
+
+  /** SInt-like API
+   */
+  def SIntReal(bits: BitCount) =
+    Real(QWidths(bits.value, 0), signed = true)
+
+  /** Q-Format API
+   *
+   * @see [[https://en.wikipedia.org/wiki/Q_(number_format) Q format]]
+   */
+  def QFormatReal(qFormat: QFormat) = {
+    import qFormat._
+    val maxExp = if (signed) nonFraction - 1 else nonFraction
+    val minExp = -fraction
+    Real(QWidths(maxExp, minExp), signed = signed)
+  }
+}
+
+object R {
+  /** Real literal factory, the constant has not only a type but also an initial connection
+   */
+  def apply(value: Double, resolution: ExpNumber): Real = {
+    val ret = Real(RealInfo(value), resolution)
     ret := value
     ret
   }

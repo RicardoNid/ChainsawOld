@@ -25,7 +25,7 @@ import scala.math._
  *                 intervals has nothing to do with errors, while errors are sometimes dependent on intervals
  * @example new error introduced through a multiplication is dependent on intervals
  */
-class RealInfo(val interval: AffineForm, val error: Double) {
+class RealInfo(val interval: AffineForm, var error: Double) {
 
   require(error >= 0.0)
   override def clone = new RealInfo(interval.clone, error)

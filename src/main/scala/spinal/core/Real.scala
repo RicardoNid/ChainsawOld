@@ -125,6 +125,13 @@ class Real(inputRealInfo: RealInfo, val resolution: ExpNumber, withRoundingError
       s"infos: minExp $minExp, maxExp $maxExp, $realInfo, representable [$minValue, $maxValue]")
 
 
+  /** Error is generally a tag, so we implement it in a var style
+   */
+  def withRoundingError = {
+    this.realInfo.error += ulp
+    this
+  }
+
   // copy from SFix template
   // TODO: figure these out
   raw.setRefOwner(this)
