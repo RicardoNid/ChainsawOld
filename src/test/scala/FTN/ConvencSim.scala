@@ -68,6 +68,5 @@ object Test {
       dut.insertTestCase(Array(true, false, true, false, true, false, true, false, true, false) :+ false)
       val report = dut.simDone()
     }
-    eng.close()
   }
 }

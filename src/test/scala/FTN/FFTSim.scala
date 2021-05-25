@@ -68,9 +68,8 @@ class testFFT extends AnyFunSuite {
     //    printlnGreen(s"FFT test at length $testFFTLength passed")
     SimConfig.withWave.compile(new FFTSim(testFFTLength, inverse = true)).doSim { dut =>
       dut.sim()
-      (0 until 20).foreach(_ => dut.insertTestCase((0 until testFFTLength).map(_ => new Complex(DSPRand.nextDouble(), DSPRand.nextDouble())).toArray))
+      (0 until 20).foreach(_ => dut.insertTestCase((0 until testFFTLength).map(_ => new Complex(DSPRand.nextDouble() * 0.99, DSPRand.nextDouble() * 0.99)).toArray))
       dut.simDone()
     }
-    eng.close()
   }
 }

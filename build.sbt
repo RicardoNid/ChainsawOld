@@ -46,5 +46,6 @@ libraryDependencies += "ai.djl" % "model-zoo" % "0.11.0"
 libraryDependencies += "ai.djl" % "basicdataset" % "0.11.0"
 // for matlab co-sim
 javaOptions += "-Djava.library.path=/usr/local/MATLAB/R2018b/bin/glnxa64:/usr/local/MATLAB/R2018b/sys/os/glnxa64"
+scalacOptions += "-Djava.library.path=/usr/local/MATLAB/R2018b/bin/glnxa64:/usr/local/MATLAB/R2018b/sys/os/glnxa64"
 
 

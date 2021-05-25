@@ -27,10 +27,10 @@ class FFT(input: Vec[Real], inverse: Boolean = false) extends DSPArea[Vec[Real],
     val real = cos(exp)
     val imag = sin(exp)
     printlnYellow(s"real: $real, imag: $imag")
-    val realReal = QFormatReal(SQ(16, 15))
+    val realReal = QFormatReal(Q"1Q15")
     println(s"error from coeff ${realReal.error}")
     realReal := real
-    val imagReal = QFormatReal(SQ(16, 15))
+    val imagReal = QFormatReal(Q"1Q15")
     println(s"error from coeff ${imagReal.error}")
     imagReal := imag
     ComplexReal(realReal, imagReal)
