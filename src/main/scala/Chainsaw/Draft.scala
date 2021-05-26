@@ -1,27 +1,24 @@
 package Chainsaw
 
-import spinal.lib._
-import spinal.sim._
-import spinal.lib.fsm._
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 import spinal.sim._
 import spinal.lib.fsm._
+
 import Chainsaw._
 import Chainsaw.Real
-import Chainsaw._
-import Chainsaw.Real
+
+class Draft extends Component{
+  val input = in Bits(8 bits)
+  val divide = Array(1,1,2,2,2)
+  val start = divide.indices.map(i => divide.take(i).sum)
+  val end = start.tail :+ divide.sum
+  val output = out(Vec(divide.indices.map(i => input.asBools.slice(start(i), end(i)).asBits())))
+}
 
 object Draft {
-
-  class subdivide extends Component{
-    val input = in Bits(8 bits)
-    val output = out (input.subdivideIn(4 bits))
-  }
-
   def main(args: Array[String]): Unit = {
-    GenRTL(new subdivide)
+    GenRTL(new Draft)
   }
-
 }

@@ -174,7 +174,6 @@ object AffineForm {
     println(af2)
     println(af3)
     println(af2 * af3)
-
   }
 }
 

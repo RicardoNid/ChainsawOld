@@ -5,6 +5,7 @@ import spinal.core._
 import spinal.core.internals.BaseNode
 import spinal.core.sim._
 import spinal.sim._
+import xilinx.VivadoFlow
 
 import java.nio.file.Paths
 import scala.collection.mutable.ArrayBuffer
@@ -109,11 +110,11 @@ package object Chainsaw extends RealFactory {
     println(s"Matlab Engine Started")
     MatlabEngine.startMatlab
   }
-//  catch {
-//    case _ => throw new IllegalAccessError("matlab is not available in current enviroment, have you set it correctly?")
-//  }
+  //  catch {
+  //    case _ => throw new IllegalAccessError("matlab is not available in current enviroment, have you set it correctly?")
+  //  }
 
-  def printlnWhenNumericDebug(content:Any) = if(ChainsawNumericDebug) printlnYellow(content)
+  def printlnWhenNumericDebug(content: Any) = if (ChainsawNumericDebug) printlnYellow(content)
 
   def printlnWhenDebug(content: Any) = if (ChainsawDebug) println(content)
 
@@ -221,6 +222,13 @@ package object Chainsaw extends RealFactory {
       .mkString("\n"))
     if (print) println(report.getRtlString())
   }
+
+  def VivadoSynth[T <: Component](gen: => T): Unit = {
+    val report = VivadoFlow(design = gen, "temp", "synthWorkspace/temp").doit()
+    report.printArea()
+    report.printFMax()
+  }
+
 
   val synthWorkspace = "/home/ltr/IdeaProjects/Chainsaw/synthWorkspace"
 

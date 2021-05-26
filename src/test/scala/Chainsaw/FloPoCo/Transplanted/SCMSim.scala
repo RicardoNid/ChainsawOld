@@ -7,7 +7,7 @@ import spinal.core.sim._
 
 import scala.math.abs
 
-class SCMDUT(lower: Double, upper: Double, constant: Int) extends  DSPDUTTiming[Real, Real] {
+class SCMDUT(lower: Double, upper: Double, constant: Int) extends DSPDUTTiming[Real, Real] {
   override val input: Real = in(Real(lower, upper, 0.1))
   val scm = new SCM(input, constant)
   override val output: Real = out(scm.implicitValue)
@@ -52,13 +52,13 @@ class testSCM extends AnyFunSuite {
     // in this case, we noticed that sometimes, +/- leads to a narrower interval and should be processed
     randomSim(0.0, 2.5, 179106, traversal = true)
     randomSim(0.0, 2.5, 171, traversal = true)
-    (0 until 5).foreach(_ => randomSim(-1.5, 2.5, DSPRand.nextInt(1023)))
-    (0 until 5).foreach(_ => randomSim(0.0, 2.5, DSPRand.nextInt(1023)))
+    (0 until 100).foreach(_ => randomSim(-1.5, 2.5, DSPRand.nextInt(1023) + 1))
+    (0 until 100).foreach(_ => randomSim(0.0, 2.5, DSPRand.nextInt(1023) + 1))
   }
 
-//  //   full test
-//  def main(args: Array[String]): Unit = {
-//    (0 until 100).foreach(_ => randomSim(0.0, 2.5, DSPRand.nextInt(1023)))
-//    (0 until 100).foreach(_ => randomSim(-1.5, 2.5, DSPRand.nextInt(1023)))
-//  }
+  //  //   full test
+  //  def main(args: Array[String]): Unit = {
+  //    (0 until 100).foreach(_ => randomSim(0.0, 2.5, DSPRand.nextInt(1023)))
+  //    (0 until 100).foreach(_ => randomSim(-1.5, 2.5, DSPRand.nextInt(1023)))
+  //  }
 }

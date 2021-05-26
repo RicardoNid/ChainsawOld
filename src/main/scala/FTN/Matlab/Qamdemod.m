@@ -2,7 +2,7 @@ function bits = Qamdemod(bitAllocated, QAMSymbols)
     global RmsAlloc
     global QAM8
 
-    if bitAllocated == 3;
+    if bitAllocated == 3
 
         QAMSymbols = QAMSymbols * RmsAlloc(3);
         QAMSymbols = QAMSymbols';
@@ -11,8 +11,8 @@ function bits = Qamdemod(bitAllocated, QAMSymbols)
         bits = reshape(temp', 1, []);
 
     else
-        QAMSymbols = QAMSymbols / rms(QAMSymbols) * RmsAlloc(bitAllocated);
-        % QAMSymbols = QAMSymbols * RmsAlloc(bitAllocated);
+        % QAMSymbols = QAMSymbols / rms(QAMSymbols) * RmsAlloc(bitAllocated); % 动态归一化
+        QAMSymbols = QAMSymbols * RmsAlloc(bitAllocated); % 静态归一化
 
         % R2016a
         % M = 2^bitAllocated;

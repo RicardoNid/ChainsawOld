@@ -18,7 +18,6 @@ class FFTSim(N: Int, inverse: Boolean) extends FFTDUT(N, inverse) with DSPSimTim
   override def peek(output: Vec[Real]): Array[Complex] =
     (0 until output.length / 2).map(i => new Complex(output(2 * i).toDouble, output(2 * i + 1).toDouble)).toArray
 
-
   /** The function that takes the testCase and return the ground truth
    *
    * @param testCase testCase
