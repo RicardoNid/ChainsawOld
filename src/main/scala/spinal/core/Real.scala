@@ -335,5 +335,5 @@ class Real(var realInfo: RealInfo, val qWidths: QWidths) extends MultiData {
     copy.asInstanceOf[this.type]
   }
 
-  override def toString() = s"$name minExp $minExp, maxExp $maxExp, $realInfo, representable [$minValue, $maxValue]"
+  override def toString() = s"name: $name, interval & error $realInfo, widths: $qWidths"
 }
