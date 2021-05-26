@@ -120,10 +120,14 @@ class Real(var realInfo: RealInfo, val qWidths: QWidths) extends MultiData {
   def doAddSub(that: Real, add: Boolean): Real = {
     // numeric inference
     printlnWhenNumericDebug(s"before addition, a: $this, b: $that")
-    val minExp = min(this.minExp, that.minExp) // LSB strategy, no rounding error introduced
-    val realInfo = if (add) this.realInfo + that.realInfo else this.realInfo - that.realInfo // MSB strategy
+    // LSB strategy, lower bound rule check is skipped as this.minExp and that.minExp have been checked earlier
+    val minExp = min(this.minExp, that.minExp)
+    // MSB & error strategy
+    val realInfo = if (add) this.realInfo + that.realInfo else this.realInfo - that.realInfo
+
     val ret = Real(realInfo, minExp exp)
     printlnWhenNumericDebug(s"after addition, a + b: $ret")
+
     val maxExpEnlarged = ret.maxExp > max(this.maxExp, that.maxExp)
     val maxExpReduced = ret.maxExp < max(this.maxExp, that.maxExp)
     printlnWhenNumericDebug(s"MSB Enlarged: $maxExpEnlarged, MSB Reduced: $maxExpReduced")
@@ -132,7 +136,7 @@ class Real(var realInfo: RealInfo, val qWidths: QWidths) extends MultiData {
     // HDL implementation
     val (rawLeft, rawRight) = alignLsb(that)
     // TODO: fully implement this
-    if(this.isUnsigned && that.isUnsigned) printlnWhenNumericDebug(s"do unsigned arithmetic")
+    if (this.isUnsigned && that.isUnsigned) printlnWhenNumericDebug(s"do unsigned arithmetic")
     val retRaw =
       if (this.isPositive && that.isPositive) {
         if (maxExpEnlarged) if (add) rawLeft.asUInt +^ rawRight.asUInt else rawLeft.asUInt -^ rawRight.asUInt
@@ -154,20 +158,39 @@ class Real(var realInfo: RealInfo, val qWidths: QWidths) extends MultiData {
   def -(that: Real) = doAddSub(that, add = false)
 
   def *(that: Real): Real = {
-
+    // numeric inference
+    printlnWhenNumericDebug(s"before multiplication, a: $this, b: $that")
+    // LSB strategy, lower bound rule should be checked
     val minExpByVerilog = this.minExp + that.minExp
-    val truncated = ChainsawExpLowerBound - minExpByVerilog
-    val minExp = if (truncated > 0) ChainsawExpLowerBound else minExpByVerilog // LSB strategy, no rounding error introduced
+    val bitsTruncated = ChainsawExpLowerBound - minExpByVerilog
+    val minExpReduced = bitsTruncated > 0
+    val minExp = if (minExpReduced) ChainsawExpLowerBound else minExpByVerilog
+    val maxExpByVerilog = this.maxExp + that.maxExp + 1
 
-    val realInfo = this.realInfo * that.realInfo // MSB strategy
-    printlnGreen(s"multiplication this: ${this.realInfo}, that: ${that.realInfo}, result: $realInfo")
+    // MSB & error strategy
+    val realInfo = this.realInfo * that.realInfo
+
     val ret = Real(realInfo, minExp exp)
+
+    val maxExpEnlarged = ret.maxExp > maxExpByVerilog
+    assert(!maxExpEnlarged, "maxExpEnlarged should always be false as Chainsaw result is more accurate than verilog")
+    val maxExpReduced = ret.maxExp < maxExpByVerilog
+    printlnWhenNumericDebug(s"MSB Reduced: $maxExpReduced")
+
+    // side effect of LSB strategy
+    if (minExpReduced) ret.withRoundingError
+    printlnWhenNumericDebug(s"after multiplication, a * b: $ret")
+
     // implementation
-    // TODO: consider all the effects of user-defined lowerBound
-    val retRaw = this.raw * that.raw
-    ret.raw :=
-      (if (truncated > 0) retRaw(retRaw.getBitsWidth - 1 downto truncated).resized
-      else retRaw.resized)
+    // HDL implementation
+    val retRaw =
+    // TODO: figure out the unsigned arithmetic
+    if (this.isPositive && that.isPositive) this.raw * that.raw
+    else this.raw * that.raw
+
+    // post alignment
+    val minExpAligned = if (minExpReduced) retRaw(retRaw.getBitsWidth - 1 downto bitsTruncated) else retRaw
+    ret.raw := (if (maxExpReduced) minExpAligned.resized else minExpAligned)
     ret
   }
 
