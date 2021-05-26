@@ -15,6 +15,12 @@ trait RealFactory {
    */
   def Real(realInfo: RealInfo, resolution: ExpNumber): Real = {
     val qWidths = interval2Width(realInfo, resolution)
+    if (qWidths.maxExp > 24 || qWidths.minExp < -25)
+      printlnYellow("currently, because of the limitation of double-precision backend, " +
+        "a correct maxExp expansion is not promised when you have [minExp, maxExp] outside of [-25, 24]" +
+        "that is, " +
+        "an upper bound pow(2.0, 25) with a resolution pow(2.0 -25) may lead to " +
+        "25 integer bits, rather than 26, which contains the upper bound")
     new Real(realInfo, qWidths)
   }
 

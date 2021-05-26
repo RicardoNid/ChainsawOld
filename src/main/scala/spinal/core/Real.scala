@@ -5,7 +5,6 @@ import Chainsaw._
 import scala.collection.mutable.ArrayBuffer
 import scala.math.{abs, ceil, log, max, min, pow}
 
-
 /**
  * @param inputRealInfo     all the numeric information of the signal(interval and error), this is a var, so it can be reassigned, determines MSB
  * @param resolution        the number of bits used for fractional part, determines LSB
@@ -46,29 +45,24 @@ class Real(var realInfo: RealInfo, val qWidths: QWidths) extends MultiData {
   val raw = SInt(bitCount bits)
   def maxValue: BigDecimal = raw.maxValue.toDouble * ulp
   def minValue: BigDecimal = raw.minValue.toDouble * ulp
+  def isUnsigned = lower * upper >= 0.0
+  def isPositive = lower >= 0.0
+  // TODO: fully implement this
+  def isNegative = upper <= 0.0
 
-  assert(minExp >= ChainsawExpLowerBound)
-  // validators
-  // TODO: improve this
-  //  assert(maxExp <= 24 && minExp >= -25 && maxExp >= minExp,
-  //    "currently, we do not allow exponents outside of [-25, 24], " +
-  //      "because of the limitation of double-precision backend")
+  // validators & warnings
+  // any minExp, no matter generated or declared, should be constrained by ChainsawExpLowerBound
+  assert(minExp >= ChainsawExpLowerBound, s"minExp $minExp is lower than the lower bound $ChainsawExpLowerBound ")
 
-  // attributes determined after maxExp
-
-  // TODO: delete after verification
-  // assertions
-  if (maxExp <= minExp) printlnYellow(s"minExp $minExp >= maxExp $maxExp, " +
-    s"as you try to represent $realInfo with a resolution of $resolution, " +
-    s"so this becomes zero and absorbed")
-  //  assert(maxExp > minExp,
-  //    s"minExp $minExp >= maxExp $maxExp, " +
-  //      s"as you try to represent $realInfo with a resolution of $resolution, " +
-  //      s"please try to fix it")
-
+  // interval relationship: representable interval should cover the real interval
   assert(lower >= minValue && upper <= maxValue,
-    s"part of the interval is not presentable, " +
-      s"infos: minExp $minExp, maxExp $maxExp, $realInfo, representable [$minValue, $maxValue]")
+    s"representable interval [$minValue, $maxValue] doesn't cover, " +
+      s"the real interval $realInfo " +
+      s"as the QWidths is $qWidths")
+
+  if (maxExp <= minExp) printlnYellow(
+    s"you try to pass a value within [$lower, $upper], but the ulp is $ulp, " +
+      s"as a result, it became zero")
 
   /** Error is generally a tag, so we implement it in a var style
    */
@@ -77,14 +71,12 @@ class Real(var realInfo: RealInfo, val qWidths: QWidths) extends MultiData {
     this
   }
 
-  // copy from SFix template
-  // TODO: figure these out
+  // TODO: figure these out(copied from SFix)
   raw.setRefOwner(this)
   raw.setPartialName("", weak = true)
-
   override def elements: ArrayBuffer[(String, Data)] = ArrayBuffer("" -> raw)
 
-  // alignment of raws
+  // implementation of operations
   def difLsb(that: Real) = this.minExp - that.minExp
 
   def alignLsb(that: Real): (SInt, SInt) = {
@@ -96,7 +88,6 @@ class Real(var realInfo: RealInfo, val qWidths: QWidths) extends MultiData {
 
   def alignLsbAndDivide(that: Real) = {
     val lowerCount = difLsb(that).abs
-    //    val (left, right) = alignLsb(that)
     val highLeft: SInt = if (difLsb(that) > 0) this.raw else this.raw(this.raw.getBitsWidth - 1 downto lowerCount)
     val highRight: SInt = if (difLsb(that) > 0) that.raw(that.raw.getBitsWidth - 1 downto lowerCount) else that.raw
     val lower: Bits =
@@ -127,22 +118,23 @@ class Real(var realInfo: RealInfo, val qWidths: QWidths) extends MultiData {
   }
 
   def doAddSub(that: Real, add: Boolean): Real = {
+    // numeric inference
+    printlnWhenNumericDebug(s"before addition, a: $this, b: $that")
     val minExp = min(this.minExp, that.minExp) // LSB strategy, no rounding error introduced
     val realInfo = if (add) this.realInfo + that.realInfo else this.realInfo - that.realInfo // MSB strategy
-    println(s"when it comes to Real ${realInfo.interval.intervalTerms.keySet.mkString(" ")}")
     val ret = Real(realInfo, minExp exp)
-    println(s"when it comes to Real later ${ret.realInfo.interval.intervalTerms.keySet.mkString(" ")}")
-
+    printlnWhenNumericDebug(s"after addition, a + b: $ret")
     val maxExpEnlarged = ret.maxExp > max(this.maxExp, that.maxExp)
     val maxExpReduced = ret.maxExp < max(this.maxExp, that.maxExp)
-    println(s"maxEnlarged: $maxExpEnlarged")
-    println(s"maxReduced: $maxExpReduced")
+    printlnWhenNumericDebug(s"MSB Enlarged: $maxExpEnlarged, MSB Reduced: $maxExpReduced")
 
     // implementation
+    // HDL implementation
     val (rawLeft, rawRight) = alignLsb(that)
-    val retRaw = // TODO: improve the performance of this part
-      if (this.lower >= 0 && that.lower >= 0) {
-        println("do uint arith")
+    // TODO: fully implement this
+    if(this.isUnsigned && that.isUnsigned) printlnWhenNumericDebug(s"do unsigned arithmetic")
+    val retRaw =
+      if (this.isPositive && that.isPositive) {
         if (maxExpEnlarged) if (add) rawLeft.asUInt +^ rawRight.asUInt else rawLeft.asUInt -^ rawRight.asUInt
         else if (add) rawLeft.asUInt + rawRight.asUInt else rawLeft.asUInt - rawRight.asUInt
       }.asSInt
@@ -151,15 +143,8 @@ class Real(var realInfo: RealInfo, val qWidths: QWidths) extends MultiData {
         else if (add) rawLeft + rawRight else rawLeft - rawRight
       }
 
-
-
-    // TODO: fix sub
-    //    val (highLeft, highRight, lower) = alignLsbAndDivide(that)
-    //    val retRaw =
-    //      (if (maxExpEnlarged) if (add) (highLeft +^ highRight) ## lower else (highLeft -^ highRight) ## lower
-    //      else if (add) (highLeft + highRight) ## lower else (highLeft - highRight) ## lower).asSInt
-
-    if (maxExpReduced) ret.raw := retRaw.resized // sometimes, because of cancellation, the interval may be narrower
+    // post alignment
+    if (maxExpReduced) ret.raw := retRaw.resized
     else ret.raw := retRaw
     ret
   }
