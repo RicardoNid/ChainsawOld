@@ -9,17 +9,13 @@ function none = PrepareROM()
     %% 准备分配数据
     % 未训练时的比特分配,所有子载波相同
     bitAlloc = ones(SubcarriersNum, 1) * PreambleBitsPerSymbolQAM;
-    % [bitAllocSort, bitAllocSum] = bits_alloc_position_sum(bitAlloc');
     % 未训练时的功率分配,所有子载波相同
     powerAlloc = ones(1, SubcarriersNum);
     % 未训练时RAM中的分配,训练后会被覆盖
     save './data/powerAlloc' powerAlloc;
     save './data/bitAlloc' bitAlloc
-    % save './data/bitAllocSort' bitAllocSort;
-    % save './data/bitAllocSum' bitAllocSum;
 
     %% 将训练比特加工为QAM符号
-    % preambleBits = randint(PreambleBitNumber, 1, 2, PreambleSeed);
     rng(PreambleSeed)
     preambleBits = randi(2, PreambleBitNumber, 1) - 1;
     preambleQAMSymbols = qammod(preambleBits, 2^PreambleBitsPerSymbolQAM, 'gray', 'InputType', 'bit');
