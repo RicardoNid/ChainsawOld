@@ -1,6 +1,6 @@
 package FTN
 
-import Chainsaw.{ChainsawDebug, DSPSimTiming, eng}
+import Chainsaw.DSPSimTiming
 import org.scalatest.funsuite.AnyFunSuite
 import spinal.core.sim._
 import spinal.core.{Bool, Vec}
