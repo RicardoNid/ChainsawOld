@@ -42,8 +42,8 @@ function [bits_allo, power_allo, total_bits] = chow_algo_all(SNR, gap)
     while (total_bits > TargetBits)
         use_ind = find(round_bits > 0);
         diff_use = difference(use_ind);
-        id = find(diff_use == min(diff_use), 1); %好好理解索引（序号）的对应关系
-        ind_alter = use_ind(id); %好好理解索引（序号）的对应关系
+        id = find(diff_use == min(diff_use), 1); % 好好理解索引（序号）的对应关系
+        ind_alter = use_ind(id); % 好好理解索引（序号）的对应关系
         round_bits(ind_alter) = round_bits(ind_alter) - 1;
         difference(ind_alter) = difference(ind_alter) + 1;
         total_bits = sum(round_bits);

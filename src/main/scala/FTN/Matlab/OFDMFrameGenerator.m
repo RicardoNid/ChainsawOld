@@ -18,15 +18,19 @@ function OFDMSymbols = OFDMFrameGenerator(msgBits)
     end
 
     PowerOn = 1; % 加功率分配
-    msgQAMSymbols = PowerOnOff(msgQAMSymbols);
-
+    poweredMsgQAMSymbols = PowerOnOff(msgQAMSymbols);
+    save './data/poweredMsgQAMSymbols' poweredMsgQAMSymbols;
+    
     %% 将训练QAM符号加工为OFDM符号
     IsPreamble = 1;
     preambleOFDMSymbols = IFFT(preambleQAMSymbols);
-
+    save './data/preambleOFDMSymbols' preambleOFDMSymbols;
+    
     %% 将信息QAM符号加工为OFDM符号
     IsPreamble = 0;
-    msgOFDMSymbols = IFFT(msgQAMSymbols); % ifft
+    msgOFDMSymbols = IFFT(poweredMsgQAMSymbols); % ifft
+    save './data/msgOFDMSymbols' msgOFDMSymbols;
+
 
     %% 拼接训练和信息序列
     OFDMSymbols = [repmat(preambleOFDMSymbols, PreambleNumber, 1); msgOFDMSymbols];
