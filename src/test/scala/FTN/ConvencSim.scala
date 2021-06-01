@@ -1,6 +1,6 @@
 package FTN
 
-import Chainsaw.DSPSimTiming
+import Chainsaw.{DSPSimTiming, eng}
 import org.scalatest.funsuite.AnyFunSuite
 import spinal.core.sim._
 import spinal.core.{Bool, Vec}
@@ -25,6 +25,8 @@ class ConvencSim(config: ConvencConfig) extends ConvencDUT(config) with DSPSimTi
       clockDomain.waitSampling()
     }
     buffer ++= output.map(_.toBoolean)
+    eng.putVariable("convCodedBitsByHardware", buffer.toArray.map(if (_) 1.0 else 0.0))
+    eng.eval("save './data/convCodedBitsByHardware' convCodedBitsByHardware;")
     buffer.toArray
   }
 
@@ -45,27 +47,17 @@ class ConvencSim(config: ConvencConfig) extends ConvencDUT(config) with DSPSimTi
 }
 
 class testConvenc extends AnyFunSuite {
-
   test("testConvenc") {
-//    SimConfig.withWave.compile(new ConvencSim(ConvencConfig(7, Array(145, 133)))).doSim { dut =>
-//      dut.sim()
-//      dut.insertTestCase(Array(false, false, false, false, false, true, true, true, true, true) :+ false)
-//      dut.insertTestCase(Array.fill(10)(false) :+ false)
-//      dut.insertTestCase(Array(true, false, true, false, true, false, true, false, true, false) :+ false)
-//      val report = dut.simDone()
-//    }
-//    eng.close()
-    Test.main(Array(""))
-  }
-}
-
-object Test {
-  def main(args: Array[String]): Unit = {
-    SimConfig.withWave.compile(new ConvencSim(ConvencConfig(7, Array(145, 133)))).doSim { dut =>
+    SimConfig.withWave.compile(new ConvencSim(ConvencConfig(7, Array(171, 133)))).doSim { dut =>
       dut.sim()
-      dut.insertTestCase(Array(false, false, false, false, false, true, true, true, true, true) :+ false)
-      dut.insertTestCase(Array.fill(10)(false) :+ false)
-      dut.insertTestCase(Array(true, false, true, false, true, false, true, false, true, false) :+ false)
+      // the actual case of FTN
+      eng.eval("cd /home/ltr/IdeaProjects/Chainsaw/src/main/scala/FTN/Matlab")
+      eng.eval("load './data/bits'")
+      val bits = eng.getVariable("bits").asInstanceOf[Array[Double]]
+      dut.insertTestCase(bits.map(_ == 1.0))
+      //      dut.insertTestCase(Array(false, false, false, false, false, true, true, true, true, true) :+ false)
+      //      dut.insertTestCase(Array.fill(10)(false) :+ false)
+      //      dut.insertTestCase(Array(true, false, true, false, true, false, true, false, true, false) :+ false)
       val report = dut.simDone()
     }
   }

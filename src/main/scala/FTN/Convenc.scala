@@ -1,13 +1,9 @@
 package FTN
 
 import Chainsaw._
-import com.mathworks.engine.MatlabEngine
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
 import matlabIO._
-
-import scala.collection.mutable.ListBuffer
+import spinal.core._
+import spinal.lib._
 
 /** Config of conv encoding
  *
@@ -28,13 +24,9 @@ class Convenc(input: Bool, config: ConvencConfig) extends ImplicitArea[Vec[Bool]
   val genCount = config.gens.length
 
   val trellises = config.gens.map(octal2BinaryString).map(_.takeRight(config.length))
-  //  val trellises = config.gens.map(octal2BinaryString).map(_.reverse.take(config.length))
-  println("trellises: \n" + trellises.mkString("\n"))
-  //  val regs = Vec(RegInit(False), config.length - 1)
+  printlnWhenDebug("trellises: \n" + trellises.mkString("\n"))
   val regs = Vec(RegInit(False), config.length)
-  //  val srl = input +: regs
   regs.head := input
-  //  srl.init.zip(srl.tail).foreach { case (prev, next) => next := prev }
   regs.init.zip(regs.tail).foreach { case (prev, next) => next := prev }
 
   //  val rets = trellises.map(trellis => trellis.zip(srl).filter(_._1 == '1').map(_._2).xorR)
@@ -43,16 +35,14 @@ class Convenc(input: Bool, config: ConvencConfig) extends ImplicitArea[Vec[Bool]
   override def implicitValue: Vec[Bool] = Vec(rets)
 
   def referenceModel(bits: Array[Boolean]) = {
-    //    val eng = MatlabEngine.startMatlab
     eng.putVariable("bits", bits)
-    eng.eval(s"trellis = poly2trellis(${config.length}, ${config.gens.asMatlab})")
-    eng.eval(s"convenc(bits, trellis)")
+    eng.eval(s"trellis = poly2trellis(${config.length}, ${config.gens.asMatlab});")
+    eng.eval(s"convenc(bits, trellis);")
     val ret = eng.getVariable("ans").asInstanceOf[Array[Boolean]]
-    //    eng.close()
     ret
   }
 
-  override val getTimingInfo: TimingInfo = TimingInfo(11, 11, 1, 18)
+  override val getTimingInfo: TimingInfo = TimingInfo(7168, 7168, 1, 7200)
 }
 
 class ConvencDUT(config: ConvencConfig) extends DSPDUTTiming[Bool, Vec[Bool]] {

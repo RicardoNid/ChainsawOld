@@ -36,7 +36,6 @@ function QAMSymbols = DynamicQammod(bits)
     %     QAMSymbols(carrierPosition, :) = QAMSymbol; % 将映射后的符号串->并装换填入对应子载波位置
     % end
 
-    % 原本的排序代码,不排序,不进行动态归一化,误码率改善了一个数量级
     for i = 1:length(bitAlloc)
 
         bitAllocated = bitAlloc(i); % 当前要处理的子载波(群)被分配的比特数

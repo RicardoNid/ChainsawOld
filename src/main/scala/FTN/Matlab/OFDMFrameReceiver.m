@@ -11,18 +11,22 @@ function [decoded] = OFDMFrameReceiver(recvOFDMFrame)
 
     %% 下面部分对应于图1
     recvPreambleOFDMSymbols = recvOFDMFrame(1:PreambleNumber * (FFTSize + CPLength)); % 将收到的子帧分为训练序列和信息序列
+    save './data/recvPreambleOFDMSymbols' recvPreambleOFDMSymbols
     recvMsgOFDMSymbols = recvOFDMFrame(PreambleNumber * (FFTSize + CPLength) + 1:end);
-
+    save './data/recvMsgOFDMSymbols' recvMsgOFDMSymbols
+    
     IsPreamble = 1;
-    reambleQAMSymbols = FFT(recvPreambleOFDMSymbols);
-
+    recvPreambleQAMSymbols = FFT(recvPreambleOFDMSymbols);
+    save './data/recvPreambleQAMSymbols' recvPreambleQAMSymbols
+    
     IsPreamble = 0;
     FDE = FFT(recvMsgOFDMSymbols); % fft,FDE尺寸224*16
+    save './data/FDE' FDE
 
-    % 信道估计和均?
-    H = ChannelEstimation(reambleQAMSymbols); % 信道估计,得到(训练序列所占据的)各个子载波上的修正系数,H尺寸255*1
+    % 信道估计和均衡
+    H = ChannelEstimation(recvPreambleQAMSymbols); % 信道估计,得到(训练序列所占据的)各个子载波上的修正系数,H尺寸255*1
 
-    % 信道均?
+    % 信道均衡
     for i = 1:SToPcol;
         FDE(:, i) = FDE(:, i) ./ H(DataCarrierPositions - 1); % ?? 此处的子载波对齐可能有误
     end

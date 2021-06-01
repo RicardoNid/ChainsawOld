@@ -1,10 +1,8 @@
 package FTN
 
 import Chainsaw._
-import breeze.numerics.{abs, pow}
 import com.mathworks.matlab.types.Complex
 import spinal.core._
-import spinal.core.sim._
 
 class FFT(input: Vec[Real], inverse: Boolean = false) extends DSPArea[Vec[Real], Array[Complex], Array[Complex]] {
   // TODO: implement

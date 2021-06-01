@@ -7,7 +7,7 @@ function [OFDMSymbols] = IFFT(QAMSymbols)
     global CPLength
     global SToPcol
 
-    if IsPreamble == 1;
+    if IsPreamble == 1
         symbolLength = 1;
         positionsIn = PreambleCarrierPositions;
         positionsOut = 1:FFTSize;
