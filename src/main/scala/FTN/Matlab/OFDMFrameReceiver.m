@@ -40,7 +40,7 @@ function [decoded] = OFDMFrameReceiver(recvOFDMFrame)
 
     decoded = QAM2Bits(diffQAMSymbols); % QAM解映射 -> 解交织 -> 维特比译码
 
-    if On == 0
+    if On == 0 
         % ?? 此处可能也是不必要的
         dataQAMSymbolsForAlloc = diffQAMSymbols * RmsAlloc(4);
         Alloc(dataQAMSymbolsForAlloc);

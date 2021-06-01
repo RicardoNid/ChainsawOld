@@ -27,6 +27,7 @@ function none = Run()
         sigma = sqrt(code_power / (snr * 2)); % sigma与当前SNR和信号平均能量有关系
         [OFDMFrame_rec, ~] = addnoise(OFDMFrame, sigma); % 只在实部添加噪声
         %% 接收机
+        % receivedBits = OFDMFrameReceiver(OFDMFrame);
         receivedBits = OFDMFrameReceiver(OFDMFrame_rec); % 接收机接收子帧
         debitsAllFrame = [debitsAllFrame; receivedBits]; % 记录信息比特
         CurrentFrame = CurrentFrame + 1;

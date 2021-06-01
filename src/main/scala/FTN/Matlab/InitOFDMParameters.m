@@ -51,8 +51,10 @@ function OFDMParameters = InitOFDMParameters()
     %% 交织参数
     % 交织深度
     % 交织器容积
-    global InterleaverDepth; InterleaverDepth = 448;
-    global InterleaverBoxSize; InterleaverBoxSize = 448 * 32;
+    % global InterleaverDepth; InterleaverDepth = 448;
+    global InterleaverDepth; InterleaverDepth = 32;
+    % global InterleaverBoxSize; InterleaverBoxSize = 448 * 32;
+    global InterleaverBoxSize; InterleaverBoxSize = 896;
 
     %% QAM参数
     % QAM8的符号
@@ -66,12 +68,12 @@ function OFDMParameters = InitOFDMParameters()
 
     %% 测试规模和随机数种子参数
     global PreambleSeed; PreambleSeed = 20;
-    % global Seed; Seed = 30;
-    global Seed; Seed = [30, 13, 21, 20, 8, 9, 15, 17, 19, 12, 11, 30, 25, 27, 26, 22, 14, 7, 23, 29];
+    global Seed; Seed = 50;
+    % global Seed; Seed = [30, 13, 21, 20, 8, 9, 15, 17, 19, 12, 11, 30, 25, 27, 26, 22, 14, 7, 23, 29];
     % global Seed; Seed = randi(30, [1, 20]);
     % global Seed; Seed = randi(100, [1, 100]);
-    % global FrameNum; FrameNum = 1;
-    global FrameNum; FrameNum = 20;
+    global FrameNum; FrameNum = 1;
+    % global FrameNum; FrameNum = 20;
     % global FrameNum; FrameNum = 100;
 
     %% Chow算法相关变量,过程中可变

@@ -14,3 +14,5 @@ function Symbols = PowerOnOff(Symbols)
         end
 
     end
+
+    
