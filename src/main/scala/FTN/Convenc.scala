@@ -45,6 +45,10 @@ class Convenc(input: Bool, config: ConvencConfig) extends ImplicitArea[Vec[Bool]
   override val getTimingInfo: TimingInfo = TimingInfo(7168, 7168, 1, 7200)
 }
 
+object Convenc {
+  def apply(input: Bool, config: ConvencConfig): Convenc = new Convenc(input, config)
+}
+
 class ConvencDUT(config: ConvencConfig) extends DSPDUTTiming[Bool, Vec[Bool]] {
   override val input: Bool = in Bool
   val convenc = new Convenc(input, config)

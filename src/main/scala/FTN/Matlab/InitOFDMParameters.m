@@ -41,7 +41,7 @@ function OFDMParameters = InitOFDMParameters()
     global PreambleCarrierPositions; PreambleCarrierPositions = 2:FFTSize / 2;
     global SubcarriersNum; SubcarriersNum = length(DataCarrierPositions);
     global PreambleCarriersNum; PreambleCarriersNum = length(PreambleCarrierPositions);
-    global OFDMPositions; OFDMPositions = sort([1 DataCarrierPositions FFTSize / 2 + 1 FFTSize + 2 - DataCarrierPositions]);
+    global OFDMPositions; OFDMPositions = sort([1, DataCarrierPositions, FFTSize / 2 + 1, FFTSize +  - DataCarrierPositions]);
     % Ö¡³¤¶È
     global BitNumber; BitNumber = length(DataCarrierPositions) * OFDMSymbolNumber * BitsPerSymbolQAM;
     global PreambleBitNumber; PreambleBitNumber = length(PreambleCarrierPositions) * PreambleBitsPerSymbolQAM;

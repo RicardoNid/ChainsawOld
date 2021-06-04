@@ -2,22 +2,21 @@ close all
 warning off all
 clc
 
-InitOFDMParameters(); % 初始化全局变量
-PrepareROM(); % 将无需硬件计算(存储在ROM中)的数据准备好
+InitOFDMParameters(); % 锟斤拷始锟斤拷全锟街憋拷锟斤拷
+PrepareROM(); % 锟斤拷锟斤拷锟斤拷硬锟斤拷锟斤拷锟斤拷(锟芥储锟斤拷ROM锟斤拷)锟斤拷锟斤拷锟斤拷准锟斤拷锟斤拷
 global On
 global CurrentFrame
 
-Run(); % 以比特分配(训练)模式运行一次系统
+Run(); % 锟皆憋拷锟截凤拷锟斤拷(训锟斤拷)模式锟斤拷锟斤拷一锟斤拷系统
 
 On = 1;
 CurrentFrame = 1;
 
-Run(); % 以比特加载(工作)模式运行一次系统
+Run(); % 锟皆憋拷锟截硷拷锟斤拷(锟斤拷锟斤拷)模式锟斤拷锟斤拷一锟斤拷系统
 
-%% 运行完毕之后,清除数据文件,以防残留的数据文件掩盖代码修改后的问题
-% 比特分配数据
-delete './data/powerAlloc.mat'
-delete './data/bitAllocSum.mat'
-% ROM预存数据
+%% 锟斤拷锟斤拷锟斤拷锟街?锟斤拷,锟斤拷锟斤拷锟斤拷锟斤拷募锟?,锟皆凤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟侥硷拷锟节盖达拷锟斤拷锟睫改猴拷锟斤拷锟斤拷锟?
+% 锟斤拷锟截凤拷锟斤拷锟斤拷锟斤拷
+% delete './data/powerAlloc.mat'
+% ROM预锟斤拷锟斤拷锟斤拷
 delete './data/preambleQAMSymbols.mat'
 delete './data/msgQAMSymbols.mat'

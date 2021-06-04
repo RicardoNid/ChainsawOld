@@ -3,14 +3,7 @@ package FTN
 import Chainsaw._
 import com.mathworks.matlab.types.Complex
 import spinal.core._
-import spinal.core._
-import spinal.core.sim._
 import spinal.lib._
-import spinal.sim._
-import spinal.lib.fsm._
-
-import Chainsaw._
-import Chainsaw.Real
 
 class DynamicQammod(input: Bits, bitsAllocated: Array[Int]) extends DSPArea[Vec[Real], Array[Int], Array[Complex]] {
   // caution: bitAllocated can be 0

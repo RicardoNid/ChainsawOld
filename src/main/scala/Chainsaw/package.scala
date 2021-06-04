@@ -1,4 +1,4 @@
-import breeze.linalg._
+import breeze.linalg.DenseVector
 import breeze.numerics._
 import breeze.numerics.constants.Pi
 import spinal.core._
@@ -28,6 +28,29 @@ package object Chainsaw extends RealFactory {
     val manager = SimManagerContext.current.manager
     val signal = btToSignal(manager, r.raw)
     manager.getLong(signal) * scala.math.pow(2, r.minExp)
+  }
+
+  import spinal.core.sim
+
+  implicit class MoreBVPimper(bv: BitVector){
+    def #=(value: Array[Boolean]) = { //TODO improve perf
+      var acc = BigInt(0)
+      value.foreach { bit =>
+        acc = acc << 1
+        acc |= (if (bit) 1 else 0)
+      }
+      setBigInt(bv, acc)
+    }
+
+    def #=(value: Array[Int]) = { //TODO improve perf
+      require(value.forall(Array(0, 1).contains(_))) // value should contains only 0 and 1
+      var acc = BigInt(0)
+      value.foreach { bit =>
+        acc = acc << 1
+        acc |= bit
+      }
+      setBigInt(bv, acc)
+    }
   }
 
   implicit class SimRealPimper(r: Real) {

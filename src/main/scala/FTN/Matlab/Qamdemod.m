@@ -22,5 +22,8 @@ function bits = Qamdemod(bitAllocated, QAMSymbols)
         % bits = demodulate(demodObj, QAMSymbols);
 
         bits = qamdemod(QAMSymbols, 2^bitAllocated, 'gray', 'OutputType', 'bit');
+        % bits = qamdemod(QAMSymbols, 2^bitAllocated, 'gray');
+        % bits
         bits = bits';
+        % size(bits)
     end

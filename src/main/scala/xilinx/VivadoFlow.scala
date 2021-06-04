@@ -53,6 +53,7 @@ class VivadoFlow[T <: Component](
       if (path.endsWith(".sv")) script += s"read_verilog -sv $path \n"
       else if (path.endsWith(".v")) script += s"read_verilog $path \n"
       else if (path.endsWith(".vhdl") || path.endsWith(".vhd")) script += s"read_vhdl $path \n"
+      else if (path.endsWith(".bin")) Unit
       else throw new IllegalArgumentException(s"invalid RTL source path $path")
     }
 
