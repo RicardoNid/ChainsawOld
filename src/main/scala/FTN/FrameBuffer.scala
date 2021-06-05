@@ -17,6 +17,7 @@ import Chainsaw.Real
 class FrameBuffer(FrameData: Array[Array[Int]]) extends DSPDUTTiming[Bool, Vec[Bits]] {
 
   println(s"first 16 bits: ${FrameData(0).take(16).mkString(" ")}")
+  // 1 0 1 0 0 1 0 1 1 0 1 0 0 0 0 1
   // 0 0 1 0 0 1 1 1 1 1 1 1 0 0 0 1 0 0 1 1 0 0 1 0 0 0 0 0 1 1 1 0
 
   override val input: Bool = in Bool // start signal

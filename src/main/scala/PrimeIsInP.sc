@@ -21,7 +21,7 @@ getContinuedFraction(11, 9)
 getContinuedFraction(294, 159)
 getContinuedFraction(314159, 100000)
 
-def getFactorsByFermat(n:Int) = {
+def getFactorsByFermat(n: Int) = {
 
 }
 
@@ -54,7 +54,7 @@ getFactorsByContinuedFraction(9073)
 
 def modByBarrett(x: Int, m: Int) = {
   val k = m.toBinaryString.length
-  require(x.toBinaryString.length <= 2 * k)
+  require(x.toBinaryString.length <= 2 * k + 1)
   val mu = (1 << (2 * k)) / m // precomputation
 
   val q1 = x >> (k - 1)
@@ -67,33 +67,44 @@ def modByBarrett(x: Int, m: Int) = {
   val s = if (r1 - r2 < 0) r1 - r2 + (1 << (k + 1)) else r1 - r2
 
   def reduction(s: Int): Int = if (s < m) s else reduction(s - m)
+
   val ret = reduction(s)
   ret
 }
 
 modByBarrett(3561, 47)
-(0 until 3561).forall(i => modByBarrett(i, 47) == i % 47)
+(0 to 4096).forall(i => modByBarrett(i, 47) == i % 47)
 
 
-def modByMontgomery(T: Int, m: Int) = {
-  val R = 1 << m.toBinaryString.length
-  require(T < m * R)
-  val ZR = Zp(R.toLong)
-  val Zm = Zp(m.toLong)
-  val mPrime = -ZR.reciprocal(m).intValue() // precomputation
-  //  println(s"mPrime: $mPrime")
-  val RInverse = Zm.reciprocal(R).intValue() // pseudo precomputation
-  // caution: mod of negative number
-  val U = R + (T * mPrime % R) // multiplication 1
-  //  println(s"U: $U")
+def modByMontgomery(t: Int, N: Int) = {
+  val rho = 1 << N.toBinaryString.length
+  require(t < N * (rho - 1))
+  val Zrho = Zp(rho.toLong)
+  val Z2 = Zp(2.toLong)
+  val Zm = Zp(N.toLong)
+  val RInverse = Zm.reciprocal(rho).intValue() // pseudo precomputation
 
-  def reduction(s: Int): Int = if (s < m
-  ) s else reduction(s - m)
-  val ret = (T + U * m) / R // multiplication 2
+//  // original
+//  val omega = -Zrho.reciprocal(N).intValue() // precomputation
+//  // caution: mod of negative number, so we add an extra rho
+//  val U = rho + (t * omega) % rho // multiplication 1
+//  val ret = (t + U * N) / rho // multiplication 2
+
+  // bit-optimized
+  val omega = -Z2.reciprocal(rho).intValue() // precomputation
+  val UN = t.toBinaryString.zipWithIndex
+      .map { case (char, i) => char.asDigit * omega % 2 * N * (1 << i)}
+      .sum
+  val ret = (t + UN) / rho
+
+
+  def reduction(s: Int): Int = if (s < N) s else reduction(s - N)
+
   reduction(ret)
 }
 
 val RInverse = Zp(47.toLong).reciprocal(64).intValue()
+modByMontgomery(RInverse, 47)
 modByMontgomery(RInverse, 47) == RInverse * RInverse % 47
 (1 until (64 * 46)).forall(i => (i * RInverse) % 47 == modByMontgomery(i, 47))
 

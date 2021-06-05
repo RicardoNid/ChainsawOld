@@ -32,8 +32,8 @@ class ParallelConvenc extends DSPDUTTiming[Vec[Bits], Bits] {
 
     convCoded := Mux(
       isActive(RUNNING0),
-      convencs0.map(_.implicitValue).flatten.asBits(),
-      convencs1.map(_.implicitValue).flatten.asBits())
+      convencs0.map(_.implicitValue.reverse).flatten.asBits(),
+      convencs1.map(_.implicitValue.reverse).flatten.asBits())
     valid := isActive(RUNNING0) || isActive(RUNNING1)
 
     when(isActive(RUNNING0))(input0 := input(0)) // caution: vector generated from asBools starts from the LSB
@@ -45,7 +45,7 @@ class ParallelConvenc extends DSPDUTTiming[Vec[Bits], Bits] {
 
   override val output: Bits = out(convCoded)
 
-  override val timing: TimingInfo = TimingInfo(70, 64, 7, 128)
+  override val timing: TimingInfo = TimingInfo(70, 64, 9, 128)
 }
 
 object ParallelConvenc {

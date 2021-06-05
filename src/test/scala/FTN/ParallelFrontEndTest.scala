@@ -16,10 +16,11 @@ class ParallelFrontEndSim extends ParallelFrontEnd with DSPSimTiming[Bits, Bits,
   override def simInit(): Unit = {
     clockDomain.forkStimulus(period)
     sleep(32)
-    start #= true
   }
 
-  override def poke(testCase: Array[Array[Int]], input: Bits): Unit = {} // do nothing
+  override def poke(testCase: Array[Array[Int]], input: Bits): Unit = {
+    start #= true
+  } // do nothing
   override def peek(output: Bits): Array[Array[Int]] = {
     val container = ArrayBuffer[Array[Int]]()
     (0 until timing.outputInterval - 1).foreach { _ =>
@@ -33,7 +34,10 @@ class ParallelFrontEndSim extends ParallelFrontEnd with DSPSimTiming[Bits, Bits,
     container += output.toBigInt.toString(2).reverse.padTo(896, '0').reverse.map(char => if (char == '1') 1 else 0).toArray
     container.grouped(16).map { slices => // 16 * 896
       val transpose = (0 until 896).map(i => slices.map(slice => slice(i))) // 896 * 16
-      transpose.flatten.toArray
+      val timeSequences = transpose.grouped(2).toArray
+        .map(two =>two(0).zip(two(1)).map(pair => Array(pair._1, pair._2)))
+        .flatten
+      timeSequences.flatten.toArray
     }.toArray
   }
   override def referenceModel(testCase: Array[Array[Int]]): Array[Array[Int]] = testCase

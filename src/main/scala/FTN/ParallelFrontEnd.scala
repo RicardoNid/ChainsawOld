@@ -27,7 +27,7 @@ class ParallelFrontEnd extends DSPDUTTiming[Bits, Bits] {
 
   valid := parallelConvenc.valid
 
-  override val timing: TimingInfo = TimingInfo(166, 160, 7, 200) // 10 frames as a group input interval = 6 + 10 * 160
+  override val timing: TimingInfo = TimingInfo(166, 160, 9, 200) // 10 frames as a group input interval = 6 + 10 * 160
 }
 
 object ParallelFrontEnd {
