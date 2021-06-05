@@ -18,6 +18,9 @@ class RSARef(lN: Int) {
   def getPublic = keyPair.getPublic
 
   def privateImpl = keyPair.getPrivate.asInstanceOf[RSAPrivateCrtKeyImpl]
+
+  def getModulus = privateImpl.getModulus
+
   def getPrivateValue = privateImpl.getPrivateExponent
   def getPublicValue = privateImpl.getPublicExponent
 

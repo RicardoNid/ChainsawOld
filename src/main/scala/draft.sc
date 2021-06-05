@@ -1,8 +1,6 @@
-val temp = Array(
-  0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1,
-  0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0)
+val a = BigInt(1)
+val b = BigInt(1)
 
-println(temp.size)
+def plus(value:BigInt) = BigInt((1 + value.toString(2)(0).asDigit).toBinaryString + value.toString(2).tail, 2)
 
-val groups = temp.grouped(16).toArray
-groups(1).zip(groups(0)).map(pair => Array(pair._1, pair._2)).flatten
+plus(2)
