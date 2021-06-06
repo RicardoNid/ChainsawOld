@@ -7,15 +7,24 @@ class RSAAlgo(lN: Int) {
 
   val Rho = BigInt(1) << lN
 
+  // ... with prefix ... has corresponding hardware implementation
+
+  def bigMod(a: BigInt, modulus: BigInt) = {
+    require(modulus.toString(2).tail.forall(_ == '0')) // modulus should be a power of the base(2)
+    BigInt(a.toString(2).takeRight(modulus.toString(2).size - 1), 2)
+  }
+
+  // TODO:
   def bigMult(a: BigInt, b: BigInt) = {
     a * b
   }
 
   def bigMultMod(a: BigInt, b: BigInt, modulus: BigInt) = {
     require(modulus.toString(2).tail.forall(_ == '0')) // modulus should be a power of the base(2)
-    BigInt((a * b).toString(2).takeRight(modulus.toString(2).size - 1))
+    bigMod(bigMult(a, b), modulus)
   }
 
+  // TODO:
   def bigSquare(a: BigInt) = {
     a * a
   }
@@ -54,7 +63,7 @@ class RSAAlgo(lN: Int) {
       }
     }
 
-    -lift(init, 1)
+    Rho - lift(init, 1)
   }
 
   /** Get rho^2^ (mod N) by iterative algorithm
@@ -69,11 +78,11 @@ class RSAAlgo(lN: Int) {
 
       // version 2
       def cal(value: BigInt) = {
-        val det = 2 * value - N
+        val det = (value << 1) - N
         if (det > 0) det else det + N
       }
 
-      if (exp == 2 * lN) cal(value)
+      if (exp == (lN << 1)) cal(value)
       else iter(cal(value), exp + 1)
     }
 
@@ -85,15 +94,39 @@ class RSAAlgo(lN: Int) {
   }
 
   def montRed(t: BigInt, N: BigInt) = {
-    require(t >= 0 && t <= N * ((BigInt(1) << lN) - 1))
+    require(t >= 0 && t <= N * Rho - 1)
     val U = bigMultMod(t, getOmega(N), Rho)
     val ret = (t + bigMult(U, N)) >> lN // divided by Rho
     val det = ret - N
-    if (det > 0) det else ret
+    if (det > 0) det else ret // result \in [0, N)
   }
 
-  def montMul = {
+  // montMul(aMont, bMont) = abMont
+  def montMul(aMont: BigInt, bMont: BigInt, N: BigInt) = {
+    require(aMont >= 0 && aMont < N)
+    require(bMont >= 0 && bMont < N)
+    // aMont, bMont \in [0, N), aMont * bMont \in [0 N^2), N^2 < N * Rho - 1(as N < Rho)
+    val prod = bigMult(aMont, bMont)
+    montRed(prod, N)
+  }
 
+  def montSquare(aMont: BigInt, N: BigInt) = {
+    require(aMont >= 0 && aMont < N)
+    val square = bigSquare(aMont)
+    montRed(square, N)
+  }
+
+  def montExp(a: BigInt, exponent: BigInt, N: BigInt) = {
+    require(a >= 0 && a < N)
+    val aMont = montMul(a, getRhoSquare(N), N)
+    val sequence = exponent.toString(2)
+    var reg = aMont
+    sequence.tail.foreach { char =>
+      val square = montSquare(reg, N)
+      if (char == '1') reg = montMul(square, aMont, N)
+      else reg = square
+    }
+    montRed(reg, N)
   }
 }
 
@@ -105,15 +138,16 @@ object RSAAlgo {
     val ref = new RSARef(512)
     val Zrho = Zp(asBigInteger(BigInt(1) << 512))
 
-    def assertBig(a: BigInt, b: IntZ) = assert(a.toString(2) == b.toString(2))
+    def assertBig(a: BigInt, b: IntZ) = assert(a.toString(2) == b.toString(2),
+      s"\nyours:  ${a.toString(2)}, \ngolden: ${b.toString(2)}")
 
     (0 until 10).foreach { _ =>
       val modulus = ref.getModulus
       //      println(s"the size of modulus is always ${modulus.toString(2).size}")
       val omega = algo.getOmega(modulus)
-      assert(-omega * modulus % (BigInt(1) << 512) == 1)
       val goldenOmega: IntZ = Zrho.reciprocal(modulus)
-      assertBig(-omega, goldenOmega)
+      assertBig(algo.bigMultMod(omega, modulus, algo.Rho), algo.Rho - 1)
+      assertBig(-omega + algo.Rho, goldenOmega)
       ref.refresh()
     }
     printlnGreen(s"getOmega, passed")
@@ -125,15 +159,27 @@ object RSAAlgo {
     }
     printlnGreen(s"getRhoSquare, passed")
 
-    //    (0 until 1).foreach { _ =>
-    //      val modulus = ref.getModulus
-    //      val ZN = Zp(modulus)
-    //      val input = BigInt(ref.getPrivateValue) - DSPRand.nextInt(10000)
-    //      val RhoInverse = ZN.reciprocal(algo.Rho)
-    //
-    //      println(algo.montRed())
-    //
-    //      //      assertBig(algo.montRed(input, modulus), ZN.multiply(input, RhoInverse))
-    //    }
+    (0 until 10).foreach { _ =>
+      val modulus = ref.getModulus
+      val ZN = Zp(modulus)
+      val input = BigInt(ref.getPrivateValue) - DSPRand.nextInt(10000)
+      val RhoInverse = ZN.reciprocal(algo.Rho)
+      assertBig(algo.montRed(input, modulus), ZN.multiply(input, RhoInverse))
+    }
+    printlnGreen(s"montRed, passed")
+
+    //    val newAlgo = new RSAAlgo(4)
+    //    val ZN = Zp(13)
+    //    val RhoInvers = ZN.reciprocal(newAlgo.Rho)
+    //    println(s"RhoInvers = $RhoInvers")
+    //    println(newAlgo.montRed(4, 13))
+    //    println(ZN.multiply(4, RhoInvers))
+
+    val modulus = ref.getModulus
+    val publicKey = ref.getPublicValue
+    val input = BigInt(ref.getPrivateValue) - DSPRand.nextInt(10000)
+    val ZN = Zp(modulus)
+    assertBig(algo.montExp(input, publicKey, modulus), ZN.pow(input, publicKey))
+    printlnGreen(s"montExp, passed")
   }
 }
