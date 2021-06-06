@@ -99,9 +99,10 @@ class RSAAlgo(lN: Int) {
     require(t >= 0 && t <= N * Rho - 1)
     // TODO: is t necessarily to be 2 * lN long?
     val U = bigMultMod(t, getOmega(N), Rho)
-    val ret = (t + bigMult(U, N)) >> lN // divided by Rho
-    val det = ret - N
-    if (det > 0) det else ret // result \in [0, N)
+    // t + bigMult(U, N) carry? may be!
+    val mid = (t + bigMult(U, N)) >> lN // divided by Rho
+    val det = mid - N
+    if (det >= 0) det else mid // result \in [0, N)
   }
 
   // montMul(aMont, bMont) = abMont

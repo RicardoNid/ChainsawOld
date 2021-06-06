@@ -1,0 +1,13 @@
+    //    GenRTL(new BigMult(512))
+    //    VivadoSynth(new BigMult)
+    // plain design with input and output regs
+    // 28168 LUT 1048 FF
+    // 900 DSP
+    // 10.03 MHz
+    // xczu7evffvc1156-2 10% LUT 52.08% DSP plain design
+
+    //    VivadoSynth(new BigMultMod(512))
+    // plain design(using BigMult and take part of the result) with input and output regs
+    // 13795 LUT 533 FF
+    // 900 DSP
+    // 19.20 MHz

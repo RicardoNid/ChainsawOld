@@ -4,6 +4,7 @@ import breeze.numerics.constants.Pi
 import spinal.core._
 import spinal.core.internals.BaseNode
 import spinal.core.sim._
+import spinal.lib.fsm.{State, StateCompletionTrait, StateMachineAccessor, StateMachineSharableRegUInt, StateMachineSharableUIntKey}
 import spinal.sim._
 import xilinx.VivadoFlow
 
@@ -14,7 +15,35 @@ import scala.util.Random
 
 package object Chainsaw extends RealFactory {
 
-  implicit class MoreOnString(s:String){
+  class StateDelayFixed(cyclesCount: UInt)(implicit stateMachineAccessor: StateMachineAccessor) extends State with StateCompletionTrait {
+
+    /** Create a StateDelay with an TimeNumber */
+    def this(time: TimeNumber)(implicit stateMachineAccessor: StateMachineAccessor) {
+      this((time * ClockDomain.current.frequency.getValue).toBigInt)
+    }
+
+    val cache = stateMachineAccessor.cacheGetOrElseUpdate(StateMachineSharableUIntKey, new StateMachineSharableRegUInt).asInstanceOf[StateMachineSharableRegUInt]
+    cache.addMinWidth(cyclesCount.getWidth)
+
+    whenIsActive {
+      cache.value := cache.value - 1
+      when(cache.value <= 1) {
+        doWhenCompletedTasks()
+      }
+    }
+
+    //    onEntry{
+    //      cache.value := cyclesCount
+    //    }
+
+    whenIsNext {
+      when(cache.value <= 1) {
+        cache.value := cyclesCount
+      }
+    }
+  }
+
+  implicit class MoreOnString(s: String) {
     def padToLeft(len: Int, elem: Char) = s.reverse.padTo(len, elem).reverse
   }
 
@@ -36,7 +65,7 @@ package object Chainsaw extends RealFactory {
 
   import spinal.core.sim
 
-  implicit class MoreBVPimper(bv: BitVector){
+  implicit class MoreBVPimper(bv: BitVector) {
     def #=(value: Array[Boolean]) = { //TODO improve perf
       var acc = BigInt(0)
       value.foreach { bit =>

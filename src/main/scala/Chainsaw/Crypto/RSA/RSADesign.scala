@@ -10,24 +10,38 @@ class RSADesign {
 
 }
 
-class BigMult(lN: Int) extends DSPDUTTiming[Vec[UInt], UInt] {
-  override val input: Vec[UInt] = in Vec(UInt(lN bits), 2)
-  override val output: UInt = out(RegNext(RegNext(input(0)) * RegNext(input(1))))
-  override val timing: TimingInfo = TimingInfo(1, 1, 2, 1)
+// width = 2 * lN
+class BigAdd(n: Int) extends DSPDUTTiming[Vec[UInt], UInt] {
+  override val input: Vec[UInt] = in Vec(UInt(n bits), 2)
+  override val output: UInt = out(input(0) +^ input(1))
+  override val timing: TimingInfo = TimingInfo(1, 1, 0, 1)
 }
 
-class BigMultMod(lN: Int) extends DSPDUTTiming[Vec[UInt], UInt] {
-  override val input: Vec[UInt] = in Vec(UInt(lN bits), 2)
-  val prod = RegNext(input(0)) * RegNext(input(1))
-  val ret = prod(511 downto 0)
+class BigAddMod(n: Int, m: Int) extends DSPDUTTiming[Vec[UInt], UInt] {
+  override val input: Vec[UInt] = in Vec(UInt(n bits), 2)
+  val sum = input(0) +^ input(1)
+  override val output: UInt = out(sum(m - 1 downto 0))
+  override val timing: TimingInfo = TimingInfo(1, 1, 0, 1)
+}
+
+class BigMult(n: Int) extends DSPDUTTiming[Vec[UInt], UInt] {
+  override val input: Vec[UInt] = in Vec(UInt(n bits), 2)
+  override val output: UInt = out(RegNext(input(0) * input(1)))
+  override val timing: TimingInfo = TimingInfo(1, 1, 1, 1)
+}
+
+class BigMultMod(n: Int, m: Int) extends DSPDUTTiming[Vec[UInt], UInt] {
+  override val input: Vec[UInt] = in Vec(UInt(n bits), 2)
+  val prod = input(0) * input(1)
+  val ret = prod(m - 1 downto 0)
   override val output: UInt = out(RegNext(ret))
-  override val timing: TimingInfo = TimingInfo(1, 1, 2, 1)
+  override val timing: TimingInfo = TimingInfo(1, 1, 1, 1)
 }
 
 case class MontExpInput(lN: Int) extends Bundle {
   val value = UInt(lN bits)
   val expononet = UInt(lN bits)
-  val expononetLength = UInt(log2Up(lN) bits)
+  val expononetLength = UInt(log2Up(lN) + 1 bits) // the exponent can be lN-bit long
   val N = UInt(lN bits)
   val RhoSquare = UInt(lN bits)
   val omega = UInt(lN bits)
@@ -50,74 +64,88 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
   val onGoingHigh = onGoingDataRegs(2 * lN - 1 downto lN)
   val onGoingLow = onGoingDataRegs(lN - 1 downto 0)
 
-  val tempRegs = Reg(UInt(lN bits)) // regs for "reg"
-
   val mult = new BigMult(lN)
+  val add = new BigAdd(2 * lN)
+  val sub = new BigAdd(lN + 1)
 
   val innerCounter = Counter(lN * 2)
 
   val exponentCounter = Counter(lN)
-  val exponentEnd = exponentCounter.valueNext === parameterRegs.expononetLength
+  val exponentEnd = exponentCounter.valueNext === (parameterRegs.expononetLength - 1)
 
   // datapath
-  val op0 = UInt(lN bits)
-  val op1 = UInt(lN bits)
+  val multOp0 = UInt(lN bits)
+  val multOp1 = UInt(lN bits)
   val prod = UInt(2 * lN bits)
-  val prodHigh = prod(2 * lN - 1 downto lN)
-  val prodLow = prod(lN - 1 downto 0)
-  mult.input(0) := op0
-  mult.input(1) := op1
-  prod := mult.output
+  def prodHigh = prod(2 * lN - 1 downto lN) // caution: val would lead to problems
+  def prodLow = prod(lN - 1 downto 0)
 
-  op0 := U(0, lN bits)
-  op1 := U(0, lN bits)
+  mult.input(0) := multOp0
+  mult.input(1) := multOp1
+  prod := mult.output
+  prod.simPublic()
+
+  sub.input(0) := add.output(2 * lN downto lN) // mid = (t + U * N) / Rho
+  sub.input(1) := parameterRegs.N.resized // padding lN to lN + 1 bits with a leading zero
+
+  multOp0 := U(0, lN bits)
+  multOp1 := U(0, lN bits)
+  add.input(0) := U(0)
+  add.input(1) := U(0)
+
+  val montRedcRet = add.output >> lN
 
   // << 1 leads to on bit more, resize would take lower(right) bits
   def exponentMove() = parameterRegs.expononet := (parameterRegs.expononet << 1).resized
 
   // template of montRedc subprocedure
-  def montRedcOnData(regForModedInput: UInt, regForFullInput: UInt,
-                     regForU: UInt,
-                     regsForOut: Vec[UInt], init: Int) = {
+  def montRedOnData(regForModedInput: UInt,
+                    regForFullInput: UInt,
+                    regsForOut: Vec[UInt], init: Int) = {
     when(innerCounter.value === U(init)) { // second cycle, first mult of montRedc
-      op0 := regForModedInput // t mod Rho
-      op1 := parameterRegs.omega
-      regForU := prodLow // U
+      multOp0 := regForModedInput // t mod Rho
+      multOp1 := parameterRegs.omega
     }.elsewhen(innerCounter.value === U(init + 1)) {
-      op0 := regForU // U
-      op1 := parameterRegs.N // N
-      // FIXME: an implicit 2 * lN-bit adder, fix it
-      // TODO: this should be part of the datapath
-      // this is the only place where 2 * lN-bit length is needed
-      val mid = (regForFullInput + prod) >> lN // (t + U * N) / Rho
-      regsForOut.foreach(_ := mid)
+      multOp0 := prodLow // U
+      multOp1 := parameterRegs.N // N
+
+      add.input(0) := regForFullInput.resized // t, may not be full width
+      add.input(1) := prod // U * N
+      val ret = Mux(sub.output >= 0,
+        sub.output(lN - 1 downto 0),
+        sub.input(0)(lN - 1 downto 0))
+      regsForOut.foreach(_ := ret)
       // FIXME: add the reduction circuit
     }
   }
 
-  def montMultOnData(input0: UInt, input1: UInt) = {
+  def montMulOnData(input0: UInt, input1: UInt) = {
     when(innerCounter.value === U(0)) { // first cycle, square
-      op0 := input0 // aMont ^ 2n / aMont ^ n
-      op1 := input1 // aMont / aMont ^ n
+      multOp0 := input0 // aMont ^ 2n / aMont ^ n
+      multOp1 := input1 // aMont / aMont ^ n
       onGoingDataRegs := prod // aMont ^ (2n+1) / AMont ^ (2n)
     }
-    montRedcOnData(onGoingLow, onGoingDataRegs, tempRegs, Vec(onGoingLow), 1)
+    montRedOnData(onGoingLow, onGoingDataRegs, Vec(onGoingLow), 1)
   }
 
   val fsm = new StateMachine {
-    val INIT = new StateDelay(1) with EntryPoint
-    val PRE = new StateDelay(2)
-    val DoSquareFor1 = new StateDelay(3)
-    val DoMultFor1 = new StateDelay(3)
-    val DoSquareFor0 = new StateDelay(3)
-    val POST = new StateDelay(2)
 
-    states.foreach(_.whenIsActive(innerCounter.increment()))
-    states.foreach(_.onExit(innerCounter.clear()))
+    // state declarations
+    val INIT = new StateDelayFixed(1) with EntryPoint // FIXME: this lasts for 3 cycles
+    val PRE = new StateDelayFixed(2)
+    val DoSquareFor1 = new StateDelayFixed(3)
+    val DoMultFor1 = new StateDelayFixed(3)
+    val DoSquareFor0 = new StateDelayFixed(3)
+    val POST = new StateDelayFixed(2)
 
-    // state trasition
+    val allStates = Seq(INIT, PRE, DoSquareFor1, DoMultFor1, DoSquareFor0, POST)
+    allStates.foreach(_.whenIsActive(innerCounter.increment()))
+    allStates.foreach(_.whenCompleted(innerCounter.clear()))
+
+    // state transitions and counter maintenances
     INIT.whenCompleted(goto(PRE))
     PRE.whenCompleted {
+      exponentMove()
       exponentCounter.clear()
       when(currentExponentBit)(goto(DoSquareFor1))
         .otherwise(goto(DoSquareFor0))
@@ -139,58 +167,83 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
     }
     POST.whenCompleted(goto(INIT))
 
+    // TODO: remove these later
+    DoSquareFor0.cache.value.simPublic()
+
+    val stateFlags = states.map(isActive(_))
+    stateFlags.foreach(_.simPublic())
+
+    val isDoSquareFor0 = isActive(DoSquareFor0)
+    val isPRE = isActive(PRE)
+    val isPOST = isActive(POST)
+
+    isDoSquareFor0.simPublic()
+    isPRE.simPublic()
+    isPOST.simPublic()
+
     // state workload on datapath
     // TODO: merge INIT workload with PRE ?
     INIT.whenIsActive(parameterRegs := input) // data initialization
-    PRE.whenIsActive(montRedcOnData(parameterRegs.value, parameterRegs.value, initDataRegs, Vec(initDataRegs, onGoingLow), 0))
-    DoSquareFor1.whenIsActive(montMultOnData(onGoingLow, onGoingLow))
-    DoMultFor1.whenIsActive(montMultOnData(onGoingLow, initDataRegs))
-    DoSquareFor0.whenIsActive(montMultOnData(onGoingLow, onGoingLow))
-    POST.whenIsActive(montRedcOnData(onGoingLow, onGoingLow, tempRegs, Vec(output), 0))
+    PRE.whenIsActive(montRedOnData(parameterRegs.value, parameterRegs.value, Vec(initDataRegs, onGoingLow), 0))
+    DoSquareFor1.whenIsActive(montMulOnData(onGoingLow, onGoingLow))
+    DoMultFor1.whenIsActive(montMulOnData(onGoingLow, initDataRegs))
+    DoSquareFor0.whenIsActive(montMulOnData(onGoingLow, onGoingLow))
+    POST.whenIsActive(montRedOnData(onGoingLow, onGoingLow, Vec(output), 0))
   }
 
 }
 
 object Experiment {
   def main(args: Array[String]): Unit = {
-    //    GenRTL(new BigMult(512))
-    //    VivadoSynth(new BigMult)
-    // plain design with input and output regs
-    // 28168 LUT 1048 FF
-    // 900 DSP
-    // 10.03 MHz
-    // xczu7evffvc1156-2 10% LUT 52.08% DSP plain design
-
-    //    VivadoSynth(new BigMultMod(512))
-    // plain design(using BigMult and take part of the result) with input and output regs
-    // 13795 LUT 533 FF
-    // 900 DSP
-    // 19.20 MHz
 
     // DSP slice - inner pipeline
     GenRTL(new MontExp(512))
     val ref = new RSARef(512)
     val algo = new RSAAlgo(512)
+    // get data from ref and algo for testing
+    val exponent = ref.getPrivateValue
+    val exponentLength = ref.getPrivateValue.toString(2).size
+    val modulus = BigInt(ref.getModulus)
+    val inputValue = (BigInt(ref.getPrivateValue) - DSPRand.nextInt(10000))
+    val valueAfterPre = algo.montRed(inputValue, modulus)
+    val omega = algo.getOmega(modulus)
+
+    val paddedExponent = BigInt(exponent.toString(2).padTo(512, '0'), 2)
+
+    def padLeft(value: BigInt) = BigInt(value.toString(2).padToLeft(512, '0'), 2)
+
+    val paddedInputValue = padLeft(inputValue)
+    val paddedValueAfterPre = padLeft(valueAfterPre)
+    val paddedOmega = padLeft(omega)
+    println(s"a = ${paddedInputValue.toString(16)}")
+    println(s"aMont = ${paddedValueAfterPre.toString(16)}")
+    println(s"paddedOmega = ${paddedOmega.toString(16)}")
+    println(s"paddedExponent = ${paddedExponent.toString(16)}")
+
     SimConfig.withWave.compile(new MontExp(512)).doSim { dut =>
       dut.clockDomain.forkStimulus(2)
-      // freeRun with given input
-      dut.input.expononet #= BigInt(ref.getPrivateValue)
-      println(s"first 16 bits of the exponent " +
-        s"${BigInt(ref.getPrivateValue).toString(2)
-          .padToLeft(512, '0')
-          .take(16).mkString("")}")
-      //  1001101101110010
-      // when you poke like this, zero would be padded to MSB side, that's unwanted
-      // : the same logic as resize - take the lowers, to the lowers
-      dut.input.expononetLength #= ref.getPrivateValue.toString(2).length
-      println(ref.getPrivateValue.toString(2).length)
-      dut.input.N #= BigInt(ref.getModulus)
-      dut.input.omega #= algo.getOmega(ref.getModulus)
-      dut.input.RhoSquare #= algo.getRhoSquare(ref.getModulus)
-      dut.input.value #= (BigInt(ref.getPrivateValue) - DSPRand.nextInt((10000)))
 
-      sleep(2000)
+      dut.input.expononet #= paddedExponent
+      println(s"first 16 bits of the exponent ${paddedExponent.toString(2).take(16).mkString("")}")
+      dut.input.expononetLength #= exponentLength
+      println(exponentLength)
+
+      dut.input.N #= modulus
+      dut.input.omega #= omega
+      dut.input.RhoSquare #= algo.getRhoSquare(modulus)
+
+      dut.input.value #= inputValue
+      println(s"cycles should be ${exponent.toString(2).tail.map(_.asDigit + 1).sum * 3 + 2}")
+
+      (0 until 3000).foreach { _ =>
+        //        println(s"on: ${dut.fsm.isDoSquareFor0.toBoolean}, cache: ${dut.fsm.DoSquareFor0.cache.value.toInt}")
+        dut.clockDomain.waitSampling()
+        if (dut.fsm.isPRE.toBoolean) {
+          println(s"PRE at $simTime")
+          println(s"prod ${padLeft(dut.prod.toBigInt).toString(16)}")
+        }
+        if (dut.fsm.isPOST.toBoolean) println(s"POST at $simTime")
+      }
     }
-
   }
 }
