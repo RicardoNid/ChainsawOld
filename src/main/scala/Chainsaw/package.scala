@@ -15,7 +15,7 @@ import scala.util.Random
 package object Chainsaw extends RealFactory {
 
   implicit class MoreOnString(s:String){
-    def padToRight(len: Int, elem: Char) = s.reverse.padTo(len, elem).reverse
+    def padToLeft(len: Int, elem: Char) = s.reverse.padTo(len, elem).reverse
   }
 
   // btToSignal and getDouble are copied from spinal.core.sim package object, as they are private

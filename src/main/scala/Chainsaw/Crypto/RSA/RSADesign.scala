@@ -1,13 +1,10 @@
 package Chainsaw.Crypto.RSA
 
+import Chainsaw._
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
-import spinal.sim._
 import spinal.lib.fsm._
-
-import Chainsaw._
-import Chainsaw.Real
 
 class RSADesign {
 
@@ -60,7 +57,7 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
   val innerCounter = Counter(lN * 2)
 
   val exponentCounter = Counter(lN)
-  val exponentEnd = exponentCounter.valueNext === parameterRegs.expononet
+  val exponentEnd = exponentCounter.valueNext === parameterRegs.expononetLength
 
   // datapath
   val op0 = UInt(lN bits)
@@ -125,10 +122,7 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
       when(currentExponentBit)(goto(DoSquareFor1))
         .otherwise(goto(DoSquareFor0))
     }
-    DoSquareFor1.whenCompleted {
-      exponentMove()
-      goto(DoMultFor1)
-    }
+    DoSquareFor1.whenCompleted(goto(DoMultFor1))
     DoMultFor1.whenCompleted(goto(DoMultFor1)).whenCompleted {
       exponentMove()
       exponentCounter.increment()
@@ -175,5 +169,28 @@ object Experiment {
 
     // DSP slice - inner pipeline
     GenRTL(new MontExp(512))
+    val ref = new RSARef(512)
+    val algo = new RSAAlgo(512)
+    SimConfig.withWave.compile(new MontExp(512)).doSim { dut =>
+      dut.clockDomain.forkStimulus(2)
+      // freeRun with given input
+      dut.input.expononet #= BigInt(ref.getPrivateValue)
+      println(s"first 16 bits of the exponent " +
+        s"${BigInt(ref.getPrivateValue).toString(2)
+          .padToLeft(512, '0')
+          .take(16).mkString("")}")
+      //  1001101101110010
+      // when you poke like this, zero would be padded to MSB side, that's unwanted
+      // : the same logic as resize - take the lowers, to the lowers
+      dut.input.expononetLength #= ref.getPrivateValue.toString(2).length
+      println(ref.getPrivateValue.toString(2).length)
+      dut.input.N #= BigInt(ref.getModulus)
+      dut.input.omega #= algo.getOmega(ref.getModulus)
+      dut.input.RhoSquare #= algo.getRhoSquare(ref.getModulus)
+      dut.input.value #= (BigInt(ref.getPrivateValue) - DSPRand.nextInt((10000)))
+
+      sleep(2000)
+    }
+
   }
 }

@@ -57,7 +57,7 @@ class RSAAlgo(lN: Int) {
 
           if (remainder == 1) solution
           //          else solution + (BigInt(1) << exp)
-          else BigInt("1" + solution.toString(2).padToRight(exp, '0'), 2) // put a 1 to the left
+          else BigInt("1" + solution.toString(2).padToLeft(exp, '0'), 2) // put a 1 to the left
 
         }
         //        println(s"lifted: $liftedSolution")
@@ -137,9 +137,10 @@ object RSAAlgo {
   def main(args: Array[String]): Unit = {
 
     // test for getOmega
-    val algo = new RSAAlgo(512)
-    val ref = new RSARef(512)
-    val Zrho = Zp(asBigInteger(BigInt(1) << 512))
+    val testSize = 512
+    val algo = new RSAAlgo(testSize)
+    val ref = new RSARef(testSize)
+    val Zrho = Zp(asBigInteger(BigInt(1) << testSize))
 
     def assertBig(a: BigInt, b: IntZ) = assert(a.toString(2) == b.toString(2),
       s"\nyours:  ${a.toString(2)}, \ngolden: ${b.toString(2)}")
