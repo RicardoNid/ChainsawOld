@@ -21,7 +21,9 @@ class RSAAlgo(lN: Int) {
 
   def bigMultMod(a: BigInt, b: BigInt, modulus: BigInt) = {
     require(modulus.toString(2).tail.forall(_ == '0')) // modulus should be a power of the base(2)
-    bigMod(bigMult(a, b), modulus)
+    val aMod = bigMod(a, modulus)
+    val bMod = bigMod(b, modulus)
+    bigMod(bigMult(aMod, bMod), modulus)
   }
 
   // TODO:
@@ -95,6 +97,7 @@ class RSAAlgo(lN: Int) {
 
   def montRed(t: BigInt, N: BigInt) = {
     require(t >= 0 && t <= N * Rho - 1)
+    // TODO: is t necessarily to be 2 * lN long?
     val U = bigMultMod(t, getOmega(N), Rho)
     val ret = (t + bigMult(U, N)) >> lN // divided by Rho
     val det = ret - N
@@ -156,6 +159,7 @@ object RSAAlgo {
       val modulus = ref.getModulus
       val ZN = Zp(modulus)
       assertBig(algo.getRhoSquare(modulus), ZN(BigInt(1) << 1024))
+      ref.refresh()
     }
     printlnGreen(s"getRhoSquare, passed")
 
@@ -165,6 +169,7 @@ object RSAAlgo {
       val input = BigInt(ref.getPrivateValue) - DSPRand.nextInt(10000)
       val RhoInverse = ZN.reciprocal(algo.Rho)
       assertBig(algo.montRed(input, modulus), ZN.multiply(input, RhoInverse))
+      ref.refresh()
     }
     printlnGreen(s"montRed, passed")
 
@@ -175,11 +180,16 @@ object RSAAlgo {
     //    println(newAlgo.montRed(4, 13))
     //    println(ZN.multiply(4, RhoInvers))
 
-    val modulus = ref.getModulus
-    val publicKey = ref.getPublicValue
-    val input = BigInt(ref.getPrivateValue) - DSPRand.nextInt(10000)
-    val ZN = Zp(modulus)
-    assertBig(algo.montExp(input, publicKey, modulus), ZN.pow(input, publicKey))
+    (0 until 10).foreach { _ =>
+      val modulus = ref.getModulus
+      val publicKey = ref.getPublicValue
+      //    val input = BigInt(ref.getPrivateValue) - DSPRand.nextInt(10000)
+      val input = BigInt(("a" * 64).getBytes())
+      //      println(input.toString(2).size)
+      val ZN = Zp(modulus)
+      assertBig(algo.montExp(input, publicKey, modulus), ZN.pow(input, publicKey))
+      ref.refresh()
+    }
     printlnGreen(s"montExp, passed")
   }
 }

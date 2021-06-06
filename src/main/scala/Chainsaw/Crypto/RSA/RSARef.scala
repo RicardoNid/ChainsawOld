@@ -50,7 +50,7 @@ object RSARef {
     val ref = new RSARef(512)
     val privateKey = ref.getPrivate
     val publicKey = ref.getPublic
-    val cipher = ref.encode(("a" * 53).getBytes(), publicKey)
+    val cipher = ref.encode(("a" * 64).getBytes(), publicKey)
     val recovered = ref.decode(cipher, privateKey)
     println(recovered.map(_.toChar).mkString(""))
 
