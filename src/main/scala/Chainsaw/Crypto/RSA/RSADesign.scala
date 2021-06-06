@@ -39,12 +39,13 @@ case class MontExpInput(lN: Int) extends Bundle {
 // first version, design with single, big multiplier
 class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
   override val input: MontExpInput = in(MontExpInput(lN))
-  override val output: UInt = out(UInt(lN bits))
+  override val output: UInt = out(Reg(UInt(lN bits)))
   override val timing: TimingInfo = TimingInfo(1, 1, 2, 1)
 
   // componnets
   val parameterRegs = Reg(MontExpInput(lN))
-  val currentExponentBit = parameterRegs.expononet.msb
+  // the second most importatnt exponent bit is the decisive one
+  val currentExponentBit = parameterRegs.expononet(lN - 2)
 
   val initDataRegs = Reg(UInt(lN bits)) // regs for "aMont"
 
@@ -58,36 +59,42 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
 
   val innerCounter = Counter(lN * 2)
 
+  val exponentCounter = Counter(lN)
+  val exponentEnd = exponentCounter.valueNext === parameterRegs.expononet
+
   // datapath
   val op0 = UInt(lN bits)
   val op1 = UInt(lN bits)
   val prod = UInt(2 * lN bits)
   val prodHigh = prod(2 * lN - 1 downto lN)
-  val prodLow = (lN - 1 downto 0)
+  val prodLow = prod(lN - 1 downto 0)
   mult.input(0) := op0
   mult.input(1) := op1
   prod := mult.output
 
-  parameterRegs := input // !! it works !!
-  op0 := input.value
-  op1 := input.value
-  output := prod
-
   op0 := U(0, lN bits)
   op1 := U(0, lN bits)
 
-  def exponentMove() = parameterRegs.expononet := parameterRegs.expononet << 1
+  // << 1 leads to on bit more, resize would take lower(right) bits
+  def exponentMove() = parameterRegs.expononet := (parameterRegs.expononet << 1).resized
 
-  def montRedcOnData() = {
-    when(innerCounter.value === U(1)) { // second cycle, first mult of montRedc
-      op0 := onGoingLow
+  // template of montRedc subprocedure
+  def montRedcOnData(regForModedInput: UInt, regForFullInput: UInt,
+                     regForU: UInt,
+                     regsForOut: Vec[UInt], init: Int) = {
+    when(innerCounter.value === U(init)) { // second cycle, first mult of montRedc
+      op0 := regForModedInput // t mod Rho
       op1 := parameterRegs.omega
-      tempRegs := prodLow // U
-    }.elsewhen(innerCounter.value === U(2)) {
-      op0 := onGoingLow // U
+      regForU := prodLow // U
+    }.elsewhen(innerCounter.value === U(init + 1)) {
+      op0 := regForU // U
       op1 := parameterRegs.N // N
-      val mid = (prod + onGoingDataRegs) >> lN // (t + U * N) / Rho
-      onGoingLow := mid
+      // FIXME: an implicit 2 * lN-bit adder, fix it
+      // TODO: this should be part of the datapath
+      // this is the only place where 2 * lN-bit length is needed
+      val mid = (regForFullInput + prod) >> lN // (t + U * N) / Rho
+      regsForOut.foreach(_ := mid)
+      // FIXME: add the reduction circuit
     }
   }
 
@@ -97,61 +104,62 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
       op1 := input1 // aMont / aMont ^ n
       onGoingDataRegs := prod // aMont ^ (2n+1) / AMont ^ (2n)
     }
-    montRedcOnData()
+    montRedcOnData(onGoingLow, onGoingDataRegs, tempRegs, Vec(onGoingLow), 1)
   }
 
   val fsm = new StateMachine {
-    val INIT = new State() with EntryPoint
-    val PRE = new State()
+    val INIT = new StateDelay(1) with EntryPoint
+    val PRE = new StateDelay(2)
     val DoSquareFor1 = new StateDelay(3)
     val DoMultFor1 = new StateDelay(3)
     val DoSquareFor0 = new StateDelay(3)
-    val POST = new State()
+    val POST = new StateDelay(2)
 
     states.foreach(_.whenIsActive(innerCounter.increment()))
     states.foreach(_.onExit(innerCounter.clear()))
 
     // state trasition
-    DoSquareFor1.whenCompleted(goto(DoMultFor1))
-    DoMultFor1.whenCompleted(goto(DoMultFor1))
-
-    // state workload
-    INIT.whenIsActive { // initialization
-      parameterRegs := input
-      goto(PRE)
+    INIT.whenCompleted(goto(PRE))
+    PRE.whenCompleted {
+      exponentCounter.clear()
+      when(currentExponentBit)(goto(DoSquareFor1))
+        .otherwise(goto(DoSquareFor0))
     }
-    PRE.whenIsActive {
-      when(innerCounter.value === U(0)) { // first cycle
-        op0 := parameterRegs.value // t
-        op1 := parameterRegs.omega // omega
-        initDataRegs := prodLow // t * omega (mod Rho), named as U
-        // expose the second most significant bit where the SM sequence starts from
-        exponentMove()
-      }.otherwise { // second cycle
-        op0 := initDataRegs // U
-        op1 := parameterRegs.N // N
-        // FIXME: an implicit 1024-bit adder, fix it
-        // TODO: this should be part of the datapath
-        val mid = (prod + parameterRegs.value) >> lN // (t + U * N) / Rho
-        initDataRegs := mid
-        onGoingLow := mid
-        // FIXME: add the reduction circuit
-        when(currentExponentBit)(goto(DoSquareFor1))
-          .otherwise(goto(DoSquareFor0))
-      }
+    DoSquareFor1.whenCompleted {
+      exponentMove()
+      goto(DoMultFor1)
     }
+    DoMultFor1.whenCompleted(goto(DoMultFor1)).whenCompleted {
+      exponentMove()
+      exponentCounter.increment()
+      when(exponentEnd)(goto(POST))
+        .elsewhen(currentExponentBit)(goto(DoSquareFor1))
+        .otherwise(goto(DoSquareFor0))
+    }
+    DoSquareFor0.whenCompleted {
+      exponentMove()
+      exponentCounter.increment()
+      when(exponentEnd)(goto(POST))
+        .elsewhen(currentExponentBit)(goto(DoSquareFor1))
+        .otherwise(goto(DoSquareFor0))
+    }
+    POST.whenCompleted(goto(INIT))
 
+    // state workload on datapath
+    // TODO: merge INIT workload with PRE ?
+    INIT.whenIsActive(parameterRegs := input) // data initialization
+    PRE.whenIsActive(montRedcOnData(parameterRegs.value, parameterRegs.value, initDataRegs, Vec(initDataRegs, onGoingLow), 0))
     DoSquareFor1.whenIsActive(montMultOnData(onGoingLow, onGoingLow))
     DoMultFor1.whenIsActive(montMultOnData(onGoingLow, initDataRegs))
     DoSquareFor0.whenIsActive(montMultOnData(onGoingLow, onGoingLow))
-
+    POST.whenIsActive(montRedcOnData(onGoingLow, onGoingLow, tempRegs, Vec(output), 0))
   }
 
 }
 
 object Experiment {
   def main(args: Array[String]): Unit = {
-    GenRTL(new BigMult(512))
+    //    GenRTL(new BigMult(512))
     //    VivadoSynth(new BigMult)
     // plain design with input and output regs
     // 28168 LUT 1048 FF
