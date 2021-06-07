@@ -92,9 +92,19 @@ class MontExpTest extends AnyFunSuite {
           if (fsm.isPOST.toBoolean && count == 3)
             dutResult = montRedcRet.toBigInt
         }
-        assertResult(result)(dutResult) // result assertion
+
+        if (ChainsawDebug) {
+          yourRecord.zip(record).foreach { case (int, int1) =>
+            printPadded("yours ", int, lN)
+            printPadded("golden", int1, lN)
+          }
+          printPadded("your result   ", dutResult, lN)
+          printPadded("golden result ", result, lN)
+        }
+        else assertResult(result)(dutResult) // result assertion
+
         println(s"cycles for exponent should be ${exponent.toString(2).tail.map(_.asDigit + 1).sum * 3}")
-        println(s"cycles actually comsumed: ${end(0) - start(0)}")
+        println(s"cycles actually comsumed: ${(end(0) - start(0)) / 2}")
       }
   }
 }

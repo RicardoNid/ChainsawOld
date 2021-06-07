@@ -45,27 +45,22 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
   val prodRegs = Reg(UInt(2 * lN bits)) // regs for "reg"
 
   // multiplier ports
-  val multOp0 = UInt(lN bits)
-  val multOp1 = UInt(lN bits)
   val prod = UInt(2 * lN bits)
   def prodHigh = prod(2 * lN - 1 downto lN) // caution: val would lead to problems
   def prodLow = prod(lN - 1 downto 0)
 
   // multiplier is used for many different purposes
-  mult.input(0) := multOp0
-  mult.input(1) := multOp1
-  prod := mult.output // prod acts like a register as mult is end-registered
-  prod.simPublic()
-  multOp0 := U(0, lN bits)
-  multOp1 := U(0, lN bits)
+  mult.input(0) := U(0, lN bits)
+  mult.input(1) := U(0, lN bits)
 
-  // add and sub are used for dedicated purpose
+  add.input(0) := U(0, 2 * lN bits)
+  add.input(1) := U(0, 2 * lN bits)
+  sub.input(0) := S(0, lN + 1 bits)
+  sub.input(1) := S(0, lN + 1 bits)
+
+  prod := mult.output // prod acts like a register as mult is end-registered
+
   // following signals are valid when inner counter points to 0
-  add.input(0) := prodRegs // t for the montRed(aMont * bMont for the montMul)
-  add.input(1) := prod // U * N
-  // TODO: cautions!
-  sub.input(0) := add.output(2 * lN downto lN).asSInt // mid = (t + U * N) / Rho, lN+1 bits
-  sub.input(1) := parameterRegs.N.intoSInt // N, padded to lN + 1 bits
   val det = sub.output
   val montRedcRet = Mux(det >= S(0), modRho(det).asUInt, add.output(2 * lN - 1 downto lN))
 
@@ -80,26 +75,38 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
   def divideRho(value: UInt) = value >> lN
   def exponentMove() = parameterRegs.exponent := (parameterRegs.exponent << 1).resized
 
-  def montMulOnData(input0: UInt, input1: UInt) = {
+  def montMulDatapath(input0: UInt, input1: UInt) = {
     when(innerCounter.value === U(0)) { // first cycle, square
-      multOp0 := input0 // aMont ^ 2n / aMont ^ n
-      multOp1 := input1 // aMont / aMont ^ n
+      mult.input(0) := input0 // aMont ^ 2n / aMont ^ n
+      mult.input(1) := input1 // aMont / aMont ^ n
+      addSubDatapath()
     }
-    montRedOnData(prod, 1)
+    montRedDatapath(prod, 1)
+    when(innerCounter.value === U(3))(addSubDatapath())
+
+    def montRedDatapath(input: UInt, // 2 * lN bits
+                      init: Int) = {
+      when(innerCounter.value === U(init)) { // second cycle, first mult of montRedc
+        mult.input(0) := modRho(input) // t mod Rho
+        mult.input(1) := parameterRegs.omega
+        prodRegs := prod // full t
+      }.elsewhen(innerCounter.value === U(init + 1)) {
+        mult.input(0) := prodLow // U
+        mult.input(1) := parameterRegs.N // N
+      }
+    }
+
+    def addSubDatapath() = {
+      add.input(0) := prodRegs // t for the montRed(aMont * bMont for the montMul)
+      add.input(1) := prod // U * N
+      // TODO: cautions!
+      sub.input(0) := add.output(2 * lN downto lN).asSInt // mid = (t + U * N) / Rho, lN+1 bits
+      sub.input(1) := parameterRegs.N.intoSInt // N, padded to lN + 1 bits
+    }
   }
 
   // template of montRedc subprocedure
-  def montRedOnData(input: UInt, // 2 * lN bits
-                    init: Int) = {
-    when(innerCounter.value === U(init)) { // second cycle, first mult of montRedc
-      multOp0 := modRho(input) // t mod Rho
-      multOp1 := parameterRegs.omega
-      prodRegs := prod // full t
-    }.elsewhen(innerCounter.value === U(init + 1)) {
-      multOp0 := prodLow // U
-      multOp1 := parameterRegs.N // N
-    }
-  }
+
 
   val fsm = new StateMachine {
     // state declarations
@@ -159,13 +166,13 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
     // TODO: merge INIT workload with PRE ?
     INIT.whenIsActive(parameterRegs := input) // data initialization
     //    PRECOM.whenIsActive {}
-    PRE.whenIsActive(montMulOnData(parameterRegs.value, parameterRegs.RhoSquare))
+    PRE.whenIsActive(montMulDatapath(parameterRegs.value, parameterRegs.RhoSquare))
     PRE.whenCompleted(readToAMontRegs.set()) // extra work
-    DoSquareFor1.whenIsActive(montMulOnData(montRedcRet, montRedcRet))
-    DoMultFor1.whenIsActive(montMulOnData(montRedcRet, aMontRegs))
-    DoSquareFor0.whenIsActive(montMulOnData(montRedcRet, montRedcRet))
+    DoSquareFor1.whenIsActive(montMulDatapath(montRedcRet, montRedcRet))
+    DoMultFor1.whenIsActive(montMulDatapath(montRedcRet, aMontRegs))
+    DoSquareFor0.whenIsActive(montMulDatapath(montRedcRet, montRedcRet))
     POST.whenIsActive {
-      montMulOnData(montRedcRet, U(1))
+      montMulDatapath(montRedcRet, U(1))
       when(innerCounter.value === U(3))(output := montRedcRet)
     }
   }
