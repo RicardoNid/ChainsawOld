@@ -7,10 +7,10 @@ import scala.math.{floor, log, sqrt}
 import scala.annotation.tailrec
 import scala.math._
 
+SmallPrimes.millerRabinPrimeTest(14)
+
 @tailrec
 def gcd(n: Int, m: Int): Int = if (m == 0) n else gcd(m, n % m)
-
-SmallPrimes.millerRabinPrimeTest(14)
 
 @tailrec
 def getContinuedFraction(m: Int, n: Int, qs: Seq[Int] = Seq[Int]()): Seq[Int] =
@@ -20,6 +20,7 @@ def getContinuedFraction(m: Int, n: Int, qs: Seq[Int] = Seq[Int]()): Seq[Int] =
 getContinuedFraction(11, 9)
 getContinuedFraction(294, 159)
 getContinuedFraction(314159, 100000)
+getFactorsByContinuedFraction(9073)
 
 def getFactorsByFermat(n: Int) = {
 
@@ -50,8 +51,6 @@ def getFactorsByContinuedFraction(n: Int) = {
   iter(1, initAB, initAB, initX)
 }
 
-getFactorsByContinuedFraction(9073)
-
 def modByBarrett(x: Int, m: Int) = {
   val k = m.toBinaryString.length
   require(x.toBinaryString.length <= 2 * k + 1)
@@ -75,7 +74,6 @@ def modByBarrett(x: Int, m: Int) = {
 modByBarrett(3561, 47)
 (0 to 4096).forall(i => modByBarrett(i, 47) == i % 47)
 
-
 def modByMontgomery(t: Int, N: Int) = {
   val rho = 1 << N.toBinaryString.length
   require(t < N * (rho - 1))
@@ -97,23 +95,10 @@ def modByMontgomery(t: Int, N: Int) = {
       .sum
   val ret = (t + UN) / rho
 
-
   def reduction(s: Int): Int = if (s < N) s else reduction(s - N)
 
   reduction(ret)
 }
 
 val RInverse = Zp(47.toLong).reciprocal(64).intValue()
-modByMontgomery(RInverse, 47)
-modByMontgomery(RInverse, 47) == RInverse * RInverse % 47
 (1 until (64 * 46)).forall(i => (i * RInverse) % 47 == modByMontgomery(i, 47))
-
-val Zm = Zp64(127.toLong)
-Zm.buildCachedReciprocals()
-
-
-
-
-
-
-

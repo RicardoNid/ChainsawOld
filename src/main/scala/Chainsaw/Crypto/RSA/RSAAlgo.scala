@@ -3,11 +3,17 @@ package Chainsaw.Crypto.RSA
 import cc.redberry.rings.scaladsl._
 import Chainsaw._
 
+import scala.collection.mutable.ArrayBuffer
+
 class RSAAlgo(lN: Int) {
 
   val Rho = BigInt(1) << lN
 
   // ... with prefix ... has corresponding hardware implementation
+
+  def bigAdd(a: BigInt, b: BigInt) = {
+    a + b
+  }
 
   def bigMod(a: BigInt, modulus: BigInt) = {
     require(modulus.toString(2).tail.forall(_ == '0')) // modulus should be a power of the base(2)
@@ -81,7 +87,7 @@ class RSAAlgo(lN: Int) {
       // version 2
       def cal(value: BigInt) = {
         val det = (value << 1) - N
-        if (det > 0) det else det + N
+        if (det > 0) det else value << 1
       }
 
       if (exp == (lN << 1)) cal(value)
@@ -95,13 +101,24 @@ class RSAAlgo(lN: Int) {
     iter(BigInt(1) << (lN - 1), lN)
   }
 
+  def printPadded(name: String, value: BigInt, lN: Int = 512) = {
+    val hex = value.toString(2).padToLeft(lN, '0')
+      .grouped(4).toArray.map(BigInt(_, 2).toString(16))
+      .mkString("")
+    println(s"$name = $hex")
+  }
+
   def montRed(t: BigInt, N: BigInt) = {
     require(t >= 0 && t <= N * Rho - 1)
     // TODO: is t necessarily to be 2 * lN long?
+    //    printPadded("t", t, 2 * lN)
     val U = bigMultMod(t, getOmega(N), Rho)
-    // t + bigMult(U, N) carry? may be!
+    //    printPadded("U", U)
     val mid = (t + bigMult(U, N)) >> lN // divided by Rho
+    //    printPadded("UN", bigMult(U, N), 2 * lN)
+    //    printPadded("mid", mid, lN)
     val det = mid - N
+    //    printPadded("det", det, lN)
     if (det >= 0) det else mid // result \in [0, N)
   }
 
@@ -109,7 +126,7 @@ class RSAAlgo(lN: Int) {
   def montMul(aMont: BigInt, bMont: BigInt, N: BigInt) = {
     require(aMont >= 0 && aMont < N)
     require(bMont >= 0 && bMont < N)
-    // aMont, bMont \in [0, N), aMont * bMont \in [0 N^2), N^2 < N * Rho - 1(as N < Rho)
+    // aMont, bMont \in [0, N), aMont * bMont \in [0 N^2), N^2 < N * Rho - 1(as N   < Rho)
     val prod = bigMult(aMont, bMont)
     montRed(prod, N)
   }
@@ -123,14 +140,40 @@ class RSAAlgo(lN: Int) {
   def montExp(a: BigInt, exponent: BigInt, N: BigInt) = {
     require(a >= 0 && a < N)
     val aMont = montMul(a, getRhoSquare(N), N)
+    //    printPadded("aMont", aMont)
     val sequence = exponent.toString(2)
     var reg = aMont
     sequence.tail.foreach { char =>
       val square = montSquare(reg, N)
-      if (char == '1') reg = montMul(square, aMont, N)
+      //      printPadded("afterSquare", square)
+      if (char == '1') {
+        reg = montMul(square, aMont, N)
+        //        printPadded("afterMul", reg)
+      }
       else reg = square
     }
     montRed(reg, N)
+  }
+
+  def montExpWithRecord(a: BigInt, exponent: BigInt, N: BigInt) = {
+    require(a >= 0 && a < N)
+    val record = ArrayBuffer[BigInt]()
+    val aMont = montMul(a, getRhoSquare(N), N)
+    record += aMont
+    val sequence = exponent.toString(2)
+    var reg = aMont
+    sequence.tail.foreach { char =>
+      val square = montSquare(reg, N)
+      record += square
+      if (char == '1') {
+        reg = montMul(square, aMont, N)
+        record += reg
+      }
+      else reg = square
+    }
+    val ret = montRed(reg, N)
+    record += ret
+    record
   }
 }
 
