@@ -44,9 +44,7 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
   val NReg = Reg(UInt(lN bits))
   //  val singleLengthReg = Reg(UInt(lN bits)) // regs for "aMont"
   val singleLengthDataIn = Reg(UInt(lN bits))
-  val singleLengthRun = Bool()
-  singleLengthRun := True // when the singleLengthQueue should run
-  val singleLengthDataOut = History(singleLengthDataIn, pipelineFactor, singleLengthRun)
+  val singleLengthDataOut = Delay(singleLengthDataIn, pipelineFactor - 1)
   //  val doubleLengthReg = Reg(UInt(2 * lN bits)) // regs for "reg"
   val doubleLengthDataIn = Reg(UInt(2 * lN bits)) // regs for "reg"
   val doubleLengthDataOut = Delay(doubleLengthDataIn, pipelineFactor - 1) // regs for "reg"
@@ -85,26 +83,20 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
 
   def montMulDatapath(input0: UInt, input1: UInt) = {
     when(innerCounter.value === U(0)) { // first cycle, square
-      mult.input(0) := input0 // aMont ^ 2n / aMont ^ n
-      mult.input(1) := input1 // aMont / aMont ^ n
+      mult.input(0) := input0 // a
+      mult.input(1) := input1 // b
       addSubDatapath()
+    }.elsewhen(innerCounter.value === U(1)) { // second cycle, first mult of montRedc
+      mult.input(0) := prodLow // t mod rho, t = a * b
+      mult.input(1) := omegaRegs
+      //        doubleLengthReg := mult.output // full t
+      doubleLengthDataIn := mult.output // full t
+    }.elsewhen(innerCounter.value === U(2)) {
+      mult.input(0) := prodLow // U, U = t * omega mod rho
+      //        mult.input(1) := inputRegs.N // N
+      mult.input(1) := NReg // N
     }
-    montRedDatapath(mult.output, 1)
     when(innerCounter.value === U(3))(addSubDatapath())
-
-    def montRedDatapath(input: UInt, // 2 * lN bits
-                        init: Int) = {
-      when(innerCounter.value === U(init)) { // second cycle, first mult of montRedc
-        mult.input(0) := modRho(input) // t mod Rho
-        mult.input(1) := omegaRegs
-        //        doubleLengthReg := mult.output // full t
-        doubleLengthDataIn := mult.output // full t
-      }.elsewhen(innerCounter.value === U(init + 1)) {
-        mult.input(0) := prodLow // U
-        //        mult.input(1) := inputRegs.N // N
-        mult.input(1) := NReg // N
-      }
-    }
 
     def addSubDatapath() = {
       //      add.input(0) := doubleLengthReg // t for the montRed(aMont * bMont for the montMul)
@@ -156,7 +148,7 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
       singleLengthDataIn := reductionRet
     }.otherwise {
       //      sub.input(0) := (singleLengthReg << 1).asSInt
-      sub.input(0) := (singleLengthDataOut.last << 1).asSInt
+      sub.input(0) := (singleLengthDataOut << 1).asSInt
       //      sub.input(1) := inputRegs.N.intoSInt
       sub.input(1) := NReg.intoSInt
       //      singleLengthReg := reductionRet
@@ -232,29 +224,18 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
       PRE.whenCompleted(readRet.set()) // extra work
       when(readRet) {
         //    singleLengthReg := reductionRet
-        singleLengthDataIn := reductionRet
-        when(pipelineCounter.value === U(2))(readRet := False)
+        inputValueRegs(pipelineCounter.value) := reductionRet
+        when(pipelineCounter.value === U(pipelineFactor - 1))(readRet := False)
       }
       DoSquareFor1.whenIsActive(montMulDatapath(reductionRet, reductionRet))
       //      DoMultFor1.whenIsActive(montMulDatapath(reductionRet, singleLengthReg))
-      // aMont is stored in singleLengthData
-      DoMultFor1.whenIsActive(montMulDatapath(reductionRet, singleLengthDataOut(pipelineCounter.value)))
+      DoMultFor1.whenIsActive(montMulDatapath(reductionRet, inputValueRegs(pipelineCounter.value)))
       DoSquareFor0.whenIsActive(montMulDatapath(reductionRet, reductionRet))
       POST.whenIsActive {
         montMulDatapath(reductionRet, U(1))
         when(innerCounter.value === U(3))(output := reductionRet)
       }
     }
-
-    // signals for simulation
-    val stateFlags = states.map(isActive(_))
-    stateFlags.foreach(_.simPublic())
-
-    val isPRE = isActive(PRE)
-    val isPOST = isActive(POST)
-    val isINIT = isActive(INIT)
-    val isPRECOM = isActive(PRECOM)
-    val isBOOT = isActive(stateBoot)
   }
 }
 

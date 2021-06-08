@@ -66,7 +66,7 @@ class RSAAlgo(lN: Int) {
     }
 
     val ret = Rho - lift(init, 1)
-    if(ChainsawDebug) printPadded(s"omega in progress ${count.toString.padToLeft(3, '0')}", ret, lN)
+    if (ChainsawDebug) printPadded(s"omega in progress ${count.toString.padToLeft(3, '0')}", ret, lN)
     ret
   }
 
@@ -102,51 +102,54 @@ class RSAAlgo(lN: Int) {
     println(s"$name = $hex")
   }
 
-  def montRed(t: BigInt, N: BigInt) = {
+  def montRed(t: BigInt, N: BigInt, print: Boolean = false) = {
     require(t >= 0 && t <= N * Rho - 1)
     // TODO: is t necessarily to be 2 * lN long?
     //    printPadded("t", t, 2 * lN)
     val U = bigMultMod(t, getOmega(N), Rho)
-    //    printPadded("U", U)
     val mid = (t + bigMult(U, N)) >> lN // divided by Rho
-    //    printPadded("UN", bigMult(U, N), 2 * lN)
-    //    printPadded("mid", mid, lN)
     val det = mid - N
-    //    printPadded("det", det, lN)
+    if (print) {
+      printPadded("t", t, 2 * lN)
+      printPadded("U", U)
+      printPadded("UN", bigMult(U, N), 2 * lN)
+      printPadded("mid", mid, lN)
+      //      printPadded("det", det, lN)
+    }
     if (det >= 0) det else mid // result \in [0, N)
   }
 
   // montMul(aMont, bMont) = abMont
-  def montMul(aMont: BigInt, bMont: BigInt, N: BigInt) = {
+  def montMul(aMont: BigInt, bMont: BigInt, N: BigInt, print: Boolean = false) = {
     require(aMont >= 0 && aMont < N)
     require(bMont >= 0 && bMont < N)
     // aMont, bMont \in [0, N), aMont * bMont \in [0 N^2), N^2 < N * Rho - 1(as N   < Rho)
     val prod = bigMult(aMont, bMont)
-    montRed(prod, N)
+    montRed(prod, N, print)
   }
 
-  def montSquare(aMont: BigInt, N: BigInt) = {
+  def montSquare(aMont: BigInt, N: BigInt, print: Boolean = false) = {
     require(aMont >= 0 && aMont < N)
     val square = bigSquare(aMont)
-    montRed(square, N)
+    montRed(square, N, print)
   }
 
-  def montExp(a: BigInt, exponent: BigInt, N: BigInt) = {
+  def montExp(a: BigInt, exponent: BigInt, N: BigInt, print: Boolean = false) = {
     require(a >= 0 && a < N)
     val aMont = montMul(a, getRhoSquare(N), N)
     //    printPadded("aMont", aMont)
     val sequence = exponent.toString(2)
     var reg = aMont
     sequence.tail.foreach { char =>
-      val square = montSquare(reg, N)
+      val square = montSquare(reg, N, print)
       //      printPadded("afterSquare", square)
       if (char == '1') {
-        reg = montMul(square, aMont, N)
+        reg = montMul(square, aMont, N, print)
         //        printPadded("afterMul", reg)
       }
       else reg = square
     }
-    montRed(reg, N)
+    montRed(reg, N, print)
   }
 
   def montExpWithRecord(a: BigInt, exponent: BigInt, N: BigInt) = {
