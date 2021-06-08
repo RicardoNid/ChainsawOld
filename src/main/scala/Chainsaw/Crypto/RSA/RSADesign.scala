@@ -38,11 +38,12 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
   // components
   // regs for data
   val inputRegs = Reg(MontExpInput(lN))
-  val singleLengthDataIn = UInt(lN bits)
-  val singleLengthDataOut = Delay(singleLengthDataIn, 1)
-  val singleLengthReg = Reg(UInt(lN bits)) // regs for "aMont"
-  val doubleLengthReg = Reg(UInt(2 * lN bits)) // regs for "reg"
-  def doubleLengthRegLow = doubleLengthReg(lN - 1 downto 0)
+  //  val singleLengthReg = Reg(UInt(lN bits)) // regs for "aMont"
+  val singleLengthDataIn = Reg(UInt(lN bits))
+  val singleLengthDataOut = Delay(singleLengthDataIn, pipelineFactor - 1)
+  //  val doubleLengthReg = Reg(UInt(2 * lN bits)) // regs for "reg"
+  val doubleLengthDataIn = Reg(UInt(2 * lN bits)) // regs for "reg"
+  val doubleLengthDataOut = Delay(doubleLengthDataIn, pipelineFactor - 1) // regs for "reg"
   val omegaRegs = Reg(UInt(lN bits))
   val rhoSquareReg = Reg(UInt(lN bits))
   // TODO: improve this
@@ -56,21 +57,23 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
   val currentExponentBit = inputRegs.exponent(lN - 2) // the second most importatnt exponent bit is the decisive one
   val exponentEnd = exponentCounter.valueNext === (inputRegs.exponentLength - 1)
   val readRet = RegInit(False) // flag
-  when(readRet) {
-    singleLengthReg := reductionRet
-    readRet := False
-  }
-
-  // mult.output acts like a register as mult is end-registered
-  def prodHigh = mult.output(2 * lN - 1 downto lN) // caution: val would lead to problems
-  def prodLow = mult.output(lN - 1 downto 0)
 
   // following signals are valid when inner counter points to 0
   // datapath of the reduction
   val det = sub.output
   val reductionRet = Mux(det >= S(0), modRho(det).asUInt, sub.input(0)(lN - 1 downto 0).asUInt)
+  when(readRet) {
+    //    singleLengthReg := reductionRet
+    singleLengthDataIn := reductionRet
+    readRet := False
+  }
 
   // utilities and subroutines
+//  def doubleLengthRegLow = doubleLengthReg(lN - 1 downto 0)
+  def doubleLengthRegLow = doubleLengthReg(lN - 1 downto 0)
+  // mult.output acts like a register as mult is end-registered
+  def prodHigh = mult.output(2 * lN - 1 downto lN) // caution: val would lead to problems
+  def prodLow = mult.output(lN - 1 downto 0)
   // << 1 leads to on bit more, resize would take lower(right) bits
   def modRho[T <: BitVector](value: T) = value(lN - 1 downto 0)
   def divideRho(value: UInt) = value >> lN
@@ -136,11 +139,14 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
     when(innerCounter.value === 0) {
       sub.input(0) := S(BigInt(1) << (lN - 1))
       sub.input(1) := inputRegs.N.intoSInt
-      singleLengthReg := reductionRet
+      //      singleLengthReg := reductionRet
+      singleLengthDataIn := reductionRet
     }.otherwise {
-      sub.input(0) := (singleLengthReg << 1).asSInt
+      //      sub.input(0) := (singleLengthReg << 1).asSInt
+      sub.input(0) := (singleLengthDataOut << 1).asSInt
       sub.input(1) := inputRegs.N.intoSInt
-      singleLengthReg := reductionRet
+      //      singleLengthReg := reductionRet
+      singleLengthDataIn := reductionRet
     }
   }
 
@@ -204,7 +210,8 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
       PRE.whenIsActive(montMulDatapath(inputRegs.value, rhoSquareReg))
       PRE.whenCompleted(readRet.set()) // extra work
       DoSquareFor1.whenIsActive(montMulDatapath(reductionRet, reductionRet))
-      DoMultFor1.whenIsActive(montMulDatapath(reductionRet, singleLengthReg))
+      //      DoMultFor1.whenIsActive(montMulDatapath(reductionRet, singleLengthReg))
+      DoMultFor1.whenIsActive(montMulDatapath(reductionRet, singleLengthDataOut))
       DoSquareFor0.whenIsActive(montMulDatapath(reductionRet, reductionRet))
       POST.whenIsActive {
         montMulDatapath(reductionRet, U(1))
