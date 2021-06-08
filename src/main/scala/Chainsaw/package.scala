@@ -32,13 +32,13 @@ package object Chainsaw extends RealFactory {
       }
     }
 
-    //    onEntry{
-    //      cache.value := cyclesCount
-    //    }
+    onEntry {
+      cache.value := cyclesCount.resized
+    }
 
     whenIsNext {
       when(cache.value <= 1) {
-        cache.value := cyclesCount
+        cache.value := cyclesCount.resized
       }
     }
   }

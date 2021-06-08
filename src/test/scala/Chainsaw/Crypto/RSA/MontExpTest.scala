@@ -2,6 +2,7 @@ package Chainsaw.Crypto.RSA
 
 import Chainsaw.{DSPRand, GenRTL, _}
 import org.scalatest.funsuite.AnyFunSuite
+import spinal.core._
 import spinal.core.sim.{SimConfig, simTime, _}
 
 import scala.collection.mutable.ArrayBuffer
@@ -31,8 +32,8 @@ class MontExpTest extends AnyFunSuite {
     // pad to right as the hardware design requires
     val paddedExponent = BigInt(exponent.toString(2).padTo(lN, '0'), 2)
 
-    val rhoSquare = algo.getRhoSquare(N)
-    val omega = algo.getOmega(N)
+    val rhoSquare = algo.getRhoSquare(N, print = true)
+    val omega = algo.getOmega(N, print = true)
 
     val inputValue = BigInt(ref.getPrivateValue) - DSPRand.nextInt(10000)
     val aMont = algo.montMul(inputValue, rhoSquare, N)
@@ -46,15 +47,24 @@ class MontExpTest extends AnyFunSuite {
     )
     toPrint.foreach { case (str, tuple) => printPadded(str, tuple._1, tuple._2) }
 
+    ChainsawDebug = true
+
     SimConfig.withWave.compile(
       new MontExp(lN) {
+
+        val stateCountDown = fsm.PRECOM.cache.value
+        stateCountDown.simPublic()
+
+        val prodRegsLowForWatch = prodRegs(lN - 1 downto 0)
+        prodRegsLowForWatch.simPublic()
 
         fsm.isPRE.simPublic()
         fsm.isPOST.simPublic()
         fsm.isINIT.simPublic()
+        fsm.isPRECOM.simPublic()
         fsm.isBOOT.simPublic()
         innerCounter.value.simPublic()
-        montRedcRet.simPublic()
+        reductionRet.simPublic()
       })
       .doSim { dut =>
         import dut._
@@ -79,7 +89,7 @@ class MontExpTest extends AnyFunSuite {
 
         val cyclesForExponent = exponent.toString(2).tail.map(_.asDigit + 1).sum * 3
 
-        (0 until cyclesForExponent + 50).foreach { _ =>
+        (0 until cyclesForExponent + 50 + lN + lN).foreach { _ =>
 
           def count = innerCounter.value.toInt
 
@@ -87,13 +97,17 @@ class MontExpTest extends AnyFunSuite {
           if (dut.fsm.isPRE.toBoolean && count == 2) start += (simTime + 2)
           if (dut.fsm.isPOST.toBoolean && count == 0) end += simTime
           if (dut.innerCounter.value.toInt == 0
-            && !dut.fsm.isINIT.toBoolean && !dut.fsm.isBOOT.toBoolean)
-            yourRecord += dut.montRedcRet.toBigInt
+            && !dut.fsm.isINIT.toBoolean
+            && !dut.fsm.isBOOT.toBoolean
+            && !fsm.isPRECOM.toBoolean)
+            yourRecord += dut.reductionRet.toBigInt
           if (fsm.isPOST.toBoolean && count == 3)
-            dutResult = montRedcRet.toBigInt
+            dutResult = reductionRet.toBigInt
         }
 
         if (ChainsawDebug) {
+          println(record.size)
+          println(yourRecord.size)
           yourRecord.zip(record).foreach { case (int, int1) =>
             printPadded("yours ", int, lN)
             printPadded("golden", int1, lN)

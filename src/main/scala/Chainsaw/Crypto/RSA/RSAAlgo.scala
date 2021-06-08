@@ -3,6 +3,7 @@ package Chainsaw.Crypto.RSA
 import cc.redberry.rings.scaladsl._
 import Chainsaw._
 
+import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 
 class RSAAlgo(lN: Int) {
@@ -41,63 +42,56 @@ class RSAAlgo(lN: Int) {
    *
    * @param N the modulus of RSA
    */
-  def getOmega(N: BigInt) = {
+  def getOmega(N: BigInt, print: Boolean = false) = {
     val init = BigInt(1) // N^{-1} \pmod 2^1
-
     // lifting by Hensel's lemma
+    @tailrec
+    var count = 0
+
     def lift(solution: BigInt, exp: Int): BigInt = {
+      if (print) {
+        printPadded(s"omega in progress ${count.toString.padToLeft(3, '0')}", solution, lN)
+        count += 1
+      }
       if (exp == lN) solution
       else {
         val liftedSolution = {
-
-          // version 1
-          //          if (solution * N % (BigInt(1) << (exp + 1)) == 1) solution
-          //          else solution + (BigInt(1) << exp)
-
-          // version 2 clarify
-          //          val product = bigMult(solution, N)
-          //          val remainder = BigInt(product.toString(2).takeRight(exp + 1)) // % 2^(exp + 1)
-
-          // version 3 merge multiplication and mod,implement it by a specific hardware later
           val remainder = bigMultMod(solution, N, BigInt(1) << (exp + 1))
-
           if (remainder == 1) solution
-          //          else solution + (BigInt(1) << exp)
-          else BigInt("1" + solution.toString(2).padToLeft(exp, '0'), 2) // put a 1 to the left
-
+          // solution + (BigInt(1) << exp), put an 1 to the left
+          else BigInt("1" + solution.toString(2).padToLeft(exp, '0'), 2)
         }
-        //        println(s"lifted: $liftedSolution")
         lift(liftedSolution, exp + 1)
       }
     }
 
-    Rho - lift(init, 1)
+    val ret = Rho - lift(init, 1)
+    if(print) printPadded(s"omega in progress ${count.toString.padToLeft(3, '0')}", ret, lN)
+    ret
   }
 
   /** Get rho^2^ (mod N) by iterative algorithm
    *
    */
-  def getRhoSquare(N: BigInt) = {
+  def getRhoSquare(N: BigInt, print: Boolean = false) = {
+    var count = 0
 
+    @tailrec
     def iter(value: BigInt, exp: Int): BigInt = {
-
-      // version 1
-      //      def cal(value: BigInt) = 2 * value % N
-
-      // version 2
-      def cal(value: BigInt) = {
-        val det = (value << 1) - N
-        if (det > 0) det else value << 1
+      if (print) {
+        printPadded(s"rhoSquare in progress ${count.toString.padToLeft(3, '0')}", value, lN)
+        count += 1
       }
 
-      if (exp == (lN << 1)) cal(value)
+      def cal(value: BigInt) = {
+        val det = (value << 1) - N
+        if (det >= 0) det else value << 1
+      }
+      // cal would be executed for lN times
+      if (exp == (lN * 2 + 1)) value
       else iter(cal(value), exp + 1)
     }
-
-    // version 1,2
-    //    iter(1, 1)
-
-    // version 3: as modulus N has the same width as Rho(lN), iteration could start from (1 << (lN - 1))
+    // as modulus N has the same width as Rho(lN), iteration could start from (1 << (lN - 1))
     iter(BigInt(1) << (lN - 1), lN)
   }
 
