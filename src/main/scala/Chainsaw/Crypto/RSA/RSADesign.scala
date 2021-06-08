@@ -37,7 +37,12 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
 
   // components
   // regs for data
-  val inputRegs = Reg(MontExpInput(lN))
+  //  val inputRegs = Reg(MontExpInput(lN))
+  val inputValueDataIn = Reg(UInt(lN bits))
+  val inputValueDataOut = Delay(inputValueDataIn, pipelineFactor)
+  val exponentReg = Reg(UInt(lN bits))
+  val exponentLengthReg = Reg(UInt(log2Up(lN) + 1 bits))
+  val NReg = Reg(UInt(lN bits))
   //  val singleLengthReg = Reg(UInt(lN bits)) // regs for "aMont"
   val singleLengthDataIn = Reg(UInt(lN bits))
   val singleLengthDataOut = Delay(singleLengthDataIn, pipelineFactor - 1)
@@ -54,8 +59,10 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
   val innerCounter = Counter(precomCycles) // counter used inside every StateDelay for control
   val exponentCounter = Counter(lN) // counter
   // flags
-  val currentExponentBit = inputRegs.exponent(lN - 2) // the second most importatnt exponent bit is the decisive one
-  val exponentEnd = exponentCounter.valueNext === (inputRegs.exponentLength - 1)
+  //  val currentExponentBit = inputRegs.exponent(lN - 2) // the second most importatnt exponent bit is the decisive one
+  val currentExponentBit = exponentReg(lN - 2) // the second most importatnt exponent bit is the decisive one
+  //  val exponentEnd = exponentCounter.valueNext === (inputRegs.exponentLength - 1)
+  val exponentEnd = exponentCounter.valueNext === (exponentLengthReg - 1)
   val readRet = RegInit(False) // flag
 
   // following signals are valid when inner counter points to 0
@@ -77,7 +84,8 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
   // << 1 leads to on bit more, resize would take lower(right) bits
   def modRho[T <: BitVector](value: T) = value(lN - 1 downto 0)
   def divideRho(value: UInt) = value >> lN
-  def exponentMove() = inputRegs.exponent := (inputRegs.exponent << 1).resized
+  //  def exponentMove() = inputRegs.exponent := (inputRegs.exponent << 1).resized
+  def exponentMove() = exponentReg := (exponentReg << 1).resized
 
   def montMulDatapath(input0: UInt, input1: UInt) = {
     when(innerCounter.value === U(0)) { // first cycle, square
@@ -97,7 +105,8 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
         doubleLengthDataIn := mult.output // full t
       }.elsewhen(innerCounter.value === U(init + 1)) {
         mult.input(0) := prodLow // U
-        mult.input(1) := inputRegs.N // N
+        //        mult.input(1) := inputRegs.N // N
+        mult.input(1) := NReg // N
       }
     }
 
@@ -107,7 +116,8 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
       add.input(1) := mult.output // U * N
       // TODO: cautions!
       sub.input(0) := add.output(2 * lN downto lN).asSInt // mid = (t + U * N) / Rho, lN+1 bits
-      sub.input(1) := inputRegs.N.intoSInt // N, padded to lN + 1 bits
+      //      sub.input(1) := inputRegs.N.intoSInt // N, padded to lN + 1 bits
+      sub.input(1) := NReg.intoSInt // N, padded to lN + 1 bits
     }
   }
 
@@ -120,7 +130,8 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
 
     when(innerCounter.value === U(0)) { // starts from f(1) = 0 mod 2
       mult.input(0) := U(1) // original solution 1
-      mult.input(1) := inputRegs.N
+      //      mult.input(1) := inputRegs.N
+      mult.input(1) := NReg
       //      doubleLengthReg(lN - 1 downto 0) := mult.input(0) // save the solution
       doubleLengthDataIn(lN - 1 downto 0) := mult.input(0) // save the solution
     }.elsewhen(innerCounter.value === U(lN)) {
@@ -132,7 +143,8 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
         Mux((prodLow & modMask.asUInt) === U(1),
           doubleLengthRegLow, // solution
           doubleLengthRegLow | addMask.asUInt) // solution + 1 << exp
-      mult.input(1) := inputRegs.N
+      //      mult.input(1) := inputRegs.N
+      mult.input(1) := NReg
       //      doubleLengthReg(lN - 1 downto 0) := mult.input(0) // save the solution
       doubleLengthDataIn(lN - 1 downto 0) := mult.input(0) // save the solution
       when(pipelineCounter.value === U(pipelineFactor - 1))(maskMove())
@@ -142,13 +154,15 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
   def getRhoSquareDatapath() = {
     when(innerCounter.value === 0) {
       sub.input(0) := S(BigInt(1) << (lN - 1))
-      sub.input(1) := inputRegs.N.intoSInt
+      //      sub.input(1) := inputRegs.N.intoSInt
+      sub.input(1) := NReg.intoSInt
       //      singleLengthReg := reductionRet
       singleLengthDataIn := reductionRet
     }.otherwise {
       //      sub.input(0) := (singleLengthReg << 1).asSInt
       sub.input(0) := (singleLengthDataOut << 1).asSInt
-      sub.input(1) := inputRegs.N.intoSInt
+      //      sub.input(1) := inputRegs.N.intoSInt
+      sub.input(1) := NReg.intoSInt
       //      singleLengthReg := reductionRet
       singleLengthDataIn := reductionRet
     }
@@ -157,8 +171,8 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
 
   val fsm = new StateMachine {
     // state declarations
-    //    val INIT = new StateDelayFixed(pipelineFactor) with EntryPoint
-    val INIT = new State with EntryPoint // FIXME: this doesn't work for 1 cycles
+    // FIXME: this doesn't work for cycleCount = 1 OR doesn't compatible with entrypoint
+    val INIT = new StateDelayFixed(pipelineFactor) with EntryPoint
     val PRECOM = new StateDelayFixed(precomCycles) // precomputation of omega and RhoSquare
     val PRE = new StateDelayFixed(3 * pipelineFactor)
     val DoSquareFor1 = new StateDelayFixed(3 * pipelineFactor)
@@ -175,7 +189,7 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
     allStateDelays.foreach(_.whenCompleted(innerCounter.clear()))
 
     val stateTransition = new Area { // state transitions and counter maintenances
-      INIT.whenIsActive(goto(PRECOM))
+      INIT.whenCompleted(goto(PRECOM))
       PRECOM.whenCompleted(goto(PRE))
       PRE.whenCompleted {
         exponentMove()
@@ -203,7 +217,13 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
 
     // TODO: merge INIT workload with PRECOM ?
     val workload = new Area { // state workload on datapath
-      INIT.whenIsActive(inputRegs := input) // data initialization
+      //      INIT.whenIsActive(inputRegs := input) // data initialization
+      INIT.whenIsActive {
+        NReg := input.N
+        exponentReg := input.exponent
+        exponentLengthReg := input.exponentLength
+        inputValueDataIn := input.value
+      } // data initialization
       PRECOM.whenIsActive { // computing omega and rhoSquare
         getRhoSquareDatapath()
         getOmegaDatapath()
@@ -211,7 +231,8 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
       PRECOM.whenCompleted {
         rhoSquareReg := reductionRet
       } // store omega and rhoSquare
-      PRE.whenIsActive(montMulDatapath(inputRegs.value, rhoSquareReg))
+      //      PRE.whenIsActive(montMulDatapath(inputRegs.value, rhoSquareReg))
+      PRE.whenIsActive(montMulDatapath(inputValueDataOut, rhoSquareReg))
       PRE.whenCompleted(readRet.set()) // extra work
       DoSquareFor1.whenIsActive(montMulDatapath(reductionRet, reductionRet))
       //      DoMultFor1.whenIsActive(montMulDatapath(reductionRet, singleLengthReg))
