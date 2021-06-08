@@ -36,40 +36,39 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
   val precomCycles = (lN + 2) * pipelineFactor
 
   // components
-  val inputRegs = Reg(MontExpInput(lN))
-  // counters
-  val pipelineCounter = Counter(pipelineFactor)
-  val innerCounter = Counter(precomCycles) // counter used inside every StateDelay for control
-  val exponentCounter = Counter(lN) // counter
-  // flags from the counters
-  val currentExponentBit = inputRegs.exponent(lN - 2) // the second most importatnt exponent bit is the decisive one
-  val exponentEnd = exponentCounter.valueNext === (inputRegs.exponentLength - 1)
-
-  // TODO: improve this
-  val modMask = RegInit(B(BigInt(3), lN bits)) // mask for mod in getOmega progress
-  val addMask = RegInit(B(BigInt(2), lN bits)) // mask for add in getOmega progress
-
   // regs for data
+  val inputRegs = Reg(MontExpInput(lN))
+  val singleLengthDataIn = UInt(lN bits)
+  val singleLengthDataOut = Delay(singleLengthDataIn, 1)
   val singleLengthReg = Reg(UInt(lN bits)) // regs for "aMont"
   val doubleLengthReg = Reg(UInt(2 * lN bits)) // regs for "reg"
   def doubleLengthRegLow = doubleLengthReg(lN - 1 downto 0)
   val omegaRegs = Reg(UInt(lN bits))
   val rhoSquareReg = Reg(UInt(lN bits))
-
-  val readToAMontRegs = RegInit(False) // flag
+  // TODO: improve this
+  val modMask = RegInit(B(BigInt(3), lN bits)) // mask for mod in getOmega progress
+  val addMask = RegInit(B(BigInt(2), lN bits)) // mask for add in getOmega progress
+  // counters
+  val pipelineCounter = Counter(pipelineFactor)
+  val innerCounter = Counter(precomCycles) // counter used inside every StateDelay for control
+  val exponentCounter = Counter(lN) // counter
+  // flags
+  val currentExponentBit = inputRegs.exponent(lN - 2) // the second most importatnt exponent bit is the decisive one
+  val exponentEnd = exponentCounter.valueNext === (inputRegs.exponentLength - 1)
+  val readRet = RegInit(False) // flag
+  when(readRet) {
+    singleLengthReg := reductionRet
+    readRet := False
+  }
 
   // mult.output acts like a register as mult is end-registered
   def prodHigh = mult.output(2 * lN - 1 downto lN) // caution: val would lead to problems
   def prodLow = mult.output(lN - 1 downto 0)
 
   // following signals are valid when inner counter points to 0
+  // datapath of the reduction
   val det = sub.output
   val reductionRet = Mux(det >= S(0), modRho(det).asUInt, sub.input(0)(lN - 1 downto 0).asUInt)
-
-  when(readToAMontRegs) {
-    singleLengthReg := reductionRet
-    readToAMontRegs := False
-  }
 
   // utilities and subroutines
   // << 1 leads to on bit more, resize would take lower(right) bits
@@ -148,7 +147,8 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
 
   val fsm = new StateMachine {
     // state declarations
-    val INIT = new State with EntryPoint // FIXME: this lasts for 3 cycles
+    //    val INIT = new StateDelayFixed(pipelineFactor) with EntryPoint
+    val INIT = new State with EntryPoint // FIXME: this doesn't work for 1 cycles
     val PRECOM = new StateDelayFixed(precomCycles) // precomputation of omega and RhoSquare
     val PRE = new StateDelayFixed(3 * pipelineFactor)
     val DoSquareFor1 = new StateDelayFixed(3 * pipelineFactor)
@@ -202,7 +202,7 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
         rhoSquareReg := reductionRet
       } // store omega and rhoSquare
       PRE.whenIsActive(montMulDatapath(inputRegs.value, rhoSquareReg))
-      PRE.whenCompleted(readToAMontRegs.set()) // extra work
+      PRE.whenCompleted(readRet.set()) // extra work
       DoSquareFor1.whenIsActive(montMulDatapath(reductionRet, reductionRet))
       DoMultFor1.whenIsActive(montMulDatapath(reductionRet, singleLengthReg))
       DoSquareFor0.whenIsActive(montMulDatapath(reductionRet, reductionRet))
