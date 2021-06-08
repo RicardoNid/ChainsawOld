@@ -38,7 +38,7 @@ class BigAddMod(n: Int, m: Int) extends DSPDUTTiming[Vec[UInt], UInt] {
 
 class BigMult(n: Int) extends DSPDUTTiming[Vec[UInt], UInt] {
   override val input: Vec[UInt] = in Vec(UInt(n bits), 2)
-  val latency = 1
+  val latency = 2
   override val output: UInt = out(Delay(input(0) * input(1), latency))
   override val timing: TimingInfo = TimingInfo(1, 1, latency, 1)
 }

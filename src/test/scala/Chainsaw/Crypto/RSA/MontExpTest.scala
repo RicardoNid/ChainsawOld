@@ -10,7 +10,6 @@ import scala.collection.mutable.ArrayBuffer
 class MontExpTest extends AnyFunSuite {
   test("testMontExp") {
 
-
     val lN = 512
 
     // print the padded number in hex form
@@ -57,7 +56,8 @@ class MontExpTest extends AnyFunSuite {
         val stateCountDown = fsm.PRECOM.cache.value
         stateCountDown.simPublic()
 
-        val prodRegsLowForWatch = doubleLengthReg(lN - 1 downto 0)
+        //        val prodRegsLowForWatch = doubleLengthReg(lN - 1 downto 0)
+        val prodRegsLowForWatch = doubleLengthDataOut(lN - 1 downto 0)
         prodRegsLowForWatch.simPublic()
 
         fsm.isPRE.simPublic()

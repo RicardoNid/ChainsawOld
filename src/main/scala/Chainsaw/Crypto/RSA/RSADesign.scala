@@ -69,8 +69,8 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
   }
 
   // utilities and subroutines
-//  def doubleLengthRegLow = doubleLengthReg(lN - 1 downto 0)
-  def doubleLengthRegLow = doubleLengthReg(lN - 1 downto 0)
+  //  def doubleLengthRegLow = doubleLengthReg(lN - 1 downto 0)
+  def doubleLengthRegLow = doubleLengthDataOut(lN - 1 downto 0)
   // mult.output acts like a register as mult is end-registered
   def prodHigh = mult.output(2 * lN - 1 downto lN) // caution: val would lead to problems
   def prodLow = mult.output(lN - 1 downto 0)
@@ -93,7 +93,8 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
       when(innerCounter.value === U(init)) { // second cycle, first mult of montRedc
         mult.input(0) := modRho(input) // t mod Rho
         mult.input(1) := omegaRegs
-        doubleLengthReg := mult.output // full t
+        //        doubleLengthReg := mult.output // full t
+        doubleLengthDataIn := mult.output // full t
       }.elsewhen(innerCounter.value === U(init + 1)) {
         mult.input(0) := prodLow // U
         mult.input(1) := inputRegs.N // N
@@ -101,7 +102,8 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
     }
 
     def addSubDatapath() = {
-      add.input(0) := doubleLengthReg // t for the montRed(aMont * bMont for the montMul)
+      //      add.input(0) := doubleLengthReg // t for the montRed(aMont * bMont for the montMul)
+      add.input(0) := doubleLengthDataOut // t for the montRed(aMont * bMont for the montMul)
       add.input(1) := mult.output // U * N
       // TODO: cautions!
       sub.input(0) := add.output(2 * lN downto lN).asSInt // mid = (t + U * N) / Rho, lN+1 bits
@@ -119,7 +121,8 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
     when(innerCounter.value === U(0)) { // starts from f(1) = 0 mod 2
       mult.input(0) := U(1) // original solution 1
       mult.input(1) := inputRegs.N
-      doubleLengthReg(lN - 1 downto 0) := mult.input(0) // save the solution
+      //      doubleLengthReg(lN - 1 downto 0) := mult.input(0) // save the solution
+      doubleLengthDataIn(lN - 1 downto 0) := mult.input(0) // save the solution
     }.elsewhen(innerCounter.value === U(lN)) {
       add.input(0) := (~doubleLengthRegLow).resized
       add.input(1) := U(1)
@@ -130,8 +133,9 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
           doubleLengthRegLow, // solution
           doubleLengthRegLow | addMask.asUInt) // solution + 1 << exp
       mult.input(1) := inputRegs.N
-      doubleLengthReg(lN - 1 downto 0) := mult.input(0) // save the solution
-      maskMove()
+      //      doubleLengthReg(lN - 1 downto 0) := mult.input(0) // save the solution
+      doubleLengthDataIn(lN - 1 downto 0) := mult.input(0) // save the solution
+      when(pipelineCounter.value === U(pipelineFactor - 1))(maskMove())
     }
   }
 
