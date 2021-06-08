@@ -42,14 +42,14 @@ class RSAAlgo(lN: Int) {
    *
    * @param N the modulus of RSA
    */
-  def getOmega(N: BigInt, print: Boolean = false) = {
+  def getOmega(N: BigInt) = {
     val init = BigInt(1) // N^{-1} \pmod 2^1
     // lifting by Hensel's lemma
     @tailrec
     var count = 0
 
     def lift(solution: BigInt, exp: Int): BigInt = {
-      if (print) {
+      if (ChainsawDebug) {
         printPadded(s"omega in progress ${count.toString.padToLeft(3, '0')}", solution, lN)
         count += 1
       }
@@ -66,19 +66,19 @@ class RSAAlgo(lN: Int) {
     }
 
     val ret = Rho - lift(init, 1)
-    if(print) printPadded(s"omega in progress ${count.toString.padToLeft(3, '0')}", ret, lN)
+    if(ChainsawDebug) printPadded(s"omega in progress ${count.toString.padToLeft(3, '0')}", ret, lN)
     ret
   }
 
   /** Get rho^2^ (mod N) by iterative algorithm
    *
    */
-  def getRhoSquare(N: BigInt, print: Boolean = false) = {
+  def getRhoSquare(N: BigInt) = {
     var count = 0
 
     @tailrec
     def iter(value: BigInt, exp: Int): BigInt = {
-      if (print) {
+      if (ChainsawDebug) {
         printPadded(s"rhoSquare in progress ${count.toString.padToLeft(3, '0')}", value, lN)
         count += 1
       }

@@ -10,6 +10,7 @@ import scala.collection.mutable.ArrayBuffer
 class MontExpTest extends AnyFunSuite {
   test("testMontExp") {
 
+
     val lN = 512
 
     // print the padded number in hex form
@@ -32,9 +33,11 @@ class MontExpTest extends AnyFunSuite {
     // pad to right as the hardware design requires
     val paddedExponent = BigInt(exponent.toString(2).padTo(lN, '0'), 2)
 
-    val rhoSquare = algo.getRhoSquare(N, print = true)
-    val omega = algo.getOmega(N, print = true)
+    ChainsawDebug = true
+    val rhoSquare = algo.getRhoSquare(N)
+    val omega = algo.getOmega(N)
 
+    ChainsawDebug = false
     val inputValue = BigInt(ref.getPrivateValue) - DSPRand.nextInt(10000)
     val aMont = algo.montMul(inputValue, rhoSquare, N)
     val result = algo.montExp(inputValue, exponent, N)
@@ -48,14 +51,13 @@ class MontExpTest extends AnyFunSuite {
     toPrint.foreach { case (str, tuple) => printPadded(str, tuple._1, tuple._2) }
 
     ChainsawDebug = true
-
     SimConfig.withWave.compile(
       new MontExp(lN) {
 
         val stateCountDown = fsm.PRECOM.cache.value
         stateCountDown.simPublic()
 
-        val prodRegsLowForWatch = prodRegs(lN - 1 downto 0)
+        val prodRegsLowForWatch = doubleLengthReg(lN - 1 downto 0)
         prodRegsLowForWatch.simPublic()
 
         fsm.isPRE.simPublic()
@@ -89,7 +91,7 @@ class MontExpTest extends AnyFunSuite {
 
         val cyclesForExponent = exponent.toString(2).tail.map(_.asDigit + 1).sum * 3
 
-        (0 until cyclesForExponent + 50 + lN + lN).foreach { _ =>
+        (0 until (cyclesForExponent + lN) * mult.latency +  50 ).foreach { _ =>
 
           def count = innerCounter.value.toInt
 
@@ -117,7 +119,7 @@ class MontExpTest extends AnyFunSuite {
         }
         else assertResult(result)(dutResult) // result assertion
 
-        println(s"cycles for exponent should be ${exponent.toString(2).tail.map(_.asDigit + 1).sum * 3}")
+        println(s"cycles for exponent should be ${exponent.toString(2).tail.map(_.asDigit + 1).sum * 3 * mult.latency}")
         println(s"cycles actually comsumed: ${(end(0) - start(0)) / 2}")
       }
   }
