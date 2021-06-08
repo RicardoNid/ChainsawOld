@@ -50,7 +50,7 @@ class MontExpTest extends AnyFunSuite {
     )
     toPrint.foreach { case (str, tuple) => printPadded(str, tuple._1, tuple._2) }
 
-    ChainsawDebug = true
+    //    ChainsawDebug = true
     SimConfig.withWave.compile(
       new MontExp(lN) {
 
@@ -77,9 +77,6 @@ class MontExpTest extends AnyFunSuite {
         dut.input.exponent #= paddedExponent
         dut.input.exponentLength #= exponentLength
 
-        dut.input.omega #= omega
-        dut.input.RhoSquare #= algo.getRhoSquare(N)
-
         dut.input.value #= inputValue
 
         val yourRecord = ArrayBuffer[BigInt]()
@@ -91,7 +88,7 @@ class MontExpTest extends AnyFunSuite {
 
         val cyclesForExponent = exponent.toString(2).tail.map(_.asDigit + 1).sum * 3
 
-        (0 until (cyclesForExponent + lN) * mult.latency +  50 ).foreach { _ =>
+        (0 until (cyclesForExponent + lN) * mult.latency + 50).foreach { _ =>
 
           def count = innerCounter.value.toInt
 
