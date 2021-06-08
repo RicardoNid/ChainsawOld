@@ -56,7 +56,7 @@ class MontExpTest extends AnyFunSuite {
         // pad to right as the hardware design requires
         val paddedExponent = BigInt(exponent.toString(2).padTo(lN, '0'), 2)
 
-        ChainsawDebug = true
+        ChainsawDebug = false
         val rhoSquare = algo.getRhoSquare(N)
         val omega = algo.getOmega(N)
 
@@ -70,6 +70,7 @@ class MontExpTest extends AnyFunSuite {
           "N" -> (N, lN),
           "omega" -> (omega, lN), "rhoSquare" -> (rhoSquare, lN))
         toPrint.foreach { case (str, tuple) => printPadded(str, tuple._1, tuple._2) }
+        inputValues.foreach(printPadded("input", _, lN))
         aMonts.foreach(printPadded("aMont", _, lN))
         results.foreach(printPadded("result", _, lN))
 

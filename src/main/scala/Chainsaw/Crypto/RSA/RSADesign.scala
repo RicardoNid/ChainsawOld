@@ -38,14 +38,15 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
   // components
   // regs for data
   //  val inputRegs = Reg(MontExpInput(lN))
-  val inputValueDataIn = Reg(UInt(lN bits))
-  val inputValueDataOut = Delay(inputValueDataIn, pipelineFactor)
+  val inputValueRegs = Vec(Reg(UInt(lN bits)), pipelineFactor) // would be reused for aMont
   val exponentReg = Reg(UInt(lN bits))
   val exponentLengthReg = Reg(UInt(log2Up(lN) + 1 bits))
   val NReg = Reg(UInt(lN bits))
   //  val singleLengthReg = Reg(UInt(lN bits)) // regs for "aMont"
   val singleLengthDataIn = Reg(UInt(lN bits))
-  val singleLengthDataOut = Delay(singleLengthDataIn, pipelineFactor - 1)
+  val singleLengthRun = Bool()
+  singleLengthRun := True // when the singleLengthQueue should run
+  val singleLengthDataOut = History(singleLengthDataIn, pipelineFactor, singleLengthRun)
   //  val doubleLengthReg = Reg(UInt(2 * lN bits)) // regs for "reg"
   val doubleLengthDataIn = Reg(UInt(2 * lN bits)) // regs for "reg"
   val doubleLengthDataOut = Delay(doubleLengthDataIn, pipelineFactor - 1) // regs for "reg"
@@ -69,11 +70,6 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
   // datapath of the reduction
   val det = sub.output
   val reductionRet = Mux(det >= S(0), modRho(det).asUInt, sub.input(0)(lN - 1 downto 0).asUInt)
-  when(readRet) {
-    //    singleLengthReg := reductionRet
-    singleLengthDataIn := reductionRet
-    readRet := False
-  }
 
   // utilities and subroutines
   //  def doubleLengthRegLow = doubleLengthReg(lN - 1 downto 0)
@@ -160,7 +156,7 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
       singleLengthDataIn := reductionRet
     }.otherwise {
       //      sub.input(0) := (singleLengthReg << 1).asSInt
-      sub.input(0) := (singleLengthDataOut << 1).asSInt
+      sub.input(0) := (singleLengthDataOut.last << 1).asSInt
       //      sub.input(1) := inputRegs.N.intoSInt
       sub.input(1) := NReg.intoSInt
       //      singleLengthReg := reductionRet
@@ -181,7 +177,7 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
     val POST = new StateDelayFixed(5 * pipelineFactor)
 
     // the overall control strategy: by the innerCounter
-    val allStateDelays = Seq(PRECOM, PRE, DoSquareFor1, DoMultFor1, DoSquareFor0, POST)
+    val allStateDelays = Seq(INIT, PRECOM, PRE, DoSquareFor1, DoMultFor1, DoSquareFor0, POST)
     allStateDelays.foreach(_.whenIsActive {
       pipelineCounter.increment()
       when(pipelineCounter.willOverflow)(innerCounter.increment())
@@ -222,7 +218,7 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
         NReg := input.N
         exponentReg := input.exponent
         exponentLengthReg := input.exponentLength
-        inputValueDataIn := input.value
+        inputValueRegs(pipelineCounter.value) := input.value
       } // data initialization
       PRECOM.whenIsActive { // computing omega and rhoSquare
         getRhoSquareDatapath()
@@ -232,11 +228,17 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
         rhoSquareReg := reductionRet
       } // store omega and rhoSquare
       //      PRE.whenIsActive(montMulDatapath(inputRegs.value, rhoSquareReg))
-      PRE.whenIsActive(montMulDatapath(inputValueDataOut, rhoSquareReg))
+      PRE.whenIsActive(montMulDatapath(inputValueRegs(pipelineCounter.value), rhoSquareReg))
       PRE.whenCompleted(readRet.set()) // extra work
+      when(readRet) {
+        //    singleLengthReg := reductionRet
+        singleLengthDataIn := reductionRet
+        when(pipelineCounter.value === U(2))(readRet := False)
+      }
       DoSquareFor1.whenIsActive(montMulDatapath(reductionRet, reductionRet))
       //      DoMultFor1.whenIsActive(montMulDatapath(reductionRet, singleLengthReg))
-      DoMultFor1.whenIsActive(montMulDatapath(reductionRet, singleLengthDataOut))
+      // aMont is stored in singleLengthData
+      DoMultFor1.whenIsActive(montMulDatapath(reductionRet, singleLengthDataOut(pipelineCounter.value)))
       DoSquareFor0.whenIsActive(montMulDatapath(reductionRet, reductionRet))
       POST.whenIsActive {
         montMulDatapath(reductionRet, U(1))
