@@ -47,6 +47,7 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
   val singleLengthDataOut = Delay(singleLengthDataIn, pipelineFactor - 1)
   //  val doubleLengthReg = Reg(UInt(2 * lN bits)) // regs for "reg"
   val doubleLengthDataIn = Reg(UInt(2 * lN bits)) // regs for "reg"
+  // TODO: optimize
   val doubleLengthDataOut = Delay(doubleLengthDataIn, pipelineFactor - 1) // regs for "reg"
   val omegaRegs = Reg(UInt(lN bits))
   val rhoSquareReg = Reg(UInt(lN bits))
@@ -95,6 +96,7 @@ class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
       mult.input(0) := prodLow // U, U = t * omega mod rho
       //        mult.input(1) := inputRegs.N // N
       mult.input(1) := NReg // N
+      doubleLengthDataIn := doubleLengthDataOut // keep the full t
     }
     when(innerCounter.value === U(3))(addSubDatapath())
 

@@ -13,7 +13,7 @@ class MontExpTest extends AnyFunSuite {
     val lN = 512
 
     // print the padded number in hex form
-    def printPadded(name: String, value: BigInt, n: Int): Unit = {
+    def printPadded(name: String, value: BigInt, n: Int = lN): Unit = {
       val hex =
         value.toString(2).padToLeft(n, '0')
           .grouped(4).toArray.map(BigInt(_, 2).toString(16))
@@ -50,6 +50,11 @@ class MontExpTest extends AnyFunSuite {
         innerCounter.value.simPublic()
         pipelineCounter.value.simPublic()
         reductionRet.simPublic()
+        mult.input.simPublic()
+        mult.output.simPublic()
+        prodLow.simPublic()
+        add.input.simPublic()
+        add.output.simPublic()
       })
       .doSim { dut =>
 
@@ -72,6 +77,7 @@ class MontExpTest extends AnyFunSuite {
         val inputValues = (0 until pipelineFactor).map(_ => BigInt(ref.getPrivateValue) - DSPRand.nextInt(10000))
         val aMonts = inputValues.map(algo.montMul(_, rhoSquare, N))
         val results = inputValues.map(algo.montExp(_, exponent, N))
+        algo.montExp(inputValues.head, exponent, N, print = true)
         val records = inputValues.map(algo.montExpWithRecord(_, exponent, N))
 
         val toPrint = Map("N" -> (N, lN), "exponent" -> (exponent, lN), "omega" -> (omega, lN), "rhoSquare" -> (rhoSquare, lN))
@@ -111,8 +117,28 @@ class MontExpTest extends AnyFunSuite {
           dut.clockDomain.waitSampling()
 
           // record the intermediate
-          if(dut.isPOST.toBoolean){
-            if(count == 3 && pipelineCount == 2) dutResult = dut.reductionRet.toBigInt
+          if (dut.isPOST.toBoolean) {
+            if (count == 3 && pipelineCount == 2) dutResult = dut.reductionRet.toBigInt
+          }
+          if (dut.isPRE.toBoolean || dut.isRUNNING.toBoolean) {
+            if (pipelineCount == 0) {
+              if (count == 0) {
+                printPadded("a          ", mult.input(0).toBigInt)
+                printPadded("b          ", mult.input(1).toBigInt)
+                printPadded("previous UN", mult.output.toBigInt, 2 * lN)
+                printPadded("previous t ", add.input(0).toBigInt, 2 * lN)
+                printPadded("previous UN", add.input(1).toBigInt, 2 * lN)
+                printPadded("prev t + UN", add.output.toBigInt, 2 * lN)
+              } else if (count == 1) {
+                printPadded("t          ", mult.input(0).toBigInt)
+                printPadded("omega      ", mult.input(1).toBigInt)
+                printPadded("ab         ", mult.output.toBigInt, 2 * lN)
+              } else if (count == 2) {
+                printPadded("U          ", mult.input(0).toBigInt)
+                printPadded("N          ", mult.input(1).toBigInt)
+                printPadded("omega * t  ", mult.output.toBigInt, 2 * lN)
+              }
+            }
           }
         }
 

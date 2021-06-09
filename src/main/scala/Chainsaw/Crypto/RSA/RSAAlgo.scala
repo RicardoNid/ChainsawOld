@@ -110,10 +110,12 @@ class RSAAlgo(lN: Int) {
     val mid = (t + bigMult(U, N)) >> lN // divided by Rho
     val det = mid - N
     if (print) {
-      printPadded("t", t, 2 * lN)
-      printPadded("U", U)
-      printPadded("UN", bigMult(U, N), 2 * lN)
-      printPadded("mid", mid, lN)
+      printPadded("t low    ", bigMod(t, Rho), lN)
+      printPadded("t        ", t, 2 * lN)
+      printPadded("U        ", U, lN)
+      printPadded("omega * t", bigMult(t, getOmega(N)), 2 * lN)
+      printPadded("UN       ", bigMult(U, N), 2 * lN)
+      printPadded("mid      ", mid, lN)
       //      printPadded("det", det, lN)
     }
     if (det >= 0) det else mid // result \in [0, N)
@@ -123,6 +125,10 @@ class RSAAlgo(lN: Int) {
   def montMul(aMont: BigInt, bMont: BigInt, N: BigInt, print: Boolean = false) = {
     require(aMont >= 0 && aMont < N)
     require(bMont >= 0 && bMont < N)
+    if (print) {
+      printPadded("aMont    ", aMont)
+      printPadded("bMont    ", bMont)
+    }
     // aMont, bMont \in [0, N), aMont * bMont \in [0 N^2), N^2 < N * Rho - 1(as N   < Rho)
     val prod = bigMult(aMont, bMont)
     montRed(prod, N, print)
@@ -130,26 +136,27 @@ class RSAAlgo(lN: Int) {
 
   def montSquare(aMont: BigInt, N: BigInt, print: Boolean = false) = {
     require(aMont >= 0 && aMont < N)
+    if (print) printPadded("aMont    ", aMont)
     val square = bigSquare(aMont)
     montRed(square, N, print)
   }
 
   def montExp(a: BigInt, exponent: BigInt, N: BigInt, print: Boolean = false) = {
     require(a >= 0 && a < N)
-    val aMont = montMul(a, getRhoSquare(N), N)
+    val aMont = montMul(a, getRhoSquare(N), N, print)
     //    printPadded("aMont", aMont)
     val sequence = exponent.toString(2)
     var reg = aMont
     sequence.tail.foreach { char =>
-      val square = montSquare(reg, N, print)
+      val square = montSquare(reg, N, print = false)
       //      printPadded("afterSquare", square)
       if (char == '1') {
-        reg = montMul(square, aMont, N, print)
+        reg = montMul(square, aMont, N, print = false)
         //        printPadded("afterMul", reg)
       }
       else reg = square
     }
-    montRed(reg, N, print)
+    montRed(reg, N, print = false)
   }
 
   def montExpWithRecord(a: BigInt, exponent: BigInt, N: BigInt) = {
