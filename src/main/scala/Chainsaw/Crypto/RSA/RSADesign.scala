@@ -44,6 +44,7 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
   val NReg = Reg(UInt(lN bits))
   val singleLengthQueue = StreamFifo(UInt(lN bits), pipelineFactor + 1) // general queue for intermediate data
   initFIFO(singleLengthQueue)
+  singleLengthQueue.io.pop.ready.allowOverride
   val doubleLengthQueue = StreamFifo(UInt(2 * lN bits), pipelineFactor + 1) // general queue for intermediate data
   initFIFO(doubleLengthQueue)
   doubleLengthQueue.io.pop.ready.allowOverride
@@ -123,23 +124,22 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
     val flag = Bool() // flag
     flag.clear()
     val afterMulflag = Delay(flag, mulLatency)
-    afterMulflag.clear()
     when(flag) {
       when(atOperation(0)) { // starts from f(1) = 0 mod 2
         mult.input(0) := U(1) // original solution
         mult.input(1) := NReg
-        push(doubleLengthQueue, mult.input(0).resized) // save the solution
+        push(singleLengthQueue, mult.input(0)) // save the solution
       }.elsewhen(atOperation(lN)) {
-        add.input(0) := (~doubleLengthLow).resized
+        add.input(0) := (~pop(singleLengthQueue)).resized
         add.input(1) := U(1)
         omegaRegs := add.output(lN - 1 downto 0)
       }.otherwise {
         mult.input(0) :=
           Mux((prodLow & modMask.asUInt) === U(1),
-            doubleLengthLow, // solution
-            doubleLengthLow | addMask.asUInt) // solution + 1 << exp
+            pop(singleLengthQueue), // solution
+            pop(singleLengthQueue) | addMask.asUInt) // solution + 1 << exp
         mult.input(1) := NReg
-        push(doubleLengthQueue, mult.input(0).resized) // save the solution
+        push(singleLengthQueue, mult.input(0)) // save the solution
         when(atPipelineCycle(pipelineFactor - 1))(maskMove())
       }
     }
@@ -152,11 +152,11 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
       when(atOperation(0)) {
         sub.input(0) := S(BigInt(1) << (lN - 1))
         sub.input(1) := NReg.intoSInt
-        push(singleLengthQueue, reductionRet)
+        push(doubleLengthQueue, reductionRet.resized)
       }.otherwise {
-        sub.input(0) := (pop(singleLengthQueue) << 1).asSInt
+        sub.input(0) := (modRho(pop(doubleLengthQueue)) << 1).asSInt
         sub.input(1) := NReg.intoSInt
-        push(singleLengthQueue, reductionRet)
+        push(doubleLengthQueue, reductionRet.resized)
       }
     }
   }
