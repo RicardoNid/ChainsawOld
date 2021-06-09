@@ -14,19 +14,13 @@ case class MontExpInput(lN: Int) extends Bundle {
 }
 
 // first version, design with single, big multiplier
-class MontExp(lN: Int, val mulLatency: Int = 4, val addLatency: Int = 0) extends DSPDUTTiming[MontExpInput, UInt] {
+class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTTiming[MontExpInput, UInt] {
   override val input: MontExpInput = in(MontExpInput(lN))
   override val output: UInt = out(Reg(UInt(lN bits)))
   override val timing: TimingInfo = TimingInfo(1, 1, 2, 1)
 
   // operator modules
-  //  val mult = new BigMult(lN, mulLatency)
-  val mult = new Component {
-    val input: Vec[UInt] = in Vec(UInt(lN bits), 2)
-    val inner = new BigMult(lN, mulLatency)
-    inner.input := input
-    val output: UInt = out(RegNext(inner.output))
-  }
+  val mult = new BigMult(lN, mulLatency)
   val add = new BigAdd(2 * lN, addLatency)
   val sub = new BigSub(lN + 1, addLatency)
   // preassign to avoid latches
@@ -38,8 +32,7 @@ class MontExp(lN: Int, val mulLatency: Int = 4, val addLatency: Int = 0) extends
   sub.input(1) := S(0, lN + 1 bits)
 
   // design parameters
-  //  val pipelineFactor = mulLatency + addLatency
-  val pipelineFactor = mulLatency + addLatency
+  val pipelineFactor = mult.latency
   val precomCycles = (lN + 2) * pipelineFactor
 
   // components
@@ -254,4 +247,3 @@ object MontExp {
     //    VivadoElabo(new MontExp(512))
   }
 }
-

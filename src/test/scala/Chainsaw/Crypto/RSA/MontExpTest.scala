@@ -29,6 +29,7 @@ class MontExpTest extends AnyFunSuite {
         val stateCountDown = fsm.PRECOM.cache.value
         stateCountDown.simPublic()
 
+        //        val prodRegsLowForWatch = doubleLengthQueue.io.pop.payload(lN - 1 downto 0)
         val prodRegsLowForWatch = doubleLengthDataOut(lN - 1 downto 0)
         prodRegsLowForWatch.simPublic()
 
@@ -65,10 +66,8 @@ class MontExpTest extends AnyFunSuite {
         val algo = new RSAAlgo(lN)
 
         val N = BigInt(ref.getModulus)
-        //        val exponent = BigInt(ref.getPublicValue)
-        //        val exponentLength = ref.getPublicValue.bitLength()
-        val exponent = BigInt(ref.getPrivateValue)
-        val exponentLength = ref.getPrivateValue.bitLength()
+        val exponent = BigInt(ref.getPublicValue)
+        val exponentLength = ref.getPublicValue.bitLength()
         // pad to right as the hardware design requires
         val paddedExponent = BigInt(exponent.toString(2).padTo(lN, '0'), 2)
 
@@ -103,13 +102,13 @@ class MontExpTest extends AnyFunSuite {
         }
 
         // data to be recorded
-        var dutResult = ArrayBuffer[BigInt]()
+        val dutResult = ArrayBuffer[BigInt]()
         // simulation and monitoring
 
         val cyclesForExponent = exponent.toString(2).tail.map(_.asDigit + 1).sum * 3
 
         ChainsawDebug = false
-        (0 until (cyclesForExponent + lN) * mulLatency + 50).foreach { _ =>
+        (0 until (cyclesForExponent + lN) * pipelineFactor + 50).foreach { _ =>
 
           def count = innerCounter.value.toInt
 
@@ -118,9 +117,9 @@ class MontExpTest extends AnyFunSuite {
           dut.clockDomain.waitSampling()
 
           // record the intermediate
-          //          if (dut.isPOST.toBoolean) {
-          //            if (count == 3) dutResult += dut.reductionRet.toBigInt
-          //          }
+          if (dut.isPOST.toBoolean) {
+            if (count == 3) dutResult += dut.reductionRet.toBigInt
+          }
           //          if (dut.isPRE.toBoolean || dut.isRUNNING.toBoolean) {
           //            if (pipelineCount == 0) {
           //              if (count == 0) {
@@ -143,11 +142,8 @@ class MontExpTest extends AnyFunSuite {
           //          }
         }
 
-        // output
-        if (ChainsawDebug) {
-          // print something
-        }
-        else dutResult.zip(results).foreach { case (int, int1) => assertResult(int)(int1) }
+        dutResult.foreach(printPadded("dutResult", _, lN))
+        dutResult.zip(results).foreach { case (int, int1) => assertResult(int)(int1) }
       }
   }
 }
