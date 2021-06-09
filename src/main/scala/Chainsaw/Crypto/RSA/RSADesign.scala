@@ -14,15 +14,15 @@ case class MontExpInput(lN: Int) extends Bundle {
 }
 
 // first version, design with single, big multiplier
-class MontExp(lN: Int) extends DSPDUTTiming[MontExpInput, UInt] {
+class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTTiming[MontExpInput, UInt] {
   override val input: MontExpInput = in(MontExpInput(lN))
   override val output: UInt = out(Reg(UInt(lN bits)))
   override val timing: TimingInfo = TimingInfo(1, 1, 2, 1)
 
   // operator modules
-  val mult = new BigMult(lN)
-  val add = new BigAdd(2 * lN)
-  val sub = new BigSub(lN + 1)
+  val mult = new BigMult(lN, mulLatency)
+  val add = new BigAdd(2 * lN, addLatency)
+  val sub = new BigSub(lN + 1, addLatency)
   // preassign to avoid latches
   mult.input(0) := U(0, lN bits)
   mult.input(1) := U(0, lN bits)

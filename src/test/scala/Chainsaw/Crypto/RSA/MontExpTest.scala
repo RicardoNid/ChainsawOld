@@ -65,8 +65,10 @@ class MontExpTest extends AnyFunSuite {
         val algo = new RSAAlgo(lN)
 
         val N = BigInt(ref.getModulus)
-        val exponent = BigInt(ref.getPublicValue)
-        val exponentLength = ref.getPublicValue.bitLength()
+        //        val exponent = BigInt(ref.getPublicValue)
+        //        val exponentLength = ref.getPublicValue.bitLength()
+        val exponent = BigInt(ref.getPrivateValue)
+        val exponentLength = ref.getPrivateValue.bitLength()
         // pad to right as the hardware design requires
         val paddedExponent = BigInt(exponent.toString(2).padTo(lN, '0'), 2)
 
@@ -101,8 +103,7 @@ class MontExpTest extends AnyFunSuite {
         }
 
         // data to be recorded
-        val yourRecord = ArrayBuffer[BigInt]()
-        var dutResult = BigInt(0)
+        var dutResult = ArrayBuffer[BigInt]()
         // simulation and monitoring
 
         val cyclesForExponent = exponent.toString(2).tail.map(_.asDigit + 1).sum * 3
@@ -117,36 +118,36 @@ class MontExpTest extends AnyFunSuite {
           dut.clockDomain.waitSampling()
 
           // record the intermediate
-          if (dut.isPOST.toBoolean) {
-            if (count == 3 && pipelineCount == 2) dutResult = dut.reductionRet.toBigInt
-          }
-          if (dut.isPRE.toBoolean || dut.isRUNNING.toBoolean) {
-            if (pipelineCount == 0) {
-              if (count == 0) {
-                printPadded("a          ", mult.input(0).toBigInt)
-                printPadded("b          ", mult.input(1).toBigInt)
-                printPadded("previous UN", mult.output.toBigInt, 2 * lN)
-                printPadded("previous t ", add.input(0).toBigInt, 2 * lN)
-                printPadded("previous UN", add.input(1).toBigInt, 2 * lN)
-                printPadded("prev t + UN", add.output.toBigInt, 2 * lN)
-              } else if (count == 1) {
-                printPadded("t          ", mult.input(0).toBigInt)
-                printPadded("omega      ", mult.input(1).toBigInt)
-                printPadded("ab         ", mult.output.toBigInt, 2 * lN)
-              } else if (count == 2) {
-                printPadded("U          ", mult.input(0).toBigInt)
-                printPadded("N          ", mult.input(1).toBigInt)
-                printPadded("omega * t  ", mult.output.toBigInt, 2 * lN)
-              }
-            }
-          }
+          //          if (dut.isPOST.toBoolean) {
+          //            if (count == 3) dutResult += dut.reductionRet.toBigInt
+          //          }
+          //          if (dut.isPRE.toBoolean || dut.isRUNNING.toBoolean) {
+          //            if (pipelineCount == 0) {
+          //              if (count == 0) {
+          //                printPadded("a          ", mult.input(0).toBigInt)
+          //                printPadded("b          ", mult.input(1).toBigInt)
+          //                printPadded("previous UN", mult.output.toBigInt, 2 * lN)
+          //                printPadded("previous t ", add.input(0).toBigInt, 2 * lN)
+          //                printPadded("previous UN", add.input(1).toBigInt, 2 * lN)
+          //                printPadded("prev t + UN", add.output.toBigInt, 2 * lN)
+          //              } else if (count == 1) {
+          //                printPadded("t          ", mult.input(0).toBigInt)
+          //                printPadded("omega      ", mult.input(1).toBigInt)
+          //                printPadded("ab         ", mult.output.toBigInt, 2 * lN)
+          //              } else if (count == 2) {
+          //                printPadded("U          ", mult.input(0).toBigInt)
+          //                printPadded("N          ", mult.input(1).toBigInt)
+          //                printPadded("omega * t  ", mult.output.toBigInt, 2 * lN)
+          //              }
+          //            }
+          //          }
         }
 
         // output
         if (ChainsawDebug) {
           // print something
         }
-        else assertResult(results(pipelineFactor - 1))(dutResult) // result assertion
+        else dutResult.zip(results).foreach { case (int, int1) => assertResult(int)(int1) }
 
         println(s"cycles for exponent should be ${exponent.toString(2).tail.map(_.asDigit + 1).sum * 3 * mult.latency}")
       }
