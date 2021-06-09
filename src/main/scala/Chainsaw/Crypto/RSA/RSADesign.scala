@@ -36,20 +36,6 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
   val pipelineFactor = mulLatency + 2 * addLatency
   val precomCycles = (lN + 2) * pipelineFactor
 
-  def initFIFO(fifo: StreamFifo[UInt]) = {
-    fifo.io.push.valid := False
-    fifo.io.push.payload := U(0)
-    fifo.io.pop.ready := False
-  }
-  def push(fifo: StreamFifo[UInt], data: UInt) = {
-    fifo.io.push.valid := True
-    fifo.io.push.payload := data
-  }
-  def pop(fifo: StreamFifo[UInt]) = {
-    fifo.io.pop.ready := True
-    fifo.io.pop.payload
-  }
-
   // components
   // regs for data
   val inputValueRegs = Vec(Reg(UInt(lN bits)), pipelineFactor) // would be reused for aMont
@@ -80,8 +66,21 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
   val det = sub.output
   val reductionRet = Mux(det >= S(0), modRho(det).asUInt, modRho(sub.input(0)).asUInt)
 
+  def initFIFO(fifo: StreamFifo[UInt]) = {
+    fifo.io.push.valid := False
+    fifo.io.push.payload := U(0)
+    fifo.io.pop.ready := False
+  }
+  def push(fifo: StreamFifo[UInt], data: UInt) = {
+    fifo.io.push.valid := True
+    fifo.io.push.payload := data
+  }
+  def pop(fifo: StreamFifo[UInt]) = {
+    fifo.io.pop.ready := True
+    fifo.io.pop.payload
+  }
   // utilities and subroutines
-  def doubleLengthRegLow = modRho(pop(doubleLengthQueue))
+  def doubleLengthLow = modRho(pop(doubleLengthQueue))
   // mult.output acts like a register as mult is end-registered
   def prodLow = mult.output(lN - 1 downto 0)
   // << 1 leads to on bit more, resize would take lower(right) bits
@@ -110,10 +109,6 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
       mult.input(0) := prodLow // U, U = t * omega mod rho
       mult.input(1) := NReg // N
     }
-    // only for POST STATE
-    // TODO: separate POST and OUTPUT? - NO EXPLICIT OUTPUT NEEDED
-    // TODO: merge this state with next INIT state
-    when(atOperation(3))(addSubDatapath())
   }
 
   def addSubDatapath() = { // t & UN given, calculate mid and ret
@@ -129,14 +124,14 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
       mult.input(1) := NReg
       push(doubleLengthQueue, mult.input(0).resized) // save the solution
     }.elsewhen(atOperation(lN)) {
-      add.input(0) := (~doubleLengthRegLow).resized
+      add.input(0) := (~doubleLengthLow).resized
       add.input(1) := U(1)
       omegaRegs := add.output(lN - 1 downto 0)
     }.otherwise {
       mult.input(0) :=
         Mux((prodLow & modMask.asUInt) === U(1),
-          doubleLengthRegLow, // solution
-          doubleLengthRegLow | addMask.asUInt) // solution + 1 << exp
+          doubleLengthLow, // solution
+          doubleLengthLow | addMask.asUInt) // solution + 1 << exp
       mult.input(1) := NReg
       push(doubleLengthQueue, mult.input(0).resized) // save the solution
       when(atPipelineCycle(pipelineFactor - 1))(maskMove())

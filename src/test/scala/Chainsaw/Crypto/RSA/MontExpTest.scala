@@ -107,12 +107,13 @@ class MontExpTest extends AnyFunSuite {
 
         val cyclesForExponent = exponent.toString(2).tail.map(_.asDigit + 1).sum * 3
 
+
+        def count = operationCounter.value.toInt
+
+        def pipelineCount = pipelineCounter.value.toInt
+
         ChainsawDebug = false
         (0 until (cyclesForExponent + lN) * pipelineFactor * 2 + precomCycles).foreach { _ =>
-
-          def count = operationCounter.value.toInt
-
-          def pipelineCount = pipelineCounter.value.toInt
 
           dut.clockDomain.waitSampling()
 
@@ -139,6 +140,10 @@ class MontExpTest extends AnyFunSuite {
           //            }
           //          }
         }
+
+        import spinal.lib.MajorityVote
+
+
 
         dutResult.foreach(printPadded("dutResult", _, lN))
         dutResult.zip(results).foreach { case (int, int1) => assertResult(int)(int1) }

@@ -13,13 +13,12 @@ class RSARef(lN: Int) {
   var keyPair = keyGen.generateKeyPair()
   def refresh() = keyPair = keyGen.generateKeyPair()
 
-
   def getPrivate = keyPair.getPrivate
   def getPublic = keyPair.getPublic
 
   def privateImpl = keyPair.getPrivate.asInstanceOf[RSAPrivateCrtKeyImpl]
 
-  def getModulus = privateImpl.getModulus
+  def getModulus = privateImpl.getModulus // N
 
   def getPrivateValue = privateImpl.getPrivateExponent
   def getPublicValue = privateImpl.getPublicExponent
