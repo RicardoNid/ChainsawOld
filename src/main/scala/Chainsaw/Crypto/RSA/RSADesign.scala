@@ -118,10 +118,13 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
     sub.input(1) := NReg.intoSInt // N, padded to lN + 1 bits
   }
 
-  val getOmegaRunning = Bool() // flag
-  getOmegaRunning := False
+
   val getOmegaDatapath = new Area {
-    when(getOmegaRunning) {
+    val flag = Bool() // flag
+    flag.clear()
+    val afterMulflag = Delay(flag, mulLatency)
+    afterMulflag.clear()
+    when(flag) {
       when(atOperation(0)) { // starts from f(1) = 0 mod 2
         mult.input(0) := U(1) // original solution
         mult.input(1) := NReg
@@ -142,15 +145,19 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
     }
   }
 
-  def getRhoSquareDatapath() = {
-    when(atOperation(0)) {
-      sub.input(0) := S(BigInt(1) << (lN - 1))
-      sub.input(1) := NReg.intoSInt
-      push(singleLengthQueue, reductionRet)
-    }.otherwise {
-      sub.input(0) := (pop(singleLengthQueue) << 1).asSInt
-      sub.input(1) := NReg.intoSInt
-      push(singleLengthQueue, reductionRet)
+  val getRhoSquareDatapath = new Area {
+    val flag = Bool()
+    flag := False
+    when(flag) {
+      when(atOperation(0)) {
+        sub.input(0) := S(BigInt(1) << (lN - 1))
+        sub.input(1) := NReg.intoSInt
+        push(singleLengthQueue, reductionRet)
+      }.otherwise {
+        sub.input(0) := (pop(singleLengthQueue) << 1).asSInt
+        sub.input(1) := NReg.intoSInt
+        push(singleLengthQueue, reductionRet)
+      }
     }
   }
 
@@ -207,8 +214,8 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
         when(atOperation(0))(addSubDatapath()) // to finish the final part of last...
       } // data initialization
       PRECOM.whenIsActive { // computing omega and rhoSquare
-        getRhoSquareDatapath()
-        getOmegaRunning := True
+        getRhoSquareDatapath.flag := True
+        getOmegaDatapath.flag := True
       }
       PRECOM.whenCompleted {
         rhoSquareReg := reductionRet
