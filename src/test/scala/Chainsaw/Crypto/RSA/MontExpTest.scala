@@ -29,8 +29,8 @@ class MontExpTest extends AnyFunSuite {
         val stateCountDown = fsm.PRECOM.cache.value
         stateCountDown.simPublic()
 
-        //        val prodRegsLowForWatch = doubleLengthQueue.io.pop.payload(lN - 1 downto 0)
-        val prodRegsLowForWatch = doubleLengthDataOut(lN - 1 downto 0)
+        val prodRegsLowForWatch = doubleLengthQueue.io.pop.payload(lN - 1 downto 0)
+        //        val prodRegsLowForWatch = doubleLengthDataOut(lN - 1 downto 0)
         prodRegsLowForWatch.simPublic()
 
         import fsm._
@@ -48,7 +48,7 @@ class MontExpTest extends AnyFunSuite {
         isRUNNING.simPublic()
         isPOST.simPublic()
         isBOOT.simPublic()
-        innerCounter.value.simPublic()
+        operationCounter.value.simPublic()
         pipelineCounter.value.simPublic()
         reductionRet.simPublic()
         mult.input.simPublic()
@@ -108,18 +108,16 @@ class MontExpTest extends AnyFunSuite {
         val cyclesForExponent = exponent.toString(2).tail.map(_.asDigit + 1).sum * 3
 
         ChainsawDebug = false
-        (0 until (cyclesForExponent + lN) * pipelineFactor + 50).foreach { _ =>
+        (0 until (cyclesForExponent + lN) * pipelineFactor * 2 + precomCycles).foreach { _ =>
 
-          def count = innerCounter.value.toInt
+          def count = operationCounter.value.toInt
 
           def pipelineCount = pipelineCounter.value.toInt
 
           dut.clockDomain.waitSampling()
 
           // record the intermediate
-          if (dut.isPOST.toBoolean) {
-            if (count == 3) dutResult += dut.reductionRet.toBigInt
-          }
+          if(dut.valid.toBoolean) dutResult += dut.reductionRet.toBigInt
           //          if (dut.isPRE.toBoolean || dut.isRUNNING.toBoolean) {
           //            if (pipelineCount == 0) {
           //              if (count == 0) {
