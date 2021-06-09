@@ -2,7 +2,6 @@ package Chainsaw.Crypto.RSA
 
 import Chainsaw._
 import spinal.core._
-import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
 
@@ -65,6 +64,9 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
   val doubleLengthDataIn = Reg(UInt(2 * lN bits)) // regs for "reg"
   // TODO: optimize
   val doubleLengthDataOut = Delay(doubleLengthDataIn, pipelineFactor - 1) // regs for "reg"
+  val doubleLengthQueue = StreamFifo(UInt(2 * lN bits), pipelineFactor + 1)
+  initFIFO(doubleLengthQueue)
+  doubleLengthQueue.io.pop.ready.allowOverride
   val omegaRegs = Reg(UInt(lN bits))
   val rhoSquareReg = Reg(UInt(lN bits))
   // TODO: improve this
@@ -88,7 +90,8 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
 
   // utilities and subroutines
   //  def doubleLengthRegLow = doubleLengthReg(lN - 1 downto 0)
-  def doubleLengthRegLow = doubleLengthDataOut(lN - 1 downto 0)
+  //  def doubleLengthRegLow = doubleLengthDataOut(lN - 1 downto 0)
+  def doubleLengthRegLow = modRho(pop(doubleLengthQueue))
   // mult.output acts like a register as mult is end-registered
   def prodHigh = mult.output(2 * lN - 1 downto lN) // caution: val would lead to problems
   def prodLow = mult.output(lN - 1 downto 0)
@@ -107,18 +110,20 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
       mult.input(0) := prodLow // t mod rho, t = a * b
       mult.input(1) := omegaRegs
       //        doubleLengthReg := mult.output // full t
-      doubleLengthDataIn := mult.output // full t
+      //      doubleLengthDataIn := mult.output // full t
+      push(doubleLengthQueue, mult.output) // full t
     }.elsewhen(innerCounter.value === U(2)) {
       mult.input(0) := prodLow // U, U = t * omega mod rho
       //        mult.input(1) := inputRegs.N // N
       mult.input(1) := NReg // N
-      doubleLengthDataIn := doubleLengthDataOut // keep the full t
+      //      doubleLengthDataIn := doubleLengthDataOut // keep the full t
     }
     when(innerCounter.value === U(3))(addSubDatapath())
 
     def addSubDatapath() = {
       //      add.input(0) := doubleLengthReg // t for the montRed(aMont * bMont for the montMul)
-      add.input(0) := doubleLengthDataOut // t for the montRed(aMont * bMont for the montMul)
+      //      add.input(0) := doubleLengthDataOut // t for the montRed(aMont * bMont for the montMul)
+      add.input(0) := pop(doubleLengthQueue) // t for the montRed(aMont * bMont for the montMul)
       add.input(1) := mult.output // U * N
       // TODO: cautions!
       sub.input(0) := add.output(2 * lN downto lN).asSInt // mid = (t + U * N) / Rho, lN+1 bits
@@ -139,7 +144,9 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
       //      mult.input(1) := inputRegs.N
       mult.input(1) := NReg
       //      doubleLengthReg(lN - 1 downto 0) := mult.input(0) // save the solution
-      doubleLengthDataIn(lN - 1 downto 0) := mult.input(0) // save the solution
+      //      doubleLengthDataIn(lN - 1 downto 0) := mult.input(0) // save the solution
+      push(doubleLengthQueue, mult.input(0).resized) // save the solution
+
     }.elsewhen(innerCounter.value === U(lN)) {
       add.input(0) := (~doubleLengthRegLow).resized
       add.input(1) := U(1)
@@ -152,7 +159,8 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
       //      mult.input(1) := inputRegs.N
       mult.input(1) := NReg
       //      doubleLengthReg(lN - 1 downto 0) := mult.input(0) // save the solution
-      doubleLengthDataIn(lN - 1 downto 0) := mult.input(0) // save the solution
+      //      doubleLengthDataIn(lN - 1 downto 0) := mult.input(0) // save the solution
+      push(doubleLengthQueue, mult.input(0).resized) // save the solution
       when(pipelineCounter.value === U(pipelineFactor - 1))(maskMove())
     }
   }
