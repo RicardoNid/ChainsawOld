@@ -42,6 +42,8 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
   val exponentReg = Reg(UInt(lN bits))
   val exponentLengthReg = Reg(UInt(log2Up(lN) + 1 bits))
   val NReg = Reg(UInt(lN bits))
+  val bitQueue = StreamFifo(UInt(1 bits), pipelineFactor + 1)
+  initFIFO(bitQueue)
   val singleLengthQueue = StreamFifo(UInt(lN bits), pipelineFactor + 1) // general queue for intermediate data
   initFIFO(singleLengthQueue)
   singleLengthQueue.io.pop.ready.allowOverride
@@ -56,6 +58,9 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
   // counters
   val pipelineCounter = Counter(pipelineFactor)
   val operationCounter = Counter(precomCycles) // counter used inside every StateDelay for control
+  val operationCounterAfterMul = Delay(operationCounter.value, mulLatency)
+  val operationCounterAfterAdd = Delay(operationCounter.value, addLatency)
+
   val exponentCounter = Counter(lN) // counter
   // flags
   val currentExponentBit = exponentReg(lN - 2) // the second most importatnt exponent bit is the decisive one
@@ -94,7 +99,12 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
     addMask := (addMask << 1).resized
   }
   def pipelineCycle = pipelineCounter.value
+
   def atOperation(count: Int) = operationCounter.value === U(count)
+  def atOperationAfterMul(count:Int) = operationCounterAfterMul === U(count)
+  def atOperationAfterAdd(count:Int) = operationCounterAfterAdd === U(count)
+
+
   def atPipelineCycle(count: Int) = pipelineCycle === U(count)
 
   def montMulDatapath(input0: UInt, input1: UInt) = {
@@ -123,7 +133,7 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
   val getOmegaDatapath = new Area {
     val flag = Bool() // flag
     flag.clear()
-    val afterMulflag = Delay(flag, mulLatency)
+    val flagAfterMul = Delay(flag, mulLatency)
     when(flag) {
       when(atOperation(0)) { // starts from f(1) = 0 mod 2
         mult.input(0) := U(1) // original solution
@@ -148,6 +158,7 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
   val getRhoSquareDatapath = new Area {
     val flag = Bool()
     flag := False
+    val flagAfterAdd = Delay(flag, addLatency)
     when(flag) {
       when(atOperation(0)) {
         sub.input(0) := S(BigInt(1) << (lN - 1))

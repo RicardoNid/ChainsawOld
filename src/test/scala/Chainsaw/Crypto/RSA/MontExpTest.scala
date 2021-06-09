@@ -56,6 +56,11 @@ class MontExpTest extends AnyFunSuite {
         prodLow.simPublic()
         add.input.simPublic()
         add.output.simPublic()
+
+        getOmegaDatapath.flag.simPublic()
+        getOmegaDatapath.flagAfterMul.simPublic()
+        getRhoSquareDatapath.flag.simPublic()
+        getRhoSquareDatapath.flagAfterAdd.simPublic()
       })
       .doSim { dut =>
 
