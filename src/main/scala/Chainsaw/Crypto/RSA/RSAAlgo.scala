@@ -48,20 +48,20 @@ class RSAAlgo(lN: Int) {
     @tailrec
     var count = 0
 
-    def lift(solution: BigInt, exp: Int): BigInt = {
+    def lift(s: BigInt, exp: Int): BigInt = {
       if (ChainsawDebug) {
-        printPadded(s"omega in progress ${count.toString.padToLeft(3, '0')}", solution, lN)
+        printPadded(s"omega in progress ${count.toString.padToLeft(3, '0')}", s, lN)
         count += 1
       }
-      if (exp == lN) solution
+      if (exp == lN) s
       else {
-        val liftedSolution = {
-          val remainder = bigMultMod(solution, N, BigInt(1) << (exp + 1))
-          if (remainder == 1) solution
+        val liftedS = { // denoted as s'
+          val remainder = bigMultMod(s, N, BigInt(1) << (exp + 1))
+          if (remainder == 1) s
           // solution + (BigInt(1) << exp), put an 1 to the left
-          else BigInt("1" + solution.toString(2).padToLeft(exp, '0'), 2)
+          else BigInt("1" + s.toString(2).padToLeft(exp, '0'), 2)
         }
-        lift(liftedSolution, exp + 1)
+        lift(liftedS, exp + 1)
       }
     }
 

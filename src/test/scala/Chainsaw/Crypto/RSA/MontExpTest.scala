@@ -109,7 +109,7 @@ class MontExpTest extends AnyFunSuite {
         val cyclesForExponent = exponent.toString(2).tail.map(_.asDigit + 1).sum * 3
 
         ChainsawDebug = false
-        (0 until (cyclesForExponent + lN) * mult.latency + 50).foreach { _ =>
+        (0 until (cyclesForExponent + lN) * mulLatency + 50).foreach { _ =>
 
           def count = innerCounter.value.toInt
 
@@ -148,8 +148,6 @@ class MontExpTest extends AnyFunSuite {
           // print something
         }
         else dutResult.zip(results).foreach { case (int, int1) => assertResult(int)(int1) }
-
-        println(s"cycles for exponent should be ${exponent.toString(2).tail.map(_.asDigit + 1).sum * 3 * mult.latency}")
       }
   }
 }
