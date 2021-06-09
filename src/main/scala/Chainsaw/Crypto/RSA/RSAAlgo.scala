@@ -73,12 +73,12 @@ class RSAAlgo(lN: Int) {
   /** Get rho^2^ (mod N) by iterative algorithm
    *
    */
-  def getRhoSquare(N: BigInt) = {
+  def getRhoSquare(N: BigInt, print:Boolean = false) = {
     var count = 0
 
     @tailrec
     def iter(value: BigInt, exp: Int): BigInt = {
-      if (ChainsawDebug) {
+      if (print) {
         printPadded(s"rhoSquare in progress ${count.toString.padToLeft(3, '0')}", value, lN)
         count += 1
       }

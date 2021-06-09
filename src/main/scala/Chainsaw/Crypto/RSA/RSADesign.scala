@@ -35,6 +35,20 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
   val pipelineFactor = mult.latency
   val precomCycles = (lN + 2) * pipelineFactor
 
+  def initFIFO(fifo: StreamFifo[UInt]) = {
+    fifo.io.push.valid := False
+    fifo.io.push.payload := U(0)
+    fifo.io.pop.ready := False
+  }
+  def push(fifo: StreamFifo[UInt], data: UInt) = {
+    fifo.io.push.valid := True
+    fifo.io.push.payload := data
+  }
+  def pop(fifo: StreamFifo[UInt]) = {
+    fifo.io.pop.ready := True
+    fifo.io.pop.payload
+  }
+
   // components
   // regs for data
   //  val inputRegs = Reg(MontExpInput(lN))
@@ -45,6 +59,8 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
   //  val singleLengthReg = Reg(UInt(lN bits)) // regs for "aMont"
   val singleLengthDataIn = Reg(UInt(lN bits))
   val singleLengthDataOut = Delay(singleLengthDataIn, pipelineFactor - 1)
+  val singleLengthQueue = StreamFifo(UInt(lN bits), pipelineFactor + 1)
+  initFIFO(singleLengthQueue)
   //  val doubleLengthReg = Reg(UInt(2 * lN bits)) // regs for "reg"
   val doubleLengthDataIn = Reg(UInt(2 * lN bits)) // regs for "reg"
   // TODO: optimize
@@ -147,14 +163,17 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
       //      sub.input(1) := inputRegs.N.intoSInt
       sub.input(1) := NReg.intoSInt
       //      singleLengthReg := reductionRet
-      singleLengthDataIn := reductionRet
+      //      singleLengthDataIn := reductionRet
+      push(singleLengthQueue, reductionRet)
     }.otherwise {
       //      sub.input(0) := (singleLengthReg << 1).asSInt
-      sub.input(0) := (singleLengthDataOut << 1).asSInt
+      //      sub.input(0) := (singleLengthDataOut << 1).asSInt
+      sub.input(0) := (pop(singleLengthQueue) << 1).asSInt
       //      sub.input(1) := inputRegs.N.intoSInt
       sub.input(1) := NReg.intoSInt
       //      singleLengthReg := reductionRet
-      singleLengthDataIn := reductionRet
+      //      singleLengthDataIn := reductionRet
+      push(singleLengthQueue, reductionRet)
     }
   }
 

@@ -72,7 +72,7 @@ class MontExpTest extends AnyFunSuite {
         val paddedExponent = BigInt(exponent.toString(2).padTo(lN, '0'), 2)
 
         ChainsawDebug = false
-        val rhoSquare = algo.getRhoSquare(N)
+        val rhoSquare = algo.getRhoSquare(N, true)
         val omega = algo.getOmega(N)
 
         val inputValues = (0 until pipelineFactor).map(_ => BigInt(ref.getPrivateValue) - DSPRand.nextInt(10000))
