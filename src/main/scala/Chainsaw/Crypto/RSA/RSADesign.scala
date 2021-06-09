@@ -118,23 +118,27 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
     sub.input(1) := NReg.intoSInt // N, padded to lN + 1 bits
   }
 
-  def getOmegaDatapath() = {
-    when(atOperation(0)) { // starts from f(1) = 0 mod 2
-      mult.input(0) := U(1) // original solution
-      mult.input(1) := NReg
-      push(doubleLengthQueue, mult.input(0).resized) // save the solution
-    }.elsewhen(atOperation(lN)) {
-      add.input(0) := (~doubleLengthLow).resized
-      add.input(1) := U(1)
-      omegaRegs := add.output(lN - 1 downto 0)
-    }.otherwise {
-      mult.input(0) :=
-        Mux((prodLow & modMask.asUInt) === U(1),
-          doubleLengthLow, // solution
-          doubleLengthLow | addMask.asUInt) // solution + 1 << exp
-      mult.input(1) := NReg
-      push(doubleLengthQueue, mult.input(0).resized) // save the solution
-      when(atPipelineCycle(pipelineFactor - 1))(maskMove())
+  val getOmegaRunning = Bool() // flag
+  getOmegaRunning := False
+  val getOmegaDatapath = new Area {
+    when(getOmegaRunning) {
+      when(atOperation(0)) { // starts from f(1) = 0 mod 2
+        mult.input(0) := U(1) // original solution
+        mult.input(1) := NReg
+        push(doubleLengthQueue, mult.input(0).resized) // save the solution
+      }.elsewhen(atOperation(lN)) {
+        add.input(0) := (~doubleLengthLow).resized
+        add.input(1) := U(1)
+        omegaRegs := add.output(lN - 1 downto 0)
+      }.otherwise {
+        mult.input(0) :=
+          Mux((prodLow & modMask.asUInt) === U(1),
+            doubleLengthLow, // solution
+            doubleLengthLow | addMask.asUInt) // solution + 1 << exp
+        mult.input(1) := NReg
+        push(doubleLengthQueue, mult.input(0).resized) // save the solution
+        when(atPipelineCycle(pipelineFactor - 1))(maskMove())
+      }
     }
   }
 
@@ -204,7 +208,7 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 0) extends DSPDUTT
       } // data initialization
       PRECOM.whenIsActive { // computing omega and rhoSquare
         getRhoSquareDatapath()
-        getOmegaDatapath()
+        getOmegaRunning := True
       }
       PRECOM.whenCompleted {
         rhoSquareReg := reductionRet
