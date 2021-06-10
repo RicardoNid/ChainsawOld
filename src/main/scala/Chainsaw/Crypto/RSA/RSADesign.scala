@@ -13,7 +13,7 @@ case class MontExpInput(lN: Int) extends Bundle {
 }
 
 // first version, design with single, big multiplier
-class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTTiming[MontExpInput, UInt] {
+class MontExp(lN: Int, mulLatency: Int = 5, addLatency: Int = 2) extends DSPDUTTiming[MontExpInput, UInt] {
   override val input: MontExpInput = in(MontExpInput(lN))
   override val output: UInt = out(UInt(lN bits))
   output := U(0)
@@ -40,7 +40,7 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
   val exponentLengthReg = Reg(UInt(log2Up(lN) + 1 bits))
   val NReg = Reg(UInt(lN bits))
   // general fifos for intermediate data, you can easily adjust your queues here
-  val QueueWidths = Seq(1, lN, lN + 1, 2 * lN, 2 * lN)
+  val QueueWidths = Seq(1, lN + 1, lN + 1, 2 * lN, 2 * lN)
   val QueueDepths = Seq.fill(5)(pipelineFactor + 1)
   val Seq(bitQueue, singleLengthQueue, anotherSingleLengthQueue, doubleLengthQueue, anotherDoubleLengthQueue) = // use unapply to declare fifos in batch
     QueueWidths.map(i => FIFO(UInt(i bits), pipelineFactor + 1)) // as they have different width and shared depth
@@ -105,7 +105,7 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
       when(atOperation(0)) { // 0_0
         mult.doMult(input0, input1) // a * b
         val det = anoterhAddSub.output(lN downto 0)
-        ret := Mux(det.msb, singleLengthQueue.pop(), lowerlN(det))
+        ret := Mux(det.msb, lowerlN(singleLengthQueue.pop()), lowerlN(det))
       }
         .elsewhen(atOperation(1)) { // 1_0
           mult.doMult(lowerlN(doubleLengthQueue.pop()), omegaRegs) // t mod rho * omega
@@ -120,7 +120,7 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
     }
     when(flagAfterMulAdd) {
       when(operationCounterAfterMulAdd === U(2)) { // 2_k+l
-        val mid = addSub.output(2 * lN - 1 downto lN) // mid = (UN + t) / rho
+        val mid = addSub.output(2 * lN downto lN) // mid = (UN + t) / rho
         anoterhAddSub.doSub(mid.resize(lN + 1), NReg) // det = mid - N
         singleLengthQueue.push(mid)
       }
@@ -140,8 +140,8 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
     val flagAfterAdd = Delay(flag, addLatency, init = False)
     when(flag) {
       def newSolution() = Mux(bitQueue.pop().asBool,
-        singleLengthQueue.pop(), // solution
-        singleLengthQueue.pop() | addMask.asUInt) // solution + (1 << (exp + 1))
+        lowerlN(singleLengthQueue.pop()), // solution
+        lowerlN(singleLengthQueue.pop()) | addMask.asUInt) // solution + (1 << (exp + 1))
 
       when(atOperation(0)) { // starts from f(1) = 0 mod 2
         mult.doMult(U(1), NReg) // initial solution = 1, 1 * N
@@ -260,7 +260,7 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
       POST.whenCompleted(valid.set())
       when(valid) {
         val det = anoterhAddSub.output(lN downto 0)
-        output := Mux(det.msb, singleLengthQueue.pop(), lowerlN(det))
+        output := Mux(det.msb, lowerlN(singleLengthQueue.pop()), lowerlN(det))
         when(atPipelineCycle(pipelineFactor - 1))(valid.clear())
       }
     }

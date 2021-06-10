@@ -111,12 +111,12 @@ class RSAAlgo(lN: Int) {
     val mid = (t + bigMult(U, N)) >> lN // divided by Rho
     val det = mid - N
     if (print) {
-      printPadded("t low    ", bigMod(t, Rho), lN)
-      printPadded("t        ", t, 2 * lN)
-      printPadded("U        ", U, lN)
-      printPadded("omega * t", bigMult(t, getOmega(N)), 2 * lN)
-      printPadded("UN       ", bigMult(U, N), 2 * lN)
-      printPadded("mid      ", mid, lN)
+      printPadded("t low 1_k    ", bigMod(t, Rho), lN)
+      printPadded("t     0_k    ", t, 2 * lN)
+      printPadded("omega * t 1_k", bigMult(bigMod(t, lN), getOmega(N)), 2 * lN)
+      printPadded("U     2_0    ", U, lN)
+      printPadded("UN    2_k    ", bigMult(U, N), 2 * lN)
+      printPadded("mid   2_k    ", mid, lN)
       //      printPadded("det", det, lN)
     }
     if (det >= 0) det else mid // result \in [0, N)
@@ -127,8 +127,9 @@ class RSAAlgo(lN: Int) {
     require(aMont >= 0 && aMont < N)
     require(bMont >= 0 && bMont < N)
     if (print) {
-      printPadded("aMont    ", aMont)
-      printPadded("bMont    ", bMont)
+      println()
+      printPadded("aMont 1_0   ", aMont)
+      printPadded("bMont 1_0   ", bMont)
     }
     // aMont, bMont \in [0, N), aMont * bMont \in [0 N^2), N^2 < N * Rho - 1(as N   < Rho)
     val prod = bigMult(aMont, bMont)
@@ -149,16 +150,13 @@ class RSAAlgo(lN: Int) {
     val sequence = exponent.toString(2)
     var reg = aMont
     sequence.tail.foreach { char =>
-      val square = montSquare(reg, N, print = false)
-      //      printPadded("afterSquare", square)
+      val square = montSquare(reg, N, print = print)
       if (char == '1') {
-        reg = montMul(square, aMont, N, print = false)
-        //        printPadded("afterMul", reg)
+        reg = montMul(square, aMont, N, print = print)
       }
       else reg = square
-      printPadded("montMulRet", reg)
     }
-    montRed(reg, N, print = false)
+    montRed(reg, N, print = print)
   }
 
   def montExpWithRecord(a: BigInt, exponent: BigInt, N: BigInt) = {

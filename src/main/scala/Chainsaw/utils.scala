@@ -19,7 +19,7 @@ class FIFO[T <: Data](dataType: HardType[T], depth: Int) extends StreamFifo(data
 
   def push(data: T): Unit = {
     io.push.valid := True
-    io.push.payload := data
+    io.push.payload := data.resized
   }
 
   def pop(): T = {

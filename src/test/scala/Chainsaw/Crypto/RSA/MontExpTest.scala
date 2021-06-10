@@ -35,8 +35,8 @@ class MontExpTest extends AnyFunSuite {
     //    ChainsawDebug = true
     SimConfig.withWave.compile(
       new MontExp(lN) {
-        val stateCountDown = fsm.PRECOM.cache.value
-        stateCountDown.simPublic()
+        //        val stateCountDown = fsm.PRECOM.cache.value
+        //        stateCountDown.simPublic()
 
         val prodRegsLowForWatch = doubleLengthQueue.io.pop.payload(lN - 1 downto 0)
         //        val prodRegsLowForWatch = doubleLengthDataOut(lN - 1 downto 0)
@@ -57,6 +57,14 @@ class MontExpTest extends AnyFunSuite {
         val addInput1Low = lowerlN(addSub.input(1))
         val addOutputLow = lowerlN(addSub.output)
         val subOutputLow = addSub.output(lN downto 0)
+
+        val subInput1 = anoterhAddSub.input(0)(lN + 1 downto 0)
+        val subInput2 = anoterhAddSub.input(1)(lN + 1 downto 0)
+        val subOutput = anoterhAddSub.output(lN + 1 downto 0)
+        subInput1.simPublic()
+        subInput2.simPublic()
+        subOutput.simPublic()
+
         subInput0Low.simPublic()
         rPrime.simPublic()
         subOutputLow.simPublic()
