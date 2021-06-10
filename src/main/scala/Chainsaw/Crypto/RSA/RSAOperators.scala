@@ -23,6 +23,14 @@ class BigSub(n: Int, val latency: Int) extends DSPDUTTiming[Vec[SInt], SInt] {
   override val timing: TimingInfo = TimingInfo(1, 1, 0, 1)
 }
 
+class BigAddSub(n: Int, val latency: Int) extends DSPDUTTiming[Vec[UInt], UInt] {
+  val input: Vec[UInt] = in Vec(UInt(n bits), 2)
+  val isAdd = in Bool()
+  val ret = Mux(isAdd, input(0) +^ input(1), (input(0) - input(1)).resized) // TODO: reconsider the sub part
+  val output: UInt = out(Delay(ret, latency))
+  override val timing: TimingInfo = TimingInfo(1,1,latency,1)
+}
+
 class BigMult(n: Int, val latency: Int) extends DSPDUTTiming[Vec[UInt], UInt] {
   override val input: Vec[UInt] = in Vec(UInt(n bits), 2)
   override val output: UInt = out(Delay(input(0) * input(1), latency))

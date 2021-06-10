@@ -7,6 +7,15 @@ import spinal.core.sim.{SimConfig, simTime, _}
 
 import scala.collection.mutable.ArrayBuffer
 
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.sim._
+import spinal.lib.fsm._
+
+import Chainsaw._
+import Chainsaw.Real
+
 class MontExpTest extends AnyFunSuite {
   test("testMontExp") {
 
@@ -42,6 +51,19 @@ class MontExpTest extends AnyFunSuite {
         val isPOST = isActive(POST)
         val isBOOT = isActive(stateBoot)
 
+        val subInput0Low = addSub.input(0)(lN downto 0)
+        val rPrime = subInput0Low >> 1
+        val addInput0Low = modRho(addSub.input(0))
+        val addInput1Low = modRho(addSub.input(1))
+        val addOutputLow = modRho(addSub.output)
+        val subOutputLow = addSub.output(lN downto 0)
+        subInput0Low.simPublic()
+        rPrime.simPublic()
+        subOutputLow.simPublic()
+        addInput0Low.simPublic()
+        addInput1Low.simPublic()
+        addOutputLow.simPublic()
+
         isINIT.simPublic()
         isPRECOM.simPublic()
         isPRE.simPublic()
@@ -61,6 +83,9 @@ class MontExpTest extends AnyFunSuite {
         getOmegaDatapath.flagAfterMul.simPublic()
         getRhoSquareDatapath.flag.simPublic()
         getRhoSquareDatapath.flagAfterAdd.simPublic()
+
+        val omegaReverse = mult.input(0).asBools.grouped(4).toSeq.reverse.flatten.asBits().asUInt
+        omegaReverse.simPublic()
       })
       .doSim { dut =>
 
@@ -78,7 +103,7 @@ class MontExpTest extends AnyFunSuite {
 
         ChainsawDebug = false
         val rhoSquare = algo.getRhoSquare(N, true)
-        val omega = algo.getOmega(N)
+        val omega = algo.getOmega(N, print = true)
 
         val inputValues = (0 until pipelineFactor).map(_ => BigInt(ref.getPrivateValue) - DSPRand.nextInt(10000))
         val aMonts = inputValues.map(algo.montMul(_, rhoSquare, N))
@@ -123,7 +148,7 @@ class MontExpTest extends AnyFunSuite {
           dut.clockDomain.waitSampling()
 
           // record the intermediate
-          if(dut.valid.toBoolean) dutResult += dut.reductionRet.toBigInt
+          if (dut.valid.toBoolean) dutResult += dut.reductionRet.toBigInt
           //          if (dut.isPRE.toBoolean || dut.isRUNNING.toBoolean) {
           //            if (pipelineCount == 0) {
           //              if (count == 0) {
@@ -147,7 +172,6 @@ class MontExpTest extends AnyFunSuite {
         }
 
         import spinal.lib.MajorityVote
-
 
 
         dutResult.foreach(printPadded("dutResult", _, lN))

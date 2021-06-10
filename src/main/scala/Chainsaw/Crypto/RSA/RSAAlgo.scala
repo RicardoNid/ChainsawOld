@@ -42,15 +42,16 @@ class RSAAlgo(lN: Int) {
    *
    * @param N the modulus of RSA
    */
-  def getOmega(N: BigInt) = {
+  def getOmega(N: BigInt, print: Boolean = false) = {
     val init = BigInt(1) // N^{-1} \pmod 2^1
     // lifting by Hensel's lemma
     @tailrec
     var count = 0
 
     def lift(s: BigInt, exp: Int): BigInt = {
-      if (ChainsawDebug) {
+      if (print) {
         printPadded(s"omega in progress ${count.toString.padToLeft(3, '0')}", s, lN)
+        printPadded(s"reverse           ${count.toString.padToLeft(3, '0')}", s, lN, reverse = true)
         count += 1
       }
       if (exp == lN) s
@@ -73,7 +74,7 @@ class RSAAlgo(lN: Int) {
   /** Get rho^2^ (mod N) by iterative algorithm
    *
    */
-  def getRhoSquare(N: BigInt, print:Boolean = false) = {
+  def getRhoSquare(N: BigInt, print: Boolean = false) = {
     var count = 0
 
     @tailrec
@@ -95,13 +96,11 @@ class RSAAlgo(lN: Int) {
     iter(BigInt(1) << (lN - 1), lN)
   }
 
-  def printPadded(name: String, value: BigInt, lN: Int = 512) = {
+  def printPadded(name: String, value: BigInt, lN: Int = 512, reverse: Boolean = false) = {
     val hex = value.toString(2).padToLeft(lN, '0')
       .grouped(4).toArray.map(BigInt(_, 2).toString(16))
       .mkString("")
-    println(s"$name = $hex")
-
-
+    println(s"$name = ${if (reverse) hex.reverse else hex}")
   }
 
   def montRed(t: BigInt, N: BigInt, print: Boolean = false) = {
