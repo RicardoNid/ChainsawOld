@@ -149,7 +149,7 @@ class MontExpTest extends AnyFunSuite {
           dut.clockDomain.waitSampling()
 
           // record the intermediate
-          if (valid.toBoolean) dutResult += montMulDatapath.ret.toBigInt
+          if (valid.toBoolean) dutResult += output.toBigInt
           if (isPRE.toBoolean && operationCycle.toInt == 0 && pipelineCycle.toInt == 0) {
             assertResult(omegaRegs.toBigInt)(omega)
             assertResult(rhoSquareReg.toBigInt)(rhoSquare)
@@ -178,7 +178,7 @@ class MontExpTest extends AnyFunSuite {
         }
 
         dutResult.foreach(printPadded("dutResult", _, lN))
-        //        dutResult.zip(results).foreach { case (int, int1) => assertResult(int)(int1) }
+        dutResult.zip(results).foreach { case (int, int1) => assertResult(int1)(int) }
       }
   }
 }
