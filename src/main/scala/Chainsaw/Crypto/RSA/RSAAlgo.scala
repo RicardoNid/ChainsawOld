@@ -156,6 +156,7 @@ class RSAAlgo(lN: Int) {
         //        printPadded("afterMul", reg)
       }
       else reg = square
+      printPadded("montMulRet", reg)
     }
     montRed(reg, N, print = false)
   }

@@ -15,7 +15,7 @@ class RSAAlgoTest extends AnyFunSuite {
     s"\nyours:  ${a.toString(2)}, \ngolden: ${b.toString(2)}")
 
   test("testMontRed") {
-    (0 until 10).foreach { _ =>
+    (0 until 1000).foreach { _ =>
       val modulus = ref.getModulus
       val ZN = Zp(modulus)
       val input = BigInt(ref.getPrivateValue) - DSPRand.nextInt(10000)
@@ -27,7 +27,7 @@ class RSAAlgoTest extends AnyFunSuite {
   }
 
   test("testGetRhoSquare") {
-    (0 until 10).foreach { _ =>
+    (0 until 1000).foreach { _ =>
       val modulus = ref.getModulus
       val ZN = Zp(modulus)
       assertBig(algo.getRhoSquare(modulus), ZN(BigInt(1) << 1024))
@@ -37,7 +37,7 @@ class RSAAlgoTest extends AnyFunSuite {
   }
 
   test("testGetOmega") {
-    (0 until 10).foreach { _ =>
+    (0 until 1000).foreach { _ =>
       val modulus = ref.getModulus
       //      println(s"the size of modulus is always ${modulus.toString(2).size}")
       val omega = algo.getOmega(modulus)
@@ -50,7 +50,7 @@ class RSAAlgoTest extends AnyFunSuite {
   }
 
   test("testMontExp") {
-    (0 until 10).foreach { _ =>
+    (0 until 100).foreach { _ =>
       val modulus = ref.getModulus
       val publicKey = ref.getPublicValue
       //    val input = BigInt(ref.getPrivateValue) - DSPRand.nextInt(10000)

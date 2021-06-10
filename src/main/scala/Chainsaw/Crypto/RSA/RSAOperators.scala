@@ -48,6 +48,18 @@ class BigAddSub(n: Int, val latency: Int) extends DSPDUTTiming[Vec[UInt], UInt] 
   }
 }
 
+object BigAddSub {
+  def main(args: Array[String]): Unit = {
+    SimConfig.withWave.compile(new BigAddSub(4, 0)).doSim { dut =>
+      Array.tabulate(4, 4)((_, _)).flatten.foreach { pair =>
+        dut.input(0) #= pair._1
+        dut.input(1) #= pair._2
+        sleep(1)
+      }
+    }
+  }
+}
+
 class BigMult(n: Int, val latency: Int) extends DSPDUTTiming[Vec[UInt], UInt] {
 
   //  val drop = RegInit(False)
