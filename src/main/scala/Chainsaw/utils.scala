@@ -26,6 +26,7 @@ class FIFO[T <: Data](dataType: HardType[T], depth: Int) extends StreamFifo(data
     io.pop.ready := True
     io.pop.payload
   }
+
 }
 
 object FIFO {

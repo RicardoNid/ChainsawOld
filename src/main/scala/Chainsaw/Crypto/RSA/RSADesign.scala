@@ -23,8 +23,10 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
   // operator modules
   val mult = new BigMult(lN, mulLatency)
   val addSub = new BigAddSub(2 * lN, addLatency)
-  Seq(mult, addSub).foreach(_.input.foreach(_.clearAll())) // preassign to avoid latches
+  val anoterhAddSub =  new BigAddSub(2 * lN, addLatency)
+  Seq(mult, addSub, anoterhAddSub).foreach(_.input.foreach(_.clearAll())) // preassign to avoid latches
   addSub.isAdd := False
+  anoterhAddSub.isAdd := False
 
   // design parameters
   val pipelineFactor = mulLatency + 2 * addLatency
@@ -37,10 +39,12 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
   val exponentReg = Reg(UInt(lN bits))
   val exponentLengthReg = Reg(UInt(log2Up(lN) + 1 bits))
   val NReg = Reg(UInt(lN bits))
-  // general fifos for intermediate data
-  val Seq(bitQueue, singleLengthQueue, anotherSingleLengthQueue, doubleLengthQueue) = // use unapply to declare fifos in batch
-    Seq(1, lN, lN + 1, 2 * lN).map(i => FIFO(UInt(i bits), pipelineFactor + 1)) // as they have different width and shared depth
-  val fifos = Seq(bitQueue, singleLengthQueue, anotherSingleLengthQueue, doubleLengthQueue)
+  // general fifos for intermediate data, you can easily adjust your queues here
+  val QueueWidths = Seq(1, lN, lN + 1, 2 * lN, 2 * lN)
+  val QueueDepths = Seq.fill(5)(pipelineFactor + 1)
+  val Seq(bitQueue, singleLengthQueue, anotherSingleLengthQueue, doubleLengthQueue, anotherDoubleLengthQueue) = // use unapply to declare fifos in batch
+    QueueWidths.map(i => FIFO(UInt(i bits), pipelineFactor + 1)) // as they have different width and shared depth
+  val fifos = Seq(bitQueue, singleLengthQueue, anotherSingleLengthQueue, doubleLengthQueue, anotherDoubleLengthQueue)
   fifos.foreach { fifo =>
     fifo.init() // TODO: avoid init in my FIFO
     fifo.io.pop.ready.allowOverride
@@ -100,24 +104,24 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
     when(flag) {
       when(atOperation(0)) { // 0_0
         mult.doMult(input0, input1) // a * b
-        val det = addSub.output(lN downto 0)
+        val det = anoterhAddSub.output(lN downto 0)
         ret := Mux(det.msb, singleLengthQueue.pop(), lowerlN(det))
       }
         .elsewhen(atOperation(1)) { // 1_0
           mult.doMult(lowerlN(doubleLengthQueue.pop()), omegaRegs) // t mod rho * omega
-          doubleLengthQueue.push(doubleLengthQueue.pop()) // loop, as t will be used later
+          anotherDoubleLengthQueue.push(doubleLengthQueue.pop()) // t will be used again later
         }
         .elsewhen(atOperation(2))(mult.doMult(lowerlN(singleLengthQueue.pop()), NReg)) // 2_0 U * N
     }
     when(flagAfterMul) {
       when(operationCounterAfterMul === U(0))(doubleLengthQueue.push(mult.output)) // 0_k t = a * b in
       when(operationCounterAfterMul === U(1))(singleLengthQueue.push(lowerlN(mult.output))) // 1_k U = rho * omega mod rho in
-      when(operationCounterAfterMul === U(2))(addSub.doAdd(mult.output, doubleLengthQueue.pop())) // 2_k t out UN + t
+      when(operationCounterAfterMul === U(2))(addSub.doAdd(mult.output, anotherDoubleLengthQueue.pop())) // 2_k t out UN + t
     }
     when(flagAfterMulAdd) {
       when(operationCounterAfterMulAdd === U(2)) { // 2_k+l
         val mid = addSub.output(2 * lN - 1 downto lN) // mid = (UN + t) / rho
-        addSub.doSub(mid.resize(lN + 1), NReg) // det = mid - N
+        anoterhAddSub.doSub(mid.resize(lN + 1), NReg) // det = mid - N
         singleLengthQueue.push(mid)
       }
     }
@@ -255,7 +259,8 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
       POST.whenIsActive(setMontMulDatapath(montMulDatapath.ret, U(1)))
       POST.whenCompleted(valid.set())
       when(valid) {
-        output := montMulDatapath.ret
+        val det = anoterhAddSub.output(lN downto 0)
+        output := Mux(det.msb, singleLengthQueue.pop(), lowerlN(det))
         when(atPipelineCycle(pipelineFactor - 1))(valid.clear())
       }
     }
