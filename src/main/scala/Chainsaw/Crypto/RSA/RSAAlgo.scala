@@ -67,7 +67,7 @@ class RSAAlgo(lN: Int) {
     }
 
     val ret = Rho - lift(init, 1)
-    if (ChainsawDebug) printPadded(s"omega in progress ${count.toString.padToLeft(3, '0')}", ret, lN)
+    if (print) printPadded(s"omega in progress ${count.toString.padToLeft(3, '0')}", ret, lN)
     ret
   }
 

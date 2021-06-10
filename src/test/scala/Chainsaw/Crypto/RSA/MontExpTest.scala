@@ -53,9 +53,9 @@ class MontExpTest extends AnyFunSuite {
 
         val subInput0Low = addSub.input(0)(lN downto 0)
         val rPrime = subInput0Low >> 1
-        val addInput0Low = modRho(addSub.input(0))
-        val addInput1Low = modRho(addSub.input(1))
-        val addOutputLow = modRho(addSub.output)
+        val addInput0Low = lowerlN(addSub.input(0))
+        val addInput1Low = lowerlN(addSub.input(1))
+        val addOutputLow = lowerlN(addSub.output)
         val subOutputLow = addSub.output(lN downto 0)
         subInput0Low.simPublic()
         rPrime.simPublic()
@@ -64,6 +64,7 @@ class MontExpTest extends AnyFunSuite {
         addInput1Low.simPublic()
         addOutputLow.simPublic()
 
+        montMulDatapath.ret.simPublic()
         isINIT.simPublic()
         isPRECOM.simPublic()
         isPRE.simPublic()
@@ -72,12 +73,9 @@ class MontExpTest extends AnyFunSuite {
         isBOOT.simPublic()
         operationCounter.value.simPublic()
         pipelineCounter.value.simPublic()
-        reductionRet.simPublic()
         mult.input.simPublic()
         mult.output.simPublic()
         prodLow.simPublic()
-        add.input.simPublic()
-        add.output.simPublic()
 
         getOmegaDatapath.flag.simPublic()
         getOmegaDatapath.flagAfterMul.simPublic()
@@ -151,7 +149,7 @@ class MontExpTest extends AnyFunSuite {
           dut.clockDomain.waitSampling()
 
           // record the intermediate
-          if (valid.toBoolean) dutResult += dut.reductionRet.toBigInt
+          if (valid.toBoolean) dutResult += montMulDatapath.ret.toBigInt
           if (isPRE.toBoolean && operationCycle.toInt == 0 && pipelineCycle.toInt == 0) {
             assertResult(omegaRegs.toBigInt)(omega)
             assertResult(rhoSquareReg.toBigInt)(rhoSquare)
