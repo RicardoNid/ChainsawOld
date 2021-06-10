@@ -159,8 +159,8 @@ class MontExpTest extends AnyFunSuite {
           // record the intermediate
           if (valid.toBoolean) dutResult += output.toBigInt
           if (isPRE.toBoolean && operationCycle.toInt == 0 && pipelineCycle.toInt == 0) {
-            assertResult(omegaRegs.toBigInt)(omega)
-            assertResult(rhoSquareReg.toBigInt)(rhoSquare)
+            assertResult(omega)(omegaRegs.toBigInt)
+            assertResult(rhoSquare)(rhoSquareReg.toBigInt)
             printlnGreen("Assertion Done")
           }
           //          if (dut.isPRE.toBoolean || dut.isRUNNING.toBoolean) {
