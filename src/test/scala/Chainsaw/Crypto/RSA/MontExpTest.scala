@@ -84,6 +84,9 @@ class MontExpTest extends AnyFunSuite {
         getRhoSquareDatapath.flag.simPublic()
         getRhoSquareDatapath.flagAfterAdd.simPublic()
 
+        omegaRegs.simPublic()
+        rhoSquareReg.simPublic()
+
         val omegaReverse = mult.input(0).asBools.grouped(4).toSeq.reverse.flatten.asBits().asUInt
         omegaReverse.simPublic()
       })
@@ -102,8 +105,8 @@ class MontExpTest extends AnyFunSuite {
         val paddedExponent = BigInt(exponent.toString(2).padTo(lN, '0'), 2)
 
         ChainsawDebug = false
-        val rhoSquare = algo.getRhoSquare(N, true)
-        val omega = algo.getOmega(N, print = true)
+        val rhoSquare = algo.getRhoSquare(N, false)
+        val omega = algo.getOmega(N, print = false)
 
         val inputValues = (0 until pipelineFactor).map(_ => BigInt(ref.getPrivateValue) - DSPRand.nextInt(10000))
         val aMonts = inputValues.map(algo.montMul(_, rhoSquare, N))
@@ -143,12 +146,17 @@ class MontExpTest extends AnyFunSuite {
         def pipelineCount = pipelineCounter.value.toInt
 
         ChainsawDebug = false
-        (0 until (cyclesForExponent + lN) * pipelineFactor * 2 + precomCycles).foreach { _ =>
+        (0 until (cyclesForExponent + lN) * pipelineFactor + precomCycles).foreach { _ =>
 
           dut.clockDomain.waitSampling()
 
           // record the intermediate
-          if (dut.valid.toBoolean) dutResult += dut.reductionRet.toBigInt
+          if (valid.toBoolean) dutResult += dut.reductionRet.toBigInt
+          if (isPRE.toBoolean && operationCycle.toInt == 0 && pipelineCycle.toInt == 0) {
+            assertResult(omegaRegs.toBigInt)(omega)
+            assertResult(rhoSquareReg.toBigInt)(rhoSquare)
+            printlnGreen("Assertion Done")
+          }
           //          if (dut.isPRE.toBoolean || dut.isRUNNING.toBoolean) {
           //            if (pipelineCount == 0) {
           //              if (count == 0) {
@@ -171,11 +179,8 @@ class MontExpTest extends AnyFunSuite {
           //          }
         }
 
-        import spinal.lib.MajorityVote
-
-
         dutResult.foreach(printPadded("dutResult", _, lN))
-        dutResult.zip(results).foreach { case (int, int1) => assertResult(int)(int1) }
+        //        dutResult.zip(results).foreach { case (int, int1) => assertResult(int)(int1) }
       }
   }
 }

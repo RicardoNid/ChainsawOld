@@ -25,24 +25,11 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
   val add = new BigAdd(2 * lN, addLatency)
   val sub = new BigSub(lN + 1, addLatency)
   val addSub = new BigAddSub(2 * lN, addLatency)
-  def doAdd(a: UInt, b: UInt): Unit = {
-    addSub.input(0) := a.resized
-    addSub.input(1) := b.resized
-    addSub.isAdd := True
-  }
-  def doSub(a: UInt, b: UInt): Unit = {
-    require(a.getBitsWidth == lN + 1)
-    require(b.getBitsWidth == lN)
-    addSub.input(0) := a.resized
-    addSub.input(1) := b.resized
-    addSub.isAdd := False
-  }
+
   // preassign to avoid latches
-  //  mult.input.foreach(_.clearAll())
-  addSub.input.foreach(_.clearAll())
+  Seq(mult, addSub).foreach(_.input.foreach(_.clearAll()))
   addSub.isAdd := False
-  mult.input(0) := U(0, lN bits)
-  mult.input(1) := U(0, lN bits)
+
   add.input(0) := U(0, 2 * lN bits)
   add.input(1) := U(0, 2 * lN bits)
   sub.input(0) := S(0, lN + 1 bits)
@@ -50,7 +37,8 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
 
   // design parameters
   val pipelineFactor = mulLatency + 2 * addLatency
-  val precomCycles = (lN + 3) * pipelineFactor
+  val precomOperations = lN + 2
+  val precomCycles = precomOperations * pipelineFactor
 
   // components
   // regs for data
@@ -58,18 +46,16 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
   val exponentReg = Reg(UInt(lN bits))
   val exponentLengthReg = Reg(UInt(log2Up(lN) + 1 bits))
   val NReg = Reg(UInt(lN bits))
-  val bitQueue = StreamFifo(UInt(1 bits), pipelineFactor + 1)
-  initFIFO(bitQueue)
-  bitQueue.io.pop.ready.allowOverride
-  val singleLengthQueue = StreamFifo(UInt(lN bits), pipelineFactor + 1) // general queue for intermediate data
-  initFIFO(singleLengthQueue)
-  singleLengthQueue.io.pop.ready.allowOverride
-  val anotherSingleLengthQueue = StreamFifo(UInt(lN + 1 bits), pipelineFactor + 1) // general queue for intermediate data
-  initFIFO(anotherSingleLengthQueue)
-  anotherSingleLengthQueue.io.pop.ready.allowOverride
-  val doubleLengthQueue = StreamFifo(UInt(2 * lN bits), pipelineFactor + 1) // general queue for intermediate data
-  initFIFO(doubleLengthQueue)
-  doubleLengthQueue.io.pop.ready.allowOverride
+  // general fifos for intermediate data
+  val bitQueue = FIFO(UInt(1 bits), pipelineFactor + 1)
+  val singleLengthQueue = StreamFifo(UInt(lN bits), pipelineFactor + 1)
+  val anotherSingleLengthQueue = StreamFifo(UInt(lN + 1 bits), pipelineFactor + 1)
+  val doubleLengthQueue = StreamFifo(UInt(2 * lN bits), pipelineFactor + 1)
+  val fifos = Seq(bitQueue, singleLengthQueue, anotherSingleLengthQueue, doubleLengthQueue)
+  fifos.foreach { fifo =>
+    initFIFO(fifo)
+    fifo.io.pop.ready.allowOverride
+  }
   val omegaRegs = Reg(UInt(lN bits))
   val rhoSquareReg = Reg(UInt(lN bits))
   // TODO: improve this
@@ -119,14 +105,13 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
     addMask := (addMask << 1).resized
   }
   def pipelineCycle = pipelineCounter.value
+  def operationCycle = operationCounter.value
 
   def atOperation(count: Int) = operationCounter.value === U(count)
   def atOperationAfterMul(count: Int) = operationCounterAfterMul === U(count)
   def atOperationAfterAdd(count: Int) = operationCounterAfterAdd === U(count)
 
-
   def atPipelineCycle(count: Int) = pipelineCycle === U(count)
-
   def montMulDatapath(input0: UInt, input1: UInt) = {
     when(atOperation(0)) { // first operation a * b
       mult.input(0) := input0 // a
@@ -141,7 +126,6 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
       mult.input(1) := NReg // N
     }
   }
-
   def addSubDatapath() = { // t & UN given, calculate mid and ret
     add.input(0) := pop(doubleLengthQueue) // t for the montRed(aMont * bMont for the montMul)
     add.input(1) := mult.output // U * N
@@ -149,31 +133,25 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
     sub.input(1) := NReg.intoSInt // N, padded to lN + 1 bits
   }
 
-
   val getOmegaDatapath = new Area {
     val flag = Bool() // flag
     flag.clear()
     val flagAfterMul = Delay(flag, mulLatency, init = False) // not init would lead to leakage
     val flagAfterAdd = Delay(flag, addLatency, init = False)
     when(flag) {
-      def newSolution() = Mux(pop(bitQueue).asBool,
+      def newSolution() = Mux(bitQueue.pop().asBool,
         pop(singleLengthQueue), // solution
         pop(singleLengthQueue) | addMask.asUInt) // solution + (1 << (exp + 1))
 
       when(atOperation(0)) { // starts from f(1) = 0 mod 2
-        val initSolution = U(1)
-        mult.input(0) := initSolution.resized // original solution
-        mult.input(1) := NReg
-        push(singleLengthQueue, initSolution.resized) // save the solution
-      }.elsewhen(atOperation(lN)) { // lN_0, final solution resolved, wait for the adder tobe available
+        mult.doMult(U(1), NReg) // initial solution = 1, 1 * N
+        push(singleLengthQueue, U(1).resized) // save the solution
+      }.elsewhen(atOperation(precomOperations - 2)) { // lN_0, final solution resolved, wait for the adder tobe available
         push(singleLengthQueue, newSolution())
-      }.elsewhen(atOperation(lN + 1)) { // lN+1_0
-        addSub.input(0) := (~pop(singleLengthQueue)).resized
-        addSub.input(1) := U(1)
-        addSub.isAdd := True
+      }.elsewhen(atOperation(precomOperations - 1)) { // lN+1_0
+        addSub.doAdd(~pop(singleLengthQueue), U(1))
       }.otherwise { // 1_0 ~ lN-1_0
-        mult.input(0) := newSolution()
-        mult.input(1) := NReg
+        mult.doMult(newSolution(), NReg) // iteratively go for next solution
         push(singleLengthQueue, newSolution()) // save the solution
         when(atPipelineCycle(pipelineFactor - 1))(maskMove()) // FIXME: separate two mask
       }
@@ -192,20 +170,20 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
     val flag = Bool()
     flag.clear()
     val flagAfterAdd = Delay(flag, addLatency, init = False)
+    def getRPrime() = {
+      val det = pop(anotherSingleLengthQueue) // fetch saved determinant
+      val r = modRho(pop(doubleLengthQueue)) // fetch saved solution
+      Mux(det.msb, modRho(r << 1), modRho(det)) // r' = 2 * r - N or 2 * r
+    }
     when(flag) {
       when(atOperation(0)) {
-        doSub(U(BigInt(1) << lN), NReg) // 2 * r - N
+        addSub.doSub(U(BigInt(1) << lN), NReg) // 2 * r - N
         push(doubleLengthQueue, U(BigInt(1) << (lN - 1))) // r in
-      }.elsewhen(atOperation(lN + 1)) {
-        val det = pop(anotherSingleLengthQueue)
-        val r = modRho(pop(doubleLengthQueue)) // fetch saved solution
-        val rPrime = Mux(det.msb, modRho(r << 1), modRho(det)) // r' = 2 * r - N or 2 * r
-        rhoSquareReg := rPrime
+      }.elsewhen(atOperation(precomOperations - 1)) {
+        rhoSquareReg := getRPrime()
       }.otherwise {
-        val det = pop(anotherSingleLengthQueue)
-        val r = modRho(pop(doubleLengthQueue)) // fetch saved solution
-        val rPrime = Mux(det.msb, modRho(r << 1), modRho(det)) // r' = 2 * r - N or 2 * r
-        doSub(rPrime << 1, NReg) // 2 * r' - N
+        val rPrime = getRPrime()
+        addSub.doSub(rPrime << 1, NReg) // 2 * r' - N
         push(doubleLengthQueue, rPrime.resized) // r' in, save the solution
       }
     }

@@ -28,13 +28,29 @@ class BigAddSub(n: Int, val latency: Int) extends DSPDUTTiming[Vec[UInt], UInt] 
   val isAdd = in Bool()
   val ret = Mux(isAdd, input(0) +^ input(1), (input(0) - input(1)).resized) // TODO: reconsider the sub part
   val output: UInt = out(Delay(ret, latency))
-  override val timing: TimingInfo = TimingInfo(1,1,latency,1)
+  override val timing: TimingInfo = TimingInfo(1, 1, latency, 1)
+  def doAdd(a: UInt, b: UInt) = {
+    input(0) := a.resized
+    input(1) := b.resized
+    isAdd := True
+  }
+  def doSub(a: UInt, b: UInt): Unit = {
+    require(a.getBitsWidth == n / 2 + 1)
+    require(b.getBitsWidth == n / 2)
+    input(0) := a.resized
+    input(1) := b.resized
+    isAdd := False
+  }
 }
 
 class BigMult(n: Int, val latency: Int) extends DSPDUTTiming[Vec[UInt], UInt] {
   override val input: Vec[UInt] = in Vec(UInt(n bits), 2)
   override val output: UInt = out(Delay(input(0) * input(1), latency))
   override val timing: TimingInfo = TimingInfo(1, 1, latency, 1)
+  def doMult(a: UInt, b: UInt): Unit = {
+    input(0) := a.resized
+    input(1) := b.resized
+  }
 }
 
 class BigAddMod(n: Int, m: Int) extends DSPDUTTiming[Vec[UInt], UInt] {
