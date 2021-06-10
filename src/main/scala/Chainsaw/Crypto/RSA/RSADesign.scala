@@ -47,15 +47,14 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
   val exponentLengthReg = Reg(UInt(log2Up(lN) + 1 bits))
   val NReg = Reg(UInt(lN bits))
   // general fifos for intermediate data
-  val bitQueue = FIFO(UInt(1 bits), pipelineFactor + 1)
-  val singleLengthQueue = StreamFifo(UInt(lN bits), pipelineFactor + 1)
-  val anotherSingleLengthQueue = StreamFifo(UInt(lN + 1 bits), pipelineFactor + 1)
-  val doubleLengthQueue = StreamFifo(UInt(2 * lN bits), pipelineFactor + 1)
+  val Seq(bitQueue, singleLengthQueue, anotherSingleLengthQueue, doubleLengthQueue) = // use unapply to unpack
+    Seq(1, lN, lN + 1, 2 * lN).map(i => FIFO(UInt(i bits), pipelineFactor + 1))
   val fifos = Seq(bitQueue, singleLengthQueue, anotherSingleLengthQueue, doubleLengthQueue)
   fifos.foreach { fifo =>
-    initFIFO(fifo)
+    fifo.init() // TODO: avoid init in my FIFO
     fifo.io.pop.ready.allowOverride
   }
+
   val omegaRegs = Reg(UInt(lN bits))
   val rhoSquareReg = Reg(UInt(lN bits))
   // TODO: improve this
@@ -78,21 +77,8 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
   val det = sub.output
   val reductionRet = Mux(det >= S(0), modRho(det).asUInt, modRho(sub.input(0)).asUInt)
 
-  def initFIFO(fifo: StreamFifo[UInt]) = {
-    fifo.io.push.valid := False
-    fifo.io.push.payload := U(0)
-    fifo.io.pop.ready := False
-  }
-  def push(fifo: StreamFifo[UInt], data: UInt) = {
-    fifo.io.push.valid := True
-    fifo.io.push.payload := data
-  }
-  def pop(fifo: StreamFifo[UInt]) = {
-    fifo.io.pop.ready := True
-    fifo.io.pop.payload
-  }
   // utilities and subroutines
-  def doubleLengthLow = modRho(pop(doubleLengthQueue))
+  def doubleLengthLow = modRho(doubleLengthQueue.pop())
   // mult.output acts like a register as mult is end-registered
   def prodLow = mult.output(lN - 1 downto 0)
   // << 1 leads to on bit more, resize would take lower(right) bits
@@ -120,14 +106,14 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
     }.elsewhen(atOperation(1)) { // second cycle U = t * omega mod rho
       mult.input(0) := prodLow // t mod rho, t = a * b
       mult.input(1) := omegaRegs // omega
-      push(doubleLengthQueue, mult.output) // full t
+      doubleLengthQueue.push(mult.output) // full t
     }.elsewhen(atOperation(2)) { // third operation U * N
       mult.input(0) := prodLow // U, U = t * omega mod rho
       mult.input(1) := NReg // N
     }
   }
   def addSubDatapath() = { // t & UN given, calculate mid and ret
-    add.input(0) := pop(doubleLengthQueue) // t for the montRed(aMont * bMont for the montMul)
+    add.input(0) := doubleLengthQueue.pop() // t for the montRed(aMont * bMont for the montMul)
     add.input(1) := mult.output // U * N
     sub.input(0) := add.output(2 * lN downto lN).asSInt // mid = (t + U * N) / Rho, lN+1 bits
     sub.input(1) := NReg.intoSInt // N, padded to lN + 1 bits
@@ -140,26 +126,25 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
     val flagAfterAdd = Delay(flag, addLatency, init = False)
     when(flag) {
       def newSolution() = Mux(bitQueue.pop().asBool,
-        pop(singleLengthQueue), // solution
-        pop(singleLengthQueue) | addMask.asUInt) // solution + (1 << (exp + 1))
+        singleLengthQueue.pop(), // solution
+        singleLengthQueue.pop() | addMask.asUInt) // solution + (1 << (exp + 1))
 
       when(atOperation(0)) { // starts from f(1) = 0 mod 2
         mult.doMult(U(1), NReg) // initial solution = 1, 1 * N
-        push(singleLengthQueue, U(1).resized) // save the solution
+        singleLengthQueue.push(U(1).resized) // save the solution
       }.elsewhen(atOperation(precomOperations - 2)) { // lN_0, final solution resolved, wait for the adder tobe available
-        push(singleLengthQueue, newSolution())
+        singleLengthQueue.push(newSolution())
       }.elsewhen(atOperation(precomOperations - 1)) { // lN+1_0
-        addSub.doAdd(~pop(singleLengthQueue), U(1))
+        addSub.doAdd(~singleLengthQueue.pop(), U(1))
       }.otherwise { // 1_0 ~ lN-1_0
         mult.doMult(newSolution(), NReg) // iteratively go for next solution
-        push(singleLengthQueue, newSolution()) // save the solution
+        singleLengthQueue.push(newSolution()) // save the solution
         when(atPipelineCycle(pipelineFactor - 1))(maskMove()) // FIXME: separate two mask
       }
     }
     when(flagAfterMul) { // 0_k ~ lN-1_k
       val det = (prodLow & modMask.asUInt) === U(1)
-      push(bitQueue, det.asUInt)
-      //      when(atPipelineCycle(mulLatency - 1))(maskMove())
+      bitQueue.push(det.asUInt)
     }
     when(flagAfterAdd) {
       when(operationCounterAfterAdd === U(lN + 1))(omegaRegs := modRho(addSub.output)) // lN+2_l
@@ -171,25 +156,25 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
     flag.clear()
     val flagAfterAdd = Delay(flag, addLatency, init = False)
     def getRPrime() = {
-      val det = pop(anotherSingleLengthQueue) // fetch saved determinant
-      val r = modRho(pop(doubleLengthQueue)) // fetch saved solution
+      val det = anotherSingleLengthQueue.pop() // fetch saved determinant
+      val r = modRho(doubleLengthQueue.pop()) // fetch saved solution
       Mux(det.msb, modRho(r << 1), modRho(det)) // r' = 2 * r - N or 2 * r
     }
     when(flag) {
       when(atOperation(0)) {
         addSub.doSub(U(BigInt(1) << lN), NReg) // 2 * r - N
-        push(doubleLengthQueue, U(BigInt(1) << (lN - 1))) // r in
+        doubleLengthQueue.push(U(BigInt(1) << (lN - 1))) // r in
       }.elsewhen(atOperation(precomOperations - 1)) {
         rhoSquareReg := getRPrime()
       }.otherwise {
         val rPrime = getRPrime()
         addSub.doSub(rPrime << 1, NReg) // 2 * r' - N
-        push(doubleLengthQueue, rPrime.resized) // r' in, save the solution
+        doubleLengthQueue.push(rPrime.resized) // r' in, save the solution
       }
     }
     when(flagAfterAdd) {
       val det = addSub.output(lN downto 0)
-      push(anotherSingleLengthQueue, det)
+      anotherSingleLengthQueue.push(det)
     }
   }
 
