@@ -47,8 +47,8 @@ class MontExp(lN: Int, mulLatency: Int = 4, addLatency: Int = 2) extends DSPDUTT
   val exponentLengthReg = Reg(UInt(log2Up(lN) + 1 bits))
   val NReg = Reg(UInt(lN bits))
   // general fifos for intermediate data
-  val Seq(bitQueue, singleLengthQueue, anotherSingleLengthQueue, doubleLengthQueue) = // use unapply to unpack
-    Seq(1, lN, lN + 1, 2 * lN).map(i => FIFO(UInt(i bits), pipelineFactor + 1))
+  val Seq(bitQueue, singleLengthQueue, anotherSingleLengthQueue, doubleLengthQueue) = // use unapply to declare fifos in batch
+    Seq(1, lN, lN + 1, 2 * lN).map(i => FIFO(UInt(i bits), pipelineFactor + 1)) // as they have different width and shared depth
   val fifos = Seq(bitQueue, singleLengthQueue, anotherSingleLengthQueue, doubleLengthQueue)
   fifos.foreach { fifo =>
     fifo.init() // TODO: avoid init in my FIFO
