@@ -10,6 +10,7 @@ import spinal.lib.fsm._
 import Chainsaw._
 import Chainsaw.Real
 
+import scala.collection.mutable.ArrayBuffer
 import scala.math.{max, min}
 
 class Add(width: Int, latency: Int) extends DSPDUTTiming[Vec[UInt], UInt] {
@@ -87,7 +88,7 @@ class MultiplierCombinator[T <: DSPDUTTiming[Vec[UInt], UInt]](
   val shiftCount = sumIndexRam(opCountAfterMulAdd)
   val offLoad = offLoadIndicatorRAM(opCountAfterMulAdd)
 
-  val partialSumQueue = FIFO(HardType(add.output), groupSize + 1)
+  val partialSumQueue = FIFO(HardType(add.output), multLatency + 1)
 
   val Seq(inputRAM0, inputRAM1, outputRAM) =
     Seq(input(0), input(1), output).map(signal => Mem(HardType(signal), groupSize))
@@ -128,8 +129,12 @@ class MultiplierCombinator[T <: DSPDUTTiming[Vec[UInt], UInt]](
   val QueueDataPath = new Area {
     val flag = Delay(addDatapath.flag, addLatency, init = False)
     when(flag) {
-      when(offLoad)(partialSumQueue.push(higherPart(add.output).resized))
-        .otherwise(partialSumQueue.push(add.output))
+      when(shiftCount === U(2 * (expansionFactor - 1))) {
+        partialSumQueue.pop() // make it empty
+      }.otherwise {
+        when(offLoad)(partialSumQueue.push(higherPart(add.output).resized))
+          .otherwise(partialSumQueue.push(add.output))
+      }
     }
   }
 
@@ -138,9 +143,10 @@ class MultiplierCombinator[T <: DSPDUTTiming[Vec[UInt], UInt]](
       when(offLoad) {
         when(shiftCount === U(2 * (expansionFactor - 1))) {
           // TODO: pipelineCounter should be delayed
-          val mask = (B("1" * 2 * baseWidth) << shiftCount * baseWidth).resize(2 * expandedWidth)
-          val input = (add.output << (shiftCount * baseWidth)).resize(2 * expandedWidth)
-          outputRAM.write(pipelineCounterAfterMulAdd, input, mask = mask)
+          //          val mask = (B("1" * 2 * baseWidth) << shiftCount * baseWidth).resize(2 * expandedWidth)
+          //          val input = (add.output << (shiftCount * baseWidth)).resize(2 * expandedWidth)
+          //          outputRAM.write(pipelineCounterAfterMulAdd, input, mask = mask)
+          outputRAM(pipelineCounterAfterMulAdd) := U(0).resize(2 * expandedWidth)
           valid := True
           output := (add.output(2 * baseWidth - 1 downto 0) ## outputRAM(pipelineCounter)(2 * expandedWidth - 2 * baseWidth - 1 downto 0)).asUInt
         }.otherwise {
@@ -157,40 +163,5 @@ class MultiplierCombinator[T <: DSPDUTTiming[Vec[UInt], UInt]](
       inputRAM0(pipelineCounter) := input(0)
       inputRAM1(pipelineCounter) := input(1)
     }
-  }
-}
-
-object MultiplierCombinator {
-  def main(args: Array[String]): Unit = {
-    val groupSize = 6
-    SimConfig.withWave
-      .compile {
-        new MultiplierCombinator(8, 3, Mult.apply, Add.apply, groupSize) {
-          add.input.setName("add_input")
-          add.output.setName("add_output")
-          mult.input.setName("mult_input")
-          mult.output.setName("mult_output")
-          val outputRAM_0 = outputRAM(U(0, log2Up(groupSize) bits))
-          outputRAM_0.simPublic()
-        }
-      }
-      .doSim { dut =>
-        import dut._
-        clockDomain.forkStimulus(2)
-        clockDomain.waitSampling()
-        (0 until 8 * 3 * 3).foreach { i =>
-          if (i < groupSize) {
-            val input0 = dut.input(0).randomizedBigInt()
-            val input1 = dut.input(1).randomizedBigInt()
-            printPadded(s"result $i", input0 * input1, expandedWidth * 2)
-            dut.input(0) #= input0
-            dut.input(1) #= input1
-          } else {
-            dut.input(0) #= 0
-            dut.input(1) #= 0
-          }
-          clockDomain.waitSampling()
-        }
-      }
   }
 }
