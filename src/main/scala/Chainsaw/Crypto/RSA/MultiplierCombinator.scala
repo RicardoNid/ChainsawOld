@@ -38,14 +38,14 @@ object Mult {
  * @param baseWidth      width of the base multiplier
  * @param baseDepth      pipeline depth of the base multiplier
  */
-class MultiplierCombinator[T <: DSPDUTTiming[Vec[UInt], UInt]](
+class MultiplierCombinator[T <: DSPDUTTiming[Vec[UInt], UInt]]( // todo note this in notion
                                                                 baseWidth: Int, expansionFactor: Int,
-                                                                baseMultiplier: (Int, Int) => T, // todo note this in notion
-                                                                baseAdder: (Int, Int) => T,
-                                                                groupSize: Int
+                                                                baseMultiplier: (Int, Int) => T, multLatency: Int,
+                                                                baseAdder: (Int, Int) => T, addLatency: Int
                                                               )
   extends DSPDUTTiming[Vec[UInt], UInt] {
 
+  val groupSize = multLatency + addLatency
   val expandedWidth = baseWidth * expansionFactor
 
   override val input = in Vec(UInt(expandedWidth bits), 2)
@@ -62,14 +62,15 @@ class MultiplierCombinator[T <: DSPDUTTiming[Vec[UInt], UInt]](
     yield (Array(i, sum - i, sum), i == min(expansionFactor, sum + 1) - 1)
   }
 
-  val mult = baseMultiplier(baseWidth, 4)
+  val mult = baseMultiplier(baseWidth, multLatency)
   mult.input.foreach(_.clearAll())
-  val multLatency = mult.timing.latency
+  //  val multLatency = mult.timing.latency
   val adderWidth = 2 * baseWidth + log2Up(expansionFactor)
-  val add = baseAdder(adderWidth, 2) // at most expansionFactor partial sums would be summed together
+  val add = baseAdder(adderWidth, addLatency) // at most expansionFactor partial sums would be summed together
   add.input.foreach(_.clearAll())
-  val addLatency = add.timing.latency
-  require(groupSize >= mult.timing.latency)
+  //  val addLatency = add.timing.latency
+  require(multLatency >= 1)
+  require(addLatency >= 1)
 
   val Seq(indexRam0, indexRam1, sumIndexRam) = (0 until 3).map { i =>
     val indexes = indexGen.map(_._1.apply(i))
@@ -88,7 +89,9 @@ class MultiplierCombinator[T <: DSPDUTTiming[Vec[UInt], UInt]](
   val shiftCount = sumIndexRam(opCountAfterMulAdd)
   val offLoad = offLoadIndicatorRAM(opCountAfterMulAdd)
 
-  val partialSumQueue = FIFO(HardType(add.output), multLatency + 1)
+  val partialSumQueue =
+    if (min(multLatency, addLatency) == 1) FIFOLowLatency(HardType(add.output), multLatency + 1)
+    else FIFO(HardType(add.output), multLatency + 1)
 
   val Seq(inputRAM0, inputRAM1, outputRAM) =
     Seq(input(0), input(1), output).map(signal => Mem(HardType(signal), groupSize))

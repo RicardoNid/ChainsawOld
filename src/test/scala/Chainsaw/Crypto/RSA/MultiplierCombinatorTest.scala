@@ -10,14 +10,15 @@ import scala.collection.mutable.ArrayBuffer
 class MultiplierCombinatorTest extends AnyFunSuite {
 
   test("testMultiplierCombinator") {
-    val groupSize = 6
+    val multLatency = 1
+    val addLatency = 1
     val baseWidth = 8
     val expansionFactor = 4
     val round = 3
-    val period = groupSize * expansionFactor * expansionFactor
+
     SimConfig.withWave
       .compile {
-        new MultiplierCombinator(baseWidth, expansionFactor, Mult.apply, Add.apply, groupSize) {
+        new MultiplierCombinator(baseWidth, expansionFactor, Mult.apply, multLatency, Add.apply, addLatency) {
           add.input.setName("add_input")
           add.output.setName("add_output")
           mult.input.setName("mult_input")
@@ -34,6 +35,7 @@ class MultiplierCombinatorTest extends AnyFunSuite {
 
         clockDomain.forkStimulus(2)
         clockDomain.waitSampling()
+        val period = groupSize * expansionFactor * expansionFactor
         (0 until round * period + groupSize).foreach { i =>
           if ((i % period) < groupSize) {
             val input0 = dut.input(0).randomizedBigInt()
