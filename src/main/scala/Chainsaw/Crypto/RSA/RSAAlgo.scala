@@ -158,25 +158,8 @@ class RSAAlgo(lN: Int) {
     }
     montRed(reg, N, print = print)
   }
+}
 
-  def montExpWithRecord(a: BigInt, exponent: BigInt, N: BigInt) = {
-    require(a >= 0 && a < N)
-    val record = ArrayBuffer[BigInt]()
-    val aMont = montMul(a, getRhoSquare(N), N)
-    record += aMont
-    val sequence = exponent.toString(2)
-    var reg = aMont
-    sequence.tail.foreach { char =>
-      val square = montSquare(reg, N)
-      record += square
-      if (char == '1') {
-        reg = montMul(square, aMont, N)
-        record += reg
-      }
-      else reg = square
-    }
-    val ret = montRed(reg, N)
-    record += ret
-    record
-  }
+object RSAAlgo {
+  def apply(lN: Int): RSAAlgo = new RSAAlgo(lN)
 }

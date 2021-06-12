@@ -15,6 +15,16 @@ import scala.util.Random
 
 package object Chainsaw extends RealFactory {
 
+  // print the padded number in hex form, so it appears the same as in gtkwave
+  def printPadded(name: String, value: BigInt, n: Int): Unit = {
+    require(n % 4 == 0)
+    val hex =
+      value.toString(2).padToLeft(n, '0')
+        .grouped(4).toArray.map(BigInt(_, 2).toString(16))
+        .mkString("")
+    println(s"$name = $hex")
+  }
+
   class StateDelayFixed(cyclesCount: UInt)(implicit stateMachineAccessor: StateMachineAccessor) extends State with StateCompletionTrait {
 
     /** Create a StateDelay with an TimeNumber */

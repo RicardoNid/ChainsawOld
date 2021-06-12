@@ -14,7 +14,7 @@ class FIFO[T <: Data](dataType: HardType[T], depth: Int) extends StreamFifo(data
   def init(): Unit = {
     io.push.valid := False
     io.pop.ready := False
-    io.push.payload.assignFromBits(B(BigInt(0), io.push.payload.getBitsWidth bits))
+    io.push.payload.assignFromBits(B(BigInt(0), io.push.payload.getBitsWidth bits)) // avoid latch
   }
 
   def push(data: T): Unit = {
@@ -30,7 +30,11 @@ class FIFO[T <: Data](dataType: HardType[T], depth: Int) extends StreamFifo(data
 }
 
 object FIFO {
-  def apply[T <: Data](dataType: HardType[T], depth: Int): FIFO[T] = new FIFO(dataType, depth)
+  def apply[T <: Data](dataType: HardType[T], depth: Int): FIFO[T] = {
+    val ret = new FIFO(dataType, depth)
+    ret.init()
+    ret
+  }
 }
 
 
