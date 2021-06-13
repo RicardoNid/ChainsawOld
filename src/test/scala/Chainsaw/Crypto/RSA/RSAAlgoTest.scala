@@ -6,7 +6,7 @@ import org.scalatest.funsuite.AnyFunSuite
 
 class RSAAlgoTest extends AnyFunSuite {
 
-  val testSize = 512
+  val testSize = 1024
   val algo = new RSAAlgo(testSize)
   val ref = new RSARef(testSize)
   val Zrho = Zp(asBigInteger(BigInt(1) << testSize))
@@ -63,4 +63,16 @@ class RSAAlgoTest extends AnyFunSuite {
     printlnGreen(s"montExp, passed")
   }
 
+  test("testMontMul"){
+    (0 until 100).foreach{ _ =>
+      val modulus = BigInt(ref.getModulus)
+      val input0 = modulus - DSPRand.nextInt(10000)
+      val input1 = modulus - DSPRand.nextInt(10000)
+      val ZN = Zp(modulus)
+      val Rho = BigInt(1) << modulus.bitLength
+      val RhoInverse = ZN.reciprocal(Rho)
+      assertBig(algo.R2MM(input0, input1, modulus), ZN.multiply(input0, input1, RhoInverse))
+    }
+    printlnGreen(s"montMul, passed")
+  }
 }

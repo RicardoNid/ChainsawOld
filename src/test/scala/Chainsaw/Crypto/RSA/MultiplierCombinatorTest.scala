@@ -12,7 +12,7 @@ class MultiplierCombinatorTest extends AnyFunSuite {
   test("testMultiplierCombinator") {
     val multLatency = 1
     val addLatency = 1
-    val baseWidth = 8
+    val baseWidth = 128
     val expansionFactor = 4
     val round = 3
 

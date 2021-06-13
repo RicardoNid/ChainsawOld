@@ -1,16 +1,9 @@
 package Chainsaw.Crypto.RSA
 
-import spinal.core._
 import Chainsaw._
 import spinal.core._
-import spinal.core.sim._
 import spinal.lib._
-import spinal.sim._
-import spinal.lib.fsm._
-import Chainsaw._
-import Chainsaw.Real
 
-import scala.collection.mutable.ArrayBuffer
 import scala.math.{max, min}
 
 class Add(width: Int, latency: Int) extends DSPDUTTiming[Vec[UInt], UInt] {
@@ -166,5 +159,11 @@ class MultiplierCombinator[T <: DSPDUTTiming[Vec[UInt], UInt]]( // todo note thi
       inputRAM0(pipelineCounter) := input(0)
       inputRAM1(pipelineCounter) := input(1)
     }
+  }
+}
+
+object MultiplierCombinator {
+  def main(args: Array[String]): Unit = {
+    VivadoSynth(new MultiplierCombinator(16, 32, Mult.apply, 1, Add.apply, 1))
   }
 }

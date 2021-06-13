@@ -158,8 +158,29 @@ class RSAAlgo(lN: Int) {
     }
     montRed(reg, N, print = print)
   }
+
+  def R2MM(X: BigInt, Y: BigInt, N: BigInt) = {
+    var S = BigInt(0)
+    val lN = N.bitLength
+    val y0 = Y.toString(2).last.asDigit
+    for (i <- 0 until lN) {
+      val s0 = S.toString(2).last.asDigit
+      val xi = X.toString(2).padToLeft(lN, '0').reverse(i).asDigit
+      val qi = (xi * y0) ^ s0
+      S = (S + xi * Y + qi * N) / 2
+    }
+    if (S >= N) S - N else S
+  }
 }
 
 object RSAAlgo {
   def apply(lN: Int): RSAAlgo = new RSAAlgo(lN)
+  def main(args: Array[String]): Unit = {
+    val algo = new RSAAlgo(4)
+    val a = 7
+    val b = 8
+    println(algo.R2MM(a,b,13))
+    val RhoReverse = Zp64(13).reciprocal(16)
+    println(s"golden = ${a * b * RhoReverse % 13}")
+  }
 }
