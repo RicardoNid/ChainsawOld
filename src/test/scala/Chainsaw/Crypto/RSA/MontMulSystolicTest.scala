@@ -14,8 +14,9 @@ class MontMulSystolicTest extends AnyFunSuite {
     // simulation: for n,w,p = 8,4,3, p == e
     def sim() = {
       val testSize = 512
-      val testWordSize = 64
-      val testPENumber = ceil((testSize + 1).toDouble / testWordSize).toInt - 1 // number of words
+      val testWordSize = 32
+      val testPENumber = ceil((testSize + 1).toDouble / testWordSize).toInt // number of words
+
       SimConfig.withWave.compile(new MontMulSystolic(testSize, testWordSize, testPENumber)).doSim { dut =>
         import dut._
         val round = ceil(n.toDouble / p).toInt
@@ -31,6 +32,7 @@ class MontMulSystolicTest extends AnyFunSuite {
           val MWords = toWords(M, w, e)
           val dutResults = ArrayBuffer[BigInt]()
           println(s"the output provider is ${outputProvider}")
+          println(s"the queue depth is ${QueueDepth}")
           clockDomain.waitSampling(5)
 
           io.start #= true
@@ -51,13 +53,16 @@ class MontMulSystolicTest extends AnyFunSuite {
             if (io.validOut.toBoolean) dutResults += io.SWordOut.toBigInt
             clockDomain.waitSampling()
           }
-          MontAlgos.Arch1MM(X, Y, M, w, print = true)
+          val golden = MontAlgos.Arch1MM(X, Y, M, w, print = true)
           println(s"Yours:  ${dutResults.map(_.toString(16).padToLeft(w / 4, '0')).mkString(" ")}")
+          val dutResultBinary = dutResults.take(e).reverse.map(_.toString(2).padToLeft(w, '0')).flatten.mkString("")
+          val yours = BigInt(dutResultBinary, 2) >> 1
+          assertResult(golden)(yours)
         }
         if (Array(512, 1024, 2048, 3072, 4096).contains(testSize)) {
           def randRSASim() = {
             val ref = new RSARef(testSize)
-            push(ref.getPrivateValue, ref.getPublicValue, ref.getModulus)
+            push(ref.getPrivateValue, ref.getPrivateValue, ref.getModulus)
           }
           randRSASim()
           randRSASim()

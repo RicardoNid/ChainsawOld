@@ -113,8 +113,10 @@ case class MontMulSystolic(lN: Int, w: Int, p: Int) extends Component {
     s"\n********systolic array properties report:********" +
       s"\n\tsize of Montgomery Multiplication is lM = $lN" +
       s"\n\tword size w = $w, word number e = $e" +
-      s"\n\tthe initiation interval is e * r = ${e * round}" +
       s"\n\tnumber of PE p = $p" +
+      s"\n\tto get the result, $round rounds of iteration will be executed," +
+      s"\n\tand the initiation interval is e * r = ${e * round}" +
+      s"\n\tthus, PE utilization is ${n.toDouble / (e * round)}" +
       s"\n\tfirst valid output(word) would be ${n + e - 1} cycles after the first valid input(word)" +
       s"\n\tthis systolic accept ${} inputs as a group, and would finish Montgomery Multiplications in" +
       s"\n\tcurrently, we would require p <= e as p > e leads to grouped input and thus, more complex input pattern" +
@@ -142,7 +144,7 @@ case class MontMulSystolic(lN: Int, w: Int, p: Int) extends Component {
   // for systolic, a FIFO is not needed, a Delay is enough, and simpler
   //  val Queue = FIFO(MontMulPEData(w), if (p - e > 0) p - e else 0)
   val Queue = MontMulPEPass(w)
-  val QueueDepth = if (p - e > 0) p - e else 0
+  val QueueDepth = if (e - p > 0) e - p else 0
 
   Queue.SetXi := Delay(PEs.last.io.dataOut.SetXi, QueueDepth, init = False)
   Queue.S0 := Delay(PEs.last.io.dataOut.S0, QueueDepth, init = U(0))
@@ -160,7 +162,8 @@ case class MontMulSystolic(lN: Int, w: Int, p: Int) extends Component {
   }
 
   // TODO: improve this, this looks smart, but would be a bad design when lM(and thus, e) is large
-  val validStart = Delay(io.start, (n + e - 1) - e + 1 + 1, init = False)
+  // 1 for start -> run, n + e - 1 for the whole interval, round * (e - p) for waiting - (e - 1) for where the output word started
+  val validStart = Delay(io.start, (n + e - 1) + (round - 1) * (e - p) - e + 1 + 1, init = False)
   val validHistory = History(validStart, e, init = False)
   io.validOut := validHistory.asBits.orR
 
@@ -201,7 +204,7 @@ case class MontMulSystolic(lN: Int, w: Int, p: Int) extends Component {
 
 object MontMulSystolic {
   def main(args: Array[String]): Unit = {
-    GenRTL(new MontMulPE(16))
-    //    VivadoSynth(new MontMulPE(16))
+    //    GenRTL(new MontMulPE(16))
+    VivadoSynth(new MontMulPE(32))
   }
 }

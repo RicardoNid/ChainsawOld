@@ -100,7 +100,6 @@ object MontAlgos {
         val det = SWords(j + 1).toString(2).last.asDigit
         CWords(j + 1) = if (det == 1) tempOdd / (BigInt(1) << w) else tempEven / (BigInt(1) << w)
         SWords(j) = if (det == 1) tempOdd % (BigInt(1) << w) else tempEven % (BigInt(1) << w)
-        if (print && cycle == e + n - 2) println(s"SWords: ${SWords.mkString(" ")}")
         if (print && cycle == e + n - 2) println(s"SWords: ${SWords.map(_.toString(16).padToLeft(w / 4, '0')).mkString(" ")}")
         //        if (print && pe == peLast) println(s"SWords: ${SWords.map(_.toString(16).padToLeft(w/4, '0')).mkString(" ")}")
       }
