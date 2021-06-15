@@ -46,12 +46,17 @@ object RSARef {
 
   def main(args: Array[String]): Unit = {
 
-    val ref = new RSARef(512)
-    val privateKey = ref.getPrivate
-    val publicKey = ref.getPublic
-    val cipher = ref.encode(("a" * 64).getBytes(), publicKey)
-    val recovered = ref.decode(cipher, privateKey)
-    println(recovered.map(_.toChar).mkString(""))
+    val ref = new RSARef(2048)
+    //    val privateKey = ref.getPrivate
+    //    val publicKey = ref.getPublic
+    //    val cipher = ref.encode(("a" * 53).getBytes(), publicKey)
+    //    val recovered = ref.decode(cipher, privateKey)
+    //    println(recovered.map(_.toChar).mkString(""))
+
+    println((0 until 1000).map{ _ =>
+      ref.refresh()
+      ref.getPrivateValue.toString(2).map(_.asDigit).sum}.sum.toDouble / 1000)
+
 
 
     //    val keys = KeyPairGenerator.getInstance("RSA").generateKeyPair()

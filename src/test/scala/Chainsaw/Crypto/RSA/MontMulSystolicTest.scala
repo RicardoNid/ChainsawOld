@@ -13,7 +13,7 @@ class MontMulSystolicTest extends AnyFunSuite {
     //    GenRTL(new MontMulSystolic(8, 4, 8))
     // simulation: for n,w,p = 8,4,3, p == e
     def sim() = {
-      val testSizes = Seq(512, 1024, 2048)
+      val testSizes = Seq(512, 1024, 2048, 3072, 4096)
       val testWordSize = 32
       val testPENumber = ceil((testSizes.min + 1).toDouble / testWordSize).toInt // number of words
 
@@ -23,8 +23,9 @@ class MontMulSystolicTest extends AnyFunSuite {
         io.start #= false
         clockDomain.waitSampling()
 
-        def push(X: BigInt, Y: BigInt, M: BigInt, mode: Int = 0) = {
-          println(s"X: $X Y: $Y M: $M")
+        def push(X: BigInt, Y: BigInt, M: BigInt) = {
+          //          println(s"X: $X Y: $Y M: $M")
+          val mode = testSizes.indexOf(M.bitLength)
           val XBits = X.toString(2).padToLeft(w * es(mode), '0').reverse.map(_.asDigit)
           val YWords = toWords(Y, w, es(mode))
           val MWords = toWords(M, w, es(mode))
@@ -34,11 +35,11 @@ class MontMulSystolicTest extends AnyFunSuite {
           clockDomain.waitSampling(5)
 
           io.start #= true
+          io.mode #= BigInt(1) << mode
           clockDomain.waitSampling()
           io.start #= false
+          io.mode #= BigInt(0)
           (0 until rounds(mode)).foreach { r =>
-
-            io.mode #= BigInt(1) << mode
 
             (0 until es(mode)).foreach { i =>
               if (r == 0) {
@@ -61,27 +62,18 @@ class MontMulSystolicTest extends AnyFunSuite {
           assertResult(golden)(yours)
         }
 
-        def randRSASim() = {
-          val ref = new RSARef(512)
-          push(ref.getPrivateValue, ref.getPrivateValue, ref.getModulus, 0)
+        def randRSASim(lN: Int = 512) = {
+          val ref = new RSARef(lN)
+          push(ref.getPrivateValue, ref.getPrivateValue, ref.getModulus)
         }
         randRSASim()
-        randRSASim()
-        randRSASim()
-
-        //        if (Array(512, 1024, 2048, 3072, 4096).contains(testSize)) {
-        //
-        //
-        //        } else {
-        //          def randBigInt = BigInt("1" + (0 until lNs - 2).map(_ => DSPRand.nextInt(2)).mkString("") + "1", 2)
-        //          push(randBigInt, randBigInt, randBigInt)
-        //          push(randBigInt, randBigInt, randBigInt)
-        //          push(randBigInt, randBigInt, randBigInt)
-        //        }
+        randRSASim(1024)
+        //        randRSASim(2048)
+        //        randRSASim(3072)
+        //        randRSASim(4096)
       }
     }
     sim()
-    //    VivadoSynth(new MontMulPE(32))
   }
 
 }

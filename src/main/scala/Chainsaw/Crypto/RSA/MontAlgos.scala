@@ -23,6 +23,19 @@ object MontAlgos {
     S
   }
 
+  // r^2 \pmod M
+  def R2MMP(M: BigInt): BigInt = {
+    val n = M.bitLength
+    var S = BigInt(1) << (M.bitLength - 1)
+    println(S)
+    (0 until n + 5).foreach { i =>
+      S = S << 1
+      S = if (S - M >= 0) S - M else S
+      println(S)
+    }
+    S
+  }
+
   // TODO: implement bit select implicit
   def toWords(value: BigInt, w: Int, e: Int) = {
     value.toString(2).padToLeft(e * w, '0')
@@ -118,24 +131,39 @@ object MontAlgos {
       val input0 = (modulus - DSPRand.nextInt(10000))
       val input1 = modulus - DSPRand.nextInt(10000)
       val ZN = Zp(modulus)
-      val Rho = BigInt(1) << (modulus.bitLength + 2)
-      val RhoInverse = ZN.reciprocal(Rho)
+      val r = BigInt(1) << (modulus.bitLength + 2)
+      val rInverse = ZN.reciprocal(r)
 
       val algoResult = algo(input0, input1, modulus)
-      val RingsResult = BigInt(ZN.multiply(input0, input1, RhoInverse).toByteArray)
+      val RingsResult = BigInt(ZN.multiply(input0, input1, rInverse).toByteArray)
       assert(algoResult < (modulus << 1))
       assert(ZN(algoResult) == ZN(RingsResult))
     }
     printlnGreen(s"montMul, passed")
   }
 
+  def verifyMMP(algo: BigInt => BigInt) = {
+    (0 until 10).foreach { _ =>
+      val modulus = BigInt(ref.getModulus)
+      val ZN = Zp(modulus)
+      val r = BigInt(1) << (modulus.bitLength + 2)
+      val algoResult = algo(modulus)
+      val RingsResult = BigInt(ZN.multiply(r, r).toByteArray)
+      assert(algoResult < modulus)
+      assert(ZN(algoResult) == ZN(RingsResult))
+    }
+    printlnGreen(s"montMulPre, passed")
+  }
+
   def main(args: Array[String]): Unit = {
     //        algo.verifyMM(algo.R2MM)
     //    algo.verifyMM(algo.MWR2MM(_, _, _, 4))
-    MontAlgos.verifyMM(MontAlgos.Arch1MM(_, _, _, 4))
-    MontAlgos.verifyMM(MontAlgos.Arch1MM(_, _, _, 16))
-    MontAlgos.verifyMM(MontAlgos.Arch1MM(_, _, _, 32))
-    MontAlgos.verifyMM(MontAlgos.Arch1MM(_, _, _, 64))
+    //    verifyMM(Arch1MM(_, _, _, 4))
+    //    verifyMM(Arch1MM(_, _, _, 16))
+    //    verifyMM(Arch1MM(_, _, _, 32))
+    //    verifyMM(Arch1MM(_, _, _, 64))
+    //    verifyMMP(R2MMP)
+    R2MMP(13)
 
     def checkstyleMontMul(X: BigInt, Y: BigInt, M: BigInt): BigInt = {
       val ZN = Zp(M)
@@ -144,9 +172,9 @@ object MontAlgos {
     }
 
     // step-by-step simulation for circuit
-    println(MontAlgos.Arch1MM(BigInt(159), BigInt(148), 177, 4, print = true))
-    println(MontAlgos.Arch1MM(BigInt(153), BigInt(147), 177, 4, print = true))
-    println((checkstyleMontMul(159, 148, 177) << 1).toString(16))
-    println((checkstyleMontMul(153, 147, 177) << 1).toString(16))
+    //    println(MontAlgos.Arch1MM(BigInt(159), BigInt(148), 177, 4, print = true))
+    //    println(MontAlgos.Arch1MM(BigInt(153), BigInt(147), 177, 4, print = true))
+    //    println((checkstyleMontMul(159, 148, 177) << 1).toString(16))
+    //    println((checkstyleMontMul(153, 147, 177) << 1).toString(16))
   }
 }
