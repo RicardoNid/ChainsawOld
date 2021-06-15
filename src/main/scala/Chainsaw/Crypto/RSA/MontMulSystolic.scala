@@ -26,7 +26,6 @@ case class MontMulPEOther() extends Bundle {
   // xi should be externally registered
   // short as it is, it is a UInt as it has numeric semantic
   val xi = UInt(1 bits)
-  val run = Bool() // the overall control
 }
 
 /**
@@ -79,13 +78,11 @@ class MontMulPE(w: Int) extends Component { // we want it to be synthesized inde
 
   // TODO: should the computation be controlled by run? would that be more energy-efficient?
   // update
-  when(io.controlIn.run) {
-    SLower := SumLower(w - 2 downto 0) // w - 1 bits
-    SO := SumHigherOdd.lsb.asUInt
-    SE := SumHigherEven.lsb.asUInt
-    CO := SumHigherOdd(2 downto 1)
-    CE := SumHigherEven(2 downto 1)
-  }
+  SLower := SumLower(w - 2 downto 0) // w - 1 bits
+  SO := SumHigherOdd.lsb.asUInt
+  SE := SumHigherEven.lsb.asUInt
+  CO := SumHigherOdd(2 downto 1)
+  CE := SumHigherEven(2 downto 1)
 
   // output
   io.dataOut.S0 := SLower.lsb.asUInt
@@ -98,26 +95,29 @@ class MontMulPE(w: Int) extends Component { // we want it to be synthesized inde
 
 
 /**
- * @param lN sizes of the MontMul that are supported
- * @param w  word size of the MontMulPE
- * @param p  number of the MontMulPE
+ * @param lNs sizes of the MontMul that are supported
+ * @param w   word size of the MontMulPE
+ * @param p   number of the MontMulPE
  */
-case class MontMulSystolic(lN: Int, w: Int, p: Int) extends Component {
+case class MontMulSystolic(lNs: Int, w: Int, p: Int) extends Component {
 
-  val n = lN + 2
+  // design parameters
+  val n = lNs + 2
   val e = ceil((n + 1).toDouble / w).toInt // number of words
   val round = ceil(n.toDouble / p).toInt // number of words
+  // n + e - 1 for the whole interval, (round - 1) * (e - p) for waiting - (e - 1) for where the output word started, 1 for start -> run
+  val latency = (n + e - 1) + (round - 1) * (e - p) - e + 1 + 1
   val outputProvider = (n - 1) % p // the index of PE that provides the result(starts from 0)
   require(p <= e, "currently, we would require p <= e as p > e leads to grouped input and thus, more complex input pattern")
   printlnGreen(
     s"\n********systolic array properties report:********" +
-      s"\n\tsize of Montgomery Multiplication is lM = $lN" +
+      s"\n\tsize of Montgomery Multiplication is lM = $lNs" +
       s"\n\tword size w = $w, word number e = $e" +
       s"\n\tnumber of PE p = $p" +
       s"\n\tto get the result, $round rounds of iteration will be executed," +
       s"\n\tand the initiation interval is e * r = ${e * round}" +
       s"\n\tthus, PE utilization is ${n.toDouble / (e * round)}" +
-      s"\n\tfirst valid output(word) would be ${n + e - 1} cycles after the first valid input(word)" +
+      s"\n\tfirst valid output(word) would be ${latency - 1} cycles after the first valid input(word)" +
       s"\n\tthis systolic accept ${} inputs as a group, and would finish Montgomery Multiplications in" +
       s"\n\tcurrently, we would require p <= e as p > e leads to grouped input and thus, more complex input pattern" +
       s"\n\tthe protocol is as follow: " +
@@ -133,11 +133,10 @@ case class MontMulSystolic(lN: Int, w: Int, p: Int) extends Component {
     val xiIn = in UInt (1 bits)
     val YWordIn = in UInt (w bits)
     val MWordIn = in UInt (w bits)
-    val SWordOut = out UInt (w bits)
-    val validOut = out Bool()
+    val dataOut = out UInt (w bits)
+    val valid = out Bool()
   }
 
-  val runFlag = RegInit(False)
   val PEs = (0 until p).map(_ => new MontMulPE(w))
   // connecting PEs with each other
   PEs.init.zip(PEs.tail).foreach { case (prev, next) => next.io.dataIn := prev.io.dataOut }
@@ -153,19 +152,17 @@ case class MontMulSystolic(lN: Int, w: Int, p: Int) extends Component {
   Queue.YWord := Delay(PEs.last.io.dataOut.YWord, QueueDepth, init = U(0))
 
   PEs.head.io.dataIn := Queue
-  io.SWordOut := (PEs(outputProvider).io.dataOut.SComp ## PEs(outputProvider).io.dataOut.S0).asUInt
+  io.dataOut := (PEs(outputProvider).io.dataOut.SComp ## PEs(outputProvider).io.dataOut.S0).asUInt
 
   // PE control inputs
   PEs.zipWithIndex.foreach { case (pe, i) =>
-    pe.io.controlIn.run := runFlag
     pe.io.controlIn.xi := io.xiIn
   }
 
   // TODO: improve this, this looks smart, but would be a bad design when lM(and thus, e) is large
-  // 1 for start -> run, n + e - 1 for the whole interval, round * (e - p) for waiting - (e - 1) for where the output word started
-  val validStart = Delay(io.start, (n + e - 1) + (round - 1) * (e - p) - e + 1 + 1, init = False)
+  val validStart = Delay(io.start, latency, init = False)
   val validHistory = History(validStart, e, init = False)
-  io.validOut := validHistory.asBits.orR
+  io.valid := validHistory.asBits.orR
 
   // counters
   val eCounter = Counter(e)
@@ -177,12 +174,9 @@ case class MontMulSystolic(lN: Int, w: Int, p: Int) extends Component {
     IDLE.whenIsActive {
       when(io.start)(goto(RUN))
     }
-    IDLE.onExit {
-      runFlag.set()
-    }
-    RUN.whenIsActive {
-      PEs.foreach(_.io.controlIn.run := True)
 
+    RUN.whenIsActive { // control the dataflow
+      eCounter.increment()
       when(roundCounter.value === U(0)) {
         // PE data input
         PEs.head.io.dataIn.S0 := U(0)
@@ -192,8 +186,6 @@ case class MontMulSystolic(lN: Int, w: Int, p: Int) extends Component {
         PEs.head.io.dataIn.SetXi := False
         when(eCounter.value === U(0))(PEs.head.io.dataIn.SetXi := True)
       }
-
-      eCounter.increment()
       when(roundCounter.willOverflow) {
         when(io.start)(goto(RUN))
           .otherwise(goto(IDLE))

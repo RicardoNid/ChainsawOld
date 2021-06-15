@@ -45,12 +45,12 @@ class MontMulSystolicTest extends AnyFunSuite {
                 io.MWordIn #= MWords(i)
               }
               if (i < p) io.xiIn #= XBits(r * p + i)
-              if (io.validOut.toBoolean) dutResults += io.SWordOut.toBigInt
+              if (io.valid.toBoolean) dutResults += io.dataOut.toBigInt
               clockDomain.waitSampling()
             }
           }
           (0 until e).foreach { _ =>
-            if (io.validOut.toBoolean) dutResults += io.SWordOut.toBigInt
+            if (io.valid.toBoolean) dutResults += io.dataOut.toBigInt
             clockDomain.waitSampling()
           }
           val golden = MontAlgos.Arch1MM(X, Y, M, w, print = true)
@@ -68,7 +68,7 @@ class MontMulSystolicTest extends AnyFunSuite {
           randRSASim()
           randRSASim()
         } else {
-          def randBigInt = BigInt("1" + (0 until lN - 2).map(_ => DSPRand.nextInt(2)).mkString("") + "1", 2)
+          def randBigInt = BigInt("1" + (0 until lNs - 2).map(_ => DSPRand.nextInt(2)).mkString("") + "1", 2)
           push(randBigInt, randBigInt, randBigInt)
           push(randBigInt, randBigInt, randBigInt)
           push(randBigInt, randBigInt, randBigInt)
