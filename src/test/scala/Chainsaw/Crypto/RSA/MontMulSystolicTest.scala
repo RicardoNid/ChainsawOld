@@ -13,33 +13,34 @@ class MontMulSystolicTest extends AnyFunSuite {
     //    GenRTL(new MontMulSystolic(8, 4, 8))
     // simulation: for n,w,p = 8,4,3, p == e
     def sim() = {
-      val testSize = 512
+      val testSizes = Seq(512, 1024, 2048)
       val testWordSize = 32
-      val testPENumber = ceil((testSize + 1).toDouble / testWordSize).toInt // number of words
+      val testPENumber = ceil((testSizes.min + 1).toDouble / testWordSize).toInt // number of words
 
-      SimConfig.withWave.compile(new MontMulSystolic(testSize, testWordSize, testPENumber)).doSim { dut =>
+      SimConfig.withWave.compile(new MontMulSystolic(testSizes, testWordSize, testPENumber)).doSim { dut =>
         import dut._
-        val round = ceil(n.toDouble / p).toInt
-        println(s"round = $round")
         clockDomain.forkStimulus(2)
         io.start #= false
         clockDomain.waitSampling()
 
-        def push(X: BigInt, Y: BigInt, M: BigInt) = {
+        def push(X: BigInt, Y: BigInt, M: BigInt, mode: Int = 0) = {
           println(s"X: $X Y: $Y M: $M")
-          val XBits = X.toString(2).padToLeft(w * e, '0').reverse.map(_.asDigit)
-          val YWords = toWords(Y, w, e)
-          val MWords = toWords(M, w, e)
+          val XBits = X.toString(2).padToLeft(w * es(mode), '0').reverse.map(_.asDigit)
+          val YWords = toWords(Y, w, es(mode))
+          val MWords = toWords(M, w, es(mode))
           val dutResults = ArrayBuffer[BigInt]()
-          println(s"the output provider is ${outputProvider}")
-          println(s"the queue depth is ${QueueDepth}")
+          println(s"the output provider is ${outputProviders(mode)}")
+          println(s"the queue depth is ${QueueDepths(mode)}")
           clockDomain.waitSampling(5)
 
           io.start #= true
           clockDomain.waitSampling()
           io.start #= false
-          (0 until round).foreach { r =>
-            (0 until e).foreach { i =>
+          (0 until rounds(mode)).foreach { r =>
+
+            io.mode #= BigInt(1) << mode
+
+            (0 until es(mode)).foreach { i =>
               if (r == 0) {
                 io.YWordIn #= YWords(i)
                 io.MWordIn #= MWords(i)
@@ -49,30 +50,34 @@ class MontMulSystolicTest extends AnyFunSuite {
               clockDomain.waitSampling()
             }
           }
-          (0 until e).foreach { _ =>
+          (0 until es(mode)).foreach { _ =>
             if (io.valid.toBoolean) dutResults += io.dataOut.toBigInt
             clockDomain.waitSampling()
           }
           val golden = MontAlgos.Arch1MM(X, Y, M, w, print = true)
           println(s"Yours:  ${dutResults.map(_.toString(16).padToLeft(w / 4, '0')).mkString(" ")}")
-          val dutResultBinary = dutResults.take(e).reverse.map(_.toString(2).padToLeft(w, '0')).flatten.mkString("")
-          val yours = BigInt(dutResultBinary, 2) >> 1
+          val dutResultBinary = dutResults.take(es(mode)).reverse.map(_.toString(2).padToLeft(w, '0')).flatten.mkString("")
+          val yours = BigInt("0" + dutResultBinary, 2) >> 1
           assertResult(golden)(yours)
         }
-        if (Array(512, 1024, 2048, 3072, 4096).contains(testSize)) {
-          def randRSASim() = {
-            val ref = new RSARef(testSize)
-            push(ref.getPrivateValue, ref.getPrivateValue, ref.getModulus)
-          }
-          randRSASim()
-          randRSASim()
-          randRSASim()
-        } else {
-          def randBigInt = BigInt("1" + (0 until lNs - 2).map(_ => DSPRand.nextInt(2)).mkString("") + "1", 2)
-          push(randBigInt, randBigInt, randBigInt)
-          push(randBigInt, randBigInt, randBigInt)
-          push(randBigInt, randBigInt, randBigInt)
+
+        def randRSASim() = {
+          val ref = new RSARef(512)
+          push(ref.getPrivateValue, ref.getPrivateValue, ref.getModulus, 0)
         }
+        randRSASim()
+        randRSASim()
+        randRSASim()
+
+        //        if (Array(512, 1024, 2048, 3072, 4096).contains(testSize)) {
+        //
+        //
+        //        } else {
+        //          def randBigInt = BigInt("1" + (0 until lNs - 2).map(_ => DSPRand.nextInt(2)).mkString("") + "1", 2)
+        //          push(randBigInt, randBigInt, randBigInt)
+        //          push(randBigInt, randBigInt, randBigInt)
+        //          push(randBigInt, randBigInt, randBigInt)
+        //        }
       }
     }
     sim()

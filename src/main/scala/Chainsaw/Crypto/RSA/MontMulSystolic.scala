@@ -99,25 +99,26 @@ class MontMulPE(w: Int) extends Component { // we want it to be synthesized inde
  * @param w   word size of the MontMulPE
  * @param p   number of the MontMulPE
  */
-case class MontMulSystolic(lNs: Int, w: Int, p: Int) extends Component {
+case class MontMulSystolic(lNs: Seq[Int], w: Int, p: Int) extends Component {
 
   // design parameters
-  val n = lNs + 2
-  val e = ceil((n + 1).toDouble / w).toInt // number of words
-  val round = ceil(n.toDouble / p).toInt // number of words
+  val ns = lNs.map(_ + 2) // total numbers of iterations
+  val es = ns.map(n => ceil((n + 1).toDouble / w).toInt) // numbers of words
+  val rounds = ns.map(n => ceil(n.toDouble / p).toInt) // numbers of rounds to be executed
   // n + e - 1 for the whole interval, (round - 1) * (e - p) for waiting - (e - 1) for where the output word started, 1 for start -> run
-  val latency = (n + e - 1) + (round - 1) * (e - p) - e + 1 + 1
-  val outputProvider = (n - 1) % p // the index of PE that provides the result(starts from 0)
-  require(p <= e, "currently, we would require p <= e as p > e leads to grouped input and thus, more complex input pattern")
+  val latencies = (0 until ns.size).map(i => (ns(i) + es(i) - 1) + (rounds(i) - 1) * (es(i) - p) - es(i) + 1 + 1)
+  val outputProviders = ns.map(n => (n - 1) % p) // the index of PE that provides the result(starts from 0)
+  val QueueDepths = es.map(e => if (e - p > 0) e - p else 0)
+  require(p <= es.min, "currently, we would require p <= e as p > e leads to grouped input and thus, more complex input pattern")
   printlnGreen(
     s"\n********systolic array properties report:********" +
-      s"\n\tsize of Montgomery Multiplication is lM = $lNs" +
-      s"\n\tword size w = $w, word number e = $e" +
+      s"\n\tsupported sizes of Montgomery Multiplications are lM = ${lNs.mkString(" ")} " +
+      s"\n\tword size w = $w, word number e = ${es.mkString(" ")}" +
       s"\n\tnumber of PE p = $p" +
-      s"\n\tto get the result, $round rounds of iteration will be executed," +
-      s"\n\tand the initiation interval is e * r = ${e * round}" +
-      s"\n\tthus, PE utilization is ${n.toDouble / (e * round)}" +
-      s"\n\tfirst valid output(word) would be ${latency - 1} cycles after the first valid input(word)" +
+      s"\n\tto get the result, ${rounds.mkString(" ")} rounds of iteration will be executed," +
+      s"\n\tand the initiation interval is e * r = ${es.zip(rounds).map { case (i, i1) => i * i1 }.mkString(" ")}" +
+      s"\n\tthus, PE utilization is ${(0 until ns.size).map(i => ns(i).toDouble / (es(i) * rounds(i))).mkString(" ")}" +
+      s"\n\tfirst valid output(word) would be ${latencies.map(_ - 1).mkString(" ")} cycles after the first valid input(word)" +
       s"\n\tthis systolic accept ${} inputs as a group, and would finish Montgomery Multiplications in" +
       s"\n\tcurrently, we would require p <= e as p > e leads to grouped input and thus, more complex input pattern" +
       s"\n\tthe protocol is as follow: " +
@@ -128,8 +129,10 @@ case class MontMulSystolic(lNs: Int, w: Int, p: Int) extends Component {
       s"\n********systolic array properties report:********")
 
   val io = new Bundle {
+    // control
     val start = in Bool()
-    // data input
+    val mode = in Bits (lNs.size bits) // one-hot
+    // data
     val xiIn = in UInt (1 bits)
     val YWordIn = in UInt (w bits)
     val MWordIn = in UInt (w bits)
@@ -142,31 +145,40 @@ case class MontMulSystolic(lNs: Int, w: Int, p: Int) extends Component {
   PEs.init.zip(PEs.tail).foreach { case (prev, next) => next.io.dataIn := prev.io.dataOut }
   // for systolic, a FIFO is not needed, a Delay is enough, and simpler
   //  val Queue = FIFO(MontMulPEData(w), if (p - e > 0) p - e else 0)
-  val Queue = MontMulPEPass(w)
-  val QueueDepth = if (e - p > 0) e - p else 0
+  val bufferSetXi = History(PEs.last.io.dataOut.SetXi, QueueDepths.max + 1, init = False)
+  val bufferS0 = History(PEs.last.io.dataOut.S0, QueueDepths.max + 1, init = U(0, 1 bits))
+  val bufferSComp = History(PEs.last.io.dataOut.SComp, QueueDepths.max + 1, init = U(0, w - 1 bits))
+  val bufferYWord = History(PEs.last.io.dataOut.YWord, QueueDepths.max + 1, init = U(0, w bits))
+  val bufferMWord = History(PEs.last.io.dataOut.MWord, QueueDepths.max + 1, init = U(0, w bits))
 
-  Queue.SetXi := Delay(PEs.last.io.dataOut.SetXi, QueueDepth, init = False)
-  Queue.S0 := Delay(PEs.last.io.dataOut.S0, QueueDepth, init = U(0))
-  Queue.SComp := Delay(PEs.last.io.dataOut.SComp, QueueDepth, init = U(0))
-  Queue.MWord := Delay(PEs.last.io.dataOut.MWord, QueueDepth, init = U(0))
-  Queue.YWord := Delay(PEs.last.io.dataOut.YWord, QueueDepth, init = U(0))
+  val queues = Vec(QueueDepths.map(_ => MontMulPEPass(w)))
+  queues.zip(QueueDepths).foreach { case (queue, depth) =>
+    queue.SetXi := bufferSetXi(depth)
+    queue.S0 := bufferS0(depth)
+    queue.SComp := bufferSComp(depth)
+    queue.YWord := bufferYWord(depth)
+    queue.MWord := bufferMWord(depth)
+  }
 
-  PEs.head.io.dataIn := Queue
-  io.dataOut := (PEs(outputProvider).io.dataOut.SComp ## PEs(outputProvider).io.dataOut.S0).asUInt
+  // datapaths
+  PEs.head.io.dataIn := MuxOH(io.mode, queues)
+  val outputCandidates = outputProviders.map(outputProvider => (PEs(outputProvider).io.dataOut.SComp ## PEs(outputProvider).io.dataOut.S0).asUInt)
+  io.dataOut := MuxOH(io.mode, outputCandidates)
 
   // PE control inputs
   PEs.zipWithIndex.foreach { case (pe, i) =>
     pe.io.controlIn.xi := io.xiIn
   }
 
-  // TODO: improve this, this looks smart, but would be a bad design when lM(and thus, e) is large
-  val validStart = Delay(io.start, latency, init = False)
-  val validHistory = History(validStart, e, init = False)
-  io.valid := validHistory.asBits.orR
+  // TODO: implement this
+  io.valid := False
 
   // counters
-  val eCounter = Counter(e)
-  val roundCounter = Counter(round, inc = eCounter.willOverflow)
+  val eCounter = Counter(es.max)
+  val eCounterWillOverflows = es.map(e => eCounter.value === U(e - 1) && eCounter.willIncrement)
+  val currentECounterOverflow = MuxOH(io.mode, eCounterWillOverflows)
+  when(currentECounterOverflow)(eCounter.clear())
+  val roundCounter = Counter(rounds.max, inc = MuxOH(io.mode, eCounterWillOverflows))
 
   val fsm = new StateMachine {
     val IDLE = StateEntryPoint()
@@ -187,11 +199,12 @@ case class MontMulSystolic(lNs: Int, w: Int, p: Int) extends Component {
         PEs.head.io.dataIn.SetXi := False
         when(eCounter.value === U(0))(PEs.head.io.dataIn.SetXi := True)
       }
-      when(roundCounter.willOverflow) {
+      when(roundCounter === MuxOH(io.mode, rounds.map(round => U(round - 1))) && currentECounterOverflow) {
         when(io.start)(goto(RUN))
           .otherwise(goto(IDLE))
       }
     }
+    RUN.onExit(roundCounter.clear())
   }
 }
 
