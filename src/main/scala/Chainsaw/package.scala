@@ -10,10 +10,17 @@ import xilinx.{ELABO, VivadoFlow, VivadoTask}
 
 import java.nio.file.Paths
 import scala.collection.mutable.ArrayBuffer
-import scala.math.{ceil, floor, pow}
+import scala.math.{BigInt, ceil, floor, pow}
 import scala.util.Random
 
 package object Chainsaw extends RealFactory {
+
+  // example: YWords = toWords(BigInt("1_1111_0000", 4, 3)), YWords(0) = 0, YWords(1) = 15, YWords(2) = 1(padded as 0001)
+  def toWords(value: BigInt, w: Int, e: Int) = {
+    value.toString(2).padToLeft(e * w, '0')
+      .grouped(w).toArray.map(BigInt(_, 2))
+      .reverse
+  }
 
   // print the padded number in hex form, so it appears the same as in gtkwave
   def printPadded(name: String, value: BigInt, n: Int): Unit = {
