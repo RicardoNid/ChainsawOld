@@ -171,6 +171,7 @@ case class MontMulSystolic(lNs: Int, w: Int, p: Int) extends Component {
   val fsm = new StateMachine {
     val IDLE = StateEntryPoint()
     val RUN = State()
+
     IDLE.whenIsActive {
       when(io.start)(goto(RUN))
     }
