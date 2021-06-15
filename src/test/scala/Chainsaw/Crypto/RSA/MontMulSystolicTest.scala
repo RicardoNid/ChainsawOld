@@ -17,8 +17,9 @@ class MontMulSystolicTest extends AnyFunSuite {
       val testWordSize = 32
       val testPENumber = ceil((testSizes.min + 1).toDouble / testWordSize).toInt // number of words
 
-      SimConfig.withWave.compile(new MontMulSystolic(testSizes, testWordSize, testPENumber)).doSim { dut =>
+      SimConfig.withWave.compile(new MontMulSystolic(MontConfig(testSizes, testWordSize, testPENumber))).doSim { dut =>
         import dut._
+        import config._
         clockDomain.forkStimulus(2)
         io.start #= false
         clockDomain.waitSampling()
@@ -31,7 +32,7 @@ class MontMulSystolicTest extends AnyFunSuite {
           val MWords = toWords(M, w, es(mode))
           val dutResults = ArrayBuffer[BigInt]()
           println(s"the output provider is ${outputProviders(mode)}")
-          println(s"the queue depth is ${QueueDepths(mode)}")
+          println(s"the queue depth is ${queueDepths(mode)}")
           clockDomain.waitSampling(5)
 
           io.start #= true

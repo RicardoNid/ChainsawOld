@@ -11,24 +11,19 @@ import Chainsaw.Real
 
 import scala.math.ceil
 
-// TODO: improve the type consistency
 
-/**
- * @param lMs sizes of the MontMul that are supported
- * @param w   word size of the MontMulPE
- * @param p   number of the MontMulPE
- */
-case class MontMulSystolic(lMs: Seq[Int], w: Int, p: Int) extends Component {
-
-  // TODO: clean up the multi-mode logic
-  // design parameters
-  val ns = lMs.map(_ + 2) // total numbers of iterations
+case class MontConfig(lMs: Seq[Int], w: Int, p: Int) {
+  val ns = lMs.map(_ + 2) // total numbers of iterations, r = 2^(n) > 4M
   val es = ns.map(n => ceil((n + 1).toDouble / w).toInt) // numbers of words
   val rounds = ns.map(n => ceil(n.toDouble / p).toInt) // numbers of rounds to be executed
+
   // n + e - 1 for the whole interval, (round - 1) * (e - p) for waiting - (e - 1) for where the output word started, 1 for start -> run
   val latencies = (0 until ns.size).map(i => (ns(i) + es(i) - 1) + (rounds(i) - 1) * (es(i) - p) - es(i) + 1 + 1)
-  val outputProviders = ns.map(n => (n - 1) % p) // the index of PE that provides the result(starts from 0)
-  val QueueDepths = es.map(e => if (e - p > 0) e - p else 0)
+  // the index of PE that provides the result(starts from 0)
+  val outputProviders = ns.map(n => (n - 1) % p)
+  // the queue depths needed to connect the data of previous and current round
+  // these depths indicate the delays, which will be used in the design
+  val queueDepths = es.map(e => if (e - p > 0) e - p else 0)
   require(p <= es.min, "currently, we would require p <= e as p > e leads to grouped input and thus, more complex input pattern")
   printlnGreen(
     s"\n********systolic array properties report:********" +
@@ -47,6 +42,17 @@ case class MontMulSystolic(lMs: Seq[Int], w: Int, p: Int) extends Component {
       s"\n\t\tfor cycle j <- 0 to p-1, bits of X, X(j) should be provided to io.XiIn, then" +
       s"\n\t\tfor cycle j <- e to e + p - 1, continues from X(j - (e - p)), this continues until X is fully consumed" +
       s"\n********systolic array properties report:********")
+}
+
+
+/**
+ * @param lMs sizes of the MontMul that are supported
+ * @param w   word size of the MontMulPE
+ * @param p   number of the MontMulPE
+ */
+case class MontMulSystolic(config: MontConfig) extends Component {
+
+  import config._
 
   val io = new Bundle {
     // control
@@ -59,7 +65,7 @@ case class MontMulSystolic(lMs: Seq[Int], w: Int, p: Int) extends Component {
 
     val dataOut = out UInt (w bits)
     val valid = out Bool()
-    //    val ready = out Bool()
+    val idle = out Bool()
   }
 
   val modeReg = Reg(HardType(io.mode))
@@ -71,14 +77,14 @@ case class MontMulSystolic(lMs: Seq[Int], w: Int, p: Int) extends Component {
   PEs.init.zip(PEs.tail).foreach { case (prev, next) => next.io.dataIn := prev.io.dataOut }
   // for systolic, a FIFO is not needed, a Delay is enough, and simpler
   //  val Queue = FIFO(MontMulPEData(w), if (p - e > 0) p - e else 0)
-  val bufferSetXi = History(PEs.last.io.dataOut.SetXi, QueueDepths.max + 1, init = False)
-  val bufferS0 = History(PEs.last.io.dataOut.S0, QueueDepths.max + 1, init = U(0, 1 bits))
-  val bufferSComp = History(PEs.last.io.dataOut.SComp, QueueDepths.max + 1, init = U(0, w - 1 bits))
-  val bufferYWord = History(PEs.last.io.dataOut.YWord, QueueDepths.max + 1, init = U(0, w bits))
-  val bufferMWord = History(PEs.last.io.dataOut.MWord, QueueDepths.max + 1, init = U(0, w bits))
+  val bufferSetXi = History(PEs.last.io.dataOut.SetXi, queueDepths.max + 1, init = False)
+  val bufferS0 = History(PEs.last.io.dataOut.S0, queueDepths.max + 1, init = U(0, 1 bits))
+  val bufferSComp = History(PEs.last.io.dataOut.SComp, queueDepths.max + 1, init = U(0, w - 1 bits))
+  val bufferYWord = History(PEs.last.io.dataOut.YWord, queueDepths.max + 1, init = U(0, w bits))
+  val bufferMWord = History(PEs.last.io.dataOut.MWord, queueDepths.max + 1, init = U(0, w bits))
 
-  val queues = Vec(QueueDepths.map(_ => MontMulPEPass(w)))
-  queues.zip(QueueDepths).foreach { case (queue, depth) =>
+  val queues = Vec(queueDepths.map(_ => MontMulPEPass(w)))
+  queues.zip(queueDepths).foreach { case (queue, depth) =>
     queue.valid := False
     queue.SetXi := bufferSetXi(depth)
     queue.S0 := bufferS0(depth)
@@ -138,6 +144,8 @@ case class MontMulSystolic(lMs: Seq[Int], w: Int, p: Int) extends Component {
       }
     }
     RUN.onExit(roundCounter.clear())
+
+    io.idle := isActive(IDLE)
   }
 }
 
