@@ -25,14 +25,19 @@ object MontAlgos {
 
   // r^2 \pmod M
   def R2MMP(M: BigInt): BigInt = {
+    var minusCount = 0
     val n = M.bitLength
     var S = BigInt(1) << (M.bitLength - 1)
     println(S)
     (0 until n + 5).foreach { i =>
       S = S << 1
-      S = if (S - M >= 0) S - M else S
+      S = if (S - M >= 0) {
+        minusCount += 1
+        S - M
+      } else S
       println(S)
     }
+    println(s"minus upper bound = ${n + 5}, total minus = $minusCount")
     S
   }
 
@@ -222,7 +227,7 @@ object MontAlgos {
     //    verifyMM(Arch1MM(_, _, _, 16))
     //    verifyMM(Arch1MM(_, _, _, 32))
     //    verifyMM(Arch1MM(_, _, _, 64))
-    //    verifyMMP(R2MMP)
+    verifyMMP(R2MMP)
     //    R2MMP(13)
 
     def checkstyleMontMul(X: BigInt, Y: BigInt, M: BigInt): BigInt = {

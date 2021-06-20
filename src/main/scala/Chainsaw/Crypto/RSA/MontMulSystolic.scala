@@ -14,20 +14,22 @@ import scala.math.{ceil, floor}
  */
 case class MontConfig(lMs: Seq[Int], w: Int, pe: Int, parallel: Boolean = false) {
 
-  if (parallel) require(lMs.forall(_ % lMs.min == 0), s"for parallel architecture, supported sizes must be multiples of the minimum size")
-  val parallelFactor = lMs.max / lMs.min
   val p = if (parallel) floor((lMs.max + 2 + 1).toDouble / w).toInt else pe // when parallel, p = e - 1
+  if (!parallel) require(p <= es.min, "currently, we would require p <= e as p > e leads to grouped input and thus, more complex input pattern")
+  if (parallel) require(lMs.forall(_ % lMs.min == 0), s"for parallel architecture, supported sizes must be multiples of the minimum size")
+  val parallelFactor = if (parallel) lMs.max / lMs.min else 1
+  val groupSize = p / parallelFactor // PEs number for the smallest lM
 
   val ns = lMs.map(_ + 2) // total numbers of iterations, r = 2^(n) > 4M
   val es = ns.map(n => ceil((n + 1).toDouble / w).toInt) // numbers of words
-  val rounds = ns.map(n => ceil(n.toDouble / p).toInt) // numbers of rounds to be executed
+  val rounds = if (parallel) ns.zip(lMs).map { case (n, lM) => ceil(n.toDouble / (p / (lM / lMs.min))).toInt }
+  else ns.map(n => ceil(n.toDouble / p).toInt) // numbers of rounds to be executed
 
   // the index of PE that provides the result(starts from 0)
-  val outputProviders = ns.map(n => (n - 1) % p)
+  val outputProviders = if (parallel) (0 until parallelFactor).map(_ * groupSize + 1) else ns.map(n => (n - 1) % p)
   // the queue depths needed to connect the data of previous and current round
   // these depths indicate the delays, which will be used in the design
   val queueDepths = es.map(e => if (e - p > 0) e - p else 0)
-  require(p <= es.min, "currently, we would require p <= e as p > e leads to grouped input and thus, more complex input pattern")
   // data
   val IIs = es.zip(rounds).map { case (i, i1) => i * i1 } // initiation intervals
   val utilizations = (0 until ns.size).map(i => ns(i).toDouble / (p * rounds(i))) // utilizations, tasks / (PE * round)
@@ -78,10 +80,15 @@ case class MontMulSystolic(config: MontConfig) extends Component {
     val YWordIn = in UInt (w bits)
     val MWordIn = in UInt (w bits)
 
-    val flowOut = out UInt (w bits)
+    val SWordOut = out UInt (w bits)
     val valid = out Bool()
     val idle = out Bool()
   }
+
+  val dataIn = MontMulPEDataFlow(w)
+  dataIn.SWord := U(0)
+  dataIn.YWord := io.YWordIn
+  dataIn.MWord := io.MWordIn
 
   val modeReg = Reg(HardType(io.mode))
   when(io.start)(modeReg := io.mode)
@@ -92,30 +99,25 @@ case class MontMulSystolic(config: MontConfig) extends Component {
   PEs.init.zip(PEs.tail).foreach { case (prev, next) => next.io.flowIn := prev.io.flowOut }
   // for systolic, a FIFO is not needed, a Delay is enough, and simpler
   //  val Queue = FIFO(MontMulPEData(w), if (p - e > 0) p - e else 0)
-  val bufferSetXi = History(PEs.last.io.flowOut.SetXi, queueDepths.max + 1, init = False)
-  val bufferS0 = History(PEs.last.io.flowOut.S0, queueDepths.max + 1, init = U(0, 1 bits))
-  val bufferSComp = History(PEs.last.io.flowOut.SComp, queueDepths.max + 1, init = U(0, w - 1 bits))
-  val bufferYWord = History(PEs.last.io.flowOut.YWord, queueDepths.max + 1, init = U(0, w bits))
-  val bufferMWord = History(PEs.last.io.flowOut.MWord, queueDepths.max + 1, init = U(0, w bits))
+  val bufferSetXi = History(PEs.last.io.flowOut.control.SetXi, queueDepths.max + 1, init = False)
+  //  val bufferDataFlow = History(PEs.last.io.flowOut.data, queueDepths.max + 1, init = MontMulPEDataFlow(w)) // TODO: init of bundle?
+  val bufferDataFlow = History(PEs.last.io.flowOut.data, queueDepths.max + 1)
 
   val queues = Vec(queueDepths.map(_ => MontMulPEFlow(w)))
   queues.zip(queueDepths).foreach { case (queue, depth) =>
-    queue.valid := False
-    queue.SetXi := bufferSetXi(depth)
-    queue.S0 := bufferS0(depth)
-    queue.SComp := bufferSComp(depth)
-    queue.YWord := bufferYWord(depth)
-    queue.MWord := bufferMWord(depth)
+    queue.control.valid := False
+    queue.control.SetXi := bufferSetXi(depth)
+    queue.data := bufferDataFlow(depth)
   }
 
   // datapaths
   PEs.head.io.flowIn := MuxOH(modeReg, queues)
   val outputPEs = outputProviders.map(PEs(_))
   val outputCandidates = outputPEs.map(pe =>
-    ((pe.io.flowOut.SComp ## pe.io.flowOut.S0).asUInt, pe.io.flowOut.valid))
+    (pe.io.flowOut.data.SWord, pe.io.flowOut.control.valid))
   //  val outputCandidates = outputProviders.map(outputProvider =>
   //    (PEs(outputProvider).io.flowOut.SComp ## PEs(outputProvider).io.flowOut.S0).asUInt)
-  io.flowOut := MuxOH(modeReg, outputCandidates.map(_._1))
+  io.SWordOut := MuxOH(modeReg, outputCandidates.map(_._1))
   io.valid := MuxOH(modeReg, outputCandidates.map(_._2))
 
   // xi input
@@ -127,7 +129,10 @@ case class MontMulSystolic(config: MontConfig) extends Component {
   val eCounterWillOverflows = es.map(e => eCounter.value === U(e - 1) && eCounter.willIncrement)
   val currentECounterOverflow = MuxOH(modeReg, eCounterWillOverflows)
   when(currentECounterOverflow)(eCounter.clear())
-  val roundCounter = Counter(rounds.max, inc = MuxOH(modeReg, eCounterWillOverflows))
+  val roundCounter = Counter(rounds.max, inc = currentECounterOverflow)
+  val roundCounterWillOverflows = rounds.map(round => roundCounter.value === U(round - 1) && roundCounter.willIncrement)
+  val currentRoundCounterOverflow = MuxOH(modeReg, roundCounterWillOverflows)
+  when(currentRoundCounterOverflow)(roundCounter.clear())
 
   val fsm = new StateMachine {
     val IDLE = StateEntryPoint()
@@ -140,24 +145,19 @@ case class MontMulSystolic(config: MontConfig) extends Component {
     RUN.whenIsActive { // control the dataflow
       eCounter.increment()
       when(roundCounter.value === U(0)) {
-        // PE data input
-        PEs.head.io.flowIn.S0 := U(0)
-        PEs.head.io.flowIn.SComp := U(0)
-        PEs.head.io.flowIn.MWord := io.MWordIn
-        PEs.head.io.flowIn.YWord := io.YWordIn
-        PEs.head.io.flowIn.SetXi := False
-        when(eCounter.value === U(0))(PEs.head.io.flowIn.SetXi := True)
+        // input operations
+        PEs.head.io.flowIn.data := dataIn
+        PEs.head.io.flowIn.control.SetXi := False
+        when(eCounter.value === U(0))(PEs.head.io.flowIn.control.SetXi := True)
       }
       when(roundCounter.value === MuxOH(modeReg, rounds.map(round => U(round - 1)))) {
-        PEs.head.io.flowIn.valid := True
+        PEs.head.io.flowIn.control.valid := True
       }
-      when(roundCounter === MuxOH(modeReg, rounds.map(round => U(round - 1))) && currentECounterOverflow) {
+      when(currentRoundCounterOverflow) {
         when(io.start)(goto(RUN))
           .otherwise(goto(IDLE))
       }
     }
-    RUN.onExit(roundCounter.clear())
-
     io.idle := isActive(IDLE)
   }
 }
