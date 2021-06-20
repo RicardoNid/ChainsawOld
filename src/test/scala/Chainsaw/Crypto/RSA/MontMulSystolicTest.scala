@@ -15,7 +15,7 @@ class MontMulSystolicTest extends AnyFunSuite {
     def sim() = {
       val testSizes = Seq(512, 1024, 2048, 3072, 4096)
       val testWordSize = 32
-      val testPENumber = ceil((testSizes.min + 1).toDouble / testWordSize).toInt // number of words
+      val testPENumber = ceil((testSizes.min + 1).toDouble / testWordSize).toInt - 1 // number of words
 
       SimConfig.withWave.compile(new MontMulSystolic(MontConfig(testSizes, testWordSize, testPENumber))).doSim { dut =>
         import dut._
@@ -48,12 +48,12 @@ class MontMulSystolicTest extends AnyFunSuite {
                 io.MWordIn #= MWords(i)
               }
               if (i < p) io.xiIn #= XBits(r * p + i)
-              if (io.valid.toBoolean) dutResults += io.dataOut.toBigInt
+              if (io.valid.toBoolean) dutResults += io.flowOut.toBigInt
               clockDomain.waitSampling()
             }
           }
           (0 until es(mode)).foreach { _ =>
-            if (io.valid.toBoolean) dutResults += io.dataOut.toBigInt
+            if (io.valid.toBoolean) dutResults += io.flowOut.toBigInt
             clockDomain.waitSampling()
           }
           val golden = MontAlgos.Arch1MM(X, Y, M, w, print = true)
@@ -69,6 +69,7 @@ class MontMulSystolicTest extends AnyFunSuite {
         }
         randRSASim()
         randRSASim(1024)
+
         //        randRSASim(2048)
         //        randRSASim(3072)
         //        randRSASim(4096)

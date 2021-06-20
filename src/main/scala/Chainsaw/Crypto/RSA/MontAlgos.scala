@@ -47,7 +47,7 @@ object MontAlgos {
   // - all the index of C is 1 less than the original representation, as C(0) didn't appear at all in the original representation - no we don't
   // - we add C(0) in 2.4 for consistency of A and B
   // - in the j-loop, when j = e, no addition really happens, so it is treated specially
-  def MWR2MM(X: BigInt, Y: BigInt, M: BigInt, w: Int) = {
+  def MWR2MM(X: BigInt, Y: BigInt, M: BigInt, w: Int, print: Boolean = false) = {
     require(X < M && Y < M)
     val n = M.bitLength + 2
     val e = ceil((n + 1).toDouble / w).toInt
@@ -60,20 +60,78 @@ object MontAlgos {
       val s0 = SWords(0).toString(2).last.asDigit
       val xi = X.toString(2).padToLeft(n, '0').reverse(i).asDigit
       val qi = (xi * y0) ^ s0
+      // this is hidden as CWords(0) never modified later
+      // and this make it confusing: where is C from?
+      CWords(0) = BigInt(0)
       (0 to e).foreach { j =>
         val temp =
-          if (j == e) CWords(j) // j = e, no addition
+          if (j == e) CWords(j) // j = e, no addition, as input words are 0
           else CWords(j) + xi * YWords(j) + qi * MWords(j) + SWords(j)
+        val SBefore = SWords(j)
         CWords(j + 1) = temp / (1 << w)
         SWords(j) = temp % (1 << w)
         // j = 0, no shift
         if (j >= 1) SWords(j - 1) = BigInt(SWords(j).toString(2).last + SWords(j - 1).toString(2).padToLeft(w, '0').take(w - 1), 2)
-        println(s"SWords: ${SWords.reverse.mkString(" ")}")
+        if (print) println(s"xi = $xi, s0 = $s0, S = $SBefore, Y = ${YWords(j)}, M = ${MWords(j)}, C = ${CWords(j)}\nSWords: ${SWords.reverse.mkString(" ")}")
       }
       SWords(e) = 0
     }
     println(SWords.mkString(" "))
     val S = BigInt(SWords.take(e).reverse.map(_.toString(2).padToLeft(w, '0')).flatten.mkString(""), 2)
+    S
+  }
+
+  // assignment-free form of MWR2MM
+  def MWR2MMAF(X: BigInt, Y: BigInt, M: BigInt, w: Int, print: Boolean = false) = {
+    require(X < M && Y < M)
+    val n = M.bitLength + 2
+    val e = ceil((n + 1).toDouble / w).toInt
+    // use random value here as they should be irrelevant to the result
+    // the input happens latter
+    // TODO: change it, use ArrayBuffers that start from nothing
+    val MWords = Array.fill(n + 1, e + 1)(BigInt(DSPRand.nextInt(100)))
+    val YWords = Array.fill(n + 1, e + 1)(BigInt(DSPRand.nextInt(100)))
+    val SWords = ArrayBuffer.fill(n + 1, e + 1)(BigInt(DSPRand.nextInt(100)))
+    val CWords = ArrayBuffer.fill(n + 1, e + 2)(BigInt(DSPRand.nextInt(100))) // carry, 2-bits long
+    val XBits = X.toString(2).padToLeft(n, '0').reverse
+    val y0 = Y.toString(2).last.asDigit
+
+    // input operation
+    for (i <- 0 to n; j <- 0 to e) {
+      MWords(0)(j) = (toWords(M, w, e) :+ BigInt(0)).apply(j) // input operation
+      YWords(0)(j) = (toWords(Y, w, e) :+ BigInt(0)).apply(j) // input operation
+      SWords(0)(j) = BigInt(0)
+      CWords(i)(0) = BigInt(0)
+    }
+
+    for (i <- 1 to n; j <- 0 to e) { // iteration vector = (i,j)
+      // control
+      val s0 = SWords(i - 1)(0).toString(2).last.asDigit
+      val xi = XBits(i - 1).asDigit
+      val qi = (xi * y0) ^ s0
+
+      // forwarding
+      YWords(i)(j) = YWords(i - 1)(j) // expand YWords(j)
+      //      println(s"$i, $j, YArray \n${YWords.map(_.mkString(" ")).mkString("\n")}")
+      MWords(i)(j) = MWords(i - 1)(j)
+      //      println(s"$i, $j, MArray \n${MWords.map(_.mkString(" ")).mkString("\n")}")
+
+      // TODO: explain why C does not need a dimension expansion
+      //  C has a different data structure, since its input
+      //  the fact is that, C had an i index already(since it is initialized through i-axis)
+      val temp = CWords(i)(j) + xi * YWords(i - 1)(j) + qi * MWords(i - 1)(j) + SWords(i - 1)(j)
+      CWords(i)(j + 1) = temp / (1 << w)
+      SWords(i)(j) = temp % (1 << w)
+
+      // j = 0, no shift
+      // this is special
+      if (j >= 1) SWords(i)(j - 1) = BigInt(SWords(i)(j).toString(2).last + SWords(i)(j - 1).toString(2).padToLeft(w, '0').take(w - 1), 2)
+      if (j == e) SWords(i)(j) = 0
+      if (print) println(s"$i, $j, xi = $xi, s0 = $s0, S = ${SWords(i - 1)(j)}, Y = ${YWords(i - 1)(j)}, M = ${MWords(i - 1)(j)} C = ${CWords(i - 1)(j)} \n SArray \n${SWords.map(_.reverse.mkString(" ")).mkString("\n")}")
+    }
+
+    // output operation
+    val S = BigInt(SWords.last.take(e).reverse.map(_.toString(2).padToLeft(w, '0')).flatten.mkString(""), 2)
     S
   }
 
@@ -137,6 +195,8 @@ object MontAlgos {
       val algoResult = algo(input0, input1, modulus)
       val RingsResult = BigInt(ZN.multiply(input0, input1, rInverse).toByteArray)
       assert(algoResult < (modulus << 1))
+      println(s"golden: ${ZN(RingsResult)}")
+      println(s"yours : ${ZN(algoResult)}")
       assert(ZN(algoResult) == ZN(RingsResult))
     }
     printlnGreen(s"montMul, passed")
@@ -163,7 +223,7 @@ object MontAlgos {
     //    verifyMM(Arch1MM(_, _, _, 32))
     //    verifyMM(Arch1MM(_, _, _, 64))
     //    verifyMMP(R2MMP)
-    R2MMP(13)
+    //    R2MMP(13)
 
     def checkstyleMontMul(X: BigInt, Y: BigInt, M: BigInt): BigInt = {
       val ZN = Zp(M)
@@ -172,9 +232,12 @@ object MontAlgos {
     }
 
     // step-by-step simulation for circuit
-    //    println(MontAlgos.Arch1MM(BigInt(159), BigInt(148), 177, 4, print = true))
+    //        println(MontAlgos.Arch1MM(BigInt(159), BigInt(148), 177, 4, print = true))
+    println(s"yours:  ${MontAlgos.MWR2MMAF(BigInt(159), BigInt(148), 177, 4)}")
+    println(s"ref  :  ${MontAlgos.MWR2MM(BigInt(159), BigInt(148), 177, 4)}")
     //    println(MontAlgos.Arch1MM(BigInt(153), BigInt(147), 177, 4, print = true))
     //    println((checkstyleMontMul(159, 148, 177) << 1).toString(16))
     //    println((checkstyleMontMul(153, 147, 177) << 1).toString(16))
+    //    verifyMM(MWR2MMAF(_, _, _, 4))
   }
 }
