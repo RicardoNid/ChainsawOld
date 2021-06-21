@@ -15,17 +15,19 @@ import scala.math.{ceil, floor}
 case class MontConfig(lMs: Seq[Int], w: Int, pe: Int, parallel: Boolean = false) {
 
   val p = if (parallel) floor((lMs.max + 2 + 1).toDouble / w).toInt else pe // when parallel, p = e - 1
-  if (!parallel) require(p <= es.min, "currently, we would require p <= e as p > e leads to grouped input and thus, more complex input pattern")
-  if (parallel) require(lMs.forall(_ % lMs.min == 0), s"for parallel architecture, supported sizes must be multiples of the minimum size")
   val parallelFactor = if (parallel) lMs.max / lMs.min else 1
   val groupSize = p / parallelFactor // PEs number for the smallest lM
 
   val ns = lMs.map(_ + 2) // total numbers of iterations, r = 2^(n) > 4M
   val es = ns.map(n => ceil((n + 1).toDouble / w).toInt) // numbers of words
-  val rounds = if (parallel) ns.zip(lMs).map { case (n, lM) => ceil(n.toDouble / (p / (lM / lMs.min))).toInt }
+  val rounds = if (parallel) ns.zip(lMs).map { case (n, lM) => ceil(n.toDouble / (p / parallelFactor * (lM / lMs.min))).toInt }
   else ns.map(n => ceil(n.toDouble / p).toInt) // numbers of rounds to be executed
 
+  if (!parallel) require(p <= es.min, "currently, we would require p <= e as p > e leads to grouped input and thus, more complex input pattern")
+  if (parallel) require(lMs.forall(_ % lMs.min == 0), s"for parallel architecture, supported sizes must be multiples of the minimum size")
+
   // the index of PE that provides the result(starts from 0)
+  // FIXME: the parallel situation is only for RSA size
   val outputProviders = if (parallel) (0 until parallelFactor).map(_ * groupSize + 1) else ns.map(n => (n - 1) % p)
   // the queue depths needed to connect the data of previous and current round
   // these depths indicate the delays, which will be used in the design

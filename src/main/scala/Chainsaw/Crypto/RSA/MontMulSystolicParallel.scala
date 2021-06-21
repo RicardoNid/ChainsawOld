@@ -52,8 +52,14 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
   //  val groupNum = parallelFactor
 
   val groupStarters = PEs.indices.filter(_ % groupSize == 0).map(PEs(_))
+  // TODO: caution: ender is different from the output
   val groupEnders = PEs.indices.filter(_ % groupSize == groupSize - 1).map(PEs(_))
   val buffers = groupEnders.map(pe => RegNext(pe.io.flowOut)) // queue with depth = 1
+  buffers.foreach{ buffer =>
+    buffer.init(MontMulPEFlow(w).getZero)
+    buffer.control.valid.allowOverride
+    buffer.control.valid := False // TODO: valid would stop here, in fact, that register should be saved
+  }
   // connecting PEs with each other
   val datapath = new Area {
     // the "default connection", all groups are connected one after another, inputPEs works as successors
@@ -78,13 +84,14 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
             .take(parallelFactor / groupPerInstance) // drop the instance without enough length
             .foreach { case (starter, i) =>
               println(s"for starter $i")
-              starter.io.flowIn.data := Mux(inputNow, dataIns(i), buffers(i + groupPerInstance - 1).data)
-              starter.io.flowIn.control.SetXi := setXiNow
-              starter.io.flowIn.control.valid := setValidNow
+              val wrapAroundBuffer = buffers(i + groupPerInstance - 1)
+              starter.io.flowIn.data := Mux(inputNow, dataIns(i), wrapAroundBuffer.data)
+              starter.io.flowIn.control.SetXi := Mux(setXiNow, setXiNow, wrapAroundBuffer.control.SetXi)
+              starter.io.flowIn.control.valid := Mux(setValidNow, setValidNow, wrapAroundBuffer.control.valid)
               (i * groupSize until (i + groupPerInstance) * groupSize).foreach { id =>
-                PEs(id).io.xi := io.xiIns(i)
+                PEs(id).io.xi := io.xiIns(i) // FIXME: xi fanout is huge for 4096
               }
-              availables(i + groupPerInstance - 1) := True
+              availables(i) := True
             }
         }
         default {
@@ -120,6 +127,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
         datapath.setValidNow := True
       }
       when(currentRoundCounterOverflow) {
+//        buffers.foreach(_.control.SetXi := False) // clean up the setXi from last task
         when(io.start)(goto(RUN))
           .otherwise(goto(IDLE))
       }
