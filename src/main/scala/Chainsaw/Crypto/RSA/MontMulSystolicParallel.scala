@@ -55,7 +55,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
   // TODO: caution: ender is different from the output
   val groupEnders = PEs.indices.filter(_ % groupSize == groupSize - 1).map(PEs(_))
   val buffers = groupEnders.map(pe => RegNext(pe.io.flowOut)) // queue with depth = 1
-  buffers.foreach{ buffer =>
+  buffers.foreach { buffer =>
     buffer.init(MontMulPEFlow(w).getZero)
     buffer.control.valid.allowOverride
     buffer.control.valid := False // TODO: valid would stop here, in fact, that register should be saved
@@ -83,7 +83,6 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
             .filter { case (e, i) => i % groupPerInstance == 0 } // take the instance starters
             .take(parallelFactor / groupPerInstance) // drop the instance without enough length
             .foreach { case (starter, i) =>
-              println(s"for starter $i")
               val wrapAroundBuffer = buffers(i + groupPerInstance - 1)
               starter.io.flowIn.data := Mux(inputNow, dataIns(i), wrapAroundBuffer.data)
               starter.io.flowIn.control.SetXi := Mux(setXiNow, setXiNow, wrapAroundBuffer.control.SetXi)
@@ -127,7 +126,9 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
         datapath.setValidNow := True
       }
       when(currentRoundCounterOverflow) {
-//        buffers.foreach(_.control.SetXi := False) // clean up the setXi from last task
+        buffers.foreach(_.control.SetXi := False) // clean up the setXi from last task
+        // this will lead the first bits of the most significant bit of S to be different from the original
+        // just ignore that, as it is don't care anyway
         when(io.start)(goto(RUN))
           .otherwise(goto(IDLE))
       }

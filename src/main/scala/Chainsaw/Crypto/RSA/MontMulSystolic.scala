@@ -16,11 +16,12 @@ case class MontConfig(lMs: Seq[Int], w: Int, pe: Int, parallel: Boolean = false)
 
   val p = if (parallel) floor((lMs.max + 2 + 1).toDouble / w).toInt else pe // when parallel, p = e - 1
   val parallelFactor = if (parallel) lMs.max / lMs.min else 1
+  val parallelPs = lMs.map(lM => p / parallelFactor * (lM / lMs.min)) // actual PEs work for a single instance when in parallel architecture
   val groupSize = p / parallelFactor // PEs number for the smallest lM
 
   val ns = lMs.map(_ + 2) // total numbers of iterations, r = 2^(n) > 4M
-  val es = ns.map(n => ceil((n + 1).toDouble / w).toInt) // numbers of words
-  val rounds = if (parallel) ns.zip(lMs).map { case (n, lM) => ceil(n.toDouble / (p / parallelFactor * (lM / lMs.min))).toInt }
+  val es = ns.map(n => ceil((n + 2).toDouble / w).toInt) // numbers of words
+  val rounds = if (parallel) ns.zip(parallelPs).map { case (n, parallelP) => ceil(n.toDouble / parallelP).toInt }
   else ns.map(n => ceil(n.toDouble / p).toInt) // numbers of rounds to be executed
 
   if (!parallel) require(p <= es.min, "currently, we would require p <= e as p > e leads to grouped input and thus, more complex input pattern")
@@ -34,10 +35,14 @@ case class MontConfig(lMs: Seq[Int], w: Int, pe: Int, parallel: Boolean = false)
   val queueDepths = es.map(e => if (e - p > 0) e - p else 0)
   // data
   val IIs = es.zip(rounds).map { case (i, i1) => i * i1 } // initiation intervals
-  val utilizations = (0 until ns.size).map(i => ns(i).toDouble / (p * rounds(i))) // utilizations, tasks / (PE * round)
-  val queueUtilizations = (0 until es.size).map(i => (es(i).toDouble - p) / (es.max - p)) // utilizations, tasks / (PE * round)
+  // utilizations, tasks / (PE * round)
+  val utilizations = if (parallel) (0 until ns.size).map(i => ns(i).toDouble / (p * rounds(i)) * (lMs.max / lMs(i)))
+  else (0 until ns.size).map(i => ns(i).toDouble / (p * rounds(i)))
+  val queueUtilizations = if (parallel) lMs.map(lM => (lMs.max / lM) * (lM / lMs.min) / parallelFactor.toDouble)
+  else (0 until es.size).map(i => (es(i).toDouble - p) / (es.max - p))
   // n + e - 1 for the whole interval, (round - 1) * (e - p) for waiting - (e - 1) for where the output word started, 1 for start -> run
-  val latencies = (0 until ns.size).map(i => (ns(i) + es(i) - 1) + (rounds(i) - 1) * (es(i) - p) - es(i) + 1 + 1)
+  val latencies = if (parallel) (0 until ns.size).map(i => (ns(i) + es(i) - 1) + (rounds(i) - 1) * (es(i) - parallelPs(i)) - es(i) + 1 + 1)
+  else (0 until ns.size).map(i => (ns(i) + es(i) - 1) + (rounds(i) - 1) * (es(i) - p) - es(i) + 1 + 1)
 
   printlnGreen(
     s"\n********systolic array properties report********" +
