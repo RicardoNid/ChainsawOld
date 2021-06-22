@@ -9,6 +9,8 @@ import Chainsaw._
 import Chainsaw.Real
 import cc.redberry.rings.bigint.BigInteger
 
+import scala.collection.mutable.ArrayBuffer
+
 case class MontExpSystolic(config: MontConfig,
                            rSquare: BigInt, M: BigInt, E: BigInt, ELength: Int,
                            Xs: Seq[BigInt]
@@ -27,7 +29,7 @@ case class MontExpSystolic(config: MontConfig,
     //    val MWordIn = in UInt (w bits)
     //    val ExponentWordIn = in UInt (lMs.max bits)
     //    val ExponentLengthIn = in UInt (log2Up(lMs.max + 1) bits)
-    val dataOut = out Vec(UInt(w bits), parallelFactor)
+    val dataOuts = out Vec(UInt(w bits), parallelFactor)
     val valids = out Vec(Bool, parallelFactor)
   }
 
@@ -62,7 +64,7 @@ case class MontExpSystolic(config: MontConfig,
   mult.io.YWordIns.foreach(_.clearAll())
   mult.io.MWordIns.foreach(_.clearAll())
 
-  io.dataOut := mult.io.dataOuts
+  io.dataOuts := mult.io.dataOuts
   io.valids := mult.io.valids
 
   when(io.start) {
@@ -111,37 +113,7 @@ case class MontExpSystolic(config: MontConfig,
 
 object MontExpSystolic {
   def main(args: Array[String]): Unit = {
-    val ref = new RSARef(512)
-    val M = BigInt(ref.getModulus)
-    val Xs = (0 until 8).map(_ => BigInt(ref.getPrivateValue) / DSPRand.nextInt(10000) - DSPRand.nextInt(10000))
-    val E = BigInt(ref.getPrivateValue)
-    val ELength = E.bitLength
-    import cc.redberry.rings.scaladsl._
-    val r = BigInt(1) << (M.bitLength + 2)
-    val rSquare = BigInt(Zp(M)(r * r).toByteArray)
-    //    GenRTL(new MontExpSystolic(MontConfig(parallel = true), rSquare, M, E, ELength, Xs))
 
-    val result0 = MontAlgos.Arch1MM(rSquare, Xs(0), M, 32, print = true)
-    val result1 = MontAlgos.Arch1MM(rSquare, Xs(1), M, 32, print = true)
-    println("X0     : " + toWordsHex(Xs(0), 32, 16))
-    println("M      : " + toWordsHex(M, 32, 16))
-    println("rSquare: " + toWordsHex(rSquare, 32, 16))
-    println("result0:  " + toWordsHex(result0 << 1, 32, 16 + 1))
-    println("result1:  " + toWordsHex(result1 << 1, 32, 16 + 1))
-
-      SimConfig.withWave.compile(new MontExpSystolic(MontConfig(parallel = true), rSquare, M, E, ELength, Xs)).doSim { dut =>
-      import dut._
-      io.start #= false
-      io.mode #= BigInt(0)
-      clockDomain.forkStimulus(2)
-      clockDomain.waitSampling()
-      io.start #= true
-      io.mode #= BigInt(1) << 0
-      clockDomain.waitSampling()
-      io.start #= false
-      io.mode #= BigInt(0)
-      sleep(5000)
-    }
   }
 }
 

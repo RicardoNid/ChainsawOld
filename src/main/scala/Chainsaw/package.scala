@@ -23,7 +23,7 @@ package object Chainsaw extends RealFactory {
   }
 
   // from lsb to msb
-  def toWordsHex(value: BigInt, w: Int, e: Int) =
+  def toWordsHexString(value: BigInt, w: Int, e: Int) =
     toWords(value, w, e).map(_.toString(16).padToLeft(w / 4, '0') + " ").flatten.mkString("")
 
   // print the padded number in hex form, so it appears the same as in gtkwave
