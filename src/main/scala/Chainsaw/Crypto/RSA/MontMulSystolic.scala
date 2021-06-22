@@ -12,7 +12,11 @@ import scala.math.{ceil, floor}
  * @param w   word size of the MontMulPE
  * @param p   number of the MontMulPE
  */
-case class MontConfig(lMs: Seq[Int], w: Int, pe: Int, parallel: Boolean = false) {
+
+case class MontConfig(lMs: Seq[Int] = Seq(512, 1024, 2048, 3072, 4096),
+                      w: Int = 32,
+                      pe: Int = 17,
+                      parallel: Boolean = false) {
 
   val p = if (parallel) floor((lMs.max + 2 + 1).toDouble / w).toInt else pe // when parallel, p = e - 1
   val parallelFactor = if (parallel) lMs.max / lMs.min else 1

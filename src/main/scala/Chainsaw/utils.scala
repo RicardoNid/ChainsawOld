@@ -63,11 +63,10 @@ object FIFO {
   }
 }
 
-class multiEndCounter(ends: Seq[BigInt], modeOH: Bits) extends ImplicitArea[UInt] {
-  require(ends.forall(_ >= 0))
+class MultiCountCounter(counts: Seq[BigInt], modeOH: Bits) extends ImplicitArea[UInt] {
   val start = 0
-  val end = ends.max
-  val w = log2Up(ends.max + 1)
+  val end = counts.max - 1
+  require(start <= end)
   val willIncrement = False.allowOverride
   val willClear = False.allowOverride
 
@@ -75,20 +74,16 @@ class multiEndCounter(ends: Seq[BigInt], modeOH: Bits) extends ImplicitArea[UInt
   def increment(): Unit = willIncrement := True
 
   val valueNext = UInt(log2Up(end + 1) bit)
-  val value = RegNext(valueNext) init(start)
-  val willOverflowIfInc = value === MuxOH(modeOH, ends.map(U(_, w bits)))
+  val value = RegNext(valueNext) init (start)
+  val willOverflowIfInc = (value === MuxOH(modeOH, counts.map(count => U(count - 1, log2Up(counts.max) bits))))
   val willOverflow = willOverflowIfInc && willIncrement
 
-  if (isPow2(end + 1) && start == 0) {   //Check if using overflow follow the spec
+  when(willOverflow) {
+    valueNext := U(start)
+  } otherwise {
     valueNext := (value + U(willIncrement)).resized
   }
-  else {
-    when(willOverflow){
-      valueNext := U(start)
-    } otherwise {
-      valueNext := (value + U(willIncrement)).resized
-    }
-  }
+
   when(willClear) {
     valueNext := start
   }
@@ -110,6 +105,14 @@ class multiEndCounter(ends: Seq[BigInt], modeOH: Bits) extends ImplicitArea[UInt
   }
 }
 
-object multiEndCounter {
-  def apply(ends: Seq[BigInt], modeOH: Bits): multiEndCounter = new multiEndCounter(ends, modeOH)
+// FIXME: when count is a power of 2, the Counter optimize it in a way that is no suitable for MultiCount
+// solved
+object MultiCountCounter {
+  def apply(counts: Seq[BigInt], modeOH: Bits): MultiCountCounter = new MultiCountCounter(counts, modeOH)
+
+  def apply(counts: Seq[BigInt], modeOH: Bits, inc: Bool): MultiCountCounter = {
+    val counter = new MultiCountCounter(counts: Seq[BigInt], modeOH: Bits)
+    counter.willIncrement := inc
+    counter
+  }
 }

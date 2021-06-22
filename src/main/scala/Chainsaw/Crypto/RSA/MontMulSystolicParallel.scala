@@ -37,13 +37,8 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
 
   // counters, set them with the maximum value and run them in different modes
   // multi-mode counter, by reassign the "willOverflowIfInc"
-  val eCounter = Counter(es.max)
-  eCounter.willOverflowIfInc.allowOverride
-  eCounter.willOverflowIfInc := (eCounter.value === MuxOH(modeReg, es.map(e => U(e - 1, w bits))))
-
-  val roundCounter = Counter(rounds.max, inc = eCounter.willOverflow)
-  roundCounter.willOverflowIfInc.allowOverride
-  roundCounter.willOverflowIfInc := (roundCounter.value === MuxOH(modeReg, rounds.map(r => U(r - 1, w bits))))
+  val eCounter = MultiCountCounter(es.map(BigInt(_)), modeReg)
+  val roundCounter = MultiCountCounter(rounds.map(BigInt(_)), modeReg, inc = eCounter.willOverflow)
 
   // datapath, see the diagram
   // for w >= 4, parallel p has the property that parallelP(2 * lM) = 2 * parallelP(lM), makes the design regular
@@ -137,7 +132,11 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
   }
 
   val feedMYNow = out(roundCounter.value === U(0))
+  // drop the msb, only valid for RSA, as word number without padding would be a power of 2
+  val MYWordIndex = out(eCounter.value(eCounter.value.getBitsWidth - 2 downto 0))
   val feedXNow = out(eCounter.value < MuxOH(modeReg, parallelPs.map(U(_))))
+  val padXNow = out(roundCounter.willOverflowIfInc)
+  val lastCycle = out(roundCounter.willOverflow)
 }
 
 object MontMulSystolicParallel {

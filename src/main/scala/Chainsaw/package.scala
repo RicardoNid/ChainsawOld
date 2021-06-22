@@ -18,9 +18,13 @@ package object Chainsaw extends RealFactory {
   // example: YWords = toWords(BigInt("1_1111_0000", 4, 3)), YWords(0) = 0, YWords(1) = 15, YWords(2) = 1(padded as 0001)
   def toWords(value: BigInt, w: Int, e: Int) = {
     value.toString(2).padToLeft(e * w, '0')
-      .grouped(w).toArray.map(BigInt(_, 2))
+      .grouped(w).toArray.take(e).map(BigInt(_, 2))
       .reverse
   }
+
+  // from lsb to msb
+  def toWordsHex(value: BigInt, w: Int, e: Int) =
+    toWords(value, w, e).map(_.toString(16).padToLeft(w / 4, '0') + " ").flatten.mkString("")
 
   // print the padded number in hex form, so it appears the same as in gtkwave
   def printPadded(name: String, value: BigInt, n: Int): Unit = {
