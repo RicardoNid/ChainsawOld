@@ -14,7 +14,7 @@ class MontMulSystolicParallelTest extends AnyFunSuite {
     // simulation: for n,w,p = 8,4,3, p == e
     def sim() = {
       val testSizes = Seq(512, 1024, 2048, 3072, 4096)
-      val testWordSize = 32
+      val testWordSize = 64
       val testPENumber = ceil((testSizes.min + 1).toDouble / testWordSize).toInt - 1 // number of words
 
       SimConfig.withWave.compile(new MontMulSystolicParallel(MontConfig(testSizes, testWordSize, testPENumber, parallel = true))).doSim { dut =>
@@ -82,14 +82,8 @@ class MontMulSystolicParallelTest extends AnyFunSuite {
         (0 until 8).foreach(randRSASim(512, _)) // 8 in parallel
         (0 until 4).foreach(randRSASim(1024, _))
         (0 until 2).foreach(randRSASim(2048, _)) // 2 in parallel
-        (0 until 1).foreach(randRSASim(3072, _))
-        (0 until 1).foreach(randRSASim(4096, _))
-//        randRSASim(1024, 0)
-//        randRSASim(1024, 1)
-//        randRSASim(2048, 0)
-//        randRSASim(2048, 1)
-//        randRSASim(3072)
-//        randRSASim(4096)
+        //                (0 until 1).foreach(randRSASim(3072, _))
+        //                (0 until 1).foreach(randRSASim(4096, _))
       }
     }
     sim()

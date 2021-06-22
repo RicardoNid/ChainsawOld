@@ -36,14 +36,14 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
   when(io.start)(modeReg := io.mode)
 
   // counters, set them with the maximum value and run them in different modes
+  // multi-mode counter, by reassign the "willOverflowIfInc"
   val eCounter = Counter(es.max)
-  val eCounterWillOverflows = es.map(e => eCounter.value === U(e - 1) && eCounter.willIncrement)
-  val currentECounterOverflow = MuxOH(modeReg, eCounterWillOverflows)
-  when(currentECounterOverflow)(eCounter.clear())
-  val roundCounter = Counter(rounds.max, inc = currentECounterOverflow)
-  val roundCounterWillOverflows = rounds.map(round => roundCounter.value === U(round - 1) && roundCounter.willIncrement)
-  val currentRoundCounterOverflow = MuxOH(modeReg, roundCounterWillOverflows)
-  when(currentRoundCounterOverflow)(roundCounter.clear())
+  eCounter.willOverflowIfInc.allowOverride
+  eCounter.willOverflowIfInc := (eCounter.value === MuxOH(modeReg, es.map(e => U(e - 1, w bits))))
+
+  val roundCounter = Counter(rounds.max, inc = eCounter.willOverflow)
+  roundCounter.willOverflowIfInc.allowOverride
+  roundCounter.willOverflowIfInc := (roundCounter.value === MuxOH(modeReg, rounds.map(r => U(r - 1, w bits))))
 
   // datapath, see the diagram
   // for w >= 4, parallel p has the property that parallelP(2 * lM) = 2 * parallelP(lM), makes the design regular
@@ -125,7 +125,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
       when(roundCounter.value === MuxOH(modeReg, rounds.map(round => U(round - 1)))) { // the "will overflow if inc"
         datapath.setValidNow := True
       }
-      when(currentRoundCounterOverflow) {
+      when(roundCounter.willOverflow) {
         buffers.foreach(_.control.SetXi := False) // clean up the setXi from last task
         // this will lead the first bits of the most significant bit of S to be different from the original
         // just ignore that, as it is don't care anyway
@@ -135,11 +135,14 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
     }
     io.idle := isActive(IDLE)
   }
+
+  val feedMYNow = out(roundCounter.value === U(0))
+  val feedXNow = out(eCounter.value < MuxOH(modeReg, parallelPs.map(U(_))))
 }
 
 object MontMulSystolicParallel {
   def main(args: Array[String]): Unit = {
-    GenRTL(new MontMulSystolicParallel(MontConfig(Seq(512, 1024, 2048), 32, 17, parallel = true)))
-    //    VivadoSynth(new MontMulPE(128))
+    GenRTL(new MontMulSystolicParallel(MontConfig(Seq(512, 1024, 2048, 3072, 4096), 32, 17, parallel = true)))
+    //    VivadoSynth(new MontMulSystolicParallel(MontConfig(Seq(512, 1024, 2048, 3072, 4096), 32, 17, parallel = true)))
   }
 }
