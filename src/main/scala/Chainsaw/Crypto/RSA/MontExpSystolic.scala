@@ -35,11 +35,12 @@ case class MontExpSystolic(config: MontConfig,
 
   }
 
+  // operator
+  // TODO: use less than e?
   val modeReg = Reg(HardType(io.mode))
-  when(io.start)(modeReg := io.mode)
+  val mult = MontMulSystolicParallel(config)
 
   // memories
-  // TODO: use less than e?
   val Seq(rSquareWordRAM, mWordRAM, exponentWordRAM) = Seq(rSquare, M, E).map(bigint => Mem(toWords(bigint, w, lMs.max / w).map(U(_, w bits))))
   require(Xs.size == parallelFactor)
 
@@ -47,23 +48,33 @@ case class MontExpSystolic(config: MontConfig,
   val xWordRAMs = xWords.map(XWord => Mem(XWord.map(U(_, w bits))))
   val partialProductWordRAMs = Seq.fill(parallelFactor)(Mem(UInt(w bits), lMs.min / w))
 
+  // counters
   val xBitCounter = Counter(w)
   val xWordCounter = Counter(lMs.min / w, inc = xBitCounter.willOverflow)
   println(s"RAMCounter counts = ${lMs.map(lM => BigInt(lM / lMs.min)).mkString(" ")}")
   val xRAMCounter = MultiCountCounter(lMs.map(lM => BigInt(lM / lMs.min)), modeReg, inc = xWordCounter.willOverflow) // how many RAMs should be involved
 
   val exponentLengthReg = RegInit(U(ELength))
-  val mult = MontMulSystolicParallel(config)
 
   // pre-assignment
   mult.io.xiIns.foreach(_.clearAll())
   mult.io.start := io.start
-  mult.io.mode := io.mode
   mult.io.YWordIns.foreach(_.clearAll())
   mult.io.MWordIns.foreach(_.clearAll())
 
   io.dataOut := mult.io.dataOuts
   io.valids := mult.io.valids
+
+  when(io.start) {
+    modeReg := io.mode
+    mult.io.mode := io.mode
+  }.otherwise {
+    mult.io.mode := modeReg
+  }
+
+  def feed(xRAMs: Seq[Mem[UInt]], yRAMs: Seq[Mem[UInt]]) = {
+
+  }
 
   val fsm = new StateMachine {
     val IDLE = StateEntryPoint()
@@ -74,7 +85,7 @@ case class MontExpSystolic(config: MontConfig,
     }
 
     WORK.whenIsActive {
-      when(mult.feedXNow) { // describe how X is fed into MontMul
+      when(mult.feedXNow && !mult.padXNow) { // describe how X is fed into MontMul
         xBitCounter.increment()
         switch(True) {
           lMs.zipWithIndex.foreach { case (lM, i) =>
@@ -109,19 +120,26 @@ object MontExpSystolic {
     val r = BigInt(1) << (M.bitLength + 2)
     val rSquare = BigInt(Zp(M)(r * r).toByteArray)
     //    GenRTL(new MontExpSystolic(MontConfig(parallel = true), rSquare, M, E, ELength, Xs))
-    val result0 =  BigInt(Zp(M).multiply(r, Xs(0)).toByteArray)
+
+    val result0 = MontAlgos.Arch1MM(rSquare, Xs(0), M, 32, print = true)
+    val result1 = MontAlgos.Arch1MM(rSquare, Xs(1), M, 32, print = true)
     println("X0     : " + toWordsHex(Xs(0), 32, 16))
     println("M      : " + toWordsHex(M, 32, 16))
     println("rSquare: " + toWordsHex(rSquare, 32, 16))
-    println("result:  " + toWordsHex(result0 << 1, 32, 16))
-    println("result:  " + toWordsHex(if(result0  >= M) (result0 - M << 1)else result0 << 1, 32, 16))
+    println("result0:  " + toWordsHex(result0 << 1, 32, 16 + 1))
+    println("result1:  " + toWordsHex(result1 << 1, 32, 16 + 1))
 
-    SimConfig.withWave.compile(new MontExpSystolic(MontConfig(parallel = true), rSquare, M, E, ELength, Xs)).doSim { dut =>
+      SimConfig.withWave.compile(new MontExpSystolic(MontConfig(parallel = true), rSquare, M, E, ELength, Xs)).doSim { dut =>
       import dut._
+      io.start #= false
+      io.mode #= BigInt(0)
       clockDomain.forkStimulus(2)
       clockDomain.waitSampling()
       io.start #= true
       io.mode #= BigInt(1) << 0
+      clockDomain.waitSampling()
+      io.start #= false
+      io.mode #= BigInt(0)
       sleep(5000)
     }
   }

@@ -45,7 +45,7 @@ class MontMulSystolicParallelTest extends AnyFunSuite {
           io.mode #= BigInt(1) << mode
           clockDomain.waitSampling()
           io.start #= false
-          io.mode #= BigInt(0)
+          //          io.mode #= BigInt(0)
           (0 until rounds(mode)).foreach { r =>
 
             (0 until es(mode)).foreach { i =>

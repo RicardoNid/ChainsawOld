@@ -14,7 +14,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
   val io = new Bundle {
     // control
     val start = in Bool()
-    val mode = in Bits (lMs.size bits) // one-hot
+    val mode = in Bits (lMs.size bits) // one-hot, provided by the external control logic
     // data
     val xiIns = in Vec(UInt(1 bits), parallelFactor)
     val YWordIns = in Vec(UInt(w bits), parallelFactor)
@@ -32,13 +32,10 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
     dataIn.YWord := io.YWordIns(i)
   }
 
-  val modeReg = Reg(HardType(io.mode))
-  when(io.start)(modeReg := io.mode)
-
   // counters, set them with the maximum value and run them in different modes
   // multi-mode counter, by reassign the "willOverflowIfInc"
-  val eCounter = MultiCountCounter(es.map(BigInt(_)), modeReg)
-  val roundCounter = MultiCountCounter(rounds.map(BigInt(_)), modeReg, inc = eCounter.willOverflow)
+  val eCounter = MultiCountCounter(es.map(BigInt(_)), io.mode)
+  val roundCounter = MultiCountCounter(rounds.map(BigInt(_)), io.mode, inc = eCounter.willOverflow)
 
   // datapath, see the diagram
   // for w >= 4, parallel p has the property that parallelP(2 * lM) = 2 * parallelP(lM), makes the design regular
@@ -72,7 +69,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
     switch(True) {
       lMs.zipWithIndex.foreach { case (lM, i) =>
         val groupPerInstance = lM / lMs.min
-        is(modeReg(i)) {
+        is(io.mode(i)) {
           println(s"mode = $i, an instance contains $groupPerInstance group and ${groupPerInstance * groupSize} PEs")
           groupStarters.zipWithIndex
             .filter { case (e, i) => i % groupPerInstance == 0 } // take the instance starters
@@ -117,7 +114,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
         datapath.inputNow := True
         when(eCounter.value === U(0))(datapath.setXiNow := True)
       }
-      when(roundCounter.value === MuxOH(modeReg, rounds.map(round => U(round - 1)))) { // the "will overflow if inc"
+      when(roundCounter.willOverflowIfInc) { // the "will overflow if inc"
         datapath.setValidNow := True
       }
       when(roundCounter.willOverflow) {
@@ -134,7 +131,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
   val feedMYNow = out(roundCounter.value === U(0))
   // drop the msb, only valid for RSA, as word number without padding would be a power of 2
   val MYWordIndex = out(eCounter.value(eCounter.value.getBitsWidth - 2 downto 0))
-  val feedXNow = out(eCounter.value < MuxOH(modeReg, parallelPs.map(U(_))))
+  val feedXNow = out(eCounter.value < MuxOH(io.mode, parallelPs.map(U(_))))
   val padXNow = out(roundCounter.willOverflowIfInc)
   val lastCycle = out(roundCounter.willOverflow)
 }
