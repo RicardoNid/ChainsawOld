@@ -52,7 +52,7 @@ class MontExpSystolicTest extends AnyFunSuite {
       clockDomain.waitSampling()
       io.start #= false
       io.mode #= BigInt(0)
-      (0 until 1000).foreach { _ =>
+      (0 until 2000).foreach { _ =>
         if (io.valids(0).toBoolean) {
           dutResults.zip(io.dataOuts).foreach { case (buffer, signal) => buffer += signal.toBigInt }
         }

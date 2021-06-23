@@ -186,8 +186,63 @@ object MontAlgos {
     S
   }
 
+  def Arch1ME(X: BigInt, exponent: BigInt, M: BigInt, w: Int, print: Boolean = false) = {
+
+    val r =  BigInt(Zp(M)(BigInt(1) << (M.bitLength + 2)).toByteArray)
+    val rInverse = BigInt(Zp(M).reciprocal(r).toByteArray)
+    val rSquare = BigInt(Zp(M)(r * r).toByteArray)
+
+    var partialProduct = r
+    var square = X
+    var ppTrue = BigInt(1)
+    var squareTrue = X
+    // precompute
+    def MM: (BigInt, BigInt) => BigInt = Arch1MM(_, _, M, w, false)
+    def printTrace() = {
+      if (print) {
+        println(s"partial product = ${toWordsHexString(partialProduct, w, M.bitLength / w + 1)}")
+        println(s"square          = ${toWordsHexString(square, w, M.bitLength / w + 1)}")
+        println(s"golden          = ${toWordsHexString(ppTrue, w, M.bitLength / w + 1)}")
+      }
+    }
+
+    printlnGreen("before pre")
+    printTrace()
+    // pre, x -> x'
+    square = MM(X, rSquare)
+    squareTrue = BigInt(Zp(M).multiply(X, rSquare, rInverse).toByteArray)
+    printlnGreen("after pre")
+    printTrace()
+    // R2L, exponent
+    var count = 0
+    printlnGreen("start power")
+    exponent.toString(2).reverse.foreach { bit =>
+      println(s"bit = $bit")
+      if (bit.asDigit == 1) {
+        partialProduct = MM(partialProduct, square)
+        ppTrue = BigInt(Zp(M).multiply(ppTrue, squareTrue, rInverse).toByteArray)
+      }
+      square = MM(square, square) // FIXME: last time can be skipped
+      squareTrue = BigInt(Zp(M).multiply(squareTrue, squareTrue, rInverse).toByteArray)
+
+      printTrace()
+    }
+    // post, x^e' -> x^e
+    partialProduct = MM(partialProduct, BigInt(1))
+    ppTrue = BigInt(Zp(M).multiply(ppTrue, BigInt(1), rInverse).toByteArray)
+    printlnGreen("after post")
+    printTrace()
+    // final reduction
+    printlnGreen("after reduction")
+    val ret = if (partialProduct >= M) partialProduct - M else partialProduct
+    val trueRet = if (ppTrue >= M) ppTrue - M else ppTrue
+    printlnGreen(toWordsHexString(trueRet, w, M.bitLength / w + 1))
+    ret
+  }
+
   val ref = new RSARef(512)
 
+  // modular multiplication
   def verifyMM(algo: (BigInt, BigInt, BigInt) => BigInt) = {
     (0 until 10).foreach { _ =>
       val modulus = BigInt(ref.getModulus)
@@ -207,6 +262,7 @@ object MontAlgos {
     printlnGreen(s"montMul, passed")
   }
 
+  // pre-computation(r square mod M) for MM
   def verifyMMP(algo: BigInt => BigInt) = {
     (0 until 10).foreach { _ =>
       val modulus = BigInt(ref.getModulus)
@@ -220,6 +276,25 @@ object MontAlgos {
     printlnGreen(s"montMulPre, passed")
   }
 
+  // modular exponentiation
+  def verifyME(algo: (BigInt, BigInt, BigInt) => BigInt) = {
+    (0 until 1).foreach { _ =>
+      val modulus = BigInt(ref.getModulus)
+      val x = modulus - DSPRand.nextInt(10000)
+      val e = BigInt(1)
+      val ZN = Zp(modulus)
+      val algoResult = algo(x, e, modulus)
+      val RingsResult = BigInt(ZN.pow(x, e).toByteArray)
+      assert(algoResult < modulus)
+      println(s"x      = ${toWordsHexString(x, 32, modulus.bitLength / 32 + 1)}")
+      println(s"yours  = ${toWordsHexString(algoResult, 32, modulus.bitLength / 32 + 1)}")
+      println(s"golden = ${toWordsHexString(RingsResult, 32, modulus.bitLength / 32 + 1)}")
+      assert(ZN(algoResult) == ZN(RingsResult))
+      //      assert(algoResult == RingsResult)
+    }
+    printlnGreen(s"montExp, passed")
+  }
+
   def main(args: Array[String]): Unit = {
     //        algo.verifyMM(algo.R2MM)
     //    algo.verifyMM(algo.MWR2MM(_, _, _, 4))
@@ -227,7 +302,8 @@ object MontAlgos {
     //    verifyMM(Arch1MM(_, _, _, 16))
     //    verifyMM(Arch1MM(_, _, _, 32))
     //    verifyMM(Arch1MM(_, _, _, 64))
-    verifyMMP(R2MMP)
+    //    verifyMMP(R2MMP)
+    verifyME(Arch1ME(_, _, _, 32, true))
     //    R2MMP(13)
 
     def checkstyleMontMul(X: BigInt, Y: BigInt, M: BigInt): BigInt = {

@@ -1,6 +1,12 @@
-val a = BigInt(13)
-val n = a.bitLength
-val aPrime = (a >> 1) + (1 << n - 1)
-println(a.toString(2))
-println(aPrime.toString(2))
+val e = BigInt(11)
+val x = BigInt(2)
 
+var p = BigInt(1)
+var s = x
+
+e.toString(2).reverse.foreach{ bit =>
+  if(bit.asDigit == 1) p = p * s
+  s = s * s
+}
+
+println(p)

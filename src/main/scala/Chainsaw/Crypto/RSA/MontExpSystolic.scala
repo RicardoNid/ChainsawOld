@@ -1,15 +1,9 @@
 package Chainsaw.Crypto.RSA
 
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.sim._
-import spinal.lib.fsm._
 import Chainsaw._
-import Chainsaw.Real
-import cc.redberry.rings.bigint.BigInteger
-
-import scala.collection.mutable.ArrayBuffer
+import spinal.core._
+import spinal.lib._
+import spinal.lib.fsm._
 
 case class MontExpSystolic(config: MontConfig,
                            rSquare: BigInt, M: BigInt, E: BigInt, ELength: Int,
