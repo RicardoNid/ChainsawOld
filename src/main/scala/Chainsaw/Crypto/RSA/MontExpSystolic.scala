@@ -21,6 +21,10 @@ case class MontExpSystolic(config: MontConfig,
   require(isPow2(w))
   //  require(lMs.forall(lM => isPow2(lM / w))) // not valid for 3072
 
+  // TODO: encapsulate the MontMul datapath for PRE/POST/MULT/SQUARE to reuse
+  // TODO: test for the whole MontExp process
+  // TODO: test for different modes
+
   val io = new Bundle {
     val start = in Bool()
     val mode = in Bits (lMs.size bits)
@@ -49,6 +53,7 @@ case class MontExpSystolic(config: MontConfig,
   val xWords = Xs.map(x => toWords(x, w, lMs.min / w))
   val xWordRAMs = xWords.map(XWord => Mem(XWord.map(U(_, w bits))))
   val partialProductWordRAMs = Seq.fill(parallelFactor)(Mem(UInt(w bits), lMs.min / w))
+  val xWordLasts, partialProductLasts = Seq.fill(parallelFactor)(RegInit(U(0, w bits)))
 
   // counters
   val xBitCounter = Counter(w)
@@ -78,6 +83,11 @@ case class MontExpSystolic(config: MontConfig,
 
   }
 
+  def readRAMsBit(rams: Seq[Mem[UInt]], wordId: UInt, bitId: UInt) = Vec(rams.map(ram => ram(wordId)(bitId)))
+  def readRAMsWord(rams: Seq[Mem[UInt]], wordId: UInt) = Vec(rams.map(ram => ram(wordId)))
+  //  def writeRAMWord
+
+
   val fsm = new StateMachine {
     val IDLE = StateEntryPoint()
     val WORK = new State()
@@ -86,22 +96,22 @@ case class MontExpSystolic(config: MontConfig,
       when(io.start)(goto(WORK))
     }
 
+    // FIXME: should a xWord be visited L2R or R2L?
     WORK.whenIsActive {
-      when(mult.feedXNow && !mult.padXNow) { // describe how X is fed into MontMul
-        xBitCounter.increment()
-        switch(True) {
-          lMs.zipWithIndex.foreach { case (lM, i) =>
-            is(modeReg(i)) { // for each mode
-              val ramStarters = xWordRAMs.indices.filter(_ % (lM / lMs.min) == 0)
-              // FIXME: should a xWord be visited L2R or R2L?
-              val xCandidates = Vec(xWordRAMs.map(ram => ram(xWordCounter.value)(xBitCounter.value))) // data from all xRAMs
-              ramStarters.foreach { i =>
-                mult.io.xiIns(i) := xCandidates(xRAMCounter.value + i).asUInt
-              }
+
+      switch(True) {
+        lMs.indices.foreach { i =>
+          val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(i) == 0)
+          val xCandidates = readRAMsBit(xWordRAMs, xWordCounter.value, xBitCounter.value) // data from all xRAMs
+          is(modeReg(i)) { // for each mode
+            when(mult.feedXNow && !mult.lastRound) { // describe how X is fed into MontMul
+              xBitCounter.increment()
+              starterIds.foreach(j => mult.io.xiIns(j) := xCandidates(xRAMCounter.value + j).asUInt) // read x
             }
           }
         }
       }
+
       when(mult.feedMYNow) {
         mult.io.MWordIns.foreach(_ := mWordRAM(mult.MYWordIndex))
         mult.io.YWordIns.foreach(_ := rSquareWordRAM(mult.MYWordIndex)) // only for RSA, as the true word number is a power of 2

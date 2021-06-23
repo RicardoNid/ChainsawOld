@@ -132,7 +132,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
   // drop the msb, only valid for RSA, as word number without padding would be a power of 2
   val MYWordIndex = out(eCounter.value(eCounter.value.getBitsWidth - 2 downto 0))
   val feedXNow = out(eCounter.value < MuxOH(io.mode, parallelPs.map(U(_))))
-  val padXNow = out(roundCounter.willOverflowIfInc)
+  val lastRound = out(roundCounter.willOverflowIfInc)
   val lastCycle = out(roundCounter.willOverflow)
 }
 

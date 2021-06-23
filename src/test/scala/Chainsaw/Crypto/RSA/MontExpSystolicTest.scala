@@ -18,10 +18,12 @@ class MontExpSystolicTest extends AnyFunSuite {
 
     val w = 32
     val M = BigInt(ref.getModulus)
+    println(s"length of the modulus: ${M.bitLength}")
     val E = BigInt(ref.getPrivateValue)
     val ELength = E.bitLength
 
-    val Xs = (0 until 8).map(_ => BigInt(ref.getPrivateValue) / DSPRand.nextInt(10000) - DSPRand.nextInt(10000))
+//    val Xs = (0 until 8).map(_ => BigInt(ref.getPrivateValue) / DSPRand.nextInt(10000) - DSPRand.nextInt(10000))
+    val Xs = (0 until 8).map(_ => BigInt(DSPRand.nextInt(1000000)))
 
     import cc.redberry.rings.scaladsl._
     val r = BigInt(1) << (M.bitLength + 2)
@@ -29,6 +31,7 @@ class MontExpSystolicTest extends AnyFunSuite {
     //    GenRTL(new MontExpSystolic(MontConfig(parallel = true), rSquare, M, E, ELength, Xs))
 
     val goldens = Xs.map(MontAlgos.Arch1MM(rSquare, _, M, w, print = true))
+    printlnGreen(s"goldens >= M exists: ${goldens.exists(_ >= M)}")
 
     println("X0     : " + toWordsHexString(Xs(0), w, 16))
     println("M      : " + toWordsHexString(M, w, 16))
