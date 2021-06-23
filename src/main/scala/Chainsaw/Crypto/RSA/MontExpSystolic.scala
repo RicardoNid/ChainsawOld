@@ -32,10 +32,6 @@ case class MontExpSystolic(config: MontConfig,
     val valids = out Vec(Bool, parallelFactor)
   }
 
-  def report = {
-
-  }
-
   // operator
   // TODO: use less than e?
   val modeReg = Reg(HardType(io.mode))
@@ -50,9 +46,9 @@ case class MontExpSystolic(config: MontConfig,
   // memories
   val Seq(rSquareWordRAM, mWordRAM, exponentWordRAM) = Seq(rSquare, M, E).map(bigint => Mem(toWords(bigint, w, lMs.max / w).map(U(_, w bits))))
   val xWords = Xs.map(x => toWords(x, w, wordPerGroup))
-  val squareRAMs = xWords.map(XWord => Mem(XWord.map(U(_, w bits)))) // at the beginning, x^0 = x
-  val productRAMs = Seq.fill(parallelFactor)(Mem(UInt(w bits), wordPerGroup))
-  val squareLasts, productLasts = Seq.fill(parallelFactor)(RegInit(U(0, w bits)))
+  val xMontRAMs = Seq.fill(parallelFactor)(Mem(UInt(w bits), wordPerGroup))
+  val productRAMs = xWords.map(XWord => Mem(XWord.map(U(_, w bits)))) // at the beginning, x^0 = x
+  val xMontLasts, productLasts = Seq.fill(parallelFactor)(RegInit(U(0, w bits)))
 
   // counters
   // counters for x,y,modulus,and exponent
@@ -71,6 +67,7 @@ case class MontExpSystolic(config: MontConfig,
   val exponentLengthReg = RegInit(U(ELength))
 
   val exponentCurrentBit = exponentWordRAM(exponentWordCounter.value)(exponentBitCounter.value)
+  val lastExponentBit = (exponentWordCounter @@ exponentBitCounter) === (exponentLengthReg - 1 - 1)
 
   io.dataOuts := montMult.io.dataOuts
   io.valids := montMult.io.valids
@@ -87,7 +84,7 @@ case class MontExpSystolic(config: MontConfig,
 
   // control the write back behavior
   val writeProduct = RegInit(False)
-  val writeSquare = RegInit(False)
+  val writeXMont = RegInit(False)
   val outputBuffers = montMult.io.dataOuts.map(RegNext(_)) // delay t for shift
   val validNext = RegNext(montMult.io.valids(0)) // delay valid for one cycle
   validNext.init(False)
@@ -97,11 +94,11 @@ case class MontExpSystolic(config: MontConfig,
   outputRAMEnables.foreach(_.clear())
   val writeBackLastWord = RegNext(outputRAMCounter.willOverflow)
   writeBackLastWord.init(False)
-  (0 until parallelFactor).foreach{i =>
-    squareRAMs(i).write(
+  (0 until parallelFactor).foreach { i =>
+    xMontRAMs(i).write(
       address = outputWordCounter.value,
       data = datasToWrite(i),
-      enable = outputRAMEnables(i) && writeSquare && validNext
+      enable = outputRAMEnables(i) && writeXMont && validNext
     )
     productRAMs(i).write(
       address = outputWordCounter.value,
@@ -113,16 +110,30 @@ case class MontExpSystolic(config: MontConfig,
 
   val fsm = new StateMachine {
     val IDLE = StateEntryPoint()
-    //    val WORK = new State()
     val PRE, MULT, SQUARE, POST = new State()
+    val RUNs = Seq(PRE, MULT, SQUARE, POST)
 
     IDLE.whenIsActive {
       when(io.start)(goto(PRE))
     }
 
-    // FIXME: should a xWord be visited L2R or R2L?
-    PRE.whenIsActive {
-      when(montMult.fsm.lastCycle)(montMult.io.start := True)
+    // state transition
+    PRE.whenIsActive(when(montMult.fsm.lastCycle)(goto(SQUARE)))
+    SQUARE.whenIsActive(when(montMult.fsm.lastCycle) {
+      when(exponentCurrentBit)(goto(MULT)) // when current bit is 1, always goto MULT for a multiplication
+        .elsewhen(lastExponentBit)(goto(POST))
+        .otherwise(goto(SQUARE))
+    })
+    MULT.whenIsActive(when(montMult.fsm.lastCycle){
+      when(lastExponentBit)(goto(POST))
+        .otherwise(goto(SQUARE))
+    })
+    POST.whenIsActive(when(montMult.fsm.lastCycle)(goto(IDLE)))
+
+    SQUARE.whenIsNext(when(montMult.fsm.lastCycle)(exponentBitCounter.increment()))
+
+    when(montMult.fsm.lastCycle) { // these four states end when a MontMul task ends
+      when(Seq(PRE, MULT, SQUARE).map(isActive(_)).xorR)(montMult.io.start := True)
     }
 
     switch(True) { // for different modes
@@ -136,18 +147,9 @@ case class MontExpSystolic(config: MontConfig,
             xCandidates.foreach(_.clear())
             when(!montMult.fsm.lastRound) {
               xBitCounter.increment()
-              when(isActive(PRE) || isActive(MULT) || isActive(SQUARE)) {
-                xCandidates := readRAMsBit(squareRAMs, xWordCounter, xBitCounter)
-              }.elsewhen(isActive(POST)) {
-                xCandidates := readRAMsBit(productRAMs, xWordCounter, xBitCounter)
-              }
+              xCandidates := readRAMsBit(productRAMs, xWordCounter, xBitCounter)
             }.otherwise {
-              val xCandidates = Vec(Bool, parallelFactor)
-              when(isActive(PRE) || isActive(MULT) || isActive(SQUARE)) {
-                xCandidates := Vec(squareLasts.map(word => word(xBitCounter.value)))
-              }.elsewhen(isActive(POST)) {
-                xCandidates := Vec(productLasts.map(word => word(xBitCounter.value)))
-              }
+              xCandidates := Vec(productLasts.map(word => word(xBitCounter.value)))
             }
             starterIds.foreach(j => montMult.io.xiIns(j) := xCandidates(xRAMCounter.value + j).asUInt) // feed X
           }
@@ -165,8 +167,8 @@ case class MontExpSystolic(config: MontConfig,
               montMult.io.MWordIns.foreach(_ := mWordRAM(mWordCounter)) // feed M
               // only for RSA, as the true word number is a power of 2
               when(isActive(PRE))(yCandidates := Vec(Seq.fill(parallelFactor)(rSquareWordRAM(yRAMCounter @@ yWordCounter)))) // feed Y
-                .elsewhen(isActive(MULT))(yCandidates := readRAMsWord(productRAMs, yWordCounter.value))
-                .elsewhen(isActive(SQUARE))(yCandidates := readRAMsWord(squareRAMs, yWordCounter.value))
+                .elsewhen(isActive(MULT))(yCandidates := readRAMsWord(xMontRAMs, yWordCounter.value))
+                .elsewhen(isActive(SQUARE))(yCandidates := readRAMsWord(productRAMs, yWordCounter.value))
                 .elsewhen(isActive(POST)) { // feed 1
                   when(yWordCounter.value === U(0))(push1())
                     .otherwise(push0())
@@ -174,30 +176,27 @@ case class MontExpSystolic(config: MontConfig,
             }.otherwise {
               starterIds.foreach(j => montMult.io.YWordIns(j) := U(0, w bits)) // feed Y
               when(isActive(PRE))(push0()) // msw = 0
-                .elsewhen(isActive(MULT))(yCandidates := Vec(productLasts))
-                .elsewhen(isActive(SQUARE))(yCandidates := Vec(squareLasts))
+                .elsewhen(isActive(MULT))(yCandidates := Vec(xMontLasts))
+                .elsewhen(isActive(SQUARE))(yCandidates := Vec(productLasts))
                 .elsewhen(isActive(POST))(push0()) // msw = 0
             }
             starterIds.foreach(j => montMult.io.YWordIns(j) := yCandidates(yRAMCounter.value + j))
           }
           // fetch XYR^-1 and write back
           when(montMult.fsm.lastRound) {
-            when(isActive(PRE) && exponentCurrentBit) {
-              writeSquare.set()
+            when(isActive(PRE)) {
+              writeXMont.set()
               writeProduct.set()
-            }.elsewhen(isActive(PRE) || isActive(SQUARE)) {
-              writeSquare.set()
-              writeProduct.clear()
-            }.elsewhen(isActive(MULT)) {
-              writeSquare.clear()
+            }.elsewhen(isActive(SQUARE) || isActive(MULT) || isActive(POST)) { // TODO: result after post is not needed
+              writeXMont.clear()
               writeProduct.set()
             }.otherwise {
-              writeSquare.clear()
+              writeXMont.clear()
               writeProduct.clear()
             }
           }
           when(validNext) {
-            when(!writeBackLastWord){
+            when(!writeBackLastWord) {
               outputWordCounter.increment()
               starterIds.foreach { j =>
                 val data = (io.dataOuts(j).lsb ## outputBuffers(j)(w - 1 downto 1)).asUInt
@@ -205,12 +204,12 @@ case class MontExpSystolic(config: MontConfig,
                 datasToWrite(j + outputRAMCounter.value) := data
                 outputRAMEnables(j + outputRAMCounter.value) := True
               }
-            }.otherwise{
+            }.otherwise {
               starterIds.foreach { j =>
                 val data = (io.dataOuts(j).lsb ## outputBuffers(j)(w - 1 downto 1)).asUInt
                 // design: selective write
                 when(writeProduct)(productLasts(j + outputRAMCounter.value) := data)
-                when(writeSquare)(squareLasts(j + outputRAMCounter.value) := data)
+                when(writeXMont)(xMontLasts(j + outputRAMCounter.value) := data)
               }
             }
           }

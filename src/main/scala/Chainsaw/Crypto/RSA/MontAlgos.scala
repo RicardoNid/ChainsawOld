@@ -222,6 +222,7 @@ object MontAlgos {
     // final reduction
     printlnGreen("after reduction")
     val ret = if (partialProduct >= M) partialProduct - M else partialProduct
+    println(toWordsHexString(ret, w, M.bitLength / w + 1))
     ret
   }
 
