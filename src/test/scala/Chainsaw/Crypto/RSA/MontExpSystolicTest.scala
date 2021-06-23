@@ -22,8 +22,8 @@ class MontExpSystolicTest extends AnyFunSuite {
     val E = BigInt(ref.getPrivateValue)
     val ELength = E.bitLength
 
-//    val Xs = (0 until 8).map(_ => BigInt(ref.getPrivateValue) / DSPRand.nextInt(10000) - DSPRand.nextInt(10000))
-    val Xs = (0 until 8).map(_ => BigInt(DSPRand.nextInt(1000000)))
+    val Xs = (0 until 8).map(_ => BigInt(ref.getPrivateValue) / DSPRand.nextInt(10000) - DSPRand.nextInt(10000))
+    //    val Xs = (0 until 8).map(_ => BigInt(DSPRand.nextInt(1000000)))
 
     import cc.redberry.rings.scaladsl._
     val r = BigInt(1) << (M.bitLength + 2)
@@ -56,11 +56,16 @@ class MontExpSystolicTest extends AnyFunSuite {
         if (io.valids(0).toBoolean) {
           dutResults.zip(io.dataOuts).foreach { case (buffer, signal) => buffer += signal.toBigInt }
         }
+//        if (checkRAM.toBoolean) {
+//          println(toWordsHexString(productRAMs(0)(0).toBigInt, 32, 1))
+//        }
         clockDomain.waitSampling()
       }
       goldens.indices.foreach { i =>
+        val goldenStringBeforeShift = toWordsHexString(goldens(i), w, 16 + 1)
         val goldenString = toWordsHexString(goldens(i) << 1, w, 16 + 1)
         val dutString = dutResults(i).map(_.toString(16).padToLeft(32 / 4, '0')).mkString(" ") + " "
+        println(s"golden result$i: $goldenStringBeforeShift")
         println(s"golden result$i: $goldenString")
         println(s"dut result$i   : $dutString")
         assertResult(goldenString)(dutString)

@@ -98,7 +98,6 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
   io.dataOuts.zip(outputPEs).foreach { case (dataOut, pe) => dataOut := pe.io.flowOut.data.SWord }
   io.valids := Vec(datapath.availables.zip(outputPEs).map { case (avail, pe) => avail && pe.io.flowOut.control.valid })
 
-
   val fsm = new StateMachine {
     val IDLE = StateEntryPoint()
     val RUN = State()
@@ -126,14 +125,16 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
       }
     }
     io.idle := isActive(IDLE)
+    val feedMYNow = out(roundCounter.value === U(0) && isActive(RUN))
+    val MYWordIndex = out(eCounter.value(eCounter.value.getBitsWidth - 2 downto 0))
+    val feedXNow = out(eCounter.value < MuxOH(io.mode, parallelPs.map(U(_))) && isActive(RUN))
+    val lastRound = out(roundCounter.willOverflowIfInc && isActive(RUN))
+    val lastWord = out(eCounter.willOverflowIfInc && isActive(RUN))
+    val lastCycle = out(roundCounter.willOverflow && isActive(RUN))
   }
 
-  val feedMYNow = out(roundCounter.value === U(0))
   // drop the msb, only valid for RSA, as word number without padding would be a power of 2
-  val MYWordIndex = out(eCounter.value(eCounter.value.getBitsWidth - 2 downto 0))
-  val feedXNow = out(eCounter.value < MuxOH(io.mode, parallelPs.map(U(_))))
-  val lastRound = out(roundCounter.willOverflowIfInc)
-  val lastCycle = out(roundCounter.willOverflow)
+
 }
 
 object MontMulSystolicParallel {
