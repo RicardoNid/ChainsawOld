@@ -188,55 +188,40 @@ object MontAlgos {
 
   def Arch1ME(X: BigInt, exponent: BigInt, M: BigInt, w: Int, print: Boolean = false) = {
 
-    val r =  BigInt(Zp(M)(BigInt(1) << (M.bitLength + 2)).toByteArray)
-    val rInverse = BigInt(Zp(M).reciprocal(r).toByteArray)
+    val r = BigInt(Zp(M)(BigInt(1) << (M.bitLength + 2)).toByteArray)
     val rSquare = BigInt(Zp(M)(r * r).toByteArray)
 
-    var partialProduct = r
-    var square = X
-    var ppTrue = BigInt(1)
-    var squareTrue = X
+    var partialProduct = X
+    var montX = BigInt(1)
     // precompute
     def MM: (BigInt, BigInt) => BigInt = Arch1MM(_, _, M, w, false)
     def printTrace() = {
-      if (print) {
-        println(s"partial product = ${toWordsHexString(partialProduct, w, M.bitLength / w + 1)}")
-        println(s"square          = ${toWordsHexString(square, w, M.bitLength / w + 1)}")
-        println(s"golden          = ${toWordsHexString(ppTrue, w, M.bitLength / w + 1)}")
-      }
+      if (print) println(s"partial product = ${toWordsHexString(partialProduct, w, M.bitLength / w + 1)}")
     }
-
     printlnGreen("before pre")
     printTrace()
     // pre, x -> x'
-    square = MM(X, rSquare)
-    squareTrue = BigInt(Zp(M).multiply(X, rSquare, rInverse).toByteArray)
+    val temp = MM(partialProduct, rSquare)
+    partialProduct = temp
+    montX = temp
     printlnGreen("after pre")
     printTrace()
-    // R2L, exponent
+    // L2R, exponent
     var count = 0
     printlnGreen("start power")
-    exponent.toString(2).reverse.foreach { bit =>
+    exponent.toString(2).tail.foreach { bit =>
       println(s"bit = $bit")
-      if (bit.asDigit == 1) {
-        partialProduct = MM(partialProduct, square)
-        ppTrue = BigInt(Zp(M).multiply(ppTrue, squareTrue, rInverse).toByteArray)
-      }
-      square = MM(square, square) // FIXME: last time can be skipped
-      squareTrue = BigInt(Zp(M).multiply(squareTrue, squareTrue, rInverse).toByteArray)
-
+      partialProduct = MM(partialProduct, partialProduct)
+      if (bit.asDigit == 1) partialProduct = MM(partialProduct, montX)
       printTrace()
     }
     // post, x^e' -> x^e
     partialProduct = MM(partialProduct, BigInt(1))
-    ppTrue = BigInt(Zp(M).multiply(ppTrue, BigInt(1), rInverse).toByteArray)
     printlnGreen("after post")
     printTrace()
     // final reduction
     printlnGreen("after reduction")
     val ret = if (partialProduct >= M) partialProduct - M else partialProduct
-    val trueRet = if (ppTrue >= M) ppTrue - M else ppTrue
-    printlnGreen(toWordsHexString(trueRet, w, M.bitLength / w + 1))
     ret
   }
 
@@ -281,7 +266,7 @@ object MontAlgos {
     (0 until 1).foreach { _ =>
       val modulus = BigInt(ref.getModulus)
       val x = modulus - DSPRand.nextInt(10000)
-      val e = BigInt(1)
+      val e = ref.getPublicValue
       val ZN = Zp(modulus)
       val algoResult = algo(x, e, modulus)
       val RingsResult = BigInt(ZN.pow(x, e).toByteArray)
