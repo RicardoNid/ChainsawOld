@@ -18,7 +18,7 @@ package object Chainsaw extends RealFactory {
   // example: YWords = toWords(BigInt("1_1111_0000", 4, 3)), YWords(0) = 0, YWords(1) = 15, YWords(2) = 1(padded as 0001)
   def toWords(value: BigInt, w: Int, e: Int) = {
     value.toString(2).padToLeft(e * w, '0')
-      .grouped(w).toArray.take(e).map(BigInt(_, 2))
+      .grouped(w).toArray.takeRight(e).map(BigInt(_, 2))
       .reverse
   }
 

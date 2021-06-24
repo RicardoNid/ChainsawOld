@@ -195,34 +195,30 @@ object MontAlgos {
     var montX = BigInt(1)
     // precompute
     def MM: (BigInt, BigInt) => BigInt = Arch1MM(_, _, M, w, false)
-    def printTrace() = {
+    def printTrace(title: String) = {
+      if (print) printlnGreen(title)
       if (print) println(s"partial product = ${toWordsHexString(partialProduct, w, M.bitLength / w + 1)}")
     }
-    printlnGreen("before pre")
-    printTrace()
+    printTrace("before pre")
     // pre, x -> x'
     val temp = MM(partialProduct, rSquare)
     partialProduct = temp
     montX = temp
-    printlnGreen("after pre")
-    printTrace()
+    printTrace("after pre")
     // L2R, exponent
     var count = 0
-    printlnGreen("start power")
     exponent.toString(2).tail.foreach { bit =>
-      println(s"bit = $bit")
       partialProduct = MM(partialProduct, partialProduct)
       if (bit.asDigit == 1) partialProduct = MM(partialProduct, montX)
-      printTrace()
+      printTrace("start power")
     }
     // post, x^e' -> x^e
     partialProduct = MM(partialProduct, BigInt(1))
-    printlnYellow("after post")
-    printTrace()
+    printTrace("after post")
     // final reduction
-    printlnGreen("after reduction")
+    if (print) printlnGreen("after reduction")
     val ret = if (partialProduct >= M) partialProduct - M else partialProduct
-    println(toWordsHexString(ret, w, M.bitLength / w + 1))
+    if (print) println(toWordsHexString(ret, w, M.bitLength / w + 1))
     ret
   }
 

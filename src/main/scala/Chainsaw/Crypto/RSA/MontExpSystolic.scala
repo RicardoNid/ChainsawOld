@@ -83,7 +83,7 @@ case class MontExpSystolic(config: MontConfig,
   val writeProduct = RegInit(False)
   val writeXMont = RegInit(False)
   val outputBuffers = montMult.io.dataOuts.map(RegNext(_)) // delay t for shift
-  val shiftedOutputs = Vec(montMult.io.dataOuts.zip(outputBuffers).map{ case (prev, next) => (prev.lsb ## next(w - 1 downto 1)).asUInt})
+  val shiftedOutputs = Vec(montMult.io.dataOuts.zip(outputBuffers).map { case (prev, next) => (prev.lsb ## next(w - 1 downto 1)).asUInt })
   val validNext = RegNext(montMult.io.valids(0)) // delay valid for one cycle
   validNext.init(False)
   val datasToWrite = Vec(UInt(w bits), parallelFactor)
@@ -105,10 +105,12 @@ case class MontExpSystolic(config: MontConfig,
     )
   }
 
+  val tobeValid = RegInit(False)
   io.dataOuts := shiftedOutputs
-  io.valids := RegNext(montMult.io.valids)
-  io.valids.foreach(_.init(False))
-
+  io.valids.zip(montMult.io.valids).foreach { case (io, mult) =>
+    io := RegNext(mult) && tobeValid
+  }
+  when(io.valids(0).fall())(tobeValid.clear())
 
   val fsm = new StateMachine {
     val IDLE = StateEntryPoint()
@@ -123,15 +125,15 @@ case class MontExpSystolic(config: MontConfig,
     PRE.whenIsActive(when(montMult.fsm.lastCycle)(goto(SQUARE)))
     SQUARE.whenIsActive(when(montMult.fsm.lastCycle) {
       when(exponentCurrentBit)(goto(MULT)) // when current bit is 1, always goto MULT for a multiplication
-        .elsewhen(lastExponentBit){
+        .elsewhen(lastExponentBit) {
           goto(POST)
           exponentBitCounter.clear()
           exponentWordCounter.clear()
         }
         .otherwise(goto(SQUARE))
     })
-    MULT.whenIsActive(when(montMult.fsm.lastCycle){
-      when(lastExponentBit){
+    MULT.whenIsActive(when(montMult.fsm.lastCycle) {
+      when(lastExponentBit) {
         goto(POST)
         exponentBitCounter.clear()
         exponentWordCounter.clear()
@@ -204,12 +206,13 @@ case class MontExpSystolic(config: MontConfig,
               writeXMont.clear()
               writeProduct.clear()
             }
+            when(isActive(POST))(tobeValid.set())
           }
           when(validNext) {
             when(!writeBackLastWord) {
               outputWordCounter.increment()
               starterIds.foreach { j =>
-                val data = (io.dataOuts(j).lsb ## outputBuffers(j)(w - 1 downto 1)).asUInt
+                val data = (montMult.io.dataOuts(j).lsb ## outputBuffers(j)(w - 1 downto 1)).asUInt
                 // design: selective write
                 datasToWrite(j + outputRAMCounter.value) := data
                 outputRAMEnables(j + outputRAMCounter.value) := True
@@ -232,7 +235,6 @@ case class MontExpSystolic(config: MontConfig,
 
 object MontExpSystolic {
   def main(args: Array[String]): Unit = {
-
   }
 }
 
