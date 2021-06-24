@@ -13,6 +13,7 @@ case class MontExpSystolic(config: MontConfig,
   import config._
 
   require(isPow2(w))
+  require(isPow2(lMs.min))
   require(Xs.size == parallelFactor)
   //  require(lMs.forall(lM => isPow2(lM / w))) // not valid for 3072
 
@@ -62,15 +63,24 @@ case class MontExpSystolic(config: MontConfig,
   //  2. Y/M are fed word by word, specially, montMult has an inner counter(eCounter) for Y/M, we save that
   //  3. the next exponent bit should be fetched when a MontMult is done
   // all these counters are triggered by corresponding "need feed" signals, who take effect in the fsm part
-  // starters
-//  val xCounter = MultiCountCounter(groupPerInstance.map(BigInt(_)), modeReg, inc = xWordCounter.willOverflow)
-  val xBitCounter, exponentBitCounter = Counter(w)
+  // as word size and smallest RSA size(lM.min = 512) are powers of 2, take the bit/word/RAM addr by bit select
+  val counterLengths = Seq(w, wordPerGroup, parallelFactor).map(log2Up(_))
+  val Seq(bitAddrLength, wordAddrLength, ramIndexLength) = counterLengths // when supporting 512-4096, they are 3,4,5
+
+  val xCounter, exponentCounter = MultiCountCounter(lMs.map(BigInt(_)), modeReg)
+  val xSplitPoints = (0 until 4).map(i => counterLengths.take(i).sum) // when supporting 512-4096, 0,3,7,12
+  val xBitSelects = xSplitPoints.init.zip(xSplitPoints.tail).map { case (start, end) => xCounter.value(end - 1 downto start) } // 2 downto 0, 6 downto 3,...
+  val Seq(xBitCount, xWordCount, xRAMCount) = xBitSelects
+
+
+  //  val xBitCounter,
+  val exponentBitCounter = Counter(w)
   val outputWordCounter = Counter(wordPerGroup)
   // cascaded counters driven by starters
-  val xWordCounter = Counter(wordPerGroup, inc = xBitCounter.willOverflow)
+  //  val xWordCounter = Counter(wordPerGroup, inc = xBitCounter.willOverflow)
   println(s"RAMCounter counts = ${lMs.map(lM => BigInt(lM / lMs.min)).mkString(" ")}")
   // how many RAMs should be involved in an instance
-  val xRAMCounter = MultiCountCounter(groupPerInstance.map(BigInt(_)), modeReg, inc = xWordCounter.willOverflow)
+  //  val xRAMCounter = MultiCountCounter(groupPerInstance.map(BigInt(_)), modeReg, inc = xWordCounter.willOverflow)
   val outputRAMCounter = MultiCountCounter(groupPerInstance.map(BigInt(_)), modeReg, inc = outputWordCounter.willOverflow)
   val exponentWordCounter = MultiCountCounter(lMs.map(lM => BigInt(lM / w)), modeReg, inc = exponentBitCounter.willOverflow)
   val exponentLengthReg = RegInit(U(ELength))
@@ -166,12 +176,12 @@ case class MontExpSystolic(config: MontConfig,
             val xCandidates = Vec(Bool, parallelFactor) // prepared for different modes, for each instance
             xCandidates.foreach(_.clear())
             when(!montMult.fsm.lastRound) {
-              xBitCounter.increment()
-              xCandidates := readRAMsBit(productRAMs, xWordCounter, xBitCounter)
+              xCounter.increment()
+              xCandidates := readRAMsBit(productRAMs, xWordCount, xBitCount)
             }.otherwise {
-              xCandidates := Vec(productLasts.map(word => word(xBitCounter.value)))
+              xCandidates := Vec(productLasts.map(word => word(xBitCount)))
             }
-            starterIds.foreach(j => montMult.io.xiIns(j) := xCandidates(xRAMCounter.value + j).asUInt) // feed X
+            starterIds.foreach(j => montMult.io.xiIns(j) := xCandidates(xRAMCount + j).asUInt) // feed X
           }
           // feed Y and Modulus
           when(montMult.fsm.feedMYNow) {

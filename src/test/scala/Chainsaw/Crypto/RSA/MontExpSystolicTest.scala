@@ -29,6 +29,8 @@ class MontExpSystolicTest extends AnyFunSuite {
     val goldens = testInputs.map(MontAlgos.Arch1ME(_, testExponent, testModulus, testWordSize, print = false))
     printlnGreen(s"goldens >= M exists: ${goldens.exists(_ >= testModulus)}")
 
+    GenRTL(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true), testRadixSquare, testModulus, testExponent, testExponentLength, testInputs))
+
     SimConfig.withWave.compile(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true), testRadixSquare, testModulus, testExponent, testExponentLength, testInputs)).doSim { dut =>
       import dut._
       import dut.config._
@@ -74,7 +76,7 @@ class MontExpSystolicTest extends AnyFunSuite {
       runForOnce(0)
     }
 
-    //    GenRTL(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true), testRadixSquare, testModulus, testExponent, testExponentLength, testInputs))
+
     //        VivadoSynth(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true), testRadixSquare, testModulus, testExponent, testExponentLength, testInputs))
   }
 }
