@@ -31,28 +31,38 @@ case class MontExpSystolic(config: MontConfig,
     val dataOuts = out Vec(UInt(w bits), parallelFactor)
     val valids = out Vec(Bool, parallelFactor)
   }
-
-  // operator
-  // TODO: use less than e?
   val modeReg = Reg(HardType(io.mode))
+  when(io.start)(modeReg := io.mode)
+
   val montMult = MontMulSystolicParallel(config)
-  // pre-assignment
-  montMult.io.xiIns.foreach(_.clearAll())
-  montMult.io.start := io.start
-  montMult.io.YWordIns.foreach(_.clearAll())
-  montMult.io.MWordIns.foreach(_.clearAll())
+  // pre-assign / set the controls
+  montMult.io.start := False
+  montMult.io.mode := Mux(io.start, io.mode, modeReg)
+  // pre-assign the data inputs
+  Seq(montMult.io.xiIns, montMult.io.MWordIns, montMult.io.YWordIns).foreach(_.foreach(_.clearAll()))
   montMult.io.YWordIns.foreach(_.allowOverride)
 
-  // memories
-  val Seq(rSquareWordRAM, mWordRAM, exponentWordRAM) = Seq(rSquare, M, BigInt(E.toString(2).reverse, 2)).map(bigint => Mem(toWords(bigint, w, lMs.max / w).map(U(_, w bits))))
+  // MEMORIES
+  // these three RAMs are for secret-key related data, and will be kept for the whole lifecycle of a MontExp
+  val Seq(rSquareWordRAM, mWordRAM, exponentWordRAM) =
+  Seq(rSquare, M, BigInt(E.toString(2).reverse, 2)).map(bigint => Mem(toWords(bigint, w, lMs.max / w).map(U(_, w bits))))
+  // these two RAMs are for partial results generated through the MontExp procedure
   val xWords = Xs.map(x => toWords(x, w, wordPerGroup))
+  // to store the Montgomery representation of x, which is x \times r^{-1} \pmod M
   val xMontRAMs = Seq.fill(parallelFactor)(Mem(UInt(w bits), wordPerGroup))
+  // to store the partial product of the MontExp, which is x at the beginning and x^{e} \pmod M
   val productRAMs = xWords.map(XWord => Mem(XWord.map(U(_, w bits)))) // at the beginning, x^0 = x
+  // for last, irregular part of the two RAMs above
   val xMontLasts, productLasts = Seq.fill(parallelFactor)(RegInit(U(0, w bits)))
 
-  // counters
-  // counters for x,y,modulus,and exponent
-  // these are starters, who are triggered when corresponding operations occur
+  // INPUT COUNTERS
+  // counters are the main controllers of the input scheme
+  // generally, the input are controlled by three different "rhythms"
+  //  1. X is fed bit by bit
+  //  2. Y/M are fed word by word, specially, montMult has an inner counter(eCounter) for Y/M, we save that
+  //  3. the next exponent bit should be fetched when a MontMult is done
+  // all these counters are triggered by corresponding "need feed" signals, who take effect in the fsm part
+  // starters
   val xBitCounter, exponentBitCounter = Counter(w)
   val yWordCounter, outputWordCounter = Counter(wordPerGroup)
   val mWordCounter = MultiCountCounter(lMs.map(lM => BigInt(lM / w)), modeReg)
@@ -68,13 +78,6 @@ case class MontExpSystolic(config: MontConfig,
 
   val exponentCurrentBit = exponentWordRAM(exponentWordCounter.value)(exponentBitCounter.value)
   val lastExponentBit = (exponentWordCounter @@ exponentBitCounter) === (exponentLengthReg - 1)
-
-  when(io.start) {
-    modeReg := io.mode
-    montMult.io.mode := io.mode
-  }.otherwise {
-    montMult.io.mode := modeReg
-  }
 
   def readRAMsBit(rams: Seq[Mem[UInt]], wordId: UInt, bitId: UInt) = Vec(rams.map(ram => ram(wordId)(bitId)))
   def readRAMsWord(rams: Seq[Mem[UInt]], wordId: UInt) = Vec(rams.map(ram => ram(wordId)))
@@ -117,12 +120,18 @@ case class MontExpSystolic(config: MontConfig,
     val PRE, MULT, SQUARE, POST = new State()
     val RUNs = Seq(PRE, MULT, SQUARE, POST)
 
+    def startMontMult() = montMult.io.start.set()
+
     IDLE.whenIsActive {
-      when(io.start)(goto(PRE))
+      when(io.start) {
+        goto(PRE)
+        montMult.io.start.set()
+      }
     }
 
     // state transition
     PRE.whenIsActive(when(montMult.fsm.lastCycle)(goto(SQUARE)))
+
     SQUARE.whenIsActive(when(montMult.fsm.lastCycle) {
       when(exponentCurrentBit)(goto(MULT)) // when current bit is 1, always goto MULT for a multiplication
         .elsewhen(lastExponentBit) {
@@ -167,9 +176,13 @@ case class MontExpSystolic(config: MontConfig,
           }
           // feed Y and Modulus
           when(montMult.fsm.feedMYNow) {
-
             val yCandidates = Vec(UInt(w bits), parallelFactor) // prepare for different modes, for each instance
-            yCandidates.foreach(_.clearAll()) // pre - assignment
+
+            val ymCount = montMult.fsm.MYWordIndex // following logics are valid with the requirement that w is a power of 2
+            val ymWordCount = ymCount(log2Up(w) - 1 downto 0) // lower part - the word count
+            val ymRAMCount =  ymCount(ymCount.getBitsWidth - 1 downto log2Up(w)) // higher part- the RAM count
+
+              yCandidates.foreach(_.clearAll()) // pre - assignment
             def push0() = yCandidates := Vec(Seq.fill(parallelFactor)(U(0, w bits)))
             def push1() = yCandidates := Vec(Seq.fill(parallelFactor)(U(1, w bits)))
 
