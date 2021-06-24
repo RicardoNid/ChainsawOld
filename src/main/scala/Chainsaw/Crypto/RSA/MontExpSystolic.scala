@@ -81,18 +81,15 @@ case class MontExpSystolic(config: MontConfig,
   val exponentCurrentBit = exponentWordRAM(exponentWordCount)(exponentBitCount)
   val exponentLastBit = exponentCounter.value === (exponentLengthReg - 1)
 
+  // for RSA sizes, when e = lM / w + 1 and p = e - 1 = lM / w, n % p == 1, so outputCounter is two cycle delayed from MYWordIndex(output provider index + DtoQ delay)
+  // besides, as the MontMult results need to be shifted left, on more cycle needed
+  val outputCounter = Delay(montMult.fsm.MYWordIndex, 3)
+  val outputRAMCount = outputCounter(ramIndexLength + wordAddrLength - 1 downto wordAddrLength)
+  val outputWordCount = outputCounter(wordAddrLength - 1 downto 0)
 
-  //  val xBitCounter,
-  //  val exponentBitCounter = Counter(w)
-  val outputWordCounter = Counter(wordPerGroup)
-  // cascaded counters driven by starters
-  //  val xWordCounter = Counter(wordPerGroup, inc = xBitCounter.willOverflow)
+  //  val outputWordCounter = Counter(wordPerGroup)
   println(s"RAMCounter counts = ${lMs.map(lM => BigInt(lM / lMs.min)).mkString(" ")}")
-  // how many RAMs should be involved in an instance
-  //  val xRAMCounter = MultiCountCounter(groupPerInstance.map(BigInt(_)), modeReg, inc = xWordCounter.willOverflow)
-  val outputRAMCounter = MultiCountCounter(groupPerInstance.map(BigInt(_)), modeReg, inc = outputWordCounter.willOverflow)
-  //  val exponentWordCounter = MultiCountCounter(lMs.map(lM => BigInt(lM / w)), modeReg, inc = exponentBitCounter.willOverflow)
-
+  //  val outputRAMCounter = MultiCountCounter(groupPerInstance.map(BigInt(_)), modeReg, inc = outputWordCounter.willOverflow)
 
   def readRAMsBit(rams: Seq[Mem[UInt]], wordId: UInt, bitId: UInt) = Vec(rams.map(ram => ram(wordId)(bitId)))
   def readRAMsWord(rams: Seq[Mem[UInt]], wordId: UInt) = Vec(rams.map(ram => ram(wordId)))
@@ -108,16 +105,18 @@ case class MontExpSystolic(config: MontConfig,
   datasToWrite.foreach(_.clearAll())
   val outputRAMEnables = Vec(Bool, parallelFactor)
   outputRAMEnables.foreach(_.clear())
-  val writeBackLastWord = RegNext(outputRAMCounter.willOverflow)
-  writeBackLastWord.init(False)
+  //  val writeBackLastWord = RegNext(outputRAMCounter.willOverflow)
+  //  writeBackLastWord.init(False)
+  val writeBackLastWord = montMult.io.valids(0).fall()
   (0 until parallelFactor).foreach { i =>
     xMontRAMs(i).write(
-      address = outputWordCounter.value,
+      //      address = outputWordCounter.value,
+      address = outputWordCount,
       data = datasToWrite(i),
       enable = outputRAMEnables(i) && writeXMont && validNext
     )
     productRAMs(i).write(
-      address = outputWordCounter.value,
+      address = outputWordCount,
       data = datasToWrite(i),
       enable = outputRAMEnables(i) && writeProduct && validNext
     )
@@ -240,19 +239,23 @@ case class MontExpSystolic(config: MontConfig,
           }
           when(validNext) {
             when(!writeBackLastWord) {
-              outputWordCounter.increment()
+              //              outputWordCounter.increment()
               starterIds.foreach { j =>
                 val data = (montMult.io.dataOuts(j).lsb ## outputBuffers(j)(w - 1 downto 1)).asUInt
                 // design: selective write
-                datasToWrite(j + outputRAMCounter.value) := data
-                outputRAMEnables(j + outputRAMCounter.value) := True
+                //                datasToWrite(j + outputRAMCounter.value) := data
+                //                outputRAMEnables(j + outputRAMCounter.value) := True
+                datasToWrite(j + outputRAMCount) := data
+                outputRAMEnables(j + outputRAMCount).set()
               }
             }.otherwise {
               starterIds.foreach { j =>
                 val data = (io.dataOuts(j).lsb ## outputBuffers(j)(w - 1 downto 1)).asUInt
                 // design: selective write
-                when(writeProduct)(productLasts(j + outputRAMCounter.value) := data)
-                when(writeXMont)(xMontLasts(j + outputRAMCounter.value) := data)
+                //                when(writeProduct)(productLasts(j + outputRAMCounter.value) := data)
+                when(writeProduct)(productLasts(j + outputRAMCount) := data)
+                //                when(writeXMont)(xMontLasts(j + outputRAMCounter.value) := data)
+                when(writeXMont)(xMontLasts(j + outputRAMCount) := data)
               }
             }
           }
