@@ -210,3 +210,3848 @@ xi = 0, s0 = 1, S = 0, Y = 0, M = 0, C = 0
 SWords: 0 0 7 14
 xi = 0, s0 = 1, S = 0, Y = 0, M = 0, C = 0
 SWords: 0 0 7 14
+
+// MontExp 4096
+/home/ltr/.jdks/corretto-1.8.0_292/bin/java -javaagent:/home/ltr/idea-IU-211.7142.45/lib/idea_rt.jar=45415:/home/ltr/idea-IU-211.7142.45/bin -Dfile.encoding=UTF-8 -classpath /home/ltr/.local/share/JetBrains/IntelliJIdea2021.1/Scala/lib/runners.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/charsets.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/ext/cldrdata.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/ext/dnsns.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/ext/jaccess.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/ext/jfxrt.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/ext/localedata.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/ext/nashorn.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/ext/sunec.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/ext/sunjce_provider.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/ext/sunpkcs11.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/ext/zipfs.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/jce.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/jfr.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/jfxswt.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/jsse.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/management-agent.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/resources.jar:/home/ltr/.jdks/corretto-1.8.0_292/jre/lib/rt.jar:/home/ltr/IdeaProjects/Chainsaw/target/scala-2.11/test-classes:/home/ltr/IdeaProjects/Chainsaw/target/scala-2.11/classes:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/ai/djl/api/0.11.0/api-0.11.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/ai/djl/basicdataset/0.11.0/basicdataset-0.11.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/ai/djl/model-zoo/0.11.0/model-zoo-0.11.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/cc/redberry/combinatorics/2.0/combinatorics-2.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/cc/redberry/libdivide4j/1.2/libdivide4j-1.2.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/cc/redberry/rings.scaladsl_2.11/2.5.7/rings.scaladsl_2.11-2.5.7.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/cc/redberry/rings/2.5.7/rings-2.5.7.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/com/chuusai/shapeless_2.11/2.3.3/shapeless_2.11-2.3.3.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/com/github/fommil/netlib/core/1.1.2/core-1.1.2.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/com/github/oshi/oshi-core/3.4.0/oshi-core-3.4.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/com/github/scopt/scopt_2.11/3.4.0/scopt_2.11-3.4.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/com/github/spinalhdl/spinalhdl-core_2.11/1.5.0/spinalhdl-core_2.11-1.5.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/com/github/spinalhdl/spinalhdl-idsl-payload_2.11/1.5.0/spinalhdl-idsl-payload_2.11-1.5.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/com/github/spinalhdl/spinalhdl-idsl-plugin_2.11/1.5.0/spinalhdl-idsl-plugin_2.11-1.5.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/com/github/spinalhdl/spinalhdl-lib_2.11/1.5.0/spinalhdl-lib_2.11-1.5.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/com/github/spinalhdl/spinalhdl-sim_2.11/1.5.0/spinalhdl-sim_2.11-1.5.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/com/github/vlsi/mxgraph/jgraphx/3.9.8.1/jgraphx-3.9.8.1.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/com/github/wendykierp/JTransforms/3.1/JTransforms-3.1.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/com/google/code/gson/gson/2.8.6/gson-2.8.6.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/com/intellij/annotations/12.0/annotations-12.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/sourcecode_2.11/0.2.7/sourcecode_2.11-0.2.7.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/commons-io/commons-io/2.4/commons-io-2.4.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/net/java/dev/jna/jna-platform/4.2.2/jna-platform-4.2.2.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/net/java/dev/jna/jna/5.3.0/jna-5.3.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/net/openhft/affinity/3.1.11/affinity-3.1.11.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/net/sf/opencsv/opencsv/2.3/opencsv-2.3.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/net/sf/trove4j/trove4j/3.0.3/trove4j-3.0.3.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/net/sourceforge/f2j/arpack_combined_all/0.1/arpack_combined_all-0.1.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/antlr/antlr4-runtime/4.7.2/antlr4-runtime-4.7.2.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/apache/commons/commons-compress/1.20/commons-compress-1.20.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/apache/commons/commons-csv/1.8/commons-csv-1.8.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/apache/commons/commons-lang3/3.8.1/commons-lang3-3.8.1.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/apache/commons/commons-math3/3.5/commons-math3-3.5.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/apache/commons/commons-text/1.6/commons-text-1.6.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/jgrapht/jgrapht-core/1.4.0/jgrapht-core-1.4.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/jgrapht/jgrapht-ext/1.4.0/jgrapht-ext-1.4.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/jgrapht/jgrapht-io/1.4.0/jgrapht-io-1.4.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/jheaps/jheaps/0.11/jheaps-0.11.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-collection-compat_2.11/2.1.1/scala-collection-compat_2.11-2.1.1.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-parser-combinators_2.11/1.0.4/scala-parser-combinators_2.11-1.0.4.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-xml_2.11/1.3.0/scala-xml_2.11-1.3.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-compiler/2.11.12/scala-compiler-2.11.12.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.11.12/scala-library-2.11.12.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.11.12/scala-reflect-2.11.12.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalactic/scalactic_2.11/3.2.9/scalactic_2.11-3.2.9.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalanlp/breeze-macros_2.11/1.0/breeze-macros_2.11-1.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalanlp/breeze_2.11/1.0/breeze_2.11-1.0.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalatest/scalatest-compatible/3.2.9/scalatest-compatible-3.2.9.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalatest/scalatest-core_2.11/3.2.9/scalatest-core_2.11-3.2.9.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalatest/scalatest-diagrams_2.11/3.2.9/scalatest-diagrams_2.11-3.2.9.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalatest/scalatest-featurespec_2.11/3.2.9/scalatest-featurespec_2.11-3.2.9.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalatest/scalatest-flatspec_2.11/3.2.9/scalatest-flatspec_2.11-3.2.9.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalatest/scalatest-freespec_2.11/3.2.9/scalatest-freespec_2.11-3.2.9.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalatest/scalatest-funspec_2.11/3.2.9/scalatest-funspec_2.11-3.2.9.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalatest/scalatest-funsuite_2.11/3.2.9/scalatest-funsuite_2.11-3.2.9.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalatest/scalatest-matchers-core_2.11/3.2.9/scalatest-matchers-core_2.11-3.2.9.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalatest/scalatest-mustmatchers_2.11/3.2.9/scalatest-mustmatchers_2.11-3.2.9.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalatest/scalatest-propspec_2.11/3.2.9/scalatest-propspec_2.11-3.2.9.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalatest/scalatest-refspec_2.11/3.2.9/scalatest-refspec_2.11-3.2.9.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalatest/scalatest-shouldmatchers_2.11/3.2.9/scalatest-shouldmatchers_2.11-3.2.9.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalatest/scalatest-wordspec_2.11/3.2.9/scalatest-wordspec_2.11-3.2.9.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalatest/scalatest_2.11/3.2.9/scalatest_2.11-3.2.9.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.30/slf4j-api-1.7.30.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/slf4j/slf4j-simple/1.7.25/slf4j-simple-1.7.25.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/algebra_2.11/2.0.0-M2/algebra_2.11-2.0.0-M2.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_2.11/2.0.0-M4/cats-kernel_2.11-2.0.0-M4.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/machinist_2.11/0.6.8/machinist_2.11-0.6.8.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/macro-compat_2.11/1.1.1/macro-compat_2.11-1.1.1.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/spire-macros_2.11/0.17.0-M1/spire-macros_2.11-0.17.0-M1.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/spire-platform_2.11/0.17.0-M1/spire-platform_2.11-0.17.0-M1.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/spire-util_2.11/0.17.0-M1/spire-util_2.11-0.17.0-M1.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/spire_2.11/0.17.0-M1/spire_2.11-0.17.0-M1.jar:/home/ltr/.cache/coursier/v1/https/repo1.maven.org/maven2/pl/edu/icm/JLargeArrays/1.5/JLargeArrays-1.5.jar:/home/ltr/IdeaProjects/Chainsaw/lib/engine.jar org.jetbrains.plugins.scala.testingSupport.scalaTest.ScalaTestRunner -s Chainsaw.Crypto.RSA.MontExpSystolicTest -testName testMontExpSystolicHardwareWithROM -showProgressMessages true
+Testing started at 下午4:51 ...
+
+
+
+length of the modulus: 512
+goldens >= M exists: false
+[Runtime] SpinalHDL v1.5.0    git head : 83a031922866b078c411ec5529e00f1b6e79f8e7
+[Runtime] JVM max memory : 14279.5MiB
+[Runtime] Current date : 2021.06.24 16:51:28
+[Progress] at 0.000 : Elaborate components
+
+********systolic array properties report********
+	a instance of MontMul has been initialized, supported sizes of Montgomery Multiplications are lM = 512 1024 2048 3072 4096
+********AREA/TIMING********
+	word size w = 32,
+	number of PE p = 128
+	depth of queue = 1
+	estimated area is , for Xilinx UltraScale, fMax >=
+	estimated area is , for TSMC 40nm technology, fMax >=
+********AREA/TIMING********
+********WORKING STATUS********
+	lMs:                     512       1024      2048      3072      4096
+	word number e:           17        33        65        97        129
+	rounds r:                33        33        33        33        33
+	initiation intervals II: 561       1089      2145      3201      4257
+	latenciese:              547       1059      2083      3107      4131
+	PE utilization:          0.973484  0.971590  0.970643  0.727746  0.970170
+	queue utilization:       1.0       1.0       1.0       0.75      1.0
+********WORKING STATUS********
+	currently, we would require p <= e as p > e leads to interleaved input and thus, more complex input pattern
+	this systolic accept 1 task as a group, and would finish Montgomery Multiplications in
+	the input scheme is as follow:
+		io.run should be set through the calculation, name the first cycle with io.run set as cycle 0
+		for cycle i <- 0 to e-1, words of M and Y, M(i) and Y(i) should be provided to io.YWordIn and io.MWordIn
+		for cycle j <- 0 to p-1, bits of X, X(j) should be provided to io.XiIn, then
+		for cycle j <- e to e + p - 1, continues from X(j - (e - p)), this continues until X is fully consumed
+	the output is indicated by valid
+********systolic array properties report********
+mode = 0, an instance contains 1 group and 16 PEs
+mode = 1, an instance contains 2 group and 32 PEs
+mode = 2, an instance contains 4 group and 64 PEs
+mode = 3, an instance contains 6 group and 96 PEs
+mode = 4, an instance contains 8 group and 128 PEs
+outputProviders are 1 17 33 49 65 81 97 113
+RAMCounter counts = 1 2 4 6 8
+[Progress] at 0.421 : Checks and transforms
+[Warning] UNASSIGNED REGISTER (toplevel/exponentLengthReg :  UInt[5 bits]) with init value, please apply the allowUnsetRegToAvoidLatch tag if that's fine
+[Progress] at 0.982 : Generate Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] 2 signals were pruned. You can call printPruned on the backend report to get more informations.
+[Done] at 1.279
+[Progress] Simulation workspace in /home/ltr/IdeaProjects/Chainsaw/./simWorkspace/MontExpSystolic
+[Progress] Verilator compilation started
+[Progress] Verilator compilation done in 2678.770 ms
+[Progress] Start MontExpSystolic test simulation with seed 479552509
+test of mode 0, which run 8 instance of size 512
+X0     : e316b1c9 fa33163e 51a6a74c d56c6c5a 426e5d95 4ce7a570 e3f39e7a 553a4016 ee3c1a62 5fc469e9 830a531b a58f00e1 ffb6cc77 93a7fb15 2404e1b7 0024b3e4
+M      : e4953e67 bbfd39b1 96594a95 c1fada64 222eb192 5835a1e5 09263bf9 c6da65d0 b25185cf 54fcda0f d76f6fad 101cf883 81c06391 db11c247 3b0d5871 a3543000
+rSquare: 96ce5646 e3a28475 ea4fa114 da2c5314 8b2d789f 500c486a 7089e2b4 8e6db3f9 64e12592 7563852f 36a8ceaf 2d5c8210 28f78a99 b5a86a53 a4031f55 88db9ec8
+golden result0        : 10af305c 357b457a 441aae35 e171f890 8d9dc982 92876842 d1c77427 657fd0f9 a2467d3d 63919a7f 2b5c7f16 7160602d ca48b53d f85b8133 ff83432d 5b7c8b43
+dut result0           : 10af305c 357b457a 441aae35 e171f890 8d9dc982 92876842 d1c77427 657fd0f9 a2467d3d 63919a7f 2b5c7f16 7160602d ca48b53d f85b8133 ff83432d 5b7c8b43
+golden result1        : 68f83c53 cecf8249 c172d6d3 6ba68263 a08a7b29 f3e07271 b1c9d849 89392441 b0401a5d 3aa6cf2c 3ce663c0 03dbd396 6e16973f 3ae7ef24 a84554b5 49da63a1
+dut result1           : 68f83c53 cecf8249 c172d6d3 6ba68263 a08a7b29 f3e07271 b1c9d849 89392441 b0401a5d 3aa6cf2c 3ce663c0 03dbd396 6e16973f 3ae7ef24 a84554b5 49da63a1
+golden result2        : c5647964 ba2e782c 96e87a34 cff57103 31d4c20a 5d64babf b66e7696 f77a2b36 ae004e6f 4da5333b 6170b4cd 82c564a4 d4355e37 3b9e72b2 561a03d3 877b5829
+dut result2           : c5647964 ba2e782c 96e87a34 cff57103 31d4c20a 5d64babf b66e7696 f77a2b36 ae004e6f 4da5333b 6170b4cd 82c564a4 d4355e37 3b9e72b2 561a03d3 877b5829
+golden result3        : aca78efb 9f422c54 a660a841 ecd7d8c5 e9db7e84 bf32d165 4d3c70ac d350416b 0a50e981 2e75deb7 1215ef9d c2813252 8dc299a4 5c91bd52 1c7fb651 9aa33a11
+dut result3           : aca78efb 9f422c54 a660a841 ecd7d8c5 e9db7e84 bf32d165 4d3c70ac d350416b 0a50e981 2e75deb7 1215ef9d c2813252 8dc299a4 5c91bd52 1c7fb651 9aa33a11
+golden result4        : da71d1e1 6e7a00ab ead11e38 7cbd6f08 afca367a b6b57653 54a7d8a0 1e9a44d4 21f3a06d b7c7f21e 560204d5 54d9fc16 fc5e22e8 56819853 80635752 1a492796
+dut result4           : da71d1e1 6e7a00ab ead11e38 7cbd6f08 afca367a b6b57653 54a7d8a0 1e9a44d4 21f3a06d b7c7f21e 560204d5 54d9fc16 fc5e22e8 56819853 80635752 1a492796
+golden result5        : 746ee0e7 17bb3292 65074fda a2de920c 36ac68ce 3cbdefd2 fa6112e2 cd745e5d 3a5b4104 0c17a61f 3f458a05 5b03648a 4b3b617e 7064a452 7abff045 5aee6045
+dut result5           : 746ee0e7 17bb3292 65074fda a2de920c 36ac68ce 3cbdefd2 fa6112e2 cd745e5d 3a5b4104 0c17a61f 3f458a05 5b03648a 4b3b617e 7064a452 7abff045 5aee6045
+golden result6        : 80700cd0 5fe90132 e62aa22f 7ac33479 491ca967 654774f4 30059cb6 1c4e63b1 e11fba1d 971ef2c0 a2e92d00 7a6d0bb4 c4ff4cd5 abc59071 b7c68333 9ceb1cc2
+dut result6           : 80700cd0 5fe90132 e62aa22f 7ac33479 491ca967 654774f4 30059cb6 1c4e63b1 e11fba1d 971ef2c0 a2e92d00 7a6d0bb4 c4ff4cd5 abc59071 b7c68333 9ceb1cc2
+golden result7        : 127efab0 fbf35d35 5d9865dd b7ea5a31 02cffa3b de44e1be 1aa06353 61389660 35abafc7 f22dd655 dd9e5174 c309d947 d42bd826 ed7f2122 4e5489a3 2cd4e27f
+dut result7           : 127efab0 fbf35d35 5d9865dd b7ea5a31 02cffa3b de44e1be 1aa06353 61389660 35abafc7 f22dd655 dd9e5174 c309d947 d42bd826 ed7f2122 4e5489a3 2cd4e27f
+[Done] Simulation done in 921.804 ms
+[Runtime] SpinalHDL v1.5.0    git head : 83a031922866b078c411ec5529e00f1b6e79f8e7
+[Runtime] JVM max memory : 14279.5MiB
+[Runtime] Current date : 2021.06.24 16:51:33
+[Progress] at 4.939 : Elaborate components
+
+********systolic array properties report********
+	a instance of MontMul has been initialized, supported sizes of Montgomery Multiplications are lM = 512 1024 2048 3072 4096
+********AREA/TIMING********
+	word size w = 32,
+	number of PE p = 128
+	depth of queue = 1
+	estimated area is , for Xilinx UltraScale, fMax >=
+	estimated area is , for TSMC 40nm technology, fMax >=
+********AREA/TIMING********
+********WORKING STATUS********
+	lMs:                     512       1024      2048      3072      4096
+	word number e:           17        33        65        97        129
+	rounds r:                33        33        33        33        33
+	initiation intervals II: 561       1089      2145      3201      4257
+	latenciese:              547       1059      2083      3107      4131
+	PE utilization:          0.973484  0.971590  0.970643  0.727746  0.970170
+	queue utilization:       1.0       1.0       1.0       0.75      1.0
+********WORKING STATUS********
+	currently, we would require p <= e as p > e leads to interleaved input and thus, more complex input pattern
+	this systolic accept 1 task as a group, and would finish Montgomery Multiplications in
+	the input scheme is as follow:
+		io.run should be set through the calculation, name the first cycle with io.run set as cycle 0
+		for cycle i <- 0 to e-1, words of M and Y, M(i) and Y(i) should be provided to io.YWordIn and io.MWordIn
+		for cycle j <- 0 to p-1, bits of X, X(j) should be provided to io.XiIn, then
+		for cycle j <- e to e + p - 1, continues from X(j - (e - p)), this continues until X is fully consumed
+	the output is indicated by valid
+********systolic array properties report********
+mode = 0, an instance contains 1 group and 16 PEs
+mode = 1, an instance contains 2 group and 32 PEs
+mode = 2, an instance contains 4 group and 64 PEs
+mode = 3, an instance contains 6 group and 96 PEs
+mode = 4, an instance contains 8 group and 128 PEs
+outputProviders are 1 17 33 49 65 81 97 113
+RAMCounter counts = 1 2 4 6 8
+[Progress] at 5.031 : Checks and transforms
+[Warning] UNASSIGNED REGISTER (toplevel/exponentLengthReg :  UInt[5 bits]) with init value, please apply the allowUnsetRegToAvoidLatch tag if that's fine
+[Progress] at 5.381 : Generate Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] memReadAsync can only be write first into Verilog
+[Warning] 2 signals were pruned. You can call printPruned on the backend report to get more informations.
+[Done] at 5.531
+/tools/Xilinx/Vivado/2019.2/bin/vivado -nojournal -log doit.log -mode batch -source doit.tcl
+
+****** Vivado v2019.2 (64-bit)
+  **** SW Build 2708876 on Wed Nov  6 21:39:14 MST 2019
+  **** IP Build 2700528 on Thu Nov  7 00:09:20 MST 2019
+    ** Copyright 1986-2019 Xilinx, Inc. All Rights Reserved.
+
+Sourcing tcl script '/home/ltr/.Xilinx/Vivado/Vivado_init.tcl'
+135 Beta devices matching pattern found, 53 enabled.
+source doit.tcl
+# read_verilog -sv temp.sv
+# read_xdc doit.xdc
+# synth_design -part xczu7ev-ffvc1156-2-e -top temp
+Command: synth_design -part xczu7ev-ffvc1156-2-e -top temp
+Starting synth_design
+Attempting to get a license for feature 'Synthesis' and/or device 'xczu7ev'
+INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xczu7ev'
+INFO: [Device 21-403] Loading part xczu7ev-ffvc1156-2-e
+INFO: Launching helper process for spawning children vivado processes
+INFO: Helper process launched with PID 24610
+---------------------------------------------------------------------------------
+Starting RTL Elaboration : Time (s): cpu = 00:00:02 ; elapsed = 00:00:03 . Memory (MB): peak = 2549.875 ; gain = 0.000 ; free physical = 13894 ; free virtual = 41064
+---------------------------------------------------------------------------------
+INFO: [Synth 8-6157] synthesizing module 'temp' [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:20]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:969]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:970]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:971]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:972]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:973]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:974]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:975]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:976]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:977]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:978]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:979]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:980]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:981]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:982]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:983]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:984]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:985]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:986]
+INFO: [Synth 8-5534] Detected attribute (* ram_style = "distributed" *) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:987]
+INFO: [Synth 8-3876] $readmem data file 'temp.sv_toplevel_rSquareWordRAM.bin' is read successfully [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:1187]
+INFO: [Synth 8-3876] $readmem data file 'temp.sv_toplevel_mWordRAM.bin' is read successfully [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:1230]
+INFO: [Synth 8-3876] $readmem data file 'temp.sv_toplevel_exponentWordRAM.bin' is read successfully [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:1273]
+INFO: [Synth 8-3876] $readmem data file 'temp.sv_toplevel_productRAMs_0.bin' is read successfully [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:1365]
+INFO: [Synth 8-3876] $readmem data file 'temp.sv_toplevel_productRAMs_1.bin' is read successfully [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:1384]
+INFO: [Synth 8-3876] $readmem data file 'temp.sv_toplevel_productRAMs_2.bin' is read successfully [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:1403]
+INFO: [Synth 8-3876] $readmem data file 'temp.sv_toplevel_productRAMs_3.bin' is read successfully [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:1422]
+INFO: [Synth 8-3876] $readmem data file 'temp.sv_toplevel_productRAMs_4.bin' is read successfully [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:1441]
+INFO: [Synth 8-3876] $readmem data file 'temp.sv_toplevel_productRAMs_5.bin' is read successfully [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:1460]
+INFO: [Synth 8-3876] $readmem data file 'temp.sv_toplevel_productRAMs_6.bin' is read successfully [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:1479]
+INFO: [Synth 8-3876] $readmem data file 'temp.sv_toplevel_productRAMs_7.bin' is read successfully [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:1498]
+INFO: [Synth 8-6157] synthesizing module 'MontMulSystolicParallel' [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:8301]
+INFO: [Synth 8-6157] synthesizing module 'MontMulPE' [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:14466]
+INFO: [Synth 8-6155] done synthesizing module 'MontMulPE' (1#1) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:14466]
+INFO: [Synth 8-6155] done synthesizing module 'MontMulSystolicParallel' (2#1) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:8301]
+INFO: [Synth 8-6155] done synthesizing module 'temp' (3#1) [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:20]
+---------------------------------------------------------------------------------
+Finished RTL Elaboration : Time (s): cpu = 00:00:04 ; elapsed = 00:00:05 . Memory (MB): peak = 2642.621 ; gain = 92.746 ; free physical = 13877 ; free virtual = 41049
+---------------------------------------------------------------------------------
+
+Report Check Netlist:
++------+------------------+-------+---------+-------+------------------+
+|      |Item              |Errors |Warnings |Status |Description       |
++------+------------------+-------+---------+-------+------------------+
+|1     |multi_driven_nets |      0|        0|Passed |Multi driven nets |
++------+------------------+-------+---------+-------+------------------+
+---------------------------------------------------------------------------------
+Start Handling Custom Attributes
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Handling Custom Attributes : Time (s): cpu = 00:00:04 ; elapsed = 00:00:06 . Memory (MB): peak = 2658.465 ; gain = 108.590 ; free physical = 13886 ; free virtual = 41058
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished RTL Optimization Phase 1 : Time (s): cpu = 00:00:04 ; elapsed = 00:00:06 . Memory (MB): peak = 2658.465 ; gain = 108.590 ; free physical = 13886 ; free virtual = 41058
+---------------------------------------------------------------------------------
+Netlist sorting complete. Time (s): cpu = 00:00:00.31 ; elapsed = 00:00:00.31 . Memory (MB): peak = 2658.465 ; gain = 0.000 ; free physical = 13853 ; free virtual = 41025
+INFO: [Project 1-570] Preparing netlist for logic optimization
+
+Processing XDC Constraints
+Initializing timing engine
+Parsing XDC File [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/doit.xdc]
+Finished Parsing XDC File [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/doit.xdc]
+Completed Processing XDC Constraints
+
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 2855.996 ; gain = 0.000 ; free physical = 13729 ; free virtual = 40900
+INFO: [Project 1-111] Unisim Transformation Summary:
+No Unisim elements were transformed.
+
+Constraint Validation Runtime : Time (s): cpu = 00:00:00.53 ; elapsed = 00:00:00.16 . Memory (MB): peak = 2855.996 ; gain = 0.000 ; free physical = 13727 ; free virtual = 40898
+---------------------------------------------------------------------------------
+Finished Constraint Validation : Time (s): cpu = 00:00:16 ; elapsed = 00:00:18 . Memory (MB): peak = 2855.996 ; gain = 306.121 ; free physical = 13863 ; free virtual = 41035
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Loading Part and Timing Information
+---------------------------------------------------------------------------------
+Loading part: xczu7ev-ffvc1156-2-e
+INFO: [Synth 8-6742] Reading net delay rules and data
+---------------------------------------------------------------------------------
+Finished Loading Part and Timing Information : Time (s): cpu = 00:00:16 ; elapsed = 00:00:18 . Memory (MB): peak = 2855.996 ; gain = 306.121 ; free physical = 13863 ; free virtual = 41035
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Applying 'set_property' XDC Constraints
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished applying 'set_property' XDC Constraints : Time (s): cpu = 00:00:16 ; elapsed = 00:00:18 . Memory (MB): peak = 2855.996 ; gain = 306.121 ; free physical = 13863 ; free virtual = 41035
+---------------------------------------------------------------------------------
+INFO: [Synth 8-4471] merging register 'buffers_1_control_valid_reg' into 'buffers_0_control_valid_reg' [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:14104]
+INFO: [Synth 8-4471] merging register 'buffers_2_control_valid_reg' into 'buffers_0_control_valid_reg' [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:14109]
+INFO: [Synth 8-4471] merging register 'buffers_3_control_valid_reg' into 'buffers_0_control_valid_reg' [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:14114]
+INFO: [Synth 8-4471] merging register 'buffers_4_control_valid_reg' into 'buffers_0_control_valid_reg' [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:14119]
+INFO: [Synth 8-4471] merging register 'buffers_5_control_valid_reg' into 'buffers_0_control_valid_reg' [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:14124]
+INFO: [Synth 8-4471] merging register 'buffers_6_control_valid_reg' into 'buffers_0_control_valid_reg' [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:14129]
+INFO: [Synth 8-4471] merging register 'buffers_7_control_valid_reg' into 'buffers_0_control_valid_reg' [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp.sv:14134]
+INFO: [Synth 8-802] inferred FSM for state register 'fsm_stateReg_reg' in module 'MontMulSystolicParallel'
+INFO: [Synth 8-5544] ROM "_zz_eCounter_willOverflowIfInc_5" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
+INFO: [Synth 8-5542] Attribute ram_style/rom_style = distributed specified for ROM  "rSquareWordRAM". This will be implemented in logic
+INFO: [Synth 8-5542] Attribute ram_style/rom_style = distributed specified for ROM  "mWordRAM". This will be implemented in logic
+INFO: [Synth 8-5542] Attribute ram_style/rom_style = distributed specified for ROM  "exponentWordRAM". This will be implemented in logic
+INFO: [Synth 8-5544] ROM "_zz_mWordCounter_willOverflowIfInc_5" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
+INFO: [Synth 8-5544] ROM "_zz_xRAMCounter_willOverflowIfInc" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
+---------------------------------------------------------------------------------
+Finished RTL Optimization Phase 2 : Time (s): cpu = 00:00:18 ; elapsed = 00:00:20 . Memory (MB): peak = 2855.996 ; gain = 306.121 ; free physical = 13851 ; free virtual = 41025
+---------------------------------------------------------------------------------
+
+Report RTL Partitions:
++------+-----------------------------+------------+----------+
+|      |RTL Partition                |Replication |Instances |
++------+-----------------------------+------------+----------+
+|1     |MontMulSystolicParallel__GB0 |           1|     17467|
+|2     |MontMulSystolicParallel__GB1 |           1|      7376|
+|3     |MontMulSystolicParallel__GB2 |           1|     10354|
+|4     |MontMulSystolicParallel__GB3 |           1|     16369|
+|5     |MontMulSystolicParallel__GB4 |           1|     15685|
+|6     |temp__GC0                    |           1|     49871|
++------+-----------------------------+------------+----------+
+---------------------------------------------------------------------------------
+Start RTL Component Statistics
+---------------------------------------------------------------------------------
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 128
+	   2 Input     32 Bit       Adders := 256
+	   2 Input      8 Bit       Adders := 1
+	   2 Input      7 Bit       Adders := 2
+	   2 Input      6 Bit       Adders := 1
+	   2 Input      5 Bit       Adders := 2
+	   2 Input      4 Bit       Adders := 3
+	   3 Input      3 Bit       Adders := 128
+	   2 Input      3 Bit       Adders := 138
+	   2 Input      2 Bit       Adders := 128
++---XORs :
+	   2 Input      1 Bit         XORs := 128
+	   3 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 304
+	               31 Bit    Registers := 128
+	                8 Bit    Registers := 1
+	                7 Bit    Registers := 4
+	                6 Bit    Registers := 1
+	                5 Bit    Registers := 3
+	                4 Bit    Registers := 3
+	                3 Bit    Registers := 4
+	                2 Bit    Registers := 256
+	                1 Bit    Registers := 790
++---Muxes :
+	   2 Input     32 Bit        Muxes := 373
+	   4 Input     32 Bit        Muxes := 8
+	   8 Input     32 Bit        Muxes := 8
+	   6 Input     32 Bit        Muxes := 2
+	   5 Input     32 Bit        Muxes := 1
+	   2 Input      8 Bit        Muxes := 2
+	   4 Input      8 Bit        Muxes := 1
+	   2 Input      7 Bit        Muxes := 4
+	   4 Input      7 Bit        Muxes := 1
+	   2 Input      6 Bit        Muxes := 1
+	   2 Input      5 Bit        Muxes := 3
+	   2 Input      3 Bit        Muxes := 11
+	   4 Input      3 Bit        Muxes := 1
+	   5 Input      2 Bit        Muxes := 1
+	   2 Input      2 Bit        Muxes := 256
+	   2 Input      1 Bit        Muxes := 536
+	   3 Input      1 Bit        Muxes := 15
+	   5 Input      1 Bit        Muxes := 8
+	   6 Input      1 Bit        Muxes := 5
+	   8 Input      1 Bit        Muxes := 16
+---------------------------------------------------------------------------------
+Finished RTL Component Statistics
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start RTL Hierarchical Component Statistics
+---------------------------------------------------------------------------------
+Hierarchical RTL Component report
+Module temp
+Detailed RTL Component Info :
++---Adders :
+	   2 Input      7 Bit       Adders := 2
+	   2 Input      5 Bit       Adders := 2
+	   2 Input      4 Bit       Adders := 3
+	   2 Input      3 Bit       Adders := 10
++---XORs :
+	   3 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 24
+	                7 Bit    Registers := 4
+	                5 Bit    Registers := 3
+	                4 Bit    Registers := 3
+	                3 Bit    Registers := 4
+	                1 Bit    Registers := 13
++---Muxes :
+	   2 Input     32 Bit        Muxes := 302
+	   4 Input     32 Bit        Muxes := 8
+	   8 Input     32 Bit        Muxes := 8
+	   6 Input     32 Bit        Muxes := 2
+	   5 Input     32 Bit        Muxes := 1
+	   2 Input      7 Bit        Muxes := 4
+	   4 Input      7 Bit        Muxes := 1
+	   2 Input      5 Bit        Muxes := 3
+	   2 Input      3 Bit        Muxes := 11
+	   4 Input      3 Bit        Muxes := 1
+	   6 Input      1 Bit        Muxes := 5
+	   2 Input      1 Bit        Muxes := 97
+	   5 Input      1 Bit        Muxes := 6
+	   8 Input      1 Bit        Muxes := 16
+Module MontMulPE__1
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__2
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__3
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__4
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__5
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__6
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__7
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__8
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__9
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__10
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__11
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__12
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__13
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__14
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__15
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__16
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__17
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__18
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__19
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__20
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__21
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__22
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__23
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__24
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__25
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__26
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__27
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__28
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__29
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__30
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__31
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__32
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__33
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__34
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__35
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__36
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__37
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__38
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__39
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__40
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__41
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__42
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__43
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__44
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__45
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__46
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__47
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__48
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__49
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__50
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__51
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__52
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__53
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__54
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__55
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__56
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__57
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__58
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__59
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__60
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__61
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__62
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__63
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__64
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__65
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__66
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__67
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__68
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__69
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__70
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__71
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__72
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__73
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__74
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__75
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__76
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__77
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__78
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__79
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__80
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__81
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__82
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__83
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__84
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__85
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__86
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__87
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__88
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__89
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__90
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__91
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__92
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__93
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__94
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__95
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__96
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__97
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__98
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__99
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__100
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__101
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__102
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__103
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__104
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__105
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__106
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__107
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__108
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__109
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__110
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__111
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__112
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__113
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__114
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__115
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__116
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__117
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__118
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__119
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__120
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__121
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__122
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__123
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__124
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__125
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__126
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE__127
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulPE
+Detailed RTL Component Info :
++---Adders :
+	   2 Input     33 Bit       Adders := 1
+	   2 Input     32 Bit       Adders := 2
+	   3 Input      3 Bit       Adders := 1
+	   2 Input      3 Bit       Adders := 1
+	   2 Input      2 Bit       Adders := 1
++---XORs :
+	   2 Input      1 Bit         XORs := 1
++---Registers :
+	               32 Bit    Registers := 2
+	               31 Bit    Registers := 1
+	                2 Bit    Registers := 2
+	                1 Bit    Registers := 6
++---Muxes :
+	   2 Input      2 Bit        Muxes := 2
+	   2 Input      1 Bit        Muxes := 3
+Module MontMulSystolicParallel
+Detailed RTL Component Info :
++---Adders :
+	   2 Input      8 Bit       Adders := 1
+	   2 Input      6 Bit       Adders := 1
++---Registers :
+	               32 Bit    Registers := 24
+	                8 Bit    Registers := 1
+	                6 Bit    Registers := 1
+	                1 Bit    Registers := 9
++---Muxes :
+	   2 Input     32 Bit        Muxes := 71
+	   2 Input      8 Bit        Muxes := 2
+	   4 Input      8 Bit        Muxes := 1
+	   2 Input      6 Bit        Muxes := 1
+	   5 Input      2 Bit        Muxes := 1
+	   2 Input      1 Bit        Muxes := 55
+	   3 Input      1 Bit        Muxes := 15
+	   5 Input      1 Bit        Muxes := 2
+---------------------------------------------------------------------------------
+Finished RTL Hierarchical Component Statistics
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Part Resource Summary
+---------------------------------------------------------------------------------
+Part Resources:
+DSPs: 1728 (col length:144)
+BRAMs: 624 (col length: RAMB18 144 RAMB36 72)
+---------------------------------------------------------------------------------
+Finished Part Resource Summary
+---------------------------------------------------------------------------------
+INFO: [Synth 8-5580] Multithreading enabled for synth_design using a maximum of 4 processes.
+---------------------------------------------------------------------------------
+Start Cross Boundary and Area Optimization
+---------------------------------------------------------------------------------
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (buffers_0_control_valid_reg)
+INFO: [Synth 8-5542] Attribute ram_style/rom_style = distributed specified for ROM  "p_0_out". This will be implemented in logic
+INFO: [Synth 8-5542] Attribute ram_style/rom_style = distributed specified for ROM  "p_0_out". This will be implemented in logic
+INFO: [Synth 8-5542] Attribute ram_style/rom_style = distributed specified for ROM  "p_0_out". This will be implemented in logic
+INFO: [Synth 8-3886] merging instance 'xMontLasts_7_reg[0]' (FDCE) to 'xMontLasts_7_reg[31]'
+INFO: [Synth 8-3886] merging instance 'xMontLasts_6_reg[0]' (FDCE) to 'xMontLasts_6_reg[31]'
+INFO: [Synth 8-3886] merging instance 'xMontLasts_5_reg[0]' (FDCE) to 'xMontLasts_5_reg[31]'
+INFO: [Synth 8-3886] merging instance 'xMontLasts_4_reg[0]' (FDCE) to 'xMontLasts_4_reg[31]'
+INFO: [Synth 8-3886] merging instance 'xMontLasts_3_reg[0]' (FDCE) to 'xMontLasts_3_reg[31]'
+INFO: [Synth 8-3886] merging instance 'xMontLasts_2_reg[0]' (FDCE) to 'xMontLasts_2_reg[31]'
+INFO: [Synth 8-3886] merging instance 'xMontLasts_1_reg[0]' (FDCE) to 'xMontLasts_1_reg[31]'
+INFO: [Synth 8-3886] merging instance 'xMontLasts_0_reg[0]' (FDCE) to 'xMontLasts_0_reg[31]'
+INFO: [Synth 8-3886] merging instance 'productLasts_7_reg[31]' (FDCE) to 'productLasts_7_reg[0]'
+INFO: [Synth 8-3886] merging instance 'productLasts_6_reg[31]' (FDCE) to 'productLasts_6_reg[0]'
+INFO: [Synth 8-3886] merging instance 'productLasts_5_reg[31]' (FDCE) to 'productLasts_5_reg[0]'
+INFO: [Synth 8-3886] merging instance 'productLasts_4_reg[31]' (FDCE) to 'productLasts_4_reg[0]'
+INFO: [Synth 8-3886] merging instance 'productLasts_3_reg[31]' (FDCE) to 'productLasts_3_reg[0]'
+INFO: [Synth 8-3886] merging instance 'productLasts_2_reg[31]' (FDCE) to 'productLasts_2_reg[0]'
+INFO: [Synth 8-3886] merging instance 'productLasts_1_reg[31]' (FDCE) to 'productLasts_1_reg[0]'
+INFO: [Synth 8-3886] merging instance 'productLasts_0_reg[31]' (FDCE) to 'productLasts_0_reg[0]'
+---------------------------------------------------------------------------------
+Finished Cross Boundary and Area Optimization : Time (s): cpu = 00:00:29 ; elapsed = 00:01:05 . Memory (MB): peak = 2855.996 ; gain = 306.121 ; free physical = 8333 ; free virtual = 35538
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start ROM, RAM, DSP and Shift Register Reporting
+---------------------------------------------------------------------------------
+
+ROM:
++------------+------------+---------------+----------------+
+|Module Name | RTL Object | Depth x Width | Implemented As |
++------------+------------+---------------+----------------+
+|temp        | p_0_out    | 128x32        | LUT            |
+|temp        | p_0_out    | 128x32        | LUT            |
+|temp        | p_0_out    | 128x32        | LUT            |
++------------+------------+---------------+----------------+
+
+
+Distributed RAM: Preliminary Mapping	Report (see note below)
++------------+-------------------+----------------+----------------------+---------------+
+|Module Name | RTL Object        | Inference      | Size (Depth x Width) | Primitives    |
++------------+-------------------+----------------+----------------------+---------------+
+|temp__GC0   | productRAMs_0_reg | User Attribute | 16 x 32              | RAM32M16 x 6	 |
+|temp__GC0   | productRAMs_1_reg | User Attribute | 16 x 32              | RAM32M16 x 6	 |
+|temp__GC0   | productRAMs_2_reg | User Attribute | 16 x 32              | RAM32M16 x 6	 |
+|temp__GC0   | productRAMs_3_reg | User Attribute | 16 x 32              | RAM32M16 x 6	 |
+|temp__GC0   | productRAMs_4_reg | User Attribute | 16 x 32              | RAM32M16 x 6	 |
+|temp__GC0   | productRAMs_5_reg | User Attribute | 16 x 32              | RAM32M16 x 6	 |
+|temp__GC0   | productRAMs_6_reg | User Attribute | 16 x 32              | RAM32M16 x 6	 |
+|temp__GC0   | productRAMs_7_reg | User Attribute | 16 x 32              | RAM32M16 x 6	 |
+|temp__GC0   | xMontRAMs_7_reg   | User Attribute | 16 x 32              | RAM32M16 x 3	 |
+|temp__GC0   | xMontRAMs_6_reg   | User Attribute | 16 x 32              | RAM32M16 x 3	 |
+|temp__GC0   | xMontRAMs_5_reg   | User Attribute | 16 x 32              | RAM32M16 x 3	 |
+|temp__GC0   | xMontRAMs_4_reg   | User Attribute | 16 x 32              | RAM32M16 x 3	 |
+|temp__GC0   | xMontRAMs_3_reg   | User Attribute | 16 x 32              | RAM32M16 x 3	 |
+|temp__GC0   | xMontRAMs_2_reg   | User Attribute | 16 x 32              | RAM32M16 x 3	 |
+|temp__GC0   | xMontRAMs_1_reg   | User Attribute | 16 x 32              | RAM32M16 x 3	 |
+|temp__GC0   | xMontRAMs_0_reg   | User Attribute | 16 x 32              | RAM32M16 x 3	 |
++------------+-------------------+----------------+----------------------+---------------+
+
+Note: The table above is a preliminary report that shows the Distributed RAMs at the current stage of the synthesis flow. Some Distributed RAMs may be reimplemented as non Distributed RAM primitives later in the synthesis flow. Multiple instantiated RAMs are reported only once.
+---------------------------------------------------------------------------------
+Finished ROM, RAM, DSP and Shift Register Reporting
+---------------------------------------------------------------------------------
+
+Report RTL Partitions:
++------+-----------------------------+------------+----------+
+|      |RTL Partition                |Replication |Instances |
++------+-----------------------------+------------+----------+
+|1     |MontMulSystolicParallel__GB0 |           1|     10387|
+|2     |MontMulSystolicParallel__GB1 |           1|      4305|
+|3     |MontMulSystolicParallel__GB2 |           1|      6758|
+|4     |MontMulSystolicParallel__GB3 |           1|      9744|
+|5     |MontMulSystolicParallel__GB4 |           1|      9116|
+|6     |temp__GC0                    |           1|     21150|
++------+-----------------------------+------------+----------+
+---------------------------------------------------------------------------------
+Start Applying XDC Timing Constraints
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Applying XDC Timing Constraints : Time (s): cpu = 00:00:45 ; elapsed = 00:01:38 . Memory (MB): peak = 3302.582 ; gain = 752.707 ; free physical = 7670 ; free virtual = 34893
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Timing Optimization
+---------------------------------------------------------------------------------
+info: optimization accepted worst group hill climbing move (-5708.0/oG. 140.0ps)
+---------------------------------------------------------------------------------
+Finished Timing Optimization : Time (s): cpu = 00:01:57 ; elapsed = 00:02:50 . Memory (MB): peak = 3714.309 ; gain = 1164.434 ; free physical = 7535 ; free virtual = 34759
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start ROM, RAM, DSP and Shift Register Reporting
+---------------------------------------------------------------------------------
+
+Distributed RAM: Final Mapping	Report
++------------+-------------------+----------------+----------------------+---------------+
+|Module Name | RTL Object        | Inference      | Size (Depth x Width) | Primitives    |
++------------+-------------------+----------------+----------------------+---------------+
+|temp__GC0   | productRAMs_0_reg | User Attribute | 16 x 32              | RAM32M16 x 6	 |
+|temp__GC0   | productRAMs_1_reg | User Attribute | 16 x 32              | RAM32M16 x 6	 |
+|temp__GC0   | productRAMs_2_reg | User Attribute | 16 x 32              | RAM32M16 x 6	 |
+|temp__GC0   | productRAMs_3_reg | User Attribute | 16 x 32              | RAM32M16 x 6	 |
+|temp__GC0   | productRAMs_4_reg | User Attribute | 16 x 32              | RAM32M16 x 6	 |
+|temp__GC0   | productRAMs_5_reg | User Attribute | 16 x 32              | RAM32M16 x 6	 |
+|temp__GC0   | productRAMs_6_reg | User Attribute | 16 x 32              | RAM32M16 x 6	 |
+|temp__GC0   | productRAMs_7_reg | User Attribute | 16 x 32              | RAM32M16 x 6	 |
+|temp__GC0   | xMontRAMs_7_reg   | User Attribute | 16 x 32              | RAM32M16 x 3	 |
+|temp__GC0   | xMontRAMs_6_reg   | User Attribute | 16 x 32              | RAM32M16 x 3	 |
+|temp__GC0   | xMontRAMs_5_reg   | User Attribute | 16 x 32              | RAM32M16 x 3	 |
+|temp__GC0   | xMontRAMs_4_reg   | User Attribute | 16 x 32              | RAM32M16 x 3	 |
+|temp__GC0   | xMontRAMs_3_reg   | User Attribute | 16 x 32              | RAM32M16 x 3	 |
+|temp__GC0   | xMontRAMs_2_reg   | User Attribute | 16 x 32              | RAM32M16 x 3	 |
+|temp__GC0   | xMontRAMs_1_reg   | User Attribute | 16 x 32              | RAM32M16 x 3	 |
+|temp__GC0   | xMontRAMs_0_reg   | User Attribute | 16 x 32              | RAM32M16 x 3	 |
++------------+-------------------+----------------+----------------------+---------------+
+
+---------------------------------------------------------------------------------
+Finished ROM, RAM, DSP and Shift Register Reporting
+---------------------------------------------------------------------------------
+
+Report RTL Partitions:
++------+--------------+------------+----------+
+|      |RTL Partition |Replication |Instances |
++------+--------------+------------+----------+
+|1     |temp_GT0      |           1|     13114|
+|2     |temp_GT1      |           1|     48086|
++------+--------------+------------+----------+
+---------------------------------------------------------------------------------
+Start Technology Mapping
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Technology Mapping : Time (s): cpu = 00:02:05 ; elapsed = 00:03:37 . Memory (MB): peak = 3726.234 ; gain = 1176.359 ; free physical = 6201 ; free virtual = 33427
+---------------------------------------------------------------------------------
+
+Report RTL Partitions:
++------+--------------+------------+----------+
+|      |RTL Partition |Replication |Instances |
++------+--------------+------------+----------+
+|1     |temp_GT0      |           1|     10575|
+|2     |temp_GT1      |           1|     26966|
++------+--------------+------------+----------+
+---------------------------------------------------------------------------------
+Start IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Flattening Before IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Flattening Before IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Final Netlist Cleanup
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Final Netlist Cleanup
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished IO Insertion : Time (s): cpu = 00:02:10 ; elapsed = 00:03:42 . Memory (MB): peak = 3726.234 ; gain = 1176.359 ; free physical = 6168 ; free virtual = 33414
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Instances
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Instances : Time (s): cpu = 00:02:10 ; elapsed = 00:03:42 . Memory (MB): peak = 3726.234 ; gain = 1176.359 ; free physical = 6168 ; free virtual = 33414
+---------------------------------------------------------------------------------
+
+Report RTL Partitions:
++-+--------------+------------+----------+
+| |RTL Partition |Replication |Instances |
++-+--------------+------------+----------+
++-+--------------+------------+----------+
+
+Report Check Netlist:
++------+------------------+-------+---------+-------+------------------+
+|      |Item              |Errors |Warnings |Status |Description       |
++------+------------------+-------+---------+-------+------------------+
+|1     |multi_driven_nets |      0|        0|Passed |Multi driven nets |
++------+------------------+-------+---------+-------+------------------+
+---------------------------------------------------------------------------------
+Start Rebuilding User Hierarchy
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Rebuilding User Hierarchy : Time (s): cpu = 00:02:14 ; elapsed = 00:03:45 . Memory (MB): peak = 3726.234 ; gain = 1176.359 ; free physical = 6162 ; free virtual = 33409
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Ports
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Ports : Time (s): cpu = 00:02:14 ; elapsed = 00:03:46 . Memory (MB): peak = 3726.234 ; gain = 1176.359 ; free physical = 6162 ; free virtual = 33409
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Handling Custom Attributes
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Handling Custom Attributes : Time (s): cpu = 00:02:15 ; elapsed = 00:03:46 . Memory (MB): peak = 3726.234 ; gain = 1176.359 ; free physical = 6163 ; free virtual = 33409
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Nets
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Nets : Time (s): cpu = 00:02:15 ; elapsed = 00:03:47 . Memory (MB): peak = 3726.234 ; gain = 1176.359 ; free physical = 6163 ; free virtual = 33409
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start ROM, RAM, DSP and Shift Register Reporting
+---------------------------------------------------------------------------------
+
+Static Shift Register Report:
++------------+------------------------------------------------------+--------+-------+--------------+--------------------+-------------------+--------+---------+
+|Module Name | RTL Name                                             | Length | Width | Reset Signal | Pull out first Reg | Pull out last Reg | SRL16E | SRLC32E |
++------------+------------------------------------------------------+--------+-------+--------------+--------------------+-------------------+--------+---------+
+|temp        | montMult/PEs_111/io_flowIn_control_valid_regNext_reg | 14     | 1     | YES          | NO                 | YES               | 1      | 0       |
+|temp        | montMult/PEs_95/io_flowIn_control_valid_regNext_reg  | 14     | 1     | YES          | NO                 | YES               | 1      | 0       |
+|temp        | montMult/PEs_31/io_flowIn_control_valid_regNext_reg  | 14     | 1     | YES          | NO                 | YES               | 1      | 0       |
+|temp        | montMult/PEs_15/io_flowIn_control_valid_regNext_reg  | 14     | 1     | YES          | NO                 | YES               | 1      | 0       |
+|temp        | montMult/PEs_79/io_flowIn_control_valid_regNext_reg  | 14     | 1     | YES          | NO                 | YES               | 1      | 0       |
+|temp        | montMult/PEs_47/io_flowIn_control_valid_regNext_reg  | 14     | 1     | YES          | NO                 | YES               | 1      | 0       |
+|temp        | montMult/PEs_63/io_flowIn_control_valid_regNext_reg  | 14     | 1     | YES          | NO                 | YES               | 1      | 0       |
++------------+------------------------------------------------------+--------+-------+--------------+--------------------+-------------------+--------+---------+
+
+---------------------------------------------------------------------------------
+Finished ROM, RAM, DSP and Shift Register Reporting
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Writing Synthesis Report
+---------------------------------------------------------------------------------
+
+Report BlackBoxes:
++-+--------------+----------+
+| |BlackBox name |Instances |
++-+--------------+----------+
++-+--------------+----------+
+
+Report Cell Usage:
++------+---------+------+
+|      |Cell     |Count |
++------+---------+------+
+|1     |BUFG     |     1|
+|2     |CARRY8   |  1665|
+|3     |LUT1     |    32|
+|4     |LUT2     |  7149|
+|5     |LUT3     |  4350|
+|6     |LUT4     |  2463|
+|7     |LUT5     |  1874|
+|8     |LUT6     |  4895|
+|9     |MUXF7    |    64|
+|10    |MUXF8    |    32|
+|11    |RAM32M16 |    72|
+|12    |SRL16E   |     7|
+|13    |FDCE     |  6535|
+|14    |FDRE     |  8475|
+|15    |IBUF     |     8|
+|16    |OBUF     |   264|
++------+---------+------+
+
+Report Instance Areas:
++------+------------+------------------------+------+
+|      |Instance    |Module                  |Cells |
++------+------------+------------------------+------+
+|1     |top         |                        | 37886|
+|2     |  montMult  |MontMulSystolicParallel | 32364|
+|3     |    PEs_0   |MontMulPE               |   858|
+|4     |    PEs_1   |MontMulPE_0             |   239|
+|5     |    PEs_10  |MontMulPE_1             |   222|
+|6     |    PEs_100 |MontMulPE_2             |   224|
+|7     |    PEs_101 |MontMulPE_3             |   223|
+|8     |    PEs_102 |MontMulPE_4             |   223|
+|9     |    PEs_103 |MontMulPE_5             |   224|
+|10    |    PEs_104 |MontMulPE_6             |   223|
+|11    |    PEs_105 |MontMulPE_7             |   223|
+|12    |    PEs_106 |MontMulPE_8             |   223|
+|13    |    PEs_107 |MontMulPE_9             |   224|
+|14    |    PEs_108 |MontMulPE_10            |   223|
+|15    |    PEs_109 |MontMulPE_11            |   224|
+|16    |    PEs_11  |MontMulPE_12            |   222|
+|17    |    PEs_110 |MontMulPE_13            |   264|
+|18    |    PEs_111 |MontMulPE_14            |   322|
+|19    |    PEs_112 |MontMulPE_15            |   263|
+|20    |    PEs_113 |MontMulPE_16            |   228|
+|21    |    PEs_114 |MontMulPE_17            |   222|
+|22    |    PEs_115 |MontMulPE_18            |   222|
+|23    |    PEs_116 |MontMulPE_19            |   222|
+|24    |    PEs_117 |MontMulPE_20            |   222|
+|25    |    PEs_118 |MontMulPE_21            |   222|
+|26    |    PEs_119 |MontMulPE_22            |   222|
+|27    |    PEs_12  |MontMulPE_23            |   222|
+|28    |    PEs_120 |MontMulPE_24            |   222|
+|29    |    PEs_121 |MontMulPE_25            |   222|
+|30    |    PEs_122 |MontMulPE_26            |   222|
+|31    |    PEs_123 |MontMulPE_27            |   222|
+|32    |    PEs_124 |MontMulPE_28            |   222|
+|33    |    PEs_125 |MontMulPE_29            |   222|
+|34    |    PEs_126 |MontMulPE_30            |   222|
+|35    |    PEs_127 |MontMulPE_31            |   140|
+|36    |    PEs_13  |MontMulPE_32            |   223|
+|37    |    PEs_14  |MontMulPE_33            |   224|
+|38    |    PEs_15  |MontMulPE_34            |   324|
+|39    |    PEs_16  |MontMulPE_35            |   368|
+|40    |    PEs_17  |MontMulPE_36            |   230|
+|41    |    PEs_18  |MontMulPE_37            |   222|
+|42    |    PEs_19  |MontMulPE_38            |   222|
+|43    |    PEs_2   |MontMulPE_39            |   222|
+|44    |    PEs_20  |MontMulPE_40            |   222|
+|45    |    PEs_21  |MontMulPE_41            |   222|
+|46    |    PEs_22  |MontMulPE_42            |   222|
+|47    |    PEs_23  |MontMulPE_43            |   222|
+|48    |    PEs_24  |MontMulPE_44            |   222|
+|49    |    PEs_25  |MontMulPE_45            |   222|
+|50    |    PEs_26  |MontMulPE_46            |   222|
+|51    |    PEs_27  |MontMulPE_47            |   222|
+|52    |    PEs_28  |MontMulPE_48            |   222|
+|53    |    PEs_29  |MontMulPE_49            |   223|
+|54    |    PEs_3   |MontMulPE_50            |   222|
+|55    |    PEs_30  |MontMulPE_51            |   224|
+|56    |    PEs_31  |MontMulPE_52            |   388|
+|57    |    PEs_32  |MontMulPE_53            |   635|
+|58    |    PEs_33  |MontMulPE_54            |   227|
+|59    |    PEs_34  |MontMulPE_55            |   222|
+|60    |    PEs_35  |MontMulPE_56            |   222|
+|61    |    PEs_36  |MontMulPE_57            |   222|
+|62    |    PEs_37  |MontMulPE_58            |   222|
+|63    |    PEs_38  |MontMulPE_59            |   222|
+|64    |    PEs_39  |MontMulPE_60            |   222|
+|65    |    PEs_4   |MontMulPE_61            |   222|
+|66    |    PEs_40  |MontMulPE_62            |   222|
+|67    |    PEs_41  |MontMulPE_63            |   222|
+|68    |    PEs_42  |MontMulPE_64            |   222|
+|69    |    PEs_43  |MontMulPE_65            |   222|
+|70    |    PEs_44  |MontMulPE_66            |   222|
+|71    |    PEs_45  |MontMulPE_67            |   223|
+|72    |    PEs_46  |MontMulPE_68            |   224|
+|73    |    PEs_47  |MontMulPE_69            |   323|
+|74    |    PEs_48  |MontMulPE_70            |   479|
+|75    |    PEs_49  |MontMulPE_71            |   228|
+|76    |    PEs_5   |MontMulPE_72            |   222|
+|77    |    PEs_50  |MontMulPE_73            |   222|
+|78    |    PEs_51  |MontMulPE_74            |   222|
+|79    |    PEs_52  |MontMulPE_75            |   222|
+|80    |    PEs_53  |MontMulPE_76            |   222|
+|81    |    PEs_54  |MontMulPE_77            |   222|
+|82    |    PEs_55  |MontMulPE_78            |   222|
+|83    |    PEs_56  |MontMulPE_79            |   222|
+|84    |    PEs_57  |MontMulPE_80            |   222|
+|85    |    PEs_58  |MontMulPE_81            |   222|
+|86    |    PEs_59  |MontMulPE_82            |   222|
+|87    |    PEs_6   |MontMulPE_83            |   222|
+|88    |    PEs_60  |MontMulPE_84            |   222|
+|89    |    PEs_61  |MontMulPE_85            |   223|
+|90    |    PEs_62  |MontMulPE_86            |   224|
+|91    |    PEs_63  |MontMulPE_87            |   446|
+|92    |    PEs_64  |MontMulPE_88            |   364|
+|93    |    PEs_65  |MontMulPE_89            |   232|
+|94    |    PEs_66  |MontMulPE_90            |   224|
+|95    |    PEs_67  |MontMulPE_91            |   224|
+|96    |    PEs_68  |MontMulPE_92            |   224|
+|97    |    PEs_69  |MontMulPE_93            |   224|
+|98    |    PEs_7   |MontMulPE_94            |   222|
+|99    |    PEs_70  |MontMulPE_95            |   224|
+|100   |    PEs_71  |MontMulPE_96            |   224|
+|101   |    PEs_72  |MontMulPE_97            |   224|
+|102   |    PEs_73  |MontMulPE_98            |   224|
+|103   |    PEs_74  |MontMulPE_99            |   224|
+|104   |    PEs_75  |MontMulPE_100           |   224|
+|105   |    PEs_76  |MontMulPE_101           |   224|
+|106   |    PEs_77  |MontMulPE_102           |   225|
+|107   |    PEs_78  |MontMulPE_103           |   226|
+|108   |    PEs_79  |MontMulPE_104           |   356|
+|109   |    PEs_8   |MontMulPE_105           |   222|
+|110   |    PEs_80  |MontMulPE_106           |   478|
+|111   |    PEs_81  |MontMulPE_107           |   229|
+|112   |    PEs_82  |MontMulPE_108           |   222|
+|113   |    PEs_83  |MontMulPE_109           |   222|
+|114   |    PEs_84  |MontMulPE_110           |   222|
+|115   |    PEs_85  |MontMulPE_111           |   222|
+|116   |    PEs_86  |MontMulPE_112           |   222|
+|117   |    PEs_87  |MontMulPE_113           |   222|
+|118   |    PEs_88  |MontMulPE_114           |   222|
+|119   |    PEs_89  |MontMulPE_115           |   222|
+|120   |    PEs_9   |MontMulPE_116           |   222|
+|121   |    PEs_90  |MontMulPE_117           |   222|
+|122   |    PEs_91  |MontMulPE_118           |   222|
+|123   |    PEs_92  |MontMulPE_119           |   222|
+|124   |    PEs_93  |MontMulPE_120           |   223|
+|125   |    PEs_94  |MontMulPE_121           |   224|
+|126   |    PEs_95  |MontMulPE_122           |   390|
+|127   |    PEs_96  |MontMulPE_123           |   287|
+|128   |    PEs_97  |MontMulPE_124           |   236|
+|129   |    PEs_98  |MontMulPE_125           |   223|
+|130   |    PEs_99  |MontMulPE_126           |   223|
++------+------------+------------------------+------+
+---------------------------------------------------------------------------------
+Finished Writing Synthesis Report : Time (s): cpu = 00:02:15 ; elapsed = 00:03:47 . Memory (MB): peak = 3726.234 ; gain = 1176.359 ; free physical = 6163 ; free virtual = 33409
+---------------------------------------------------------------------------------
+Synthesis finished with 0 errors, 0 critical warnings and 0 warnings.
+Synthesis Optimization Runtime : Time (s): cpu = 00:02:08 ; elapsed = 00:03:40 . Memory (MB): peak = 3726.234 ; gain = 978.828 ; free physical = 13111 ; free virtual = 40358
+Synthesis Optimization Complete : Time (s): cpu = 00:02:17 ; elapsed = 00:03:49 . Memory (MB): peak = 3726.234 ; gain = 1176.359 ; free physical = 13115 ; free virtual = 40358
+INFO: [Project 1-571] Translating synthesized netlist
+Netlist sorting complete. Time (s): cpu = 00:00:00.38 ; elapsed = 00:00:00.38 . Memory (MB): peak = 3726.234 ; gain = 0.000 ; free physical = 13088 ; free virtual = 40330
+INFO: [Netlist 29-17] Analyzing 1842 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-570] Preparing netlist for logic optimization
+Parsing XDC File [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/doit.xdc]
+Finished Parsing XDC File [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/doit.xdc]
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.01 . Memory (MB): peak = 3770.336 ; gain = 0.000 ; free physical = 13002 ; free virtual = 40244
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 81 instances were transformed.
+  BUFG => BUFGCE: 1 instance
+  IBUF => IBUF (IBUFCTRL, INBUF): 8 instances
+  RAM32M16 => RAM32M16 (RAMD32(x14), RAMS32(x2)): 72 instances
+
+INFO: [Common 17-83] Releasing license: Synthesis
+83 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+synth_design completed successfully
+synth_design: Time (s): cpu = 00:02:32 ; elapsed = 00:04:10 . Memory (MB): peak = 3770.336 ; gain = 2239.254 ; free physical = 13160 ; free virtual = 40403
+# report_utilization
+Copyright 1986-2019 Xilinx, Inc. All Rights Reserved.
+------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2019.2 (lin64) Build 2708876 Wed Nov  6 21:39:14 MST 2019
+| Date         : Thu Jun 24 16:55:55 2021
+| Host         : 311-FPGA running 64-bit unknown
+| Command      : report_utilization
+| Design       : temp
+| Device       : xczu7evffvc1156-2
+| Design State : Synthesized
+------------------------------------------------------------------------------------
+
+Utilization Design Information
+
+Table of Contents
+-----------------
+1. CLB Logic
+1.1 Summary of Registers by Type
+2. BLOCKRAM
+3. ARITHMETIC
+4. I/O
+5. CLOCK
+6. ADVANCED
+7. CONFIGURATION
+8. Primitives
+9. Black Boxes
+10. Instantiated Netlists
+
+1. CLB Logic
+------------
+
++----------------------------+-------+-------+-----------+-------+
+|          Site Type         |  Used | Fixed | Available | Util% |
++----------------------------+-------+-------+-----------+-------+
+| CLB LUTs*                  | 20936 |     0 |    230400 |  9.09 |
+|   LUT as Logic             | 20353 |     0 |    230400 |  8.83 |
+|   LUT as Memory            |   583 |     0 |    101760 |  0.57 |
+|     LUT as Distributed RAM |   576 |     0 |           |       |
+|     LUT as Shift Register  |     7 |     0 |           |       |
+| CLB Registers              | 15010 |     0 |    460800 |  3.26 |
+|   Register as Flip Flop    | 15010 |     0 |    460800 |  3.26 |
+|   Register as Latch        |     0 |     0 |    460800 |  0.00 |
+| CARRY8                     |  1665 |     0 |     28800 |  5.78 |
+| F7 Muxes                   |    64 |     0 |    115200 |  0.06 |
+| F8 Muxes                   |    32 |     0 |     57600 |  0.06 |
+| F9 Muxes                   |     0 |     0 |     28800 |  0.00 |
++----------------------------+-------+-------+-----------+-------+
+* Warning! The Final LUT count, after physical optimizations and full implementation, is typically lower. Run opt_design after synthesis, if not already completed, for a more realistic count.
+
+
+1.1 Summary of Registers by Type
+--------------------------------
+
++-------+--------------+-------------+--------------+
+| Total | Clock Enable | Synchronous | Asynchronous |
++-------+--------------+-------------+--------------+
+| 0     |            _ |           - |            - |
+| 0     |            _ |           - |          Set |
+| 0     |            _ |           - |        Reset |
+| 0     |            _ |         Set |            - |
+| 0     |            _ |       Reset |            - |
+| 0     |          Yes |           - |            - |
+| 0     |          Yes |           - |          Set |
+| 6535  |          Yes |           - |        Reset |
+| 0     |          Yes |         Set |            - |
+| 8475  |          Yes |       Reset |            - |
++-------+--------------+-------------+--------------+
+
+
+2. BLOCKRAM
+-----------
+
++----------------+------+-------+-----------+-------+
+|    Site Type   | Used | Fixed | Available | Util% |
++----------------+------+-------+-----------+-------+
+| Block RAM Tile |    0 |     0 |       312 |  0.00 |
+|   RAMB36/FIFO* |    0 |     0 |       312 |  0.00 |
+|   RAMB18       |    0 |     0 |       624 |  0.00 |
+| URAM           |    0 |     0 |        96 |  0.00 |
++----------------+------+-------+-----------+-------+
+* Note: Each Block RAM Tile only has one FIFO logic available and therefore can accommodate only one FIFO36E2 or one FIFO18E2. However, if a FIFO18E2 occupies a Block RAM Tile, that tile can still accommodate a RAMB18E2
+
+
+3. ARITHMETIC
+-------------
+
++-----------+------+-------+-----------+-------+
+| Site Type | Used | Fixed | Available | Util% |
++-----------+------+-------+-----------+-------+
+| DSPs      |    0 |     0 |      1728 |  0.00 |
++-----------+------+-------+-----------+-------+
+
+
+4. I/O
+------
+
++------------+------+-------+-----------+-------+
+|  Site Type | Used | Fixed | Available | Util% |
++------------+------+-------+-----------+-------+
+| Bonded IOB |  272 |     0 |       360 | 75.56 |
++------------+------+-------+-----------+-------+
+
+
+5. CLOCK
+--------
+
++----------------------+------+-------+-----------+-------+
+|       Site Type      | Used | Fixed | Available | Util% |
++----------------------+------+-------+-----------+-------+
+| GLOBAL CLOCK BUFFERs |    1 |     0 |       544 |  0.18 |
+|   BUFGCE             |    1 |     0 |       208 |  0.48 |
+|   BUFGCE_DIV         |    0 |     0 |        32 |  0.00 |
+|   BUFG_GT            |    0 |     0 |       144 |  0.00 |
+|   BUFG_PS            |    0 |     0 |        96 |  0.00 |
+|   BUFGCTRL*          |    0 |     0 |        64 |  0.00 |
+| PLL                  |    0 |     0 |        16 |  0.00 |
+| MMCM                 |    0 |     0 |         8 |  0.00 |
++----------------------+------+-------+-----------+-------+
+* Note: Each used BUFGCTRL counts as two GLOBAL CLOCK BUFFERs. This table does not include global clocking resources, only buffer cell usage. See the Clock Utilization Report (report_clock_utilization) for detailed accounting of global clocking resource availability.
+
+
+6. ADVANCED
+-----------
+
++-----------------+------+-------+-----------+-------+
+|    Site Type    | Used | Fixed | Available | Util% |
++-----------------+------+-------+-----------+-------+
+| GTHE4_CHANNEL   |    0 |     0 |        20 |  0.00 |
+| GTHE4_COMMON    |    0 |     0 |         5 |  0.00 |
+| OBUFDS_GTE4     |    0 |     0 |        10 |  0.00 |
+| OBUFDS_GTE4_ADV |    0 |     0 |        10 |  0.00 |
+| PCIE40E4        |    0 |     0 |         2 |  0.00 |
+| PS8             |    0 |     0 |         1 |  0.00 |
+| SYSMONE4        |    0 |     0 |         1 |  0.00 |
+| VCU             |    0 |     0 |         1 |  0.00 |
++-----------------+------+-------+-----------+-------+
+
+
+7. CONFIGURATION
+----------------
+
++-------------+------+-------+-----------+-------+
+|  Site Type  | Used | Fixed | Available | Util% |
++-------------+------+-------+-----------+-------+
+| BSCANE2     |    0 |     0 |         4 |  0.00 |
+| DNA_PORTE2  |    0 |     0 |         1 |  0.00 |
+| EFUSE_USR   |    0 |     0 |         1 |  0.00 |
+| FRAME_ECCE4 |    0 |     0 |         1 |  0.00 |
+| ICAPE3      |    0 |     0 |         2 |  0.00 |
+| MASTER_JTAG |    0 |     0 |         1 |  0.00 |
+| STARTUPE3   |    0 |     0 |         1 |  0.00 |
++-------------+------+-------+-----------+-------+
+
+
+8. Primitives
+-------------
+
++----------+------+---------------------+
+| Ref Name | Used | Functional Category |
++----------+------+---------------------+
+| FDRE     | 8475 |            Register |
+| LUT2     | 7149 |                 CLB |
+| FDCE     | 6535 |            Register |
+| LUT6     | 4895 |                 CLB |
+| LUT3     | 4350 |                 CLB |
+| LUT4     | 2463 |                 CLB |
+| LUT5     | 1874 |                 CLB |
+| CARRY8   | 1665 |                 CLB |
+| RAMD32   | 1008 |                 CLB |
+| OBUF     |  264 |                 I/O |
+| RAMS32   |  144 |                 CLB |
+| MUXF7    |   64 |                 CLB |
+| MUXF8    |   32 |                 CLB |
+| LUT1     |   32 |                 CLB |
+| INBUF    |    8 |                 I/O |
+| IBUFCTRL |    8 |              Others |
+| SRL16E   |    7 |                 CLB |
+| BUFGCE   |    1 |               Clock |
++----------+------+---------------------+
+
+
+9. Black Boxes
+--------------
+
++----------+------+
+| Ref Name | Used |
++----------+------+
+
+
+10. Instantiated Netlists
+-------------------------
+
++----------+------+
+| Ref Name | Used |
++----------+------+
+
+
+# report_timing
+INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -2, Temperature grade: E, Delay Type: max.
+INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 8 CPUs
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+INFO: [Timing 38-78] ReportTimingParams: -max_paths 1 -nworst 1 -delay_type max -sort_by slack.
+Copyright 1986-2019 Xilinx, Inc. All Rights Reserved.
+-----------------------------------------------------------------------------------------
+| Tool Version      : Vivado v.2019.2 (lin64) Build 2708876 Wed Nov  6 21:39:14 MST 2019
+| Date              : Thu Jun 24 16:56:10 2021
+| Host              : 311-FPGA running 64-bit unknown
+| Command           : report_timing
+| Design            : temp
+| Device            : xczu7ev-ffvc1156
+| Speed File        : -2  PRODUCTION 1.26 08-13-2019
+| Temperature Grade : E
+-----------------------------------------------------------------------------------------
+
+Timing Report
+
+Slack (VIOLATED) :        -2.013ns  (required time - arrival time)
+  Source:                 xWordCounter_value_reg[1]/C
+                            (rising edge-triggered cell FDCE clocked by clk  {rise@0.000ns fall@1.250ns period=2.500ns})
+  Destination:            montMult/PEs_96/CE_reg[0]/D
+                            (rising edge-triggered cell FDCE clocked by clk  {rise@0.000ns fall@1.250ns period=2.500ns})
+  Path Group:             clk
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            2.500ns  (clk rise@2.500ns - clk rise@0.000ns)
+  Data Path Delay:        4.358ns  (logic 1.550ns (35.567%)  route 2.808ns (64.433%))
+  Logic Levels:           21  (CARRY8=6 LUT2=1 LUT3=2 LUT5=1 LUT6=8 MUXF7=1 MUXF8=1 RAMD32=1)
+  Clock Path Skew:        -0.145ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.927ns = ( 5.427 - 2.500 )
+    Source Clock Delay      (SCD):    3.355ns
+    Clock Pessimism Removal (CPR):    0.283ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk rise edge)        0.000     0.000 r
+                                                      0.000     0.000 r  clk (IN)
+                         net (fo=0)                   0.000     0.000    clk_IBUF_inst/I
+                         INBUF (Prop_INBUF_PAD_O)     0.582     0.582 r  clk_IBUF_inst/INBUF_INST/O
+                         net (fo=1, unplaced)         0.000     0.582    clk_IBUF_inst/OUT
+                         IBUFCTRL (Prop_IBUFCTRL_I_O)
+                                                      0.000     0.582 r  clk_IBUF_inst/IBUFCTRL_INST/O
+                         net (fo=1, unplaced)         0.161     0.743    clk_IBUF
+                         BUFGCE (Prop_BUFGCE_I_O)     0.028     0.771 r  clk_IBUF_BUFG_inst/O
+                         net (fo=16169, unplaced)     2.584     3.355    clk_IBUF_BUFG
+                         FDCE                                         r  xWordCounter_value_reg[1]/C
+  -------------------------------------------------------------------    -------------------
+                         FDCE (Prop_FDCE_C_Q)         0.077     3.432 r  xWordCounter_value_reg[1]/Q
+                         net (fo=341, unplaced)       0.262     3.694    productRAMs_7_reg_r2_0_15_14_27/ADDRC1
+                         RAMD32 (Prop_RAMD32_RADR1_O)
+                                                      0.123     3.817 r  productRAMs_7_reg_r2_0_15_14_27/RAMC_D1/O
+                         net (fo=1, unplaced)         0.107     3.924    montMult/PEs_80/_zz__zz_io_xiIns_0_7[19]
+                         LUT6 (Prop_LUT6_I0_O)        0.145     4.069 r  montMult/PEs_80/qi_i_208/O
+                         net (fo=1, unplaced)         0.032     4.101    montMult/PEs_80/qi_i_208_n_0
+                         MUXF7 (Prop_MUXF7_I0_O)      0.069     4.170 r  montMult/PEs_80/qi_reg_i_96/O
+                         net (fo=1, unplaced)         0.000     4.170    montMult/PEs_80/qi_reg_i_96_n_0
+                         MUXF8 (Prop_MUXF8_I0_O)      0.030     4.200 r  montMult/PEs_80/qi_reg_i_40/O
+                         net (fo=1, unplaced)         0.187     4.387    montMult/PEs_80/qi_reg_i_40_n_0
+                         LUT6 (Prop_LUT6_I0_O)        0.100     4.487 r  montMult/PEs_80/qi_i_14/O
+                         net (fo=4, unplaced)         0.153     4.640    montMult/PEs_80/xBitCounter_value_reg[4]
+                         LUT6 (Prop_LUT6_I0_O)        0.100     4.740 r  montMult/PEs_80/xi[0]_i_5/O
+                         net (fo=5, unplaced)         0.203     4.943    montMult/PEs_15/xi_reg[0]_8
+                         LUT6 (Prop_LUT6_I2_O)        0.038     4.981 r  montMult/PEs_15/xi[0]_i_2__18/O
+                         net (fo=38, unplaced)        0.249     5.230    montMult/PEs_110/qi_i_3__4_1
+                         LUT6 (Prop_LUT6_I5_O)        0.038     5.268 f  montMult/PEs_110/qi_i_7/O
+                         net (fo=1, unplaced)         0.185     5.453    montMult/PEs_110/qi_i_7_n_0
+                         LUT6 (Prop_LUT6_I1_O)        0.038     5.491 r  montMult/PEs_110/qi_i_3__4/O
+                         net (fo=6, unplaced)         0.207     5.698    montMult/PEs_97/qi_reg_2
+                         LUT5 (Prop_LUT5_I4_O)        0.038     5.736 r  montMult/PEs_97/qi_i_2__26/O
+                         net (fo=67, unplaced)        0.261     5.997    montMult/PEs_95/PEs_96_io_xi
+                         LUT3 (Prop_LUT3_I0_O)        0.038     6.035 r  montMult/PEs_95/xi[0]_i_1__30/O
+                         net (fo=11, unplaced)        0.220     6.255    montMult/PEs_95/xi_reg[0]_0
+                         LUT6 (Prop_LUT6_I2_O)        0.038     6.293 r  montMult/PEs_95/qi_i_1__30/O
+                         net (fo=37, unplaced)        0.248     6.541    montMult/PEs_95/qiInUse
+                         LUT3 (Prop_LUT3_I1_O)        0.037     6.578 r  montMult/PEs_95/SLower[7]_i_37__0/O
+                         net (fo=1, unplaced)         0.023     6.601    montMult/PEs_95/SLower[7]_i_37__0_n_0
+                         CARRY8 (Prop_CARRY8_S[1]_CO[7])
+                                                      0.197     6.798 r  montMult/PEs_95/SLower_reg[7]_i_21__30/CO[7]
+                         net (fo=1, unplaced)         0.005     6.803    montMult/PEs_95/SLower_reg[7]_i_21__30_n_0
+                         CARRY8 (Prop_CARRY8_CI_CO[7])
+                                                      0.022     6.825 r  montMult/PEs_95/SLower_reg[15]_i_19__30/CO[7]
+                         net (fo=1, unplaced)         0.005     6.830    montMult/PEs_95/SLower_reg[15]_i_19__30_n_0
+                         CARRY8 (Prop_CARRY8_CI_CO[7])
+                                                      0.022     6.852 r  montMult/PEs_95/SLower_reg[23]_i_19__30/CO[7]
+                         net (fo=1, unplaced)         0.005     6.857    montMult/PEs_95/SLower_reg[23]_i_19__30_n_0
+                         CARRY8 (Prop_CARRY8_CI_O[1])
+                                                      0.076     6.933 r  montMult/PEs_95/SLower_reg[30]_i_18__30/O[1]
+                         net (fo=1, unplaced)         0.183     7.116    montMult/PEs_96/SLower_reg[30]_2[1]
+                         LUT2 (Prop_LUT2_I1_O)        0.037     7.153 r  montMult/PEs_96/SLower[30]_i_9__30/O
+                         net (fo=1, unplaced)         0.023     7.176    montMult/PEs_95/S[1]
+                         CARRY8 (Prop_CARRY8_S[1]_CO[7])
+                                                      0.197     7.373 r  montMult/PEs_95/SLower_reg[30]_i_1__30/CO[7]
+                         net (fo=1, unplaced)         0.005     7.378    montMult/PEs_95/SLower_reg[30]_i_1__30_n_0
+                         CARRY8 (Prop_CARRY8_CI_CO[0])
+                                                      0.052     7.430 r  montMult/PEs_95/CE_reg[1]_i_2__30/CO[0]
+                         net (fo=4, unplaced)         0.197     7.627    montMult/PEs_95/CE_reg[1]_i_2__30_n_7
+                         LUT6 (Prop_LUT6_I5_O)        0.038     7.665 r  montMult/PEs_95/CE[0]_i_1__30/O
+                         net (fo=1, unplaced)         0.048     7.713    montMult/PEs_96/CE_reg[1]_1[0]
+                         FDCE                                         r  montMult/PEs_96/CE_reg[0]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk rise edge)        2.500     2.500 r
+                                                      0.000     2.500 r  clk (IN)
+                         net (fo=0)                   0.000     2.500    clk_IBUF_inst/I
+                         INBUF (Prop_INBUF_PAD_O)     0.331     2.831 r  clk_IBUF_inst/INBUF_INST/O
+                         net (fo=1, unplaced)         0.000     2.831    clk_IBUF_inst/OUT
+                         IBUFCTRL (Prop_IBUFCTRL_I_O)
+                                                      0.000     2.831 r  clk_IBUF_inst/IBUFCTRL_INST/O
+                         net (fo=1, unplaced)         0.133     2.964    clk_IBUF
+                         BUFGCE (Prop_BUFGCE_I_O)     0.024     2.988 r  clk_IBUF_BUFG_inst/O
+                         net (fo=16169, unplaced)     2.439     5.427    montMult/PEs_96/clk_IBUF_BUFG
+                         FDCE                                         r  montMult/PEs_96/CE_reg[0]/C
+                         clock pessimism              0.283     5.710
+                         clock uncertainty           -0.035     5.675
+                         FDCE (Setup_FDCE_C_D)        0.025     5.700    montMult/PEs_96/CE_reg[0]
+  -------------------------------------------------------------------
+                         required time                          5.700
+                         arrival time                          -7.713
+  -------------------------------------------------------------------
+                         slack                                 -2.013
+
+
+
+
+report_timing: Time (s): cpu = 00:00:22 ; elapsed = 00:00:15 . Memory (MB): peak = 4525.965 ; gain = 755.629 ; free physical = 12444 ; free virtual = 39687
+# write_checkpoint temp_synth.dcp
+Netlist sorting complete. Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00 . Memory (MB): peak = 4525.965 ; gain = 0.000 ; free physical = 12444 ; free virtual = 39687
+INFO: [Timing 38-480] Writing timing data to binary archive.
+INFO: [Common 17-1381] The checkpoint '/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp_synth.dcp' has been generated.
+INFO: [Common 17-206] Exiting Vivado at Thu Jun 24 16:56:14 2021...
+LUT: 20936
+FF: 15010
+DSP: 0
+BRAM: 0
+
+Frequency: 221.5820961666297 MHz
+
+
+
+
+Process finished with exit code 0

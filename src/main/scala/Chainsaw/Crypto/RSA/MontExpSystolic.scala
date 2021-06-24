@@ -63,15 +63,14 @@ case class MontExpSystolic(config: MontConfig,
   //  3. the next exponent bit should be fetched when a MontMult is done
   // all these counters are triggered by corresponding "need feed" signals, who take effect in the fsm part
   // starters
+//  val xCounter = MultiCountCounter(groupPerInstance.map(BigInt(_)), modeReg, inc = xWordCounter.willOverflow)
   val xBitCounter, exponentBitCounter = Counter(w)
-  val yWordCounter, outputWordCounter = Counter(wordPerGroup)
-  val mWordCounter = MultiCountCounter(lMs.map(lM => BigInt(lM / w)), modeReg)
+  val outputWordCounter = Counter(wordPerGroup)
   // cascaded counters driven by starters
   val xWordCounter = Counter(wordPerGroup, inc = xBitCounter.willOverflow)
   println(s"RAMCounter counts = ${lMs.map(lM => BigInt(lM / lMs.min)).mkString(" ")}")
   // how many RAMs should be involved in an instance
   val xRAMCounter = MultiCountCounter(groupPerInstance.map(BigInt(_)), modeReg, inc = xWordCounter.willOverflow)
-  val yRAMCounter = MultiCountCounter(groupPerInstance.map(BigInt(_)), modeReg, inc = yWordCounter.willOverflow)
   val outputRAMCounter = MultiCountCounter(groupPerInstance.map(BigInt(_)), modeReg, inc = outputWordCounter.willOverflow)
   val exponentWordCounter = MultiCountCounter(lMs.map(lM => BigInt(lM / w)), modeReg, inc = exponentBitCounter.willOverflow)
   val exponentLengthReg = RegInit(U(ELength))
@@ -179,23 +178,22 @@ case class MontExpSystolic(config: MontConfig,
             val yCandidates = Vec(UInt(w bits), parallelFactor) // prepare for different modes, for each instance
 
             val ymCount = montMult.fsm.MYWordIndex // following logics are valid with the requirement that w is a power of 2
-            val ymWordCount = ymCount(log2Up(w) - 1 downto 0) // lower part - the word count
-            val ymRAMCount =  ymCount(ymCount.getBitsWidth - 1 downto log2Up(w)) // higher part- the RAM count
+            val wordAddrLength = xMontRAMs(0).addressWidth
+            val ymRAMCount = ymCount.splitAt(wordAddrLength)._1.asUInt // higher part- the RAM count
+            val ymWordCount = ymCount.splitAt(wordAddrLength)._2.asUInt // lower part - the word count
 
-              yCandidates.foreach(_.clearAll()) // pre - assignment
+            yCandidates.foreach(_.clearAll()) // pre - assignment
             def push0() = yCandidates := Vec(Seq.fill(parallelFactor)(U(0, w bits)))
             def push1() = yCandidates := Vec(Seq.fill(parallelFactor)(U(1, w bits)))
 
             when(!montMult.fsm.lastWord) {
-              yWordCounter.increment()
-              mWordCounter.increment()
-              montMult.io.MWordIns.foreach(_ := mWordRAM(mWordCounter)) // feed M
+              montMult.io.MWordIns.foreach(_ := mWordRAM(ymCount)) // feed M
               // only for RSA, as the true word number is a power of 2
-              when(isActive(PRE))(yCandidates := Vec(Seq.fill(parallelFactor)(rSquareWordRAM(yRAMCounter @@ yWordCounter)))) // feed Y
-                .elsewhen(isActive(MULT))(yCandidates := readRAMsWord(xMontRAMs, yWordCounter.value))
-                .elsewhen(isActive(SQUARE))(yCandidates := readRAMsWord(productRAMs, yWordCounter.value))
+              when(isActive(PRE))(yCandidates := Vec(Seq.fill(parallelFactor)(rSquareWordRAM(ymCount)))) // feed Y
+                .elsewhen(isActive(MULT))(yCandidates := readRAMsWord(xMontRAMs, ymWordCount))
+                .elsewhen(isActive(SQUARE))(yCandidates := readRAMsWord(productRAMs, ymWordCount))
                 .elsewhen(isActive(POST)) { // feed 1
-                  when(yWordCounter.value === U(0))(push1())
+                  when(ymWordCount === U(0))(push1())
                     .otherwise(push0())
                 }
             }.otherwise {
@@ -205,7 +203,7 @@ case class MontExpSystolic(config: MontConfig,
                 .elsewhen(isActive(SQUARE))(yCandidates := Vec(productLasts))
                 .elsewhen(isActive(POST))(push0()) // msw = 0
             }
-            starterIds.foreach(j => montMult.io.YWordIns(j) := yCandidates(yRAMCounter.value + j))
+            starterIds.foreach(j => montMult.io.YWordIns(j) := yCandidates(ymRAMCount + j))
           }
           // fetch XYR^-1 and write back
           when(montMult.fsm.lastRound) {
