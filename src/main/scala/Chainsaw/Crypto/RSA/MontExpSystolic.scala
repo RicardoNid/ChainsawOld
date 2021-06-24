@@ -44,7 +44,7 @@ case class MontExpSystolic(config: MontConfig,
   montMult.io.YWordIns.foreach(_.allowOverride)
 
   // memories
-  val Seq(rSquareWordRAM, mWordRAM, exponentWordRAM) = Seq(rSquare, M, E).map(bigint => Mem(toWords(bigint, w, lMs.max / w).map(U(_, w bits))))
+  val Seq(rSquareWordRAM, mWordRAM, exponentWordRAM) = Seq(rSquare, M, BigInt(E.toString(2).reverse, 2)).map(bigint => Mem(toWords(bigint, w, lMs.max / w).map(U(_, w bits))))
   val xWords = Xs.map(x => toWords(x, w, wordPerGroup))
   val xMontRAMs = Seq.fill(parallelFactor)(Mem(UInt(w bits), wordPerGroup))
   val productRAMs = xWords.map(XWord => Mem(XWord.map(U(_, w bits)))) // at the beginning, x^0 = x
@@ -67,10 +67,7 @@ case class MontExpSystolic(config: MontConfig,
   val exponentLengthReg = RegInit(U(ELength))
 
   val exponentCurrentBit = exponentWordRAM(exponentWordCounter.value)(exponentBitCounter.value)
-  val lastExponentBit = (exponentWordCounter @@ exponentBitCounter) === (exponentLengthReg - 1 - 1)
-
-  io.dataOuts := montMult.io.dataOuts
-  io.valids := montMult.io.valids
+  val lastExponentBit = (exponentWordCounter @@ exponentBitCounter) === (exponentLengthReg - 1)
 
   when(io.start) {
     modeReg := io.mode
@@ -86,6 +83,7 @@ case class MontExpSystolic(config: MontConfig,
   val writeProduct = RegInit(False)
   val writeXMont = RegInit(False)
   val outputBuffers = montMult.io.dataOuts.map(RegNext(_)) // delay t for shift
+  val shiftedOutputs = Vec(montMult.io.dataOuts.zip(outputBuffers).map{ case (prev, next) => (prev.lsb ## next(w - 1 downto 1)).asUInt})
   val validNext = RegNext(montMult.io.valids(0)) // delay valid for one cycle
   validNext.init(False)
   val datasToWrite = Vec(UInt(w bits), parallelFactor)
@@ -107,6 +105,10 @@ case class MontExpSystolic(config: MontConfig,
     )
   }
 
+  io.dataOuts := shiftedOutputs
+  io.valids := RegNext(montMult.io.valids)
+  io.valids.foreach(_.init(False))
+
 
   val fsm = new StateMachine {
     val IDLE = StateEntryPoint()
@@ -121,11 +123,19 @@ case class MontExpSystolic(config: MontConfig,
     PRE.whenIsActive(when(montMult.fsm.lastCycle)(goto(SQUARE)))
     SQUARE.whenIsActive(when(montMult.fsm.lastCycle) {
       when(exponentCurrentBit)(goto(MULT)) // when current bit is 1, always goto MULT for a multiplication
-        .elsewhen(lastExponentBit)(goto(POST))
+        .elsewhen(lastExponentBit){
+          goto(POST)
+          exponentBitCounter.clear()
+          exponentWordCounter.clear()
+        }
         .otherwise(goto(SQUARE))
     })
     MULT.whenIsActive(when(montMult.fsm.lastCycle){
-      when(lastExponentBit)(goto(POST))
+      when(lastExponentBit){
+        goto(POST)
+        exponentBitCounter.clear()
+        exponentWordCounter.clear()
+      }
         .otherwise(goto(SQUARE))
     })
     POST.whenIsActive(when(montMult.fsm.lastCycle)(goto(IDLE)))

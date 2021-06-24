@@ -217,7 +217,7 @@ object MontAlgos {
     }
     // post, x^e' -> x^e
     partialProduct = MM(partialProduct, BigInt(1))
-    printlnGreen("after post")
+    printlnYellow("after post")
     printTrace()
     // final reduction
     printlnGreen("after reduction")
