@@ -55,6 +55,8 @@ case class MontExpSystolic(config: MontConfig,
   val productRAMs = xWords.map(XWord => Mem(XWord.map(U(_, w bits)))) // at the beginning, x^0 = x
   // for last, irregular part of the two RAMs above
   val xMontLasts, productLasts = Seq.fill(parallelFactor)(RegInit(U(0, w bits)))
+  // register storing the length of exponent
+  val exponentLengthReg = RegInit(U(ELength))
 
   // INPUT COUNTERS
   // counters are the main controllers of the input scheme
@@ -66,15 +68,22 @@ case class MontExpSystolic(config: MontConfig,
   // as word size and smallest RSA size(lM.min = 512) are powers of 2, take the bit/word/RAM addr by bit select
   val counterLengths = Seq(w, wordPerGroup, parallelFactor).map(log2Up(_))
   val Seq(bitAddrLength, wordAddrLength, ramIndexLength) = counterLengths // when supporting 512-4096, they are 3,4,5
+  val splitPoints = (0 until 4).map(i => counterLengths.take(i).sum) // when supporting 512-4096, 0,3,7,12
 
   val xCounter, exponentCounter = MultiCountCounter(lMs.map(BigInt(_)), modeReg)
-  val xSplitPoints = (0 until 4).map(i => counterLengths.take(i).sum) // when supporting 512-4096, 0,3,7,12
-  val xBitSelects = xSplitPoints.init.zip(xSplitPoints.tail).map { case (start, end) => xCounter.value(end - 1 downto start) } // 2 downto 0, 6 downto 3,...
+
+  val xBitSelects = splitPoints.init.zip(splitPoints.tail).map { case (start, end) => xCounter.value(end - 1 downto start) } // 2 downto 0, 6 downto 3,...
   val Seq(xBitCount, xWordCount, xRAMCount) = xBitSelects
+
+  val exponentBitSelect = splitPoints.init.zip(splitPoints.tail).map { case (start, end) => exponentCounter.value(end - 1 downto start) }
+  val exponentBitCount = exponentBitSelect(0)
+  val exponentWordCount = exponentBitSelect(1) @@ exponentBitSelect(2)
+  val exponentCurrentBit = exponentWordRAM(exponentWordCount)(exponentBitCount)
+  val exponentLastBit = exponentCounter.value === (exponentLengthReg - 1)
 
 
   //  val xBitCounter,
-  val exponentBitCounter = Counter(w)
+  //  val exponentBitCounter = Counter(w)
   val outputWordCounter = Counter(wordPerGroup)
   // cascaded counters driven by starters
   //  val xWordCounter = Counter(wordPerGroup, inc = xBitCounter.willOverflow)
@@ -82,11 +91,8 @@ case class MontExpSystolic(config: MontConfig,
   // how many RAMs should be involved in an instance
   //  val xRAMCounter = MultiCountCounter(groupPerInstance.map(BigInt(_)), modeReg, inc = xWordCounter.willOverflow)
   val outputRAMCounter = MultiCountCounter(groupPerInstance.map(BigInt(_)), modeReg, inc = outputWordCounter.willOverflow)
-  val exponentWordCounter = MultiCountCounter(lMs.map(lM => BigInt(lM / w)), modeReg, inc = exponentBitCounter.willOverflow)
-  val exponentLengthReg = RegInit(U(ELength))
+  //  val exponentWordCounter = MultiCountCounter(lMs.map(lM => BigInt(lM / w)), modeReg, inc = exponentBitCounter.willOverflow)
 
-  val exponentCurrentBit = exponentWordRAM(exponentWordCounter.value)(exponentBitCounter.value)
-  val lastExponentBit = (exponentWordCounter @@ exponentBitCounter) === (exponentLengthReg - 1)
 
   def readRAMsBit(rams: Seq[Mem[UInt]], wordId: UInt, bitId: UInt) = Vec(rams.map(ram => ram(wordId)(bitId)))
   def readRAMsWord(rams: Seq[Mem[UInt]], wordId: UInt) = Vec(rams.map(ram => ram(wordId)))
@@ -143,24 +149,27 @@ case class MontExpSystolic(config: MontConfig,
 
     SQUARE.whenIsActive(when(montMult.fsm.lastCycle) {
       when(exponentCurrentBit)(goto(MULT)) // when current bit is 1, always goto MULT for a multiplication
-        .elsewhen(lastExponentBit) {
+        .elsewhen(exponentLastBit) {
           goto(POST)
-          exponentBitCounter.clear()
-          exponentWordCounter.clear()
+          //          exponentBitCounter.clear()
+          //          exponentWordCounter.clear()
+          exponentCounter.clear()
         }
         .otherwise(goto(SQUARE))
     })
     MULT.whenIsActive(when(montMult.fsm.lastCycle) {
-      when(lastExponentBit) {
+      when(exponentLastBit) {
         goto(POST)
-        exponentBitCounter.clear()
-        exponentWordCounter.clear()
+        //        exponentBitCounter.clear()
+        //        exponentWordCounter.clear()
+        exponentCounter.clear()
       }
         .otherwise(goto(SQUARE))
     })
     POST.whenIsActive(when(montMult.fsm.lastCycle)(goto(IDLE)))
 
-    SQUARE.whenIsNext(when(montMult.fsm.lastCycle)(exponentBitCounter.increment()))
+    SQUARE.whenIsNext(when(montMult.fsm.lastCycle)(exponentCounter.increment()))
+    //    SQUARE.whenIsNext(when(montMult.fsm.lastCycle)(exponentBitCounter.increment()))
 
     when(montMult.fsm.lastCycle) { // these four states end when a MontMul task ends
       when(Seq(PRE, MULT, SQUARE).map(isActive(_)).xorR)(montMult.io.start := True)
