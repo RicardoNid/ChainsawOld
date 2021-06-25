@@ -17,9 +17,7 @@ case class MontExpSystolic(config: MontConfig) extends Component {
 
   import config._
 
-  // TODO: test for different modes
   // TODO: test for closely continuous workload
-  // TODO: add INIT
   require(isPow2(w) && isPow2(lMs.min))
 
   val io = new Bundle {
@@ -170,7 +168,7 @@ case class MontExpSystolic(config: MontConfig) extends Component {
       when(lastMontMult)(goto(POST))
         .otherwise(goto(SQUARE))
     })
-    POST.whenIsActive(when(montMultOver){
+    POST.whenIsActive(when(montMultOver) {
       when(io.start)(goto(INIT))
         .otherwise(goto(IDLE))
     })
@@ -188,7 +186,8 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     //  rather than the regular RAMs
     switch(True) { // for different modes
       lMs.indices.foreach { i => // traverse each mode, as each mode run instances of different size lM
-        val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(i) == 0) // instance index of current mode
+        val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(i) == 0) // instance indices of current mode
+            .take(parallelFactor / groupPerInstance(i))
         is(modeReg(i)) { // for each mode
           IDLE.onExit { // preset the write flag for INIT
             writeXMont.clear()

@@ -11,7 +11,10 @@ case class MontExpTestCase(modeId: Int, changeKey: Boolean = false)
 
 class MontExpSystolicTest extends AnyFunSuite {
 
+
   test("testMontExpSystolicHardwareWithROM") {
+
+    val comparStageByStage = false
 
     val testSizes = Seq(512, 1024, 2048, 3072, 4096)
     val testWordSize = 32
@@ -80,6 +83,7 @@ class MontExpSystolicTest extends AnyFunSuite {
             // monitors
             val runtime = config.IIs(modeId) * testExponent.toString(2).map(_.asDigit + 1).sum + 200
             val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(modeId) == 0)
+              .take(parallelFactor / groupPerInstance(modeId))
             val currentDataOuts = io.dataOuts.indices.filter(starterIds.contains(_)).map(io.dataOuts(_))
 
             def montMulResultMonitor() = if (montMult.io.valids(0).toBoolean) dutResults.zip(io.dataOuts).foreach { case (buffer, signal) => buffer += signal.toBigInt }
@@ -108,7 +112,7 @@ class MontExpSystolicTest extends AnyFunSuite {
             }
             println("M      : " + toWordsHexString(testModulus, testWordSize, currentWordPerInstance))
             println("rSquare: " + toWordsHexString(testRadixSquare, testWordSize, currentWordPerInstance))
-            MontAlgos.Arch1ME(testInputs(1), testExponent, testModulus, testWordSize, print = true) // print the partial products
+            if(comparStageByStage) MontAlgos.Arch1ME(testInputs(0), testExponent, testModulus, testWordSize, print = true) // print the partial products
             goldens.indices.foreach { i =>
               val goldenString = toWordsHexString(goldens(i), testWordSize, lMs(modeId) / w)
               val dutString = dutResults(i).init.map(_.toString(16).padToLeft(testWordSize / 4, '0')).mkString(" ") + " "
@@ -128,10 +132,11 @@ class MontExpSystolicTest extends AnyFunSuite {
       clockDomain.forkStimulus(2)
       clockDomain.waitSampling()
       val testCases = Seq(
-        //        MontExpTestCase(0, true),
-        //        MontExpTestCase(0, false),
-        //        MontExpTestCase(1, true)
-        MontExpTestCase(3, true)
+        MontExpTestCase(0, true),
+        MontExpTestCase(0, false),
+        MontExpTestCase(1, true),
+        MontExpTestCase(3, true),
+        MontExpTestCase(4, true)
       )
       runTestCases(testCases)
     }
