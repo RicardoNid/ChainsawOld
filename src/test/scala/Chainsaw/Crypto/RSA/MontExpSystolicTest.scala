@@ -14,15 +14,15 @@ class MontExpSystolicTest extends AnyFunSuite {
 
   test("testMontExpSystolicHardwareWithROM") {
 
+    val doGen = true
+    val doSim = true
+    val doSynth = true
     val comparStageByStage = false
 
     val testSizes = Seq(512, 1024, 2048, 3072, 4096)
     val testWordSize = 32
-    //    GenRTL(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true))) // for a quick semantic test
-    //    VivadoSynth(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true), testRadixSquare, testModulus, testExponent, testExponentLength, testInputs))
-    // design parameters that are determined by the user
-
-    SimConfig.withWave.compile(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true))).doSim { dut =>
+    if (doGen) GenRTL(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true))) // for a quick semantic test
+    if (doSim) SimConfig.withWave.compile(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true))).doSim { dut =>
       import dut._
       import dut.config._
 
@@ -112,7 +112,7 @@ class MontExpSystolicTest extends AnyFunSuite {
             }
             println("M      : " + toWordsHexString(testModulus, testWordSize, currentWordPerInstance))
             println("rSquare: " + toWordsHexString(testRadixSquare, testWordSize, currentWordPerInstance))
-            if(comparStageByStage) MontAlgos.Arch1ME(testInputs(0), testExponent, testModulus, testWordSize, print = true) // print the partial products
+            if (comparStageByStage) MontAlgos.Arch1ME(testInputs(0), testExponent, testModulus, testWordSize, print = true) // print the partial products
             goldens.indices.foreach { i =>
               val goldenString = toWordsHexString(goldens(i), testWordSize, lMs(modeId) / w)
               val dutString = dutResults(i).init.map(_.toString(16).padToLeft(testWordSize / 4, '0')).mkString(" ") + " "
@@ -140,5 +140,6 @@ class MontExpSystolicTest extends AnyFunSuite {
       )
       runTestCases(testCases)
     }
+    if (doSynth) VivadoSynth(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true)))
   }
 }

@@ -46,10 +46,8 @@ case class MontExpSystolic(config: MontConfig) extends Component {
 
   // BLOCK MEMORIES
   // these three RAMs are for secret-key related data, and will be kept for the whole lifecycle of a MontExp
-  //  val Seq(radixSquareWordRAM, modulusWordRAM, exponentWordRAM) =
-  //  Seq(rSquare, M, BigInt(E.toString(2).reverse, 2)).map(bigint => Mem(toWords(bigint, w, lMs.max / w).map(U(_, w bits))))
-  // these two RAMs are for partial results generated through the MontExp procedure
   val radixSquareWordRAM, modulusWordRAM, exponentWordRAM = Mem(UInt(w bits), lMs.max / w)
+  // these two RAMs are for partial results generated through the MontExp procedure
   // to store the Montgomery representation of x, which is x \times r^{-1} \pmod M
   val xMontRAMs = Seq.fill(parallelFactor)(Mem(UInt(w bits), wordPerGroup))
   // to store the partial product of the MontExp, which is x at the beginning and x^{e} \pmod M
@@ -81,8 +79,8 @@ case class MontExpSystolic(config: MontConfig) extends Component {
   val exponentBitSelect = splitPoints.init.zip(splitPoints.tail).map { case (start, end) => exponentCounter.value(end - 1 downto start) }
   val exponentBitCount = exponentBitSelect(0)
   val exponentWordCount = exponentBitSelect(1) @@ exponentBitSelect(2)
-  val exponentCurrentBit = exponentWordRAM(exponentWordCount)(exponentBitCount)
-  val exponentLastBit = exponentCounter.value === (exponentLengthReg - 1)
+  val currentExponentBit = exponentWordRAM(exponentWordCount)(exponentBitCount)
+  val lastExponentBit = exponentCounter.value === (exponentLengthReg - 1)
 
   val initCounter = MultiCountCounter(lMs.map(lM => BigInt(lM / w)), modeReg)
   val initRAMCount = initCounter(ramIndexLength + wordAddrLength - 1 downto wordAddrLength)
@@ -145,7 +143,7 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     def initOver = initCounter.willOverflow
     def startMontMult() = montMult.io.start.set()
     def montMultOver = montMult.fsm.lastCycle
-    def lastMontMult = exponentLastBit
+    def lastMontMult = lastExponentBit
 
     // generally speaking, we have three states: IDLE, INIT, and RUN
     //  at INIT, the user provides the inputs(Xs) and optionally reset the secret key(provides modulus, exponent and precomputed radixSquare)
@@ -160,7 +158,7 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     INIT.whenIsActive(when(initOver)(goto(PRE)))
     PRE.whenIsActive(when(montMultOver)(goto(SQUARE)))
     SQUARE.whenIsActive(when(montMultOver) {
-      when(exponentCurrentBit)(goto(MULT)) // when current bit is 1, always goto MULT for a multiplication
+      when(currentExponentBit)(goto(MULT)) // when current bit is 1, always goto MULT for a multiplication
         .elsewhen(lastMontMult)(goto(POST)) // current bit is 0 and no next bit, goto POST
         .otherwise(goto(SQUARE)) // current bit is 0 and has next bit, goto SQUARE
     })
@@ -184,26 +182,36 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     // and the workload of RUN(PRE, POST, SQUARE, MULT) is to feed data to montMult, and write back the result from montMult to the RAMs
     //  particularly, in our memory system, the last words, as they are irregular should always be written/read into/from the "last word regs",
     //  rather than the regular RAMs
+
+    val ymCount = montMult.fsm.MYWordIndex // following logics are valid with the requirement that w is a power of 2
+    val wordAddrLength = xMontRAMs(0).addressWidth
+    val ymRAMCount = ymCount.splitAt(wordAddrLength)._1.asUInt // higher part- the RAM count
+    val ymWordCount = ymCount.splitAt(wordAddrLength)._2.asUInt // lower part - the word count
+
+    val currnetModulusWord = modulusWordRAM.readAsync(ymCount)
+    val currentRadixSquareWord = radixSquareWordRAM.readAsync(ymCount)
+
+    // BLOCK workload0.1: when resetting secret key, writing secretKeyRAMs
+    val secretKeyRAMs = Seq(modulusWordRAM, radixSquareWordRAM,exponentWordRAM)
+    val secretKeyInputs = Seq(io.modulusWordIn, io.radixSquareWordIn, io.exponentWordIn)
+    secretKeyRAMs.zip(secretKeyInputs).foreach{ case (ram, io) => ram.write(initCounter.value, io, enable = isActive(INIT) && keyResetReg)}
+
     switch(True) { // for different modes
       lMs.indices.foreach { i => // traverse each mode, as each mode run instances of different size lM
         val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(i) == 0) // instance indices of current mode
-            .take(parallelFactor / groupPerInstance(i))
+          .take(parallelFactor / groupPerInstance(i))
         is(modeReg(i)) { // for each mode
           IDLE.onExit { // preset the write flag for INIT
             writeXMont.clear()
             writeProduct.set()
           }
+
           when(isActive(INIT)) { // BLOCK workload0: store the input for MontExp
             initCounter.increment()
             starterIds.foreach { j => // BLOCK workload0.0: always, writing Xs into productRAMs
               ramEnables(j + initRAMCount).set() // select RAMs
               addrToWrite := initWordCount
               dataToWrite(j + initRAMCount) := io.xWordIns(j)
-            }
-            when(keyResetReg) { // BLOCK workload0.1: when resetting secret key,
-              modulusWordRAM(initCounter.value) := io.modulusWordIn
-              radixSquareWordRAM(initCounter.value) := io.radixSquareWordIn
-              exponentWordRAM(initCounter.value) := io.exponentWordIn
             }
           }
           when(montMult.fsm.feedXNow) { // BLOCK workload1: feed X, for every stage, X is from the productRAMs
@@ -215,20 +223,15 @@ case class MontExpSystolic(config: MontConfig) extends Component {
           }
 
           when(montMult.fsm.feedMYNow) { // BLOCK workload2: feed Y and Modulus
-            val ymCount = montMult.fsm.MYWordIndex // following logics are valid with the requirement that w is a power of 2
-            val wordAddrLength = xMontRAMs(0).addressWidth
-            val ymRAMCount = ymCount.splitAt(wordAddrLength)._1.asUInt // higher part- the RAM count
-            val ymWordCount = ymCount.splitAt(wordAddrLength)._2.asUInt // lower part - the word count
-
             val yCandidates = Vec(UInt(w bits), parallelFactor) // prepare for different modes, for each instance
             yCandidates.foreach(_.clearAll()) // pre - assignment
             def feed0() = yCandidates := Vec(Seq.fill(parallelFactor)(U(0, w bits)))
             def feed1() = yCandidates := Vec(Seq.fill(parallelFactor)(U(1, w bits)))
 
-            when(!montMult.fsm.lastWord)(montMult.io.MWordIns.foreach(_ := modulusWordRAM(ymCount))) // M is from the modulusRAM
+            when(!montMult.fsm.lastWord)(montMult.io.MWordIns.foreach(_ := currnetModulusWord)) // M is from the modulusRAM
             when(!montMult.fsm.lastWord) { // Y is from different RAMs at different stage
               // only for RSA, as the true word number is a power of 2
-              when(isActive(PRE))(yCandidates := Vec(Seq.fill(parallelFactor)(radixSquareWordRAM(ymCount)))) // from radixSquare
+              when(isActive(PRE))(yCandidates := Vec(Seq.fill(parallelFactor)(currentRadixSquareWord))) // from radixSquare
                 .elsewhen(isActive(MULT))(yCandidates := readRAMsWord(xMontRAMs, ymWordCount)) // from xMont
                 .elsewhen(isActive(SQUARE))(yCandidates := readRAMsWord(productRAMs, ymWordCount)) // from partialProduct
                 .elsewhen(isActive(POST)) { // 1, as POST executes MontMult(x^e', 1)
@@ -287,9 +290,6 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     val isINIT = fsm.isActive(fsm.INIT)
     isINIT.simPublic()
     isINIT.allowPruning()
-    exponentWordRAM.simPublic()
-    modulusWordRAM.simPublic()
-    radixSquareWordRAM.simPublic()
   }
 
 }

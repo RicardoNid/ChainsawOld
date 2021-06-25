@@ -1,3 +1,5 @@
+import scala.collection.mutable.ArrayBuffer
+
 val e = BigInt(11)
 val x = BigInt(2)
 
@@ -9,4 +11,9 @@ e.toString(2).reverse.foreach{ bit =>
   s = s * s
 }
 
-println(p)
+
+
+val a,b = ArrayBuffer[Int]()
+a += 1
+b
+a == b
