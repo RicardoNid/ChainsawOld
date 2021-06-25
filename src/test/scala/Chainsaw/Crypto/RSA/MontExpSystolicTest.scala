@@ -45,9 +45,9 @@ class MontExpSystolicTest extends AnyFunSuite {
     val goldens = testInputs.map(MontAlgos.Arch1ME(_, testExponent, testModulus, testWordSize, print = false))
     printlnGreen(s"goldens >= M exists: ${goldens.exists(_ >= testModulus)}")
 
-    GenRTL(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true), testRadixSquare, testModulus, testExponent, testExponentLength, testInputs))
+    GenRTL(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true)))
 
-    SimConfig.withWave.compile(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true), testRadixSquare, testModulus, testExponent, testExponentLength, testInputs)).doSim { dut =>
+    SimConfig.withWave.compile(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true))).doSim { dut =>
       import dut._
       import dut.config._
 
@@ -79,7 +79,7 @@ class MontExpSystolicTest extends AnyFunSuite {
         def montMulResultMonitor() = if (montMult.io.valids(0).toBoolean) dutResults.zip(io.dataOuts).foreach { case (buffer, signal) => buffer += signal.toBigInt }
         def montExpResultMonitor() = if (io.valids(0).toBoolean) dutResults.zip(io.dataOuts).foreach { case (buffer, signal) => buffer += signal.toBigInt }
 
-        val runtime = config.IIs(modeId) * dut.E.toString(2).map(_.asDigit + 1).sum + 200
+        val runtime = config.IIs(modeId) * testExponent.toString(2).map(_.asDigit + 1).sum + 200
         val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(modeId) == 0)
 
         startAMontExp()

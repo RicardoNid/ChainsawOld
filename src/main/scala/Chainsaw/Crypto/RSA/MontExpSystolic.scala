@@ -13,17 +13,14 @@ import spinal.lib.fsm._
 import Chainsaw._
 import Chainsaw.Real
 
-case class MontExpSystolic(config: MontConfig,
-                           rSquare: BigInt, M: BigInt, E: BigInt, ELength: Int,
-                           Xs: Seq[BigInt]
-                          ) extends Component {
+case class MontExpSystolic(config: MontConfig) extends Component {
 
   import config._
 
   // TODO: test for different modes
   // TODO: test for continuous workload
   // TODO: add INIT
-  require(isPow2(w) && isPow2(lMs.min) && Xs.size == parallelFactor)
+  require(isPow2(w) && isPow2(lMs.min))
 
   val io = new Bundle {
     val start = in Bool()
@@ -55,7 +52,6 @@ case class MontExpSystolic(config: MontConfig,
   //  Seq(rSquare, M, BigInt(E.toString(2).reverse, 2)).map(bigint => Mem(toWords(bigint, w, lMs.max / w).map(U(_, w bits))))
   // these two RAMs are for partial results generated through the MontExp procedure
   val radixSquareWordRAM, modulusWordRAM, exponentWordRAM = Mem(UInt(w bits), lMs.max / w)
-  val xWords = Xs.map(x => toWords(x, w, wordPerGroup))
   // to store the Montgomery representation of x, which is x \times r^{-1} \pmod M
   val xMontRAMs = Seq.fill(parallelFactor)(Mem(UInt(w bits), wordPerGroup))
   // to store the partial product of the MontExp, which is x at the beginning and x^{e} \pmod M
