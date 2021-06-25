@@ -21,8 +21,12 @@ case class MontConfig(lMs: Seq[Int] = Seq(512, 1024, 2048, 3072, 4096),
   val p = if (parallel) floor((lMs.max + 2 + 1).toDouble / w).toInt else pe // when parallel, p = e - 1
   val parallelFactor = if (parallel) lMs.max / lMs.min else 1
   val groupPerInstance = lMs.map(_ / lMs.min)
-  val groupSize = p / parallelFactor // PEs number for the smallest lM
+  val instanceNumber = lMs.map(lMs.max / _)
+
   val wordPerGroup = lMs.min / w
+  val wordPerInstance = lMs.map(_ / w)
+
+  val groupSize = p / parallelFactor // PEs number for the smallest lM
   val parallelPs = lMs.map(lM => p / parallelFactor * (lM / lMs.min)) // actual PEs work for a single instance when in parallel architecture
 
   val ns = lMs.map(_ + 2) // total numbers of iterations, r = 2^(n) > 4M

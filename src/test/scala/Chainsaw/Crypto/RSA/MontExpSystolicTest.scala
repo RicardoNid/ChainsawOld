@@ -4,6 +4,14 @@ import Chainsaw._
 import org.scalatest.funsuite.AnyFunSuite
 import spinal.core.sim._
 import cc.redberry.rings.scaladsl._
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.sim._
+import spinal.lib.fsm._
+
+import Chainsaw._
+import Chainsaw.Real
 
 import scala.collection.mutable.ArrayBuffer
 import scala.math.ceil
@@ -22,10 +30,18 @@ class MontExpSystolicTest extends AnyFunSuite {
     println(s"length of the modulus: ${testModulus.bitLength}")
     // you can use the public key for a faster test
     val testExponent = BigInt(ref.getPublicValue)
-    val testExponentLength = testExponent.bitLength
-    val testInputs = (0 until 8).map(_ => BigInt(ref.getPrivateValue) / DSPRand.nextInt(10000) - DSPRand.nextInt(10000))
+    println(s"exponent = ${testExponent.toString(2)}")
     val testRadix = BigInt(1) << (testModulus.bitLength + 2)
     val testRadixSquare = BigInt(Zp(testModulus)(testRadix * testRadix).toByteArray)
+    val testExponentLength = testExponent.bitLength
+
+    val testExponentWords = toWords(BigInt(testExponent.toString(2).reverse, 2), testWordSize, 512 / testWordSize)
+    val testRadixSquareWords = toWords(testRadixSquare, testWordSize, 512 / testWordSize)
+    val testModulusWords = toWords(testModulus, testWordSize, 512 / testWordSize)
+
+    val testInputs = (0 until 8).map(_ => BigInt(ref.getPrivateValue) / DSPRand.nextInt(10000) - DSPRand.nextInt(10000))
+    val testInputsWords = testInputs.map(input => toWords(input, testWordSize, 512 / testWordSize))
+
     val goldens = testInputs.map(MontAlgos.Arch1ME(_, testExponent, testModulus, testWordSize, print = false))
     printlnGreen(s"goldens >= M exists: ${goldens.exists(_ >= testModulus)}")
 
@@ -42,18 +58,41 @@ class MontExpSystolicTest extends AnyFunSuite {
       clockDomain.forkStimulus(2)
       clockDomain.waitSampling()
 
+      def startAMontExp(): Unit = {
+        io.start #= true
+        io.mode #= BigInt(1) << modeId
+        io.exponentLengthIn #= testExponentLength
+        io.keyReset #= true
+        clockDomain.waitSampling()
+      }
+
+      def unsetStart() = {
+        io.start #= false
+        io.mode #= BigInt(0)
+        io.exponentLengthIn #= 0
+        io.keyReset #= false
+      }
+
       def runForOnce(modeId: Int) = {
         val dutResults = Seq.fill(8)(ArrayBuffer[BigInt]())
         // monitors
         def montMulResultMonitor() = if (montMult.io.valids(0).toBoolean) dutResults.zip(io.dataOuts).foreach { case (buffer, signal) => buffer += signal.toBigInt }
         def montExpResultMonitor() = if (io.valids(0).toBoolean) dutResults.zip(io.dataOuts).foreach { case (buffer, signal) => buffer += signal.toBigInt }
 
-        io.start #= true
-        io.mode #= BigInt(1) << modeId
-        clockDomain.waitSampling()
-        io.start #= false
-        io.mode #= BigInt(0)
         val runtime = config.IIs(modeId) * dut.E.toString(2).map(_.asDigit + 1).sum + 200
+        val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(modeId) == 0)
+
+        startAMontExp()
+
+        (0 until wordPerInstance(modeId)).foreach { i => // feed
+          if(i == 0) unsetStart()
+          io.modulusWordIn #= testModulusWords(i)
+          io.radixSquareWordIn #= testRadixSquareWords(i)
+          io.exponentWordIn #= testExponentWords(i)
+          starterIds.zipWithIndex.foreach { case (starter, inputId) => io.xWordIns(starter) #= testInputsWords(inputId)(i) }
+          clockDomain.waitSampling()
+        }
+
         (0 until runtime).foreach { _ =>
           montExpResultMonitor()
           clockDomain.waitSampling()
@@ -76,6 +115,6 @@ class MontExpSystolicTest extends AnyFunSuite {
       runForOnce(0)
     }
 
-//    VivadoSynth(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true), testRadixSquare, testModulus, testExponent, testExponentLength, testInputs))
+    //    VivadoSynth(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true), testRadixSquare, testModulus, testExponent, testExponentLength, testInputs))
   }
 }
