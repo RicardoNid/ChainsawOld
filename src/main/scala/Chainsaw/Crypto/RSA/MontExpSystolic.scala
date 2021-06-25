@@ -9,17 +9,10 @@ case class MontExpSystolic(config: MontConfig,
                            rSquare: BigInt, M: BigInt, E: BigInt, ELength: Int,
                            Xs: Seq[BigInt]
                           ) extends Component {
-
   import config._
 
-  require(isPow2(w))
-  require(isPow2(lMs.min))
-  require(Xs.size == parallelFactor)
-  //  require(lMs.forall(lM => isPow2(lM / w))) // not valid for 3072
-
-  // TODO: encapsulate the MontMul datapath for PRE/POST/MULT/SQUARE to reuse
-  // TODO: test for the whole MontExp process
   // TODO: test for different modes
+  require(isPow2(w) && isPow2(lMs.min) && Xs.size == parallelFactor)
 
   val io = new Bundle {
     val start = in Bool()
@@ -35,7 +28,7 @@ case class MontExpSystolic(config: MontConfig,
   val modeReg = Reg(HardType(io.mode))
   when(io.start)(modeReg := io.mode)
 
-  // WORKLOAD
+  // BLOCK OPERATOR
   val montMult = MontMulSystolicParallel(config)
   // pre-assign / set the controls
   montMult.io.start := False
@@ -44,7 +37,7 @@ case class MontExpSystolic(config: MontConfig,
   Seq(montMult.io.xiIns, montMult.io.MWordIns, montMult.io.YWordIns).foreach(_.foreach(_.clearAll()))
   montMult.io.YWordIns.foreach(_.allowOverride)
 
-  // MEMORIES
+  // BLOCK MEMORIES
   // these three RAMs are for secret-key related data, and will be kept for the whole lifecycle of a MontExp
   val Seq(radixSquareWordRAM, modulusWordRAM, exponentWordRAM) =
   Seq(rSquare, M, BigInt(E.toString(2).reverse, 2)).map(bigint => Mem(toWords(bigint, w, lMs.max / w).map(U(_, w bits))))
@@ -59,7 +52,7 @@ case class MontExpSystolic(config: MontConfig,
   // register storing the length of exponent
   val exponentLengthReg = RegInit(U(ELength))
 
-  // INPUT scheme
+  // BLOCK DATAPATH FOR INPUT SCHEME
   // counters are the main controllers of the input scheme
   // generally, the input are controlled by three different "rhythms"
   //  1. X is fed bit by bit
@@ -82,7 +75,7 @@ case class MontExpSystolic(config: MontConfig,
   val exponentCurrentBit = exponentWordRAM(exponentWordCount)(exponentBitCount)
   val exponentLastBit = exponentCounter.value === (exponentLengthReg - 1)
 
-  // OUTPUT scheme
+  // BLOCK DATAPATH FOR OUTPUT SCHEME
   // the output rhythm is word by word, and can also maintained by a counter
   // in fact, montMult has an inner counter(eCounter) maintains the word by word input / output rhythm, we reuse it
   // for RSA sizes, when e = lM / w + 1 and p = e - 1 = lM / w, n % p == 1, so outputCounter is two cycle delayed from MYWordIndex(output provider index + DtoQ delay)
@@ -91,7 +84,6 @@ case class MontExpSystolic(config: MontConfig,
   val outputRAMCount = outputCounter(ramIndexLength + wordAddrLength - 1 downto wordAddrLength)
   val outputWordCount = outputCounter(wordAddrLength - 1 downto 0)
 
-  // DESIGN: selective write
   // also, for the output scheme, we need to "selectively write" RAMs, this is implemented by the enables of the RAMs
   val writeProduct, writeXMont = RegInit(False) // select RAM group
   val montMultOutputValid = montMult.io.valids(0)
@@ -125,8 +117,7 @@ case class MontExpSystolic(config: MontConfig,
   // output is valid, when montMult output is valid and now is the last MontMult operation
   io.valids.zip(montMult.io.valids).foreach { case (io, mult) => io := RegNext(mult) && tobeValid }
 
-  // STATE MACHINE, which controls the datapath defined above
-  val fsm = new StateMachine {
+  val fsm = new StateMachine { // BLOCK STATE MACHINE, which controls the datapath defined above
     val IDLE = StateEntryPoint()
     val PRE, MULT, SQUARE, POST = new State()
     val RUNs = Seq(PRE, MULT, SQUARE, POST)
@@ -145,6 +136,7 @@ case class MontExpSystolic(config: MontConfig,
     // part 1: state transitions
     //  by the way control montMult starting points and exponent bit traversing, as they happens together with state transitions
     // TODO: after INIT added, these should be modified
+    // BLOCK STATE TRANSITION
     IDLE.whenIsActive(when(io.start)(goto(PRE)))
     PRE.whenIsActive(when(montMultOver)(goto(SQUARE)))
     SQUARE.whenIsActive(when(montMultOver) {
@@ -166,55 +158,59 @@ case class MontExpSystolic(config: MontConfig,
     // part 2: state workload
     // the workload of INIT is to store the input provided
     // and the workload of RUN(PRE, POST, SQUARE, MULT) is to feed data to montMult, and write back the result from montMult to the RAMs
-    //  particularly, in our memory system, the last words, as they are irregular should always be written into the "last word regs",
+    //  particularly, in our memory system, the last words, as they are irregular should always be written/read into/from the "last word regs",
     //  rather than the regular RAMs
     switch(True) { // for different modes
       lMs.indices.foreach { i => // traverse each mode, as each mode run instances of different size lM
-        // characteristics of this mode
         val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(i) == 0) // instance index of current mode
         is(modeReg(i)) { // for each mode
-          when(montMult.fsm.feedXNow) { // WORKLOAD1: feed X, for every stage, X is from the productRAMs
+          when(montMult.fsm.feedXNow) { // BLOCK workload1: feed X, for every stage, X is from the productRAMs
             when(!montMult.fsm.lastRound)(xCounter.increment())
             val xLast = Vec(productLasts.map(word => word(xBitCount)))
             val xInit = readRAMsBit(productRAMs, xWordCount, xBitCount)
             val xCandidates = Mux(montMult.fsm.lastRound, xLast, xInit)
             starterIds.foreach(j => montMult.io.xiIns(j) := xCandidates(xRAMCount + j).asUInt) // feed X, according to current mode
           }
-          // feed Y and Modulus
-          when(montMult.fsm.feedMYNow) {
-            val yCandidates = Vec(UInt(w bits), parallelFactor) // prepare for different modes, for each instance
 
+          when(montMult.fsm.feedMYNow) { // BLOCK workload2: feed Y and Modulus
             val ymCount = montMult.fsm.MYWordIndex // following logics are valid with the requirement that w is a power of 2
             val wordAddrLength = xMontRAMs(0).addressWidth
             val ymRAMCount = ymCount.splitAt(wordAddrLength)._1.asUInt // higher part- the RAM count
             val ymWordCount = ymCount.splitAt(wordAddrLength)._2.asUInt // lower part - the word count
 
+            val yCandidates = Vec(UInt(w bits), parallelFactor) // prepare for different modes, for each instance
             yCandidates.foreach(_.clearAll()) // pre - assignment
-            def push0() = yCandidates := Vec(Seq.fill(parallelFactor)(U(0, w bits)))
-            def push1() = yCandidates := Vec(Seq.fill(parallelFactor)(U(1, w bits)))
+            def feed0() = yCandidates := Vec(Seq.fill(parallelFactor)(U(0, w bits)))
+            def feed1() = yCandidates := Vec(Seq.fill(parallelFactor)(U(1, w bits)))
 
-            when(!montMult.fsm.lastWord) {
-              montMult.io.MWordIns.foreach(_ := modulusWordRAM(ymCount)) // feed M
+            when(!montMult.fsm.lastWord)(montMult.io.MWordIns.foreach(_ := modulusWordRAM(ymCount))) // M is from the modulusRAM
+            when(!montMult.fsm.lastWord) { // Y is from different RAMs at different stage
               // only for RSA, as the true word number is a power of 2
-              when(isActive(PRE))(yCandidates := Vec(Seq.fill(parallelFactor)(radixSquareWordRAM(ymCount)))) // feed Y
-                .elsewhen(isActive(MULT))(yCandidates := readRAMsWord(xMontRAMs, ymWordCount))
-                .elsewhen(isActive(SQUARE))(yCandidates := readRAMsWord(productRAMs, ymWordCount))
-                .elsewhen(isActive(POST)) { // feed 1
-                  when(ymWordCount === U(0))(push1())
-                    .otherwise(push0())
+              when(isActive(PRE))(yCandidates := Vec(Seq.fill(parallelFactor)(radixSquareWordRAM(ymCount)))) // from radixSquare
+                .elsewhen(isActive(MULT))(yCandidates := readRAMsWord(xMontRAMs, ymWordCount)) // from xMont
+                .elsewhen(isActive(SQUARE))(yCandidates := readRAMsWord(productRAMs, ymWordCount)) // from partialProduct
+                .elsewhen(isActive(POST)) { // 1, as POST executes MontMult(x^e', 1)
+                  when(ymWordCount === U(0))(feed1())
+                    .otherwise(feed0())
                 }
-            }.otherwise {
+              // need no default, as yCandidates have been pre-assigned
+            }.otherwise { // a this time, the most significant word(msw) of Y should be fed
               starterIds.foreach(j => montMult.io.YWordIns(j) := U(0, w bits)) // feed Y
-              when(isActive(PRE))(push0()) // msw = 0
+              when(isActive(PRE))(feed0()) // msw = 0
                 .elsewhen(isActive(MULT))(yCandidates := Vec(xMontLasts))
                 .elsewhen(isActive(SQUARE))(yCandidates := Vec(productLasts))
-                .elsewhen(isActive(POST))(push0()) // msw = 0
+                .elsewhen(isActive(POST))(feed0()) // msw = 0
             }
             starterIds.foreach(j => montMult.io.YWordIns(j) := yCandidates(ymRAMCount + j))
           }
-          // fetch XYR^-1 and write back
+          // BLOCK workload3: fetch XYR^-1 \pmod M and write back
           when(montMult.fsm.lastRound) {
-            when(isActive(PRE)) {
+            // as we have defined the write back datapath above, we control write back behavior by
+            //  1. setting proper triggers
+            //  2. set "dataToWrite" with proper data
+            // the trigger "lastRound" is just before the valids, and inside the state
+            // valids themselves can't be the triggers as they last even when the state has changed(the "trailing" phenomenon of the output)
+            when(isActive(PRE)) { // BLOCK workload3.1: determine which group of RAMs should be written
               writeXMont.set()
               writeProduct.set()
             }.elsewhen(isActive(SQUARE) || isActive(MULT) || isActive(POST)) { // TODO: result after post is not needed
@@ -224,22 +220,18 @@ case class MontExpSystolic(config: MontConfig,
               writeXMont.clear()
               writeProduct.clear()
             }
+            // similarly, we mark the final output by setting a trigger which last long enough to cooperate with the trailing valids
             when(isActive(POST))(tobeValid.set())
           }
-          when(shiftedOutputValid) {
-            val writeBackLastWord = montMult.io.valids(0).fall()
-            when(!writeBackLastWord) {
-              //              outputWordCounter.increment()
-              starterIds.foreach { j =>
-                val data = (montMult.io.dataOuts(j).lsb ## outputBuffers(j)(w - 1 downto 1)).asUInt
-                dataToWrite(j + outputRAMCount) := data
+          when(shiftedOutputValid) { // BLOCK workload3.2: set "dataToWrite" with proper data
+            val writeBackLastWord = montMult.io.valids(0).fall() // the last word flag
+            starterIds.foreach { j =>
+              when(!writeBackLastWord) {
+                dataToWrite(j + outputRAMCount) := shiftedMontMultOutputs(j)
                 outputRAMEnables(j + outputRAMCount).set()
-              }
-            }.otherwise {
-              starterIds.foreach { j =>
-                val data = (io.dataOuts(j).lsb ## outputBuffers(j)(w - 1 downto 1)).asUInt
-                when(writeProduct)(productLasts(j + outputRAMCount) := data)
-                when(writeXMont)(xMontLasts(j + outputRAMCount) := data)
+              }.otherwise {
+                when(writeProduct)(productLasts(j + outputRAMCount) := shiftedMontMultOutputs(j))
+                when(writeXMont)(xMontLasts(j + outputRAMCount) := shiftedMontMultOutputs(j))
               }
             }
           }

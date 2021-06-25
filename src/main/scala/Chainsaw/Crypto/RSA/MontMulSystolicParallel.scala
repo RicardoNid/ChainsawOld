@@ -140,6 +140,6 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
 object MontMulSystolicParallel {
   def main(args: Array[String]): Unit = {
     GenRTL(new MontMulSystolicParallel(MontConfig(Seq(512, 1024, 2048, 3072, 4096), 32, 17, parallel = true)))
-    //    VivadoSynth(new MontMulSystolicParallel(MontConfig(Seq(512, 1024, 2048, 3072, 4096), 32, 17, parallel = true)))
+    VivadoSynth(new MontMulSystolicParallel(MontConfig(Seq(512, 1024, 2048, 3072, 4096), 32, 17, parallel = true)))
   }
 }
