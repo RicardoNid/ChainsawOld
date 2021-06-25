@@ -13,10 +13,11 @@ class MontExpSystolicTest extends AnyFunSuite {
 
   test("testMontExpSystolicHardwareWithROM") {
 
-    // design parameters that are determined by the user
     val testSizes = Seq(512, 1024, 2048, 3072, 4096)
     val testWordSize = 32
     GenRTL(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true))) // for a quick semantic test
+    //    VivadoSynth(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true), testRadixSquare, testModulus, testExponent, testExponentLength, testInputs))
+    // design parameters that are determined by the user
 
     SimConfig.withWave.compile(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true))).doSim { dut =>
       import dut._
@@ -112,7 +113,5 @@ class MontExpSystolicTest extends AnyFunSuite {
       runTestCases(testCases)
 
     }
-
-    //    VivadoSynth(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true), testRadixSquare, testModulus, testExponent, testExponentLength, testInputs))
   }
 }
