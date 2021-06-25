@@ -163,22 +163,22 @@ case class MontExpSystolic(config: MontConfig,
     // SQUARE is the first operation for each exponent bit in L2R order, so exponent bit iterates whenever a new SQUARE will be entered
     SQUARE.whenIsNext(when(montMultOver)(exponentCounter.increment()))
 
+    // part 2: state workload
+    // the workload of INIT is to store the input provided
+    // and the workload of RUN(PRE, POST, SQUARE, MULT) is to feed data to montMult, and write back the result from montMult to the RAMs
+    //  particularly, in our memory system, the last words, as they are irregular should always be written into the "last word regs",
+    //  rather than the regular RAMs
     switch(True) { // for different modes
-      lMs.indices.foreach { i => // traverse each mode
+      lMs.indices.foreach { i => // traverse each mode, as each mode run instances of different size lM
         // characteristics of this mode
-        val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(i) == 0) // instance index
+        val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(i) == 0) // instance index of current mode
         is(modeReg(i)) { // for each mode
-          // feed X
-          when(montMult.fsm.feedXNow) { // describe how X is fed into MontMul
-            val xCandidates = Vec(Bool, parallelFactor) // prepared for different modes, for each instance
-            xCandidates.foreach(_.clear())
-            when(!montMult.fsm.lastRound) {
-              xCounter.increment()
-              xCandidates := readRAMsBit(productRAMs, xWordCount, xBitCount)
-            }.otherwise {
-              xCandidates := Vec(productLasts.map(word => word(xBitCount)))
-            }
-            starterIds.foreach(j => montMult.io.xiIns(j) := xCandidates(xRAMCount + j).asUInt) // feed X
+          when(montMult.fsm.feedXNow) { // WORKLOAD1: feed X, for every stage, X is from the productRAMs
+            when(!montMult.fsm.lastRound)(xCounter.increment())
+            val xLast = Vec(productLasts.map(word => word(xBitCount)))
+            val xInit = readRAMsBit(productRAMs, xWordCount, xBitCount)
+            val xCandidates = Mux(montMult.fsm.lastRound, xLast, xInit)
+            starterIds.foreach(j => montMult.io.xiIns(j) := xCandidates(xRAMCount + j).asUInt) // feed X, according to current mode
           }
           // feed Y and Modulus
           when(montMult.fsm.feedMYNow) {
