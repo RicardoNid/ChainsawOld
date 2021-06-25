@@ -18,7 +18,7 @@ case class MontExpSystolic(config: MontConfig) extends Component {
   import config._
 
   // TODO: test for different modes
-  // TODO: test for continuous workload
+  // TODO: test for closely continuous workload
   // TODO: add INIT
   require(isPow2(w) && isPow2(lMs.min))
 
@@ -170,12 +170,16 @@ case class MontExpSystolic(config: MontConfig) extends Component {
       when(lastMontMult)(goto(POST))
         .otherwise(goto(SQUARE))
     })
-    POST.whenIsActive(when(montMultOver)(goto(IDLE)))
+    POST.whenIsActive(when(montMultOver){
+      when(io.start)(goto(INIT))
+        .otherwise(goto(IDLE))
+    })
     //
     INIT.onExit(startMontMult())
     Seq(PRE, SQUARE, MULT).foreach(_.whenIsActive(when(montMultOver)(startMontMult())))
     // SQUARE is the first operation for each exponent bit in L2R order, so exponent bit iterates whenever a new SQUARE will be entered
     SQUARE.whenIsNext(when(montMultOver)(exponentCounter.increment()))
+    POST.onEntry(exponentCounter.clear())
 
     // part 2: state workload
     // the workload of INIT is to store the input provided
@@ -195,7 +199,7 @@ case class MontExpSystolic(config: MontConfig) extends Component {
             starterIds.foreach { j => // BLOCK workload0.0: always, writing Xs into productRAMs
               ramEnables(j + initRAMCount).set() // select RAMs
               addrToWrite := initWordCount
-              dataToWrite(j + initRAMCount) := io.xWordIns(j + initRAMCount)
+              dataToWrite(j + initRAMCount) := io.xWordIns(j)
             }
             when(keyResetReg) { // BLOCK workload0.1: when resetting secret key,
               modulusWordRAM(initCounter.value) := io.modulusWordIn
@@ -229,7 +233,7 @@ case class MontExpSystolic(config: MontConfig) extends Component {
                 .elsewhen(isActive(MULT))(yCandidates := readRAMsWord(xMontRAMs, ymWordCount)) // from xMont
                 .elsewhen(isActive(SQUARE))(yCandidates := readRAMsWord(productRAMs, ymWordCount)) // from partialProduct
                 .elsewhen(isActive(POST)) { // 1, as POST executes MontMult(x^e', 1)
-                  when(ymWordCount === U(0))(feed1())
+                  when(ymCount === U(0))(feed1())
                     .otherwise(feed0())
                 }
               // need no default, as yCandidates have been pre-assigned
