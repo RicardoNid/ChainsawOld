@@ -15,16 +15,16 @@ class MontExpSystolicTest extends AnyFunSuite {
   test("testMontExpSystolicHardwareWithROM") {
 
     val doGen = false
-    val doSim = true
+    val doSim = false
     val doSynth = true
     val comparStageByStage = false
 
     val testCases = Seq(
-      MontExpTestCase(0, true),
-      MontExpTestCase(0, false),
-      MontExpTestCase(1, true),
-      MontExpTestCase(3, true),
-      MontExpTestCase(4, true)
+      //      MontExpTestCase(0, true),
+      //      MontExpTestCase(0, false),
+      MontExpTestCase(1, true)
+      //      MontExpTestCase(3, true),
+      //      MontExpTestCase(4, true)
     )
 
     val testSizes = Seq(512, 1024, 2048, 3072, 4096)
@@ -142,8 +142,8 @@ class MontExpSystolicTest extends AnyFunSuite {
 
       runTestCases(testCases)
     }
-//    if (doSynth) VivadoSynth(new MontMulPE(testWordSize))
-//    if (doSynth) VivadoSynth(new MontMulSystolicParallel(MontConfig(lMs = testSizes, parallel = true)))
+    //    if (doSynth) VivadoSynth(new MontMulPE(testWordSize))
+    //    if (doSynth) VivadoSynth(new MontMulSystolicParallel(MontConfig(lMs = testSizes, parallel = true)))
     if (doSynth) VivadoSynth(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true)))
   }
 }

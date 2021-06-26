@@ -189,13 +189,13 @@ case class MontExpSystolic(config: MontConfig) extends Component {
 
     // FIXME: change "7"
     val currentProductWordsForX = Vec(productRAMs.map(ram => ram.readAsync(xWordCount)))
-    //    val currentProductWordsForX = Vec(productRAMs.map(ram => ram.readAsync(xWordCount))).reduce(_ @@ _).rotateLeft((xRAMCount * w) (7 downto 0)).subdivideIn(parallelFactor slices)
-        val currentProductWordsForY = Vec(productRAMs.map(ram => ram.readAsync(ymWordCount)))
-//    val currentProductWordsForY = Vec(productRAMs.map(ram => ram.readAsync(ymWordCount))).reduce(_ @@ _).rotateLeft((ymRAMCount * w) (7 downto 0)).subdivideIn(parallelFactor slices)
+    val currentProductWordsForXShifted = currentProductWordsForX.reverse.reduce(_ @@ _).rotateRight((xRAMCount * w) (7 downto 0)).subdivideIn(parallelFactor slices) // FIXME
+    val currentProductWordsForY = Vec(productRAMs.map(ram => ram.readAsync(ymWordCount)))
+    val currentProductWordsForYShifted = currentProductWordsForY.reverse.reduce(_ @@ _).rotateRight((ymRAMCount * w) (7 downto 0)).subdivideIn(parallelFactor slices) // FIXME
     val currentProductBits = Vec(currentProductWordsForX.map(word => word(xBitCount)))
 
-        val currentXMontWords = Vec(xMontRAMs.map(ram => ram.readAsync(ymWordCount)))
-//    val currentXMontWords = Vec(xMontRAMs.map(ram => ram.readAsync(ymWordCount))).reduce(_ @@ _).rotateLeft((ymRAMCount * w) (7 downto 0)).subdivideIn(parallelFactor slices)
+    val currentXMontWords = Vec(xMontRAMs.map(ram => ram.readAsync(ymWordCount)))
+    val currentXMontWordsShifted = currentXMontWords.reverse.reduce(_ @@ _).rotateRight((ymRAMCount * w) (7 downto 0)).subdivideIn(parallelFactor slices)
 
     val currnetModulusWord = modulusWordRAM.readAsync(ymCount)
     val currentRadixSquareWord = radixSquareWordRAM.readAsync(ymCount)
@@ -243,8 +243,10 @@ case class MontExpSystolic(config: MontConfig) extends Component {
             when(!montMult.fsm.lastWord) { // Y is from different RAMs at different stage
               // only for RSA, as the true word number is a power of 2
               when(isActive(PRE))(yCandidates := Vec(Seq.fill(parallelFactor)(currentRadixSquareWord))) // from radixSquare
-                .elsewhen(isActive(MULT))(yCandidates := currentXMontWords) // from xMont
-                .elsewhen(isActive(SQUARE))(yCandidates := currentProductWordsForY) // from partialProduct
+                //                .elsewhen(isActive(MULT))(yCandidates := currentXMontWords) // from xMont
+                .elsewhen(isActive(MULT))(yCandidates := currentXMontWordsShifted) // from xMont FIXME
+                //                .elsewhen(isActive(SQUARE))(yCandidates := currentProductWordsForY) // from partialProduct
+                .elsewhen(isActive(SQUARE))(yCandidates := currentProductWordsForYShifted) // from partialProduct // FIXME
                 .elsewhen(isActive(POST)) { // 1, as POST executes MontMult(x^e', 1)
                   when(ymCount === U(0))(feed1())
                     .otherwise(feed0())
@@ -257,8 +259,9 @@ case class MontExpSystolic(config: MontConfig) extends Component {
                 .elsewhen(isActive(SQUARE))(yCandidates := Vec(productLasts))
                 .elsewhen(isActive(POST))(feed0()) // msw = 0
             }
-            starterIds.foreach(j => montMult.io.YWordIns(j) := yCandidates(ymRAMCount + j))
-            //            starterIds.foreach(j => montMult.io.YWordIns(j) := yCandidates(j)) // FIXME
+            //            starterIds.foreach(j => montMult.io.YWordIns(j) := yCandidates(ymRAMCount + j))
+            starterIds.foreach(j => montMult.io.YWordIns(j) := yCandidates(j)) // FIXME
+            starterIds.foreach(i => println(s"starter $i"))
           }
           // BLOCK workload3: fetch XYR^-1 \pmod M and write back
           when(montMult.fsm.lastRound) {
