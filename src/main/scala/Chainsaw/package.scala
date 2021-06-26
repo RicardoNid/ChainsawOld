@@ -6,7 +6,7 @@ import spinal.core.internals.BaseNode
 import spinal.core.sim._
 import spinal.lib.fsm.{State, StateCompletionTrait, StateMachineAccessor, StateMachineSharableRegUInt, StateMachineSharableUIntKey}
 import spinal.sim._
-import xilinx.{ELABO, VivadoFlow, VivadoTask}
+import xilinx.{ELABO, IMPL, VivadoFlow, VivadoTask}
 
 import java.nio.file.Paths
 import scala.collection.mutable.ArrayBuffer
@@ -302,6 +302,12 @@ package object Chainsaw extends RealFactory {
 
   def VivadoSynth[T <: Component](gen: => T): Unit = {
     val report = VivadoFlow(design = gen, "temp", "synthWorkspace/temp").doit()
+    report.printArea()
+    report.printFMax()
+  }
+
+  def VivadoImpl[T <: Component](gen: => T): Unit = {
+    val report = VivadoFlow(design = gen, "temp", "synthWorkspace/temp", vivadoTask = VivadoTask(taskType = IMPL)).doit()
     report.printArea()
     report.printFMax()
   }

@@ -84,7 +84,7 @@ BRAM: 0
 
 Frequency: 223.61359570661892 MHz
 
-with a truly seperated selection network
+with a truly separated selection network
 
 LUT: 22860
 FF: 15011
@@ -92,3 +92,39 @@ DSP: 0
 BRAM: 0
 
 Frequency: 229.20009168003662 MHz
+
+with two truly separated election networks, 200MHz
+
+LUT: 21993
+FF: 15030
+DSP: 0
+BRAM: 0
+
+Frequency: 228.93772893772893 MHz
+
+with two truly separated selection networks, 200MHz
+
+LUT: 22403 -> work harder, but no improvement
+FF: 15030
+DSP: 0
+BRAM: 0
+
+Frequency: 228.93772893772893 MHz
+
+with writing path implemented by separated selection networks and reused, best ever
+
+LUT: 20885
+FF: 15020
+DSP: 0
+BRAM: 0
+
+Frequency: 240.38461538461536 MHz
+
+the "last" part reuse the separated selection network module
+
+LUT: 18514
+FF: 15018
+DSP: 0
+BRAM: 0
+
+Frequency: 225.63176895306862 MHz
