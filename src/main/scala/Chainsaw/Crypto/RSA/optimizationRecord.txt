@@ -41,15 +41,6 @@ BRAM: 0
 
 Frequency: 271.2967986977754 MHz
 
-replace one of the selection network by barrel-shifter
-
-LUT: 17552
-FF: 15010
-DSP: 0
-BRAM: 0
-
-Frequency: 272.18290691344583 MHz
-
 replace one of the Y selection network by barrel-shifter correctly
 
 LUT: 22934
@@ -65,3 +56,30 @@ DSP: 0
 BRAM: 0
 
 Frequency: 260.01040041601664 MHz
+
+refactor the whole "ForY" datapath
+
+LUT: 23100
+FF: 15011
+DSP: 0
+BRAM: 0
+
+Frequency: 249.19013207077 MHz
+
+roll back to selection network with more integrated logic
+
+LUT: 21704
+FF: 15019
+DSP: 0
+BRAM: 0
+
+Frequency: 238.60653781913624 MHz
+
+put the one of the selection network outside of switch, which makes it a dense network
+
+LUT: 24136
+FF: 15023
+DSP: 0
+BRAM: 0
+
+Frequency: 223.61359570661892 MHz

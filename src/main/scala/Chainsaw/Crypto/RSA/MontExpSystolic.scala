@@ -185,30 +185,44 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     val ymRAMCount = ymCount.splitAt(wordAddrLength)._1.asUInt // higher part- the RAM count
     val ymWordCount = ymCount.splitAt(wordAddrLength)._2.asUInt // lower part - the word count
 
-    // dual-port, as when SQUARE is active, productRAMs are read concurrently in two different manners
+    //    def shiftByRAMCount(vec: Vec[UInt], ramCount: UInt) = vec.reverse.reduce(_ @@ _)
+    //      .rotateRight((ramCount * w) (log2Up(parallelFactor * w) - 1 downto 0))
+    //      .subdivideIn(parallelFactor slices)
 
-//    def shiftByRAMCount(vec: Vec[UInt], ramCount: UInt) = vec.reverse.reduce(_ @@ _)
-//      .rotateRight((ramCount * w) (log2Up(parallelFactor * w) - 1 downto 0))
-//      .subdivideIn(parallelFactor slices)
-
-    def shiftByRAMCount(vec: Vec[UInt], ramCount: UInt) = {
+    def shiftByRAMCount(vec: Vec[UInt], ramCount: UInt) = { // for current design, this cost 32 shifters = 32
       val transposed: Seq[Bits] = (0 until w).map(i => vec.map(uint => uint(i)).asBits())
       val shifted = transposed.map(bits => bits.rotateRight(ramCount))
       val back = (0 until parallelFactor).map(i => shifted.map(bits => bits(i)).asBits().asUInt)
       Vec(back)
     }
 
-    // FIXME: change "7"
-    val currentProductWordsForX = Vec(productRAMs.map(ram => ram.readAsync(xWordCount)))
-    val currentProductWordsForXShifted = shiftByRAMCount(currentProductWordsForX, xRAMCount)
+    // dual-port, as when SQUARE is active, productRAMs are read concurrently in two different manners
+    val productWordsForX = Mux(!montMult.fsm.lastRound, Vec(productRAMs.map(ram => ram.readAsync(xWordCount))), Vec(productLasts))
+    //    val productWordsForXShifted = shiftByRAMCount(productWordsForX, xRAMCount)
+    val productBitsForX = Vec(productWordsForX.map(word => word(xBitCount).asUInt))
+    //    val productBitsForXShifted = Vec(productWordsForXShifted.map(word => word(xBitCount)))
 
-    val currentProductBits = Vec(currentProductWordsForX.map(word => word(xBitCount)))
-    val productLastsShiftedForY = shiftByRAMCount(Vec(productLasts), ymRAMCount)
+    def selectionNetWork[T <: Data](src: Vec[T], des: Vec[T], selectCount: UInt) = {
+      switch(True) { // for different modes
+        lMs.indices.foreach { modeId => // traverse each mode, as each mode run instances of different size lM
+          val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(modeId) == 0) // instance indices of current mode
+            .take(parallelFactor / groupPerInstance(modeId))
+          is(modeReg(modeId)) {
+            starterIds.foreach(j => des(j) := src(selectCount + j)) // selection network version
+          }
+        }
+      }
+    }
+
+//    when(montMult.fsm.feedXNow){
+//      when(!montMult.fsm.lastRound)(xCounter.increment())
+//      selectionNetWork(productBitsForX, montMult.io.xiIns, xRAMCount)
+//    }
 
     val productWordsForY = Mux(!montMult.fsm.lastWord, Vec(productRAMs.map(ram => ram.readAsync(ymWordCount))), Vec(productLasts))
-    val productWordsForYShifted = shiftByRAMCount(productWordsForY, ymRAMCount)
+    //    val productWordsForYShifted = shiftByRAMCount(productWordsForY, ymRAMCount)
     val xMontWordsForY = Mux(!montMult.fsm.lastWord, Vec(xMontRAMs.map(ram => ram.readAsync(ymWordCount))), Vec(xMontLasts))
-    val xMontWordsForYShifted = shiftByRAMCount(xMontWordsForY, ymRAMCount)
+    //    val xMontWordsForYShifted = shiftByRAMCount(xMontWordsForY, ymRAMCount)
     val radixSquareWordForY = Mux(!montMult.fsm.lastWord, radixSquareWordRAM.readAsync(ymCount), U(0, w bits))
 
     val modulusWordForM = Mux(!montMult.fsm.lastWord, modulusWordRAM.readAsync(ymCount), U(0, w bits))
@@ -227,7 +241,6 @@ case class MontExpSystolic(config: MontConfig) extends Component {
             writeXMont.clear()
             writeProduct.set()
           }
-
           when(isActive(INIT)) { // BLOCK workload0: store the input for MontExp
             initCounter.increment()
             starterIds.foreach { j => // BLOCK workload0.0: always, writing Xs into productRAMs
@@ -239,13 +252,10 @@ case class MontExpSystolic(config: MontConfig) extends Component {
           }
           when(montMult.fsm.feedXNow) { // BLOCK workload1: feed X, for every stage, X is from the productRAMs
             when(!montMult.fsm.lastRound)(xCounter.increment())
-            val xLast = Vec(productLasts.map(word => word(xBitCount)))
-            val xInit = currentProductBits
-            val xCandidates = Mux(montMult.fsm.lastRound, xLast, xInit)
-            starterIds.foreach(j => montMult.io.xiIns(j) := xCandidates(xRAMCount + j).asUInt) // feed X, according to current mode
-            //            starterIds.foreach(j => montMult.io.xiIns(j) := xCandidates(j).asUInt) // feed X, according to current mode // FIXME
+            //            starterIds.foreach(j => montMult.io.xiIns(j) := productBitsForXShifted(j).asUInt) // feed X, according to current mode // shifter version
+            starterIds.foreach(j => montMult.io.xiIns(j) := productBitsForX(xRAMCount + j)) // selection network version
+            //            starterIds.foreach(j => montMult.io.xiIns(j) := productBitsForXSelected(j).asUInt) // selection network version
           }
-
           when(montMult.fsm.feedMYNow) { // BLOCK workload2: feed Y and Modulus
             val yCandidates = Vec(UInt(w bits), parallelFactor) // prepare for different modes, for each instance
             yCandidates.foreach(_.clearAll()) // pre - assignment
@@ -254,34 +264,18 @@ case class MontExpSystolic(config: MontConfig) extends Component {
 
             montMult.io.MWordIns.foreach(_ := modulusWordForM) // M is from the modulusRAM
 
-
             when(isActive(PRE))(yCandidates := Vec(Seq.fill(parallelFactor)(radixSquareWordForY))) // from radixSquare
-              .elsewhen(isActive(MULT))(yCandidates := xMontWordsForYShifted) // from xMont FIXME
-              .elsewhen(isActive(SQUARE))(yCandidates := productWordsForYShifted) // from partialProduct // FIXME
+              //              .elsewhen(isActive(MULT))(yCandidates := xMontWordsForYShifted) // from xMont // shifter version
+              .elsewhen(isActive(MULT))(yCandidates := xMontWordsForY) // from xMont // selection network version
+              //              .elsewhen(isActive(SQUARE))(yCandidates := productWordsForYShifted) // from partialProduct // shifter version
+              .elsewhen(isActive(SQUARE))(yCandidates := productWordsForY) // from partialProduct // selection network version
               .elsewhen(isActive(POST)) { // 1, as POST executes MontMult(x^e', 1)
-                when(!montMult.fsm.lastWord){
+                when(!montMult.fsm.lastWord) {
                   when(ymCount === U(0))(feed1()).otherwise(feed0())
                 }.otherwise(feed0())
               }
-
-//            when(!montMult.fsm.lastWord) { // Y is from different RAMs at different stage
-//              // only for RSA, as the true word number is a power of 2
-//              when(isActive(PRE))(yCandidates := Vec(Seq.fill(parallelFactor)(radixSquareWordForY))) // from radixSquare
-//                .elsewhen(isActive(MULT))(yCandidates := xMontWordsForYShifted) // from xMont FIXME
-//                .elsewhen(isActive(SQUARE))(yCandidates := productWordsForYShifted) // from partialProduct // FIXME
-//                .elsewhen(isActive(POST)) { // 1, as POST executes MontMult(x^e', 1)
-//                  when(ymCount === U(0))(feed1())
-//                    .otherwise(feed0())
-//                }
-//              // need no default, as yCandidates have been pre-assigned
-//            }.otherwise { // a this time, the most significant word(msw) of Y should be fed
-//              when(isActive(PRE))(feed0()) // msw = 0
-//                .elsewhen(isActive(MULT))(yCandidates := xMontWordsForYShifted)
-//                .elsewhen(isActive(SQUARE))(yCandidates := productWordsForYShifted)
-//                .elsewhen(isActive(POST))(feed0()) // msw = 0
-//            }
-            //            starterIds.foreach(j => montMult.io.YWordIns(j) := yCandidates(ymRAMCount + j))
-            starterIds.foreach(j => montMult.io.YWordIns(j) := yCandidates(j)) // FIXME
+            //            starterIds.foreach(j => montMult.io.YWordIns(j) := yCandidates(j)) // shifter version
+            starterIds.foreach(j => montMult.io.YWordIns(j) := yCandidates(ymRAMCount + j)) // selection network version
           }
           // BLOCK workload3: fetch XYR^-1 \pmod M and write back
           when(montMult.fsm.lastRound) {
