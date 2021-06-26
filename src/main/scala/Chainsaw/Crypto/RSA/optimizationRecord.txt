@@ -83,3 +83,12 @@ DSP: 0
 BRAM: 0
 
 Frequency: 223.61359570661892 MHz
+
+with a truly seperated selection network
+
+LUT: 22860
+FF: 15011
+DSP: 0
+BRAM: 0
+
+Frequency: 229.20009168003662 MHz

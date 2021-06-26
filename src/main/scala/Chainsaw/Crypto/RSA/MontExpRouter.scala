@@ -9,19 +9,25 @@ import spinal.lib.fsm._
 import Chainsaw._
 import Chainsaw.Real
 
-class MontExpRouter[T <: Data](parallelFactor:Int, hardType: HardType[T]) extends Component {
+case class MontExpRouter[T <: BitVector](config: MontConfig, hardType: HardType[T]) extends Component {
 
+  import config._
+
+  val work = in Bool
+  val mode = in Bits(lMs.size bits)
+  val selectCount = in UInt (log2Up(parallelFactor) bits)
   val src = in Vec(hardType, parallelFactor)
-  val des: out Vec[T], selectCount: UInt
+  val toDes = out Vec(hardType, parallelFactor)
+
+  toDes.foreach(_.clearAll())
 
   switch(True) { // for different modes
     lMs.indices.foreach { modeId => // traverse each mode, as each mode run instances of different size lM
       val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(modeId) == 0) // instance indices of current mode
         .take(parallelFactor / groupPerInstance(modeId))
-      is(modeReg(modeId)) {
-        starterIds.foreach(j => des(j) := src(selectCount + j)) // selection network version
+      is(mode(modeId)) {
+        starterIds.foreach(j => toDes(j) := src(selectCount + j)) // selection network version
       }
     }
   }
-
 }
