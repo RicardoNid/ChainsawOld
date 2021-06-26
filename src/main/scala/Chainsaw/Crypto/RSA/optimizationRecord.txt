@@ -1,0 +1,51 @@
+init
+MontExp
+    LUT: 22566
+    FF: 15013
+    DSP: 0
+    BRAM: 0
+
+    Frequency: 250.12506253126563 MHz
+
+MontMul
+    LUT: 14674
+    FF: 14147
+    DSP: 0
+    BRAM: 0
+
+    Frequency: 320.1024327784891 MHz
+
+MontMulPE
+    LUT: 105
+    FF: 105
+    DSP: 0
+    BRAM: 0
+
+    Frequency: 548.5463521667581 MHz
+
+after trying to avoid selection
+
+LUT: 22922
+FF: 15002
+DSP: 0
+BRAM: 0
+
+Frequency: 264.20079260237776 MHz
+
+the design without selection network
+
+LUT: 17019
+FF: 14992
+DSP: 0
+BRAM: 0
+
+Frequency: 271.2967986977754 MHz
+
+replace one of the selection network by barrel-shifter
+
+LUT: 17552
+FF: 15010
+DSP: 0
+BRAM: 0
+
+Frequency: 272.18290691344583 MHz
