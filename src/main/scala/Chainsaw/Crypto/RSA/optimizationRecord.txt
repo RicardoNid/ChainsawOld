@@ -49,3 +49,19 @@ DSP: 0
 BRAM: 0
 
 Frequency: 272.18290691344583 MHz
+
+replace one of the Y selection network by barrel-shifter correctly
+
+LUT: 22934
+FF: 15020
+DSP: 0
+BRAM: 0
+
+Frequency: 257.06940874035985 MHz
+
+LUT: 23677 -> 23066 merge... so the shifter cost is 600
+FF: 15026
+DSP: 0
+BRAM: 0
+
+Frequency: 260.01040041601664 MHz

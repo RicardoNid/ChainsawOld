@@ -7,7 +7,7 @@ import spinal.core.sim._
 
 import scala.collection.mutable.ArrayBuffer
 
-case class MontExpTestCase(modeId: Int, changeKey: Boolean = false)
+case class MontExpTestCase(modeId: Int, changeKey: Boolean = true)
 
 class MontExpSystolicTest extends AnyFunSuite {
 
@@ -20,11 +20,11 @@ class MontExpSystolicTest extends AnyFunSuite {
     val comparStageByStage = false
 
     val testCases = Seq(
-      //      MontExpTestCase(0, true),
-      //      MontExpTestCase(0, false),
-      MontExpTestCase(1, true)
-      //      MontExpTestCase(3, true),
-      //      MontExpTestCase(4, true)
+      MontExpTestCase(0, true),
+      MontExpTestCase(0, false),
+      MontExpTestCase(1, true),
+      MontExpTestCase(3, true)
+//      MontExpTestCase(4, true)
     )
 
     val testSizes = Seq(512, 1024, 2048, 3072, 4096)
