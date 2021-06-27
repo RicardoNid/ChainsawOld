@@ -113,11 +113,6 @@ case class MontExpSystolic(config: MontConfig) extends Component {
   addrToWrite.allowOverride
   dataToWrite.allowOverride
 
-  // get the shifted output
-  val outputBuffers = montMult.io.dataOuts.map(RegNext(_)) // delay t for shift
-  val shiftedMontMultOutputs = Vec(montMult.io.dataOuts.zip(outputBuffers).map { case (prev, next) => (prev.lsb ## next(w - 1 downto 1)).asUInt })
-
-
   val fsm = new StateMachine { // BLOCK STATE MACHINE, which controls the datapath defined above
     // BLOCK STATE DECLARATION
     val IDLE = StateEntryPoint()
@@ -134,9 +129,9 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     val isFeedingX = montMult.fsm.feedXNow
     val isFeedingYM = montMult.fsm.feedMYNow
     val shouldWriteBack = isActive(PRE) || isActive(MULT) || isActive(SQUARE)
-    val tobeValid = RegInit(False)
-    val shiftedOutputValid = RegNext(montMult.io.valids(0), init = False) // delay valid for one cycle as we need to shift it
-    val isWritingBack = shiftedOutputValid && !tobeValid
+    val MontExpValid = RegInit(False) // will be implemented below
+    val MontMultValids = RegNext(montMult.io.valids, init = montMult.io.valids.getZero) // delay valid for one cycle as we need to shift it
+    val isWritingBack = MontMultValids(0) && !MontExpValid
     val writeBackLastWord = montMult.io.valids(0).fall()
 
     IDLE.whenIsActive(when(io.start)(goto(INIT)))
@@ -169,6 +164,9 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     val secretKeyInputs = Seq(io.modulusWordIn, io.radixSquareWordIn, io.exponentWordIn)
     secretKeyRAMs.zip(secretKeyInputs).foreach { case (ram, io) => ram.write(initCounter.value, io, enable = isActive(INIT) && keyResetReg) }
     // BLOCK flow1 & 7 & 8
+    val outputBuffers = montMult.io.dataOuts.map(RegNext(_)) // delay t for shift
+    val shiftedMontMultOutputs = Vec(montMult.io.dataOuts.zip(outputBuffers).map { case (prev, next) => (prev.lsb ## next(w - 1 downto 1)).asUInt })
+
     when(shouldWriteBack && lastRound) { // determine when should productRAMs and xMontRAMs be written
       when(isActive(PRE))(writeXMont.set())
         .otherwise(writeXMont.clear())
@@ -193,7 +191,8 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     // dual-port, as when SQUARE is active, productRAMs are read concurrently in two different manners
     val productWordsForX = Mux(!lastRound, Vec(productRAMs.map(ram => ram.readAsync(xWordCount))), productLasts)
     val productBitsForX = Vec(productWordsForX.map(word => word(xBitCount).asUInt))
-    when(isFeedingX)(when(!lastRound)(xCounter.increment()))
+    when(isFeedingX)(xCounter.increment())
+    when(montMultOver)(xCounter.clear())
 
     val routerProdToX = MontExpRouter(config, UInt(1 bits))
     routerProdToX.work := montMult.fsm.feedXNow
@@ -232,10 +231,10 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     when(montMult.fsm.feedMYNow)(montMult.io.MWordIns.foreach(_ := modulusWordForM)) // M is from the modulusRAM)
 
     // BLOCK flow9
-    when(isActive(POST) && lastRound)(tobeValid.set()) // set at the last round of POST by the fsm
-    when(io.valids(0).fall())(tobeValid.clear()) // and cleared when the continuous output ends, then wait for next POST
+    when(isActive(POST) && lastRound)(MontExpValid.set()) // set valid of the final result at the last round of POST
+    when(io.valids(0).fall())(MontExpValid.clear()) // and cleared when the continuous output ends, then wait for next POST
     io.dataOuts := shiftedMontMultOutputs
-    io.valids.zip(montMult.io.valids).foreach { case (io, mult) => io := RegNext(mult) && tobeValid } // delay the valid of montMult for shifting
+    io.valids.zip(MontMultValids).foreach { case (io, mult) => io := mult && MontExpValid } // delay the valid of montMult for shifting
 
     switch(True) { // for different modes
       lMs.indices.foreach { modeId => // traverse each mode, as each mode run instances of different size lM
@@ -243,9 +242,9 @@ case class MontExpSystolic(config: MontConfig) extends Component {
           .take(parallelFactor / groupPerInstance(modeId))
         is(modeReg(modeId)) { // for each mode
           when(montMult.fsm.lastRound) {
-            when(isActive(POST))(tobeValid.set())
+            when(isActive(POST))(MontExpValid.set())
           }
-          when(shiftedOutputValid && !tobeValid) {
+          when(isWritingBack) {
             starterIds.foreach { j =>
               when(!writeBackLastWord) {
                 ramEnables(j + outputRAMCount).set() // select RAMs
