@@ -76,6 +76,9 @@ case class MontExpSystolic(config: MontConfig) extends Component {
   val currentExponentBit = exponentWordRAM(exponentWordCount)(exponentBitCount)
   val lastExponentBit = exponentCounter.value === (exponentLengthReg - 1)
 
+  val eCounter = MultiCountCounter(es.map(BigInt(_)), modeReg)
+  val roundCounter = Counter(rounds(0), inc = eCounter.willOverflow) // rounds are the same
+
   val ymCount = montMult.fsm.MYWordIndex // following logics are valid with the requirement that w is a power of 2
   val ymRAMCount = ymCount.splitAt(wordAddrLength)._1.asUInt // higher part- the RAM count
   val ymWordCount = ymCount.splitAt(wordAddrLength)._2.asUInt // lower part - the word count
@@ -113,11 +116,22 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     // BLOCK STATE DECLARATION
     val IDLE = StateEntryPoint()
     val INIT, PRE, MULT, SQUARE, POST = new State()
+    val RUNs = Seq(PRE, MULT, SQUARE, POST)
     // BLOCK STATE TRANSITION
 
     // for readability, we pre-define some "timing" at the beginning
+
+    val montMultRunning = RUNs.map(isActive(_)).xorR
+    val feedMYNow = out(roundCounter.value === U(0) && montMultRunning)
+    val MYWordIndex = out(eCounter.value(eCounter.value.getBitsWidth - 2 downto 0))
+    val feedXNow = out(eCounter.value < MuxOH(io.mode, pPerInstance.map(U(_))) && montMultRunning)
+    val firstRount = (roundCounter.value === U(0) && montMultRunning)
+//    val lastRound = out(roundCounter.willOverflowIfInc && montMultRunning)
+//    val lastWord = out(eCounter.willOverflowIfInc && montMultRunning)
+//    val lastCycle = out(roundCounter.willOverflow && montMultRunning)
+
     val initOver = initCounter.willOverflow
-    def runMontMult() = montMult.io.run.set()
+    def setMontMult() = montMult.io.run.set()
     val montMultOver = montMult.fsm.lastCycle
     val lastMontMult = lastExponentBit
     val lastRound = montMult.fsm.lastRound
@@ -147,7 +161,7 @@ case class MontExpSystolic(config: MontConfig) extends Component {
       when(io.start)(goto(INIT))
         .otherwise(goto(IDLE))
     })
-    Seq(PRE, SQUARE, MULT, POST).foreach(_.whenIsActive(runMontMult())) // control the montMult module
+    when(montMultRunning)(setMontMult()) // control the montMult module
     SQUARE.whenIsNext(when(montMultOver)(exponentCounter.increment())) // SQUARE is the first operation for each exponent bit, so exponent moves
     POST.onEntry(exponentCounter.clear())
     // BLOCK STATE WORKLOAD

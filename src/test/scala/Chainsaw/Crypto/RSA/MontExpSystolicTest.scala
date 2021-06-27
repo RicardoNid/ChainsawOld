@@ -18,7 +18,7 @@ class MontExpSystolicTest extends AnyFunSuite {
     val doGen = false
     val doSim = true
     val simTimes = 1
-    val doSynth = true
+    val doSynth = false
     val doImpl = false
     val comparStageByStage = false
 

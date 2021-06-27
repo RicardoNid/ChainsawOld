@@ -111,10 +111,10 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
       datapath.inputNow := True
       when(eCounter.value === U(0))(datapath.setXiNow := True)
     }
-    when(roundCounter.willOverflowIfInc) { // the "will overflow if inc"
+    when(lastRound) { // the "will overflow if inc"
       datapath.setValidNow := True
     }
-    when(roundCounter.willOverflow) {
+    when(lastCycle) {
       buffers.foreach(_.control.SetXi := False) // clean up the setXi from last task
       // FIXME: this will lead the first bits of the most significant bit of S to be different from the original just ignore that, as it is don't care anyway
     }
