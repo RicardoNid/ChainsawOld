@@ -13,7 +13,8 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
 
   val io = new Bundle {
     // control
-    val start = in Bool()
+    val run = in Bool()
+//    val start = in Bool()
     val mode = in Bits (lMs.size bits) // one-hot, provided by the external control logic
     // data
     val xiIns = in Vec(UInt(1 bits), parallelFactor)
@@ -23,7 +24,6 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
 
     val dataOuts = out Vec(UInt(w bits), parallelFactor)
     val valids = out Vec(Bool, parallelFactor)
-    val idle = out Bool()
   }
 
   val dataIns = Vec(MontMulPEDataFlow(w), parallelFactor)
@@ -87,47 +87,36 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
   }
 
   // BLOCK STATE MACHINE
-  println(s"outputProviders are ${outputProviders.mkString(" ")}")
-  val outputPEs = outputProviders.map(PEs(_))
-  io.dataOuts.zip(outputPEs).foreach { case (dataOut, pe) => dataOut := pe.io.flowOut.data.SWord }
-//  io.valids := Vec(datapath.availables.zip(outputPEs).map { case (avail, pe) => avail && pe.io.flowOut.control.valid })
-  val resultValid = Delay(roundCounter.willOverflowIfInc, 2, init = False)
-  io.valids := Vec(datapath.availables.map(_ && resultValid))
-
-  val fsm = new StateMachine {
-    val IDLE = StateEntryPoint()
-    val RUN = State()
-
+  val fsm = new Area {
+    
     // for readability, we pre-define some "timing" at the beginning
-    val feedMYNow = out(roundCounter.value === U(0) && isActive(RUN))
+    val feedMYNow = out(roundCounter.value === U(0) && io.run)
     val MYWordIndex = out(eCounter.value(eCounter.value.getBitsWidth - 2 downto 0))
-    val feedXNow = out(eCounter.value < MuxOH(io.mode, pPerInstance.map(U(_))) && isActive(RUN))
-    val firstRount = roundCounter.value === U(0)
-    val lastRound = out(roundCounter.willOverflowIfInc && isActive(RUN))
-    val lastWord = out(eCounter.willOverflowIfInc && isActive(RUN))
-    val lastCycle = out(roundCounter.willOverflow && isActive(RUN))
+    val feedXNow = out(eCounter.value < MuxOH(io.mode, pPerInstance.map(U(_))) && io.run)
+    val firstRount = (roundCounter.value === U(0) && io.run)
+    val lastRound = out(roundCounter.willOverflowIfInc && io.run)
+    val lastWord = out(eCounter.willOverflowIfInc && io.run)
+    val lastCycle = out(roundCounter.willOverflow && io.run)
 
-    IDLE.whenIsActive {
-      when(io.start)(goto(RUN))
-    }
 
-    RUN.whenIsActive { // control the dataflow
-      eCounter.increment()
-      when(firstRount) {
-        datapath.inputNow := True
-        when(eCounter.value === U(0))(datapath.setXiNow := True)
-      }
-      when(roundCounter.willOverflowIfInc) { // the "will overflow if inc"
-        datapath.setValidNow := True
-      }
-      when(roundCounter.willOverflow) {
-        buffers.foreach(_.control.SetXi := False) // clean up the setXi from last task
-        // this will lead the first bits of the most significant bit of S to be different from the original
-        // just ignore that, as it is don't care anyway
-        when(io.start)(goto(RUN))
-          .otherwise(goto(IDLE))
-      }
+    println(s"outputProviders are ${outputProviders.mkString(" ")}")
+    val outputPEs = outputProviders.map(PEs(_))
+    io.dataOuts.zip(outputPEs).foreach { case (dataOut, pe) => dataOut := pe.io.flowOut.data.SWord }
+    //  io.valids := Vec(datapath.availables.zip(outputPEs).map { case (avail, pe) => avail && pe.io.flowOut.control.valid })
+    val resultValid = Delay(roundCounter.willOverflowIfInc, 2, init = False)
+    io.valids := Vec(datapath.availables.map(_ && resultValid))
+
+    when(io.run)(eCounter.increment())
+    when(firstRount) {
+      datapath.inputNow := True
+      when(eCounter.value === U(0))(datapath.setXiNow := True)
     }
-    io.idle := isActive(IDLE)
+    when(roundCounter.willOverflowIfInc) { // the "will overflow if inc"
+      datapath.setValidNow := True
+    }
+    when(roundCounter.willOverflow) {
+      buffers.foreach(_.control.SetXi := False) // clean up the setXi from last task
+      // FIXME: this will lead the first bits of the most significant bit of S to be different from the original just ignore that, as it is don't care anyway
+    }
   }
 }

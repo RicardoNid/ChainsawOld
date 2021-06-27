@@ -36,7 +36,8 @@ case class MontExpSystolic(config: MontConfig) extends Component {
 
   // BLOCK: OPERATOR
   val montMult = MontMulSystolicParallel(config)
-  montMult.io.start.clear() // pre-assign / set the controls
+  montMult.io.run.clear() // pre-assign / set the controls
+  montMult.io.run.allowOverride // pre-assign / set the controls
   montMult.io.mode := Mux(io.start, io.mode, modeReg)
   Seq(montMult.io.xiIns, montMult.io.MWordIns, montMult.io.YWordIns).foreach { dataIn => // pre-assign the data inputs X,Y,M
     dataIn.foreach(_.clearAll())
@@ -116,7 +117,7 @@ case class MontExpSystolic(config: MontConfig) extends Component {
 
     // for readability, we pre-define some "timing" at the beginning
     val initOver = initCounter.willOverflow
-    def startMontMult() = montMult.io.start.set()
+    def runMontMult() = montMult.io.run.set()
     val montMultOver = montMult.fsm.lastCycle
     val lastMontMult = lastExponentBit
     val lastRound = montMult.fsm.lastRound
@@ -146,8 +147,7 @@ case class MontExpSystolic(config: MontConfig) extends Component {
       when(io.start)(goto(INIT))
         .otherwise(goto(IDLE))
     })
-    INIT.onExit(startMontMult())
-    Seq(PRE, SQUARE, MULT).foreach(_.whenIsActive(when(montMultOver)(startMontMult()))) // control the montMult module
+    Seq(PRE, SQUARE, MULT, POST).foreach(_.whenIsActive(runMontMult())) // control the montMult module
     SQUARE.whenIsNext(when(montMultOver)(exponentCounter.increment())) // SQUARE is the first operation for each exponent bit, so exponent moves
     POST.onEntry(exponentCounter.clear())
     // BLOCK STATE WORKLOAD
