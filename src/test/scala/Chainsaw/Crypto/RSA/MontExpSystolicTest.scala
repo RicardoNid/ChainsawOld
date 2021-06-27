@@ -22,21 +22,26 @@ class MontExpSystolicTest extends AnyFunSuite {
     val doImpl = false
     val comparStageByStage = true
 
-    val testCases = Seq(
-//      MontExpTestCase(0),
-//      MontExpTestCase(0, false),
-//      MontExpTestCase(0, false),
-//      MontExpTestCase(1),
-//      MontExpTestCase(1, false),
-//      MontExpTestCase(3),
-//      MontExpTestCase(4),
-        MontExpTestCase(0, true, true,
-        BigInt("3775557727213339572812604588093324436079947854837508332343092186931683938562410136017141014918823217981885271863836706688118776762121923052827795164960"),
-        BigInt("13305195339129481446439779257053916209961917311022812371383969707378601839700763856307372363038112695925801258391531796160626755226442670947356262837951487")
-      )
-//        X = 22400467417805284757766605209212878439803772731355638183678274454896235325438927427484704907952358339759397364207922053128270559680328075687431638963567106008989735341043566381275809983934533844056061735630667183136024120709258990390369767819551181232122570132557350010402147425558669748488065808465826149
-//        M = 156528288625350386211606848607900957189468450865566988874145886607950996313764779898666695253876617633436943331011347572339661265821949037041520291842118802853343280515179837694951287920521203574277041880151041447360009605574953642423117283258781417857328899278450203172149575357667186245132592922074549259959
+    //        val testCases = Seq(
+    //          MontExpTestCase(0),
+    //          MontExpTestCase(0, false),
+    //          MontExpTestCase(0, false),
+    //          MontExpTestCase(1),
+    //          MontExpTestCase(1, false),
+    //          MontExpTestCase(3),
+    //          MontExpTestCase(3, false),
+    //          MontExpTestCase(3, false),
+    //          MontExpTestCase(4),
+    //          MontExpTestCase(4),
+    //          MontExpTestCase(4)
+    //        )
+
+    val badCase = MontExpTestCase(0, true, true,
+      BigInt("273656445163906518094773480352271233871692103500636569603988579080814552483327531633505581086736049017998828948679567076627001706629177242217482108696"),
+      BigInt("12267987580685115953631480690461459043943927543093117253628628978016608995370795422687359683171054370545203756302344647661277721930565462426339590241818599")
     )
+
+    val testCases = Seq.fill(1)(badCase)
 
     val testSizes = Seq(512, 1024, 2048, 3072, 4096)
     val testWordSize = 32
@@ -64,8 +69,8 @@ class MontExpSystolicTest extends AnyFunSuite {
 
               val testRadix = BigInt(1) << (testModulus.bitLength + 2)
               val testRadixSquare = if (testcase.changeKey) BigInt(Zp(testModulus)(testRadix * testRadix).toByteArray) else lastRadixSquare
-              //          val testExponent = if (testcase.changeKey) BigInt(ref.getPublicValue) else lastExponent
-              val testExponent = BigInt("1001", 2)
+              val testExponent = if (testcase.changeKey) BigInt(ref.getPrivateValue) else lastExponent
+              //              val testExponent = BigInt("10101", 2)
               val testExponentLength = testExponent.bitLength
 
               lastModulus = testModulus
@@ -75,7 +80,9 @@ class MontExpSystolicTest extends AnyFunSuite {
 
               val testInputs = (0 until currentInstanceNumber).map(_ => if (testcase.useGivenValue) testcase.X else BigInt(ref.getPrivateValue) / DSPRand.nextInt(10000) - DSPRand.nextInt(10000))
               // get words
-              val testExponentWords = toWords(BigInt(testExponent.toString(2).reverse, 2), testWordSize, currentTestSize / testWordSize)
+              require(testExponent % 2 == 1)
+              val testExponentWords = testExponent.toString(2).padTo(currentTestSize, '0').grouped(testWordSize).toArray.map(wordString => BigInt(wordString.reverse, 2))
+              println(s"exponent Words ${testExponentWords.mkString(" ")}")
               val testRadixSquareWords = toWords(testRadixSquare, testWordSize, currentTestSize / testWordSize)
               val testModulusWords = toWords(testModulus, testWordSize, currentTestSize / testWordSize)
               val testInputsWords = testInputs.map(input => toWords(input, testWordSize, currentTestSize / testWordSize))
@@ -104,7 +111,9 @@ class MontExpSystolicTest extends AnyFunSuite {
               def runForOnce() = {
                 val dutResults = Seq.fill(currentInstanceNumber)(ArrayBuffer[BigInt]())
                 // monitors
-                val runtime = config.IIs(modeId) * testExponent.toString(2).map(_.asDigit + 1).sum + 200
+                val montMultCount = testExponent.toString(2).tail.map(_.asDigit + 1).sum + 2
+                val runtime = config.IIs(modeId) * montMultCount + es(modeId) + 10
+                println(s"estimated MontMultCount = $montMultCount, estimated runtime = $runtime")
                 val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(modeId) == 0)
                   .take(parallelFactor / groupPerInstance(modeId))
                 val currentDataOuts = io.dataOuts.indices.filter(starterIds.contains(_)).map(io.dataOuts(_))

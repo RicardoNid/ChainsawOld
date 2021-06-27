@@ -6,7 +6,7 @@ class MontExpRouter[T <: BitVector](config: MontConfig, hardType: HardType[T], N
 
   import config._
 
-  val work = in Bool
+  val connected = in Bool
   val mode = in Bits (lMs.size bits)
   val selectCount = in UInt (log2Up(parallelFactor) bits)
   val src = in Vec(hardType, parallelFactor)
@@ -18,17 +18,17 @@ class MontExpRouter[T <: BitVector](config: MontConfig, hardType: HardType[T], N
     lMs.indices.foreach { modeId => // traverse each mode, as each mode run instances of different size lM
       val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(modeId) == 0) // instance indices of current mode
         .take(parallelFactor / groupPerInstance(modeId))
-      if (NTo1) is(mode(modeId))(when(work)(starterIds.foreach(j => toDes(j) := src(selectCount + j))))
-      else is(mode(modeId))(when(work)(starterIds.foreach(j => toDes(selectCount + j) := src(j)))) // selection network version
+      if (NTo1) is(mode(modeId))(when(connected)(starterIds.foreach(j => toDes(j) := src(selectCount + j))))
+      else is(mode(modeId))(when(connected)(starterIds.foreach(j => toDes(selectCount + j) := src(j)))) // selection network version
     }
   }
 
   def preClear() = {
-    work.clear()
+    connected.clear()
     mode.clearAll()
     selectCount.clearAll()
     src.foreach(_.clearAll())
-    work.allowOverride
+    connected.allowOverride
     mode.allowOverride
     selectCount.allowOverride
     src.allowOverride

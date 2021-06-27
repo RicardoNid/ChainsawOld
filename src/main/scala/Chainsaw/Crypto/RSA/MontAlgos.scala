@@ -206,12 +206,15 @@ object MontAlgos {
     partialProduct = temp
     montX = temp
     printTrace("after pre")
-    // L2R, exponent
+    // L2R, M2L exponent
     var count = 0
     exponent.toString(2).tail.foreach { bit =>
       partialProduct = MM(partialProduct, partialProduct)
-      if (bit.asDigit == 1) partialProduct = MM(partialProduct, montX)
-      printTrace("start power")
+      printTrace("after square")
+      if (bit.asDigit == 1) {
+        partialProduct = MM(partialProduct, montX)
+        printTrace("after mult")
+      }
     }
     // post, x^e' -> x^e
     partialProduct = MM(partialProduct, BigInt(1))
