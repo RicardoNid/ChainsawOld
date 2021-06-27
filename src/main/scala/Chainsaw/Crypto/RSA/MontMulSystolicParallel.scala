@@ -17,7 +17,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
     val mode = in Bits (lMs.size bits) // one-hot, provided by the external control logic
     // data
     val xiIns = in Vec(UInt(1 bits), parallelFactor)
-    xiIns.addAttribute("max_fanout = \"16\"")
+//    xiIns.addAttribute("max_fanout = \"16\"")
     val YWordIns = in Vec(UInt(w bits), parallelFactor)
     val MWordIns = in Vec(UInt(w bits), parallelFactor)
 
@@ -40,14 +40,13 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
 
   val PEs = (0 until p).map(_ => new MontMulPE(w))
 
-
   val groupStarters = PEs.indices.filter(_ % pPerGroup == 0).map(PEs(_))
   val groupEnders = PEs.indices.filter(_ % pPerGroup == pPerGroup - 1).map(PEs(_))
   val buffers = groupEnders.map(pe => RegNext(pe.io.flowOut)) // queue with depth = 1
   buffers.foreach { buffer =>
     buffer.init(MontMulPEFlow(w).getZero) // clear when not connected
-    buffer.control.valid.allowOverride
-    buffer.control.valid := False // TODO: valid would stop here, in fact, that register should be saved
+//    buffer.control.valid.allowOverride
+//    buffer.control.valid := False // TODO: valid would stop here, in fact, that register should be saved
   }
   // connecting PEs with each other
   val datapath = new Area {
@@ -77,7 +76,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
             val wrapAroundBuffer = buffers(j + groupCount - 1)
             starter.io.flowIn.data := Mux(inputNow, dataIns(j), wrapAroundBuffer.data)
             starter.io.flowIn.control.SetXi := Mux(setXiNow, setXiNow, wrapAroundBuffer.control.SetXi)
-            starter.io.flowIn.control.valid := Mux(setValidNow, setValidNow, wrapAroundBuffer.control.valid)
+//            starter.io.flowIn.control.valid := Mux(setValidNow, setValidNow, wrapAroundBuffer.control.valid)
             // TODO: try max_fanout/reg duplication as xi fanout is huge for 4096
             (j * pPerGroup until (j + groupCount) * pPerGroup).foreach(id => PEs(id).io.xi := io.xiIns(j))
             availables(j) := True
@@ -91,9 +90,9 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
   println(s"outputProviders are ${outputProviders.mkString(" ")}")
   val outputPEs = outputProviders.map(PEs(_))
   io.dataOuts.zip(outputPEs).foreach { case (dataOut, pe) => dataOut := pe.io.flowOut.data.SWord }
-  io.valids := Vec(datapath.availables.zip(outputPEs).map { case (avail, pe) => avail && pe.io.flowOut.control.valid })
-  // FIXME
-  //  io.valids := Vec(datapath.availables.map(_ && Delay(roundCounter.willOverflowIfInc, 2, init = False)))
+//  io.valids := Vec(datapath.availables.zip(outputPEs).map { case (avail, pe) => avail && pe.io.flowOut.control.valid })
+  val resultValid = Delay(roundCounter.willOverflowIfInc, 2, init = False)
+  io.valids := Vec(datapath.availables.map(_ && resultValid))
 
   val fsm = new StateMachine {
     val IDLE = StateEntryPoint()
@@ -103,6 +102,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
     val feedMYNow = out(roundCounter.value === U(0) && isActive(RUN))
     val MYWordIndex = out(eCounter.value(eCounter.value.getBitsWidth - 2 downto 0))
     val feedXNow = out(eCounter.value < MuxOH(io.mode, pPerInstance.map(U(_))) && isActive(RUN))
+    val firstRount = roundCounter.value === U(0)
     val lastRound = out(roundCounter.willOverflowIfInc && isActive(RUN))
     val lastWord = out(eCounter.willOverflowIfInc && isActive(RUN))
     val lastCycle = out(roundCounter.willOverflow && isActive(RUN))
@@ -113,8 +113,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
 
     RUN.whenIsActive { // control the dataflow
       eCounter.increment()
-      when(roundCounter.value === U(0)) {
-        // PE data input
+      when(firstRount) {
         datapath.inputNow := True
         when(eCounter.value === U(0))(datapath.setXiNow := True)
       }

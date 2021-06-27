@@ -88,105 +88,105 @@ case class MontConfig(lMs: Seq[Int] = Seq(512, 1024, 2048, 3072, 4096),
       s"\n********systolic array properties report********")
 }
 
-case class MontMulSystolic(config: MontConfig) extends Component {
-
-  import config._
-
-  val io = new Bundle {
-    // control
-    val start = in Bool()
-    val mode = in Bits (lMs.size bits) // one-hot
-    // data
-    val xiIn = in UInt (1 bits)
-    val YWordIn = in UInt (w bits)
-    val MWordIn = in UInt (w bits)
-
-    val SWordOut = out UInt (w bits)
-    val valid = out Bool()
-    val idle = out Bool()
-  }
-
-  val dataIn = MontMulPEDataFlow(w)
-  dataIn.SWord := U(0)
-  dataIn.YWord := io.YWordIn
-  dataIn.MWord := io.MWordIn
-
-  val modeReg = Reg(HardType(io.mode))
-  when(io.start)(modeReg := io.mode)
-
-  // TODO: clean up this part
-  val PEs = (0 until p).map(_ => new MontMulPE(w))
-  // connecting PEs with each other
-  PEs.init.zip(PEs.tail).foreach { case (prev, next) => next.io.flowIn := prev.io.flowOut }
-  // for systolic, a FIFO is not needed, a Delay is enough, and simpler
-  //  val Queue = FIFO(MontMulPEData(w), if (p - e > 0) p - e else 0)
-  val bufferSetXi = History(PEs.last.io.flowOut.control.SetXi, queueDepths.max + 1, init = False)
-  //  val bufferDataFlow = History(PEs.last.io.flowOut.data, queueDepths.max + 1, init = MontMulPEDataFlow(w)) // TODO: init of bundle?
-  val bufferDataFlow = History(PEs.last.io.flowOut.data, queueDepths.max + 1)
-
-  val queues = Vec(queueDepths.map(_ => MontMulPEFlow(w)))
-  queues.zip(queueDepths).foreach { case (queue, depth) =>
-    queue.control.valid := False
-    queue.control.SetXi := bufferSetXi(depth)
-    queue.data := bufferDataFlow(depth)
-  }
-
-  // datapaths
-  PEs.head.io.flowIn := MuxOH(modeReg, queues)
-  val outputPEs = outputProviders.map(PEs(_))
-  val outputCandidates = outputPEs.map(pe =>
-    (pe.io.flowOut.data.SWord, pe.io.flowOut.control.valid))
-  //  val outputCandidates = outputProviders.map(outputProvider =>
-  //    (PEs(outputProvider).io.flowOut.SComp ## PEs(outputProvider).io.flowOut.S0).asUInt)
-  io.SWordOut := MuxOH(modeReg, outputCandidates.map(_._1))
-  io.valid := MuxOH(modeReg, outputCandidates.map(_._2))
-
-  // xi input
-  PEs.foreach(pe => pe.io.xi := io.xiIn)
-
-
-  // counters
-  val eCounter = Counter(es.max)
-  val eCounterWillOverflows = es.map(e => eCounter.value === U(e - 1) && eCounter.willIncrement)
-  val currentECounterOverflow = MuxOH(modeReg, eCounterWillOverflows)
-  when(currentECounterOverflow)(eCounter.clear())
-  val roundCounter = Counter(rounds.max, inc = currentECounterOverflow)
-  val roundCounterWillOverflows = rounds.map(round => roundCounter.value === U(round - 1) && roundCounter.willIncrement)
-  val currentRoundCounterOverflow = MuxOH(modeReg, roundCounterWillOverflows)
-  when(currentRoundCounterOverflow)(roundCounter.clear())
-
-  val fsm = new StateMachine {
-    val IDLE = StateEntryPoint()
-    val RUN = State()
-
-    IDLE.whenIsActive {
-      when(io.start)(goto(RUN))
-    }
-
-    RUN.whenIsActive { // control the dataflow
-      eCounter.increment()
-      when(roundCounter.value === U(0)) {
-        // input operations
-        PEs.head.io.flowIn.data := dataIn
-        PEs.head.io.flowIn.control.SetXi := False
-        when(eCounter.value === U(0))(PEs.head.io.flowIn.control.SetXi := True)
-      }
-      when(roundCounter.value === MuxOH(modeReg, rounds.map(round => U(round - 1)))) {
-        PEs.head.io.flowIn.control.valid := True
-      }
-      when(currentRoundCounterOverflow) {
-        when(io.start)(goto(RUN))
-          .otherwise(goto(IDLE))
-      }
-    }
-    io.idle := isActive(IDLE)
-  }
-}
-
-object MontMulSystolic {
-  def main(args: Array[String]): Unit = {
-    //    GenRTL(new MontMulPE(16))
-    //    VivadoSynth(new MontMulPE(128))
-    VivadoSynth(new MontMulSystolic(MontConfig(Seq(512, 1024, 2048, 3072, 4096), 32, 17)))
-  }
-}
+//case class MontMulSystolic(config: MontConfig) extends Component {
+//
+//  import config._
+//
+//  val io = new Bundle {
+//    // control
+//    val start = in Bool()
+//    val mode = in Bits (lMs.size bits) // one-hot
+//    // data
+//    val xiIn = in UInt (1 bits)
+//    val YWordIn = in UInt (w bits)
+//    val MWordIn = in UInt (w bits)
+//
+//    val SWordOut = out UInt (w bits)
+//    val valid = out Bool()
+//    val idle = out Bool()
+//  }
+//
+//  val dataIn = MontMulPEDataFlow(w)
+//  dataIn.SWord := U(0)
+//  dataIn.YWord := io.YWordIn
+//  dataIn.MWord := io.MWordIn
+//
+//  val modeReg = Reg(HardType(io.mode))
+//  when(io.start)(modeReg := io.mode)
+//
+//  // TODO: clean up this part
+//  val PEs = (0 until p).map(_ => new MontMulPE(w))
+//  // connecting PEs with each other
+//  PEs.init.zip(PEs.tail).foreach { case (prev, next) => next.io.flowIn := prev.io.flowOut }
+//  // for systolic, a FIFO is not needed, a Delay is enough, and simpler
+//  //  val Queue = FIFO(MontMulPEData(w), if (p - e > 0) p - e else 0)
+//  val bufferSetXi = History(PEs.last.io.flowOut.control.SetXi, queueDepths.max + 1, init = False)
+//  //  val bufferDataFlow = History(PEs.last.io.flowOut.data, queueDepths.max + 1, init = MontMulPEDataFlow(w)) // TODO: init of bundle?
+//  val bufferDataFlow = History(PEs.last.io.flowOut.data, queueDepths.max + 1)
+//
+//  val queues = Vec(queueDepths.map(_ => MontMulPEFlow(w)))
+//  queues.zip(queueDepths).foreach { case (queue, depth) =>
+//    queue.control.valid := False
+//    queue.control.SetXi := bufferSetXi(depth)
+//    queue.data := bufferDataFlow(depth)
+//  }
+//
+//  // datapaths
+//  PEs.head.io.flowIn := MuxOH(modeReg, queues)
+//  val outputPEs = outputProviders.map(PEs(_))
+//  val outputCandidates = outputPEs.map(pe =>
+//    (pe.io.flowOut.data.SWord, pe.io.flowOut.control.valid))
+//  //  val outputCandidates = outputProviders.map(outputProvider =>
+//  //    (PEs(outputProvider).io.flowOut.SComp ## PEs(outputProvider).io.flowOut.S0).asUInt)
+//  io.SWordOut := MuxOH(modeReg, outputCandidates.map(_._1))
+//  io.valid := MuxOH(modeReg, outputCandidates.map(_._2))
+//
+//  // xi input
+//  PEs.foreach(pe => pe.io.xi := io.xiIn)
+//
+//
+//  // counters
+//  val eCounter = Counter(es.max)
+//  val eCounterWillOverflows = es.map(e => eCounter.value === U(e - 1) && eCounter.willIncrement)
+//  val currentECounterOverflow = MuxOH(modeReg, eCounterWillOverflows)
+//  when(currentECounterOverflow)(eCounter.clear())
+//  val roundCounter = Counter(rounds.max, inc = currentECounterOverflow)
+//  val roundCounterWillOverflows = rounds.map(round => roundCounter.value === U(round - 1) && roundCounter.willIncrement)
+//  val currentRoundCounterOverflow = MuxOH(modeReg, roundCounterWillOverflows)
+//  when(currentRoundCounterOverflow)(roundCounter.clear())
+//
+//  val fsm = new StateMachine {
+//    val IDLE = StateEntryPoint()
+//    val RUN = State()
+//
+//    IDLE.whenIsActive {
+//      when(io.start)(goto(RUN))
+//    }
+//
+//    RUN.whenIsActive { // control the dataflow
+//      eCounter.increment()
+//      when(roundCounter.value === U(0)) {
+//        // input operations
+//        PEs.head.io.flowIn.data := dataIn
+//        PEs.head.io.flowIn.control.SetXi := False
+//        when(eCounter.value === U(0))(PEs.head.io.flowIn.control.SetXi := True)
+//      }
+//      when(roundCounter.value === MuxOH(modeReg, rounds.map(round => U(round - 1)))) {
+//        PEs.head.io.flowIn.control.valid := True
+//      }
+//      when(currentRoundCounterOverflow) {
+//        when(io.start)(goto(RUN))
+//          .otherwise(goto(IDLE))
+//      }
+//    }
+//    io.idle := isActive(IDLE)
+//  }
+//}
+//
+//object MontMulSystolic {
+//  def main(args: Array[String]): Unit = {
+//    //    GenRTL(new MontMulPE(16))
+//    //    VivadoSynth(new MontMulPE(128))
+//    VivadoSynth(new MontMulSystolic(MontConfig(Seq(512, 1024, 2048, 3072, 4096), 32, 17)))
+//  }
+//}

@@ -16,7 +16,7 @@ case class MontMulPEDataFlow(w: Int) extends Bundle {
 
 case class MontMulPEControlFlow(w: Int) extends Bundle {
   val SetXi = Bool()
-  val valid = Bool()
+//  val valid = Bool()
 }
 
 case class MontMulPEFlow(w: Int) extends Bundle {
@@ -43,7 +43,7 @@ class MontMulPE(w: Int) extends Component { // we want it to be synthesized inde
   val YWord = io.flowIn.data.YWord
   val MWord = io.flowIn.data.MWord
   val SetXi = io.flowIn.control.SetXi
-  val valid = io.flowIn.control.valid
+//  val valid = io.flowIn.control.valid
 
   // data registers
   val CO, CE = RegInit(U(0, 2 bits))
@@ -97,6 +97,6 @@ class MontMulPE(w: Int) extends Component { // we want it to be synthesized inde
 
   io.flowOut.control.SetXi := RegNext(SetXi)
   io.flowOut.control.SetXi.init(False)
-  io.flowOut.control.valid := RegNext(valid)
-  io.flowOut.control.valid.init(False)
+//  io.flowOut.control.valid := RegNext(valid)
+//  io.flowOut.control.valid.init(False)
 }
