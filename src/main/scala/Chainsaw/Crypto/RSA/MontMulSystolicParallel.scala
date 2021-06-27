@@ -17,6 +17,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
     val mode = in Bits (lMs.size bits) // one-hot, provided by the external control logic
     // data
     val xiIns = in Vec(UInt(1 bits), parallelFactor)
+    xiIns.addAttribute("max_fanout = \"16\"")
     val YWordIns = in Vec(UInt(w bits), parallelFactor)
     val MWordIns = in Vec(UInt(w bits), parallelFactor)
 
@@ -35,72 +36,76 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
   // counters, set them with the maximum value and run them in different modes
   // multi-mode counter, by reassign the "willOverflowIfInc"
   val eCounter = MultiCountCounter(es.map(BigInt(_)), io.mode)
-  val roundCounter = MultiCountCounter(rounds.map(BigInt(_)), io.mode, inc = eCounter.willOverflow)
+  val roundCounter = Counter(rounds(0), inc = eCounter.willOverflow) // rounds are the same
 
-  // datapath, see the diagram
-  // for w >= 4, parallel p has the property that parallelP(2 * lM) = 2 * parallelP(lM), makes the design regular
-  // more specifically, p = e - 1 for each size
   val PEs = (0 until p).map(_ => new MontMulPE(w))
-  //  val groupNum = parallelFactor
 
-  val groupStarters = PEs.indices.filter(_ % groupSize == 0).map(PEs(_))
-  // TODO: caution: ender is different from the output
-  val groupEnders = PEs.indices.filter(_ % groupSize == groupSize - 1).map(PEs(_))
+
+  val groupStarters = PEs.indices.filter(_ % pPerGroup == 0).map(PEs(_))
+  val groupEnders = PEs.indices.filter(_ % pPerGroup == pPerGroup - 1).map(PEs(_))
   val buffers = groupEnders.map(pe => RegNext(pe.io.flowOut)) // queue with depth = 1
   buffers.foreach { buffer =>
-    buffer.init(MontMulPEFlow(w).getZero)
+    buffer.init(MontMulPEFlow(w).getZero) // clear when not connected
     buffer.control.valid.allowOverride
     buffer.control.valid := False // TODO: valid would stop here, in fact, that register should be saved
   }
   // connecting PEs with each other
   val datapath = new Area {
-    // the "default connection", all groups are connected one after another, inputPEs works as successors
     PEs.init.zip(PEs.tail).foreach { case (prev, next) => next.io.flowIn := prev.io.flowOut }
-    PEs.head.io.flowIn := MontMulPEFlow(w).getZero
-    PEs.foreach(_.io.xi := U(0))
+    PEs.head.io.flowIn := MontMulPEFlow(w).getZero // pre-assign
+    PEs.foreach(_.io.xi := U(0)) // pre-assign
 
     val inputNow, setXiNow, setValidNow = Bool()
     Seq(inputNow, setXiNow, setValidNow).foreach(_.clear())
 
     val availables = Vec(Bool(), parallelFactor)
     availables := availables.getZero
-    availables.allowOverride // some may be always available
 
+    /**
+     * @see [[https://www.notion.so/RSA-ECC-59bfcca42cd54253ad370defc199b090 "MontMult-Connections" in this page]]
+     */
+    // BLOCK Connections
     switch(True) {
-      lMs.zipWithIndex.foreach { case (lM, i) =>
-        val groupPerInstance = lM / lMs.min
+      lMs.indices.foreach { i =>
+        val groupCount = groupPerInstance(i)
+        val starterIds = startersAtModes(i)
+        println(s"mode $i, starterIds = ${starterIds.mkString(" ")}")
         is(io.mode(i)) {
-          println(s"mode = $i, an instance contains $groupPerInstance group and ${groupPerInstance * groupSize} PEs")
-          groupStarters.zipWithIndex
-            .filter { case (e, i) => i % groupPerInstance == 0 } // take the instance starters
-            .take(parallelFactor / groupPerInstance) // drop the instance without enough length
-            .foreach { case (starter, i) =>
-              val wrapAroundBuffer = buffers(i + groupPerInstance - 1)
-              starter.io.flowIn.data := Mux(inputNow, dataIns(i), wrapAroundBuffer.data)
-              starter.io.flowIn.control.SetXi := Mux(setXiNow, setXiNow, wrapAroundBuffer.control.SetXi)
-              starter.io.flowIn.control.valid := Mux(setValidNow, setValidNow, wrapAroundBuffer.control.valid)
-              (i * groupSize until (i + groupPerInstance) * groupSize).foreach { id =>
-                PEs(id).io.xi := io.xiIns(i) // FIXME: xi fanout is huge for 4096
-              }
-              availables(i) := True
-            }
-        }
-        default {
-          availables.foreach(_ := False)
+          println(s"mode = $i, an instance contains $groupCount group and ${groupCount * pPerGroup} PEs")
+          starterIds.foreach { j =>
+            val starter = PEs(j * pPerGroup)
+            val wrapAroundBuffer = buffers(j + groupCount - 1)
+            starter.io.flowIn.data := Mux(inputNow, dataIns(j), wrapAroundBuffer.data)
+            starter.io.flowIn.control.SetXi := Mux(setXiNow, setXiNow, wrapAroundBuffer.control.SetXi)
+            starter.io.flowIn.control.valid := Mux(setValidNow, setValidNow, wrapAroundBuffer.control.valid)
+            // TODO: try max_fanout/reg duplication as xi fanout is huge for 4096
+            (j * pPerGroup until (j + groupCount) * pPerGroup).foreach(id => PEs(id).io.xi := io.xiIns(j))
+            availables(j) := True
+          }
         }
       }
     }
   }
 
-  // FIXME: this is for RSA only, as 512,1024...are special
+  // BLOCK STATE MACHINE
   println(s"outputProviders are ${outputProviders.mkString(" ")}")
   val outputPEs = outputProviders.map(PEs(_))
   io.dataOuts.zip(outputPEs).foreach { case (dataOut, pe) => dataOut := pe.io.flowOut.data.SWord }
   io.valids := Vec(datapath.availables.zip(outputPEs).map { case (avail, pe) => avail && pe.io.flowOut.control.valid })
+  // FIXME
+  //  io.valids := Vec(datapath.availables.map(_ && Delay(roundCounter.willOverflowIfInc, 2, init = False)))
 
   val fsm = new StateMachine {
     val IDLE = StateEntryPoint()
     val RUN = State()
+
+    // for readability, we pre-define some "timing" at the beginning
+    val feedMYNow = out(roundCounter.value === U(0) && isActive(RUN))
+    val MYWordIndex = out(eCounter.value(eCounter.value.getBitsWidth - 2 downto 0))
+    val feedXNow = out(eCounter.value < MuxOH(io.mode, pPerInstance.map(U(_))) && isActive(RUN))
+    val lastRound = out(roundCounter.willOverflowIfInc && isActive(RUN))
+    val lastWord = out(eCounter.willOverflowIfInc && isActive(RUN))
+    val lastCycle = out(roundCounter.willOverflow && isActive(RUN))
 
     IDLE.whenIsActive {
       when(io.start)(goto(RUN))
@@ -125,21 +130,5 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
       }
     }
     io.idle := isActive(IDLE)
-    val feedMYNow = out(roundCounter.value === U(0) && isActive(RUN))
-    val MYWordIndex = out(eCounter.value(eCounter.value.getBitsWidth - 2 downto 0))
-    val feedXNow = out(eCounter.value < MuxOH(io.mode, parallelPs.map(U(_))) && isActive(RUN))
-    val lastRound = out(roundCounter.willOverflowIfInc && isActive(RUN))
-    val lastWord = out(eCounter.willOverflowIfInc && isActive(RUN))
-    val lastCycle = out(roundCounter.willOverflow && isActive(RUN))
-  }
-
-  // drop the msb, only valid for RSA, as word number without padding would be a power of 2
-
-}
-
-object MontMulSystolicParallel {
-  def main(args: Array[String]): Unit = {
-    GenRTL(new MontMulSystolicParallel(MontConfig(Seq(512, 1024, 2048, 3072, 4096), 32, 17, parallel = true)))
-    VivadoSynth(new MontMulSystolicParallel(MontConfig(Seq(512, 1024, 2048, 3072, 4096), 32, 17, parallel = true)))
   }
 }

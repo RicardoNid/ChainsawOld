@@ -22,27 +22,25 @@ class MontExpSystolicTest extends AnyFunSuite {
     val doImpl = false
     val comparStageByStage = false
 
-    //        val testCases = Seq(
-    //          MontExpTestCase(0),
-    //          MontExpTestCase(0, false),
-    //          MontExpTestCase(0, false),
-    //          MontExpTestCase(1),
-    //          MontExpTestCase(1, false),
-    //          MontExpTestCase(3),
-    //          MontExpTestCase(3, false),
-    //          MontExpTestCase(3, false),
-    //          MontExpTestCase(4),
-    //          MontExpTestCase(4),
-    //          MontExpTestCase(4)
-    //        )
-
-    val badCase = MontExpTestCase(0, true, true,
-      BigInt("273656445163906518094773480352271233871692103500636569603988579080814552483327531633505581086736049017998828948679567076627001706629177242217482108696"),
-      BigInt("12267987580685115953631480690461459043943927543093117253628628978016608995370795422687359683171054370545203756302344647661277721930565462426339590241818599"),
-      BigInt("5433588703050657206861401806324500141237388948531921154891779928667076710845287411293152284475037292688199242193504515118968404814818381145741024098164669")
+    val testCases = Seq(
+      MontExpTestCase(0),
+      MontExpTestCase(0, false),
+      MontExpTestCase(1),
+      MontExpTestCase(1, false),
+      MontExpTestCase(2),
+      MontExpTestCase(2, false),
+      MontExpTestCase(3),
+      MontExpTestCase(3, false),
+      MontExpTestCase(4)
     )
 
-    val testCases = Seq.fill(1)(badCase)
+    //        val badCase = MontExpTestCase(1, true, true,
+    //          BigInt("57672963219229608566122095449320371427896130103262549352542382457236533534393489411745214907273731307561093116217721632027816358266916903113909029292202805093499793235217933094232543998620966750602243132189331059932356344584047353749377034258025114707422663774779536927888912242023208801751390779062809732"),
+    //          BigInt("166644392282266875954513831175540529397163380390707403110974781007670843453490184946095434604027505101010747292231349069096507339835525815712445725029868007848300215029684008186459470380875965050724904228097254348679814787670865419713168691924160602351898706599670261013108938872651996924853042703444696880073"),
+    //          BigInt("21")
+    //        )
+    //
+    //        val testCases = Seq.fill(1)(badCase)
 
     val testSizes = Seq(512, 1024, 2048, 3072, 4096)
     val testWordSize = 32
@@ -70,9 +68,9 @@ class MontExpSystolicTest extends AnyFunSuite {
 
               val testRadix = BigInt(1) << (testModulus.bitLength + 2)
               val testRadixSquare = if (testcase.changeKey) BigInt(Zp(testModulus)(testRadix * testRadix).toByteArray) else lastRadixSquare
-              val testExponent = if (testcase.useGivenValue) testcase.E
-              else if (testcase.changeKey) BigInt(ref.getPrivateValue) else lastExponent
-              //              val testExponent = BigInt("10101", 2)
+              //              val newExponent = BigInt(ref.getPrivateValue)
+              val newExponent = BigInt("10101", 2)
+              val testExponent = if (testcase.useGivenValue) testcase.E else if (testcase.changeKey) newExponent else lastExponent
               val testExponentLength = testExponent.bitLength
 
               lastModulus = testModulus

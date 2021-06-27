@@ -16,8 +16,7 @@ class MontExpRouter[T <: BitVector](config: MontConfig, hardType: HardType[T], N
 
   switch(True) { // for different modes
     lMs.indices.foreach { modeId => // traverse each mode, as each mode run instances of different size lM
-      val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(modeId) == 0) // instance indices of current mode
-        .take(parallelFactor / groupPerInstance(modeId))
+      val starterIds = startersAtModes(modeId)
       if (NTo1) is(mode(modeId))(when(connected)(starterIds.foreach(j => toDes(j) := src(selectCount + j))))
       else is(mode(modeId))(when(connected)(starterIds.foreach(j => toDes(selectCount + j) := src(j)))) // selection network version
     }
