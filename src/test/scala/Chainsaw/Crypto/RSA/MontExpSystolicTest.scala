@@ -8,7 +8,7 @@ import spinal.core.sim._
 import scala.collection.mutable.ArrayBuffer
 
 case class MontExpTestCase(modeId: Int, changeKey: Boolean = true,
-                           useGivenValue: Boolean = false, X: BigInt = 0, M: BigInt = 0)
+                           useGivenValue: Boolean = false, X: BigInt = 0, M: BigInt = 0, E: BigInt = 0)
 
 class MontExpSystolicTest extends AnyFunSuite {
 
@@ -18,9 +18,9 @@ class MontExpSystolicTest extends AnyFunSuite {
     val doGen = false
     val doSim = true
     val simTimes = 1
-    val doSynth = false
+    val doSynth = true
     val doImpl = false
-    val comparStageByStage = true
+    val comparStageByStage = false
 
     //        val testCases = Seq(
     //          MontExpTestCase(0),
@@ -38,7 +38,8 @@ class MontExpSystolicTest extends AnyFunSuite {
 
     val badCase = MontExpTestCase(0, true, true,
       BigInt("273656445163906518094773480352271233871692103500636569603988579080814552483327531633505581086736049017998828948679567076627001706629177242217482108696"),
-      BigInt("12267987580685115953631480690461459043943927543093117253628628978016608995370795422687359683171054370545203756302344647661277721930565462426339590241818599")
+      BigInt("12267987580685115953631480690461459043943927543093117253628628978016608995370795422687359683171054370545203756302344647661277721930565462426339590241818599"),
+      BigInt("5433588703050657206861401806324500141237388948531921154891779928667076710845287411293152284475037292688199242193504515118968404814818381145741024098164669")
     )
 
     val testCases = Seq.fill(1)(badCase)
@@ -69,24 +70,22 @@ class MontExpSystolicTest extends AnyFunSuite {
 
               val testRadix = BigInt(1) << (testModulus.bitLength + 2)
               val testRadixSquare = if (testcase.changeKey) BigInt(Zp(testModulus)(testRadix * testRadix).toByteArray) else lastRadixSquare
-              val testExponent = if (testcase.changeKey) BigInt(ref.getPrivateValue) else lastExponent
+              val testExponent = if (testcase.useGivenValue) testcase.E
+              else if (testcase.changeKey) BigInt(ref.getPrivateValue) else lastExponent
               //              val testExponent = BigInt("10101", 2)
               val testExponentLength = testExponent.bitLength
 
               lastModulus = testModulus
               lastRadixSquare = testRadixSquare
               lastExponent = testExponent
-              println(s"exponent = ${testExponent.toString(2)}")
 
               val testInputs = (0 until currentInstanceNumber).map(_ => if (testcase.useGivenValue) testcase.X else BigInt(ref.getPrivateValue) / DSPRand.nextInt(10000) - DSPRand.nextInt(10000))
               // get words
               require(testExponent % 2 == 1)
               val testExponentWords = testExponent.toString(2).padTo(currentTestSize, '0').grouped(testWordSize).toArray.map(wordString => BigInt(wordString.reverse, 2))
-              println(s"exponent Words ${testExponentWords.mkString(" ")}")
               val testRadixSquareWords = toWords(testRadixSquare, testWordSize, currentTestSize / testWordSize)
               val testModulusWords = toWords(testModulus, testWordSize, currentTestSize / testWordSize)
               val testInputsWords = testInputs.map(input => toWords(input, testWordSize, currentTestSize / testWordSize))
-              println(s"input words: ${testInputsWords(0).map(_.toString(16)).mkString(" ")}")
               // get golden
               //          val goldens = testInputs.map(MontAlgos.Arch1ME(_, testExponent, testModulus, testWordSize, print = false))
               // FIXME: much faster, but may not be totally the same as results of Arch1ME
@@ -111,7 +110,7 @@ class MontExpSystolicTest extends AnyFunSuite {
               def runForOnce() = {
                 val dutResults = Seq.fill(currentInstanceNumber)(ArrayBuffer[BigInt]())
                 // monitors
-                val montMultCount = testExponent.toString(2).tail.map(_.asDigit + 1).sum + 2
+                val montMultCount = testExponent.toString(2).tail.map(_.asDigit + 1).sum + 2 + 20
                 val runtime = config.IIs(modeId) * montMultCount + es(modeId) + 10
                 println(s"estimated MontMultCount = $montMultCount, estimated runtime = $runtime")
                 val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(modeId) == 0)
@@ -154,6 +153,7 @@ class MontExpSystolicTest extends AnyFunSuite {
                     s"bad case" +
                       s"\n\t X = ${testInputs(i)}" +
                       s"\n\t M = $testModulus" +
+                      s"\n\t E = $testExponent" +
                       s"\n\t mode = $modeId"
                   )
                   //                  assertResult(goldenString)(dutString)

@@ -57,8 +57,8 @@ case class MontExpSystolic(config: MontConfig) extends Component {
    */
   // BLOCK COUNTERS
   val counterLengths = Seq(w, wordPerGroup, parallelFactor).map(log2Up(_))
-  val Seq(bitAddrLength, wordAddrLength, ramIndexLength) = counterLengths // 3,4,5
-  val splitPoints = (0 until 4).map(i => counterLengths.take(i).sum) // 0,3,7,12
+  val Seq(bitAddrLength, wordAddrLength, ramIndexLength) = counterLengths // 5,4,3
+  val splitPoints = (0 until 4).map(i => counterLengths.take(i).sum) // 0,5,9,12
 
   val initCounter = MultiCountCounter(lMs.map(lM => BigInt(lM / w)), modeReg)
   val initRAMCount = initCounter.splitAt(wordAddrLength)._1.asUInt
@@ -66,12 +66,12 @@ case class MontExpSystolic(config: MontConfig) extends Component {
 
   val xCounter, exponentCounter = MultiCountCounter(lMs.map(BigInt(_)), modeReg)
 
-  val xBitSelects = splitPoints.init.zip(splitPoints.tail).map { case (start, end) => xCounter.value(end - 1 downto start) } // 2 downto 0, 6 downto 3,...
+  val xBitSelects = splitPoints.init.zip(splitPoints.tail).map { case (start, end) => xCounter.value(end - 1 downto start) } // 4 downto 0, 8 downto 5,...
   val Seq(xBitCount, xWordCount, xRAMCount) = xBitSelects
 
   val exponentBitSelect = splitPoints.init.zip(splitPoints.tail).map { case (start, end) => exponentCounter.value(end - 1 downto start) }
-  val exponentBitCount = exponentBitSelect(0)
-  val exponentWordCount = exponentBitSelect(1) @@ exponentBitSelect(2)
+  val exponentWordCount = exponentCounter.splitAt(bitAddrLength)._1.asUInt
+  val exponentBitCount = exponentCounter.splitAt(bitAddrLength)._2.asUInt
   val currentExponentBit = exponentWordRAM(exponentWordCount)(exponentBitCount)
   val lastExponentBit = exponentCounter.value === (exponentLengthReg - 1)
 
@@ -80,9 +80,9 @@ case class MontExpSystolic(config: MontConfig) extends Component {
   val ymWordCount = ymCount.splitAt(wordAddrLength)._2.asUInt // lower part - the word count
 
   // TODO: make it behave correctly at "last"
-  val wordMax = MuxOH(modeReg, lMs.map(lM => U(lM / w - 1, ymCount.getBitsWidth bits )))
-  val temp = Delay(ymCount, 3)
-  val outputCounter = Mux(temp > wordMax, U(0), temp)
+  val wordMax = MuxOH(modeReg, lMs.map(lM => U(lM / w - 1, ymCount.getBitsWidth bits)))
+  val delayedYmCount = Delay(ymCount, 3)
+  val outputCounter = Mux(delayedYmCount > wordMax, U(0), delayedYmCount) // it's like a multicounter, but driven by the ymCount
   val outputRAMCount = outputCounter.splitAt(wordAddrLength)._1.asUInt
   val outputWordCount = outputCounter.splitAt(wordAddrLength)._2.asUInt
 
