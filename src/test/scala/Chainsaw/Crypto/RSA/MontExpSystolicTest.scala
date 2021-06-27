@@ -15,9 +15,9 @@ class MontExpSystolicTest extends AnyFunSuite {
   test("testMontExpSystolicHardwareWithROM") {
 
     val doGen = false
-    val doSim = false
+    val doSim = true
     val doSynth = false
-    val doImpl = true
+    val doImpl = false
     val comparStageByStage = false
 
     val testCases = Seq(

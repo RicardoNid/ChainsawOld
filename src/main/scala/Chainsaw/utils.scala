@@ -63,6 +63,10 @@ object FIFO {
   }
 }
 
+class multi(counts: Seq[BigInt], modeOH: Bits) extends Counter(start = 0, end = counts.max){
+  override val willOverflowIfInc = (value === MuxOH(modeOH, counts.map(count => U(count - 1, log2Up(counts.max) bits))))
+}
+
 class MultiCountCounter(counts: Seq[BigInt], modeOH: Bits) extends ImplicitArea[UInt] {
   val start = 0
   val end = counts.max - 1

@@ -7,6 +7,7 @@ import Chainsaw._
 import java.math.BigInteger
 import scala.collection.mutable.ArrayBuffer
 
+
 object MontAlgos {
   def R2MM(X: BigInt, Y: BigInt, M: BigInt) = {
     require(X < M && Y < M)
@@ -41,12 +42,12 @@ object MontAlgos {
     S
   }
 
-  // TODO: implement bit select implicit
-  def toWords(value: BigInt, w: Int, e: Int) = {
-    value.toString(2).padToLeft(e * w, '0')
-      .grouped(w).toArray.map(BigInt(_, 2))
-      .reverse
-  }
+//  // TODO: implement bit select implicit
+//  def toWords(value: BigInt, w: Int, e: Int) = {
+//    value.toString(2).padToLeft(e * w, '0')
+//      .grouped(w).toArray.map(BigInt(_, 2))
+//      .reverse
+//  }
 
   // Modifications
   // - all the index of C is 1 less than the original representation, as C(0) didn't appear at all in the original representation - no we don't
