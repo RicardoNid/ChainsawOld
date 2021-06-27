@@ -89,8 +89,8 @@ case class MontExpSystolic(config: MontConfig) extends Component {
   val outputWordCount = outputCounter.splitAt(wordAddrLength)._2.asUInt
 
   // BLOCK MEMORY PORTS
-  val writeProduct, writeXMont = RegInit(False) // select RAM group
-  Seq(writeProduct, writeXMont).foreach(_.allowOverride)
+  val writeXMont = RegInit(False) // select RAM group
+  writeXMont.allowOverride
   // ports writing xMontRAMs and productRAMs
   val ramEnables = Vec(Bool, parallelFactor) // select RAM
   val addrToWrite = UInt(wordAddrLength bits)
@@ -99,47 +99,45 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     xMontRAMs(i).write(
       address = addrToWrite,
       data = dataToWrite(i),
-      enable = ramEnables(i) && writeXMont // the only difference
+      enable = ramEnables(i) && writeXMont // extra condition for xMontRAMs
     )
     productRAMs(i).write(
       address = addrToWrite,
       data = dataToWrite(i),
-      enable = ramEnables(i) && writeProduct
+      enable = ramEnables(i)
     )
   }
   ramEnables.foreach(_.clear()) // pre-assignments
   addrToWrite.clearAll()
   dataToWrite.foreach(_.clearAll())
   addrToWrite.allowOverride
+  dataToWrite.allowOverride
 
   // get the shifted output
   val outputBuffers = montMult.io.dataOuts.map(RegNext(_)) // delay t for shift
   val shiftedMontMultOutputs = Vec(montMult.io.dataOuts.zip(outputBuffers).map { case (prev, next) => (prev.lsb ## next(w - 1 downto 1)).asUInt })
-  val montMultOutputValid = montMult.io.valids(0)
-  val shiftedOutputValid = RegNext(montMultOutputValid, init = False) // delay valid for one cycle as we need to shift it
-
-  // define the final output of MontExp
-  val tobeValid = RegInit(False) // this will be set at the last round of POST by the fsm
-  when(io.valids(0).fall())(tobeValid.clear()) // and cleared when the continuous output ends, then wait for next POST
-  io.dataOuts := shiftedMontMultOutputs
-  // output is valid, when montMult output is valid and now is the last MontMult operation
-  io.valids.zip(montMult.io.valids).foreach { case (io, mult) => io := RegNext(mult) && tobeValid }
 
   val fsm = new StateMachine { // BLOCK STATE MACHINE, which controls the datapath defined above
     // BLOCK STATE DECLARATION
     val IDLE = StateEntryPoint()
     val INIT, PRE, MULT, SQUARE, POST = new State()
     // BLOCK STATE TRANSITION
-    // for readability, we pre-define some "task" at the beginning
-    def initOver = initCounter.willOverflow
+    // for readability, we pre-define some "timing" at the beginning
+    val initOver = initCounter.willOverflow
     def startMontMult() = montMult.io.start.set()
-    def montMultOver = montMult.fsm.lastCycle
-    def lastMontMult = lastExponentBit
-    def lastRound = montMult.fsm.lastRound
-    def firstWord = ymCount === U(0)
-    def lastWord = montMult.fsm.lastWord
-    def feedX = montMult.fsm.feedXNow
-    def feedYM = montMult.fsm.feedMYNow
+    val montMultOver = montMult.fsm.lastCycle
+    val lastMontMult = lastExponentBit
+    val lastRound = montMult.fsm.lastRound
+    val firstWord = ymCount === U(0)
+    val lastWord = montMult.fsm.lastWord
+    val isFeedingX = montMult.fsm.feedXNow
+    val isFeedingYM = montMult.fsm.feedMYNow
+    val shouldWriteBack = isActive(PRE) || isActive(MULT) || isActive(SQUARE)
+    val MontExpValid = RegInit(False) // this will be described later
+    val MontMultValids = RegNext(montMult.io.valids, init = montMult.io.valids.getZero) // delay valid for one cycle as we need to shift it
+    val isWritingBack = MontMultValids(0) && !MontExpValid
+    val writeBackLastWord = montMult.io.valids(0).fall()
+
     IDLE.whenIsActive(when(io.start)(goto(INIT)))
     INIT.whenIsActive(when(initOver)(goto(PRE)))
     PRE.whenIsActive(when(montMultOver)(goto(SQUARE)))
@@ -161,27 +159,6 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     SQUARE.whenIsNext(when(montMultOver)(exponentCounter.increment())) // SQUARE is the first operation for each exponent bit, so exponent moves
     POST.onEntry(exponentCounter.clear())
     // BLOCK STATE WORKLOAD
-    val routerToRAMs = MontExpRouter12N(config, UInt(w bits))
-    routerToRAMs.src.foreach(_.clearAll())
-    routerToRAMs.selectCount.clearAll()
-
-    // BLOCK workload0: store the input for MontExp
-    val writeBackLastWord = montMult.io.valids(0).fall() // the last word flag
-    when(isActive(INIT)) { // BLOCK workload0.0: always, writing Xs into productRAMs
-      initCounter.increment()
-      routerToRAMs.src := io.xWordIns
-      routerToRAMs.selectCount := initRAMCount
-      addrToWrite := initWordCount
-    }.elsewhen(shiftedOutputValid && !tobeValid) { // BLOCK workload3.1: set "dataToWrite" with proper data and "open" the RAMs
-      routerToRAMs.src := shiftedMontMultOutputs
-      routerToRAMs.selectCount := outputRAMCount
-      addrToWrite := outputWordCount
-    }
-
-    routerToRAMs.work := True
-    routerToRAMs.mode := modeReg
-    dataToWrite.allowOverride
-    dataToWrite := routerToRAMs.toDes
 
     /**
      * @see [[https://www.notion.so/RSA-ECC-59bfcca42cd54253ad370defc199b090 "Flows" in this page]]
@@ -190,21 +167,41 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     val secretKeyRAMs = Seq(modulusWordRAM, radixSquareWordRAM, exponentWordRAM)
     val secretKeyInputs = Seq(io.modulusWordIn, io.radixSquareWordIn, io.exponentWordIn)
     secretKeyRAMs.zip(secretKeyInputs).foreach { case (ram, io) => ram.write(initCounter.value, io, enable = isActive(INIT) && keyResetReg) }
-    // BLOCK flow1 & 7
+    // BLOCK flow1 & 7 & 8
+    when(shouldWriteBack && lastRound) { // determine when should productRAMs and xMontRAMs be written
+      when(isActive(PRE))(writeXMont.set())
+        .otherwise(writeXMont.clear())
+    }
+
+    val routerToRAMs = MontExpRouter(config, UInt(w bits), NTo1 = false) // 1 to N
+    routerToRAMs.mode := modeReg
+    when(isActive(INIT)) { // flow1 transfer the input data to productRAMs
+      initCounter.increment()
+      routerToRAMs.src := io.xWordIns
+      routerToRAMs.work := True
+      routerToRAMs.selectCount := initRAMCount
+      addrToWrite := initWordCount
+    }.elsewhen(isWritingBack) { // flow 7 & 8 transfer the MontMult result to productRAMs 7 xMontRAMs
+      routerToRAMs.src := shiftedMontMultOutputs
+      routerToRAMs.work := True
+      routerToRAMs.selectCount := outputRAMCount
+      addrToWrite := outputWordCount
+    }
+    dataToWrite := routerToRAMs.toDes
+    // BLOCK flow2
     // dual-port, as when SQUARE is active, productRAMs are read concurrently in two different manners
     val productWordsForX = Mux(!lastRound, Vec(productRAMs.map(ram => ram.readAsync(xWordCount))), productLasts)
     val productBitsForX = Vec(productWordsForX.map(word => word(xBitCount).asUInt))
-    when(feedX)(when(!lastRound)(xCounter.increment()))
+    when(isFeedingX)(when(!lastRound)(xCounter.increment()))
 
-    val routerProdToX = MontExpRouterN21(config, UInt(1 bits))
+    val routerProdToX = MontExpRouter(config, UInt(1 bits))
     routerProdToX.work := montMult.fsm.feedXNow
     routerProdToX.mode := modeReg
     routerProdToX.selectCount := xRAMCount
     routerProdToX.src := productBitsForX
     montMult.io.xiIns.allowOverride
     montMult.io.xiIns := routerProdToX.toDes
-
-    // BLOCK flow3
+    // BLOCK flow3 & 4 & 5
     val productWordsForY = Mux(!lastWord, Vec(productRAMs.map(ram => ram.readAsync(ymWordCount))), productLasts)
     val xMontWordsForY = Mux(!lastWord, Vec(xMontRAMs.map(ram => ram.readAsync(ymWordCount))), xMontLasts)
     val radixSquareWordForY = Mux(!lastWord, radixSquareWordRAM.readAsync(ymCount), U(0, w bits))
@@ -217,13 +214,11 @@ case class MontExpSystolic(config: MontConfig) extends Component {
       .elsewhen(isActive(MULT))(wordsForY := xMontWordsForY) // from xMont // selection network version
       .elsewhen(isActive(SQUARE))(wordsForY := productWordsForY) // from partialProduct // selection network version
       .elsewhen(isActive(POST)) { // 1, as POST executes MontMult(x^e', 1)
-        when(!lastWord) {
-          when(firstWord)(feed1()).otherwise(feed0())
-        }.otherwise(feed0())
+        when(!lastWord)(when(firstWord)(feed1()).otherwise(feed0()))
+          .otherwise(feed0())
       }
 
-    // BLOCK workload2: feed Y and Modulus
-    val routerToY = MontExpRouterN21(config, UInt(w bits))
+    val routerToY = MontExpRouter(config, UInt(w bits))
     routerToY.work := montMult.fsm.feedMYNow
     routerToY.mode := modeReg
     routerToY.selectCount := ymRAMCount
@@ -231,52 +226,38 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     montMult.io.YWordIns.allowOverride
     montMult.io.YWordIns := routerToY.toDes
 
+    // BLOCK flow6
     val modulusWordForM = Mux(!montMult.fsm.lastWord, modulusWordRAM.readAsync(ymCount), U(0, w bits))
     when(montMult.fsm.feedMYNow)(montMult.io.MWordIns.foreach(_ := modulusWordForM)) // M is from the modulusRAM)
+
+    // BLOCK flow9
+    when(isActive(POST) && lastRound)(MontExpValid.set()) // set at the last round of POST by the fsm
+    when(io.valids(0).fall())(MontExpValid.clear()) // and cleared when the continuous output ends, then wait for next POST
+    io.dataOuts := shiftedMontMultOutputs
+    io.valids.zip(MontMultValids).foreach { case (io, mult) => io := mult && MontExpValid } // delay the valid of montMult for shifting
 
     switch(True) { // for different modes
       lMs.indices.foreach { modeId => // traverse each mode, as each mode run instances of different size lM
         val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(modeId) == 0) // instance indices of current mode
           .take(parallelFactor / groupPerInstance(modeId))
         is(modeReg(modeId)) { // for each mode
-          IDLE.onExit { // preset the write flag for INIT
-            writeXMont.clear()
-            writeProduct.set()
-          }
-
-          when(isActive(INIT)) { // BLOCK workload0: store the input for MontExp
-            initCounter.increment()
-            starterIds.foreach { j => // BLOCK workload0.0: always, writing Xs into productRAMs
-              ramEnables(j + initRAMCount).set() // select RAMs
-            }
-          }
-
-          // BLOCK workload3: fetch XYR^-1 \pmod M and write back
           when(montMult.fsm.lastRound) {
-            // valids themselves can't be the triggers as they last even when the state has changed(the "trailing" phenomenon of the output)
-            when(isActive(PRE)) { // BLOCK workload3.0: determine which group of RAMs should be written
-              writeXMont.set()
-              writeProduct.set()
-            }.elsewhen(isActive(SQUARE) || isActive(MULT) || isActive(POST)) { // TODO: result after post is not needed
-              writeXMont.clear()
-              writeProduct.set()
-            }.otherwise {
-              writeXMont.clear()
-              writeProduct.clear()
-            }
-            // similarly, we mark the final output by setting a trigger which last long enough to cooperate with the trailing valids
-            when(isActive(POST))(tobeValid.set())
+            when(isActive(POST))(MontExpValid.set())
           }
-          // BLOCK workload3.1: set "dataToWrite" with proper data and "open" the RAMs
-          //  particularly, no write back for the last MontMult(final result), and the router works for it INIT workload
-          when(shiftedOutputValid && !tobeValid) {
+          when(isWritingBack) {
             starterIds.foreach { j =>
               when(!writeBackLastWord) {
                 ramEnables(j + outputRAMCount).set() // select RAMs
               }.otherwise {
-                when(writeProduct)(productLasts := dataToWrite)
+                productLasts := dataToWrite
                 when(writeXMont)(xMontLasts := dataToWrite)
               }
+            }
+          }
+          when(isActive(INIT)) { // BLOCK workload0: store the input for MontExp
+            initCounter.increment()
+            starterIds.foreach { j => // BLOCK workload0.0: always, writing Xs into productRAMs
+              ramEnables(j + initRAMCount).set() // select RAMs
             }
           }
         }
