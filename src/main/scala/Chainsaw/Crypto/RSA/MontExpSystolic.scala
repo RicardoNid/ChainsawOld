@@ -81,6 +81,11 @@ case class MontExpSystolic(config: MontConfig) extends Component {
   val ymRAMCount = ymCount.splitAt(wordAddrLength)._1.asUInt // higher part- the RAM count
   val ymWordCount = ymCount.splitAt(wordAddrLength)._2.asUInt // lower part - the word count
 
+  // FIXME try
+  val xWordCountNext = xCounter.valueNext(bitAddrLength + wordAddrLength - 1 downto bitAddrLength)
+  val ymCountNext = eCounter.valueNext(ramIndexLength + wordAddrLength - 1 downto 0)
+  val ymWordCountNext = ymCountNext.splitAt(wordAddrLength)._2.asUInt // lower part - the word count
+
   // TODO: make it behave correctly at "last"
   val wordMax = MuxOH(modeReg, lMs.map(lM => U(lM / w - 1, ymCount.getBitsWidth bits)))
   val delayedYmCount = Delay(ymCount, 3)
@@ -217,7 +222,8 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     ramEnables := Vec(routerToRAMEnables.toDes.map(_.asBool))
     // BLOCK flow2
     // dual-port, as when SQUARE is active, productRAMs are read concurrently in two different manners
-    val productWordsForX = Mux(!lastRound, Vec(productRAMs.map(ram => ram.readAsync(xWordCount))), productLasts)
+    //    val productWordsForX = Mux(!lastRound, Vec(productRAMs.map(ram => ram.readAsync(xWordCount))), productLasts)
+    val productWordsForX = Mux(!lastRound, Vec(productRAMs.map(ram => ram.readSync(xWordCountNext))), productLasts) // FIXME
     val productBitsForX = Vec(productWordsForX.map(word => word(xBitCount).asUInt))
     when(isFeedingX)(xCounter.increment())
     when(montMultOver)(xCounter.clear())
@@ -230,9 +236,12 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     montMult.io.xiIns.allowOverride
     montMult.io.xiIns := routerProdToX.toDes
     // BLOCK flow3 & 4 & 5
-    val productWordsForY = Mux(!lastWord, Vec(productRAMs.map(ram => ram.readAsync(ymWordCount))), productLasts)
-    val xMontWordsForY = Mux(!lastWord, Vec(xMontRAMs.map(ram => ram.readAsync(ymWordCount))), xMontLasts)
-    val radixSquareWordForY = Mux(!lastWord, radixSquareWordRAM.readAsync(ymCount), U(0, w bits))
+    //    val productWordsForY = Mux(!lastWord, Vec(productRAMs.map(ram => ram.readAsync(ymWordCount))), productLasts)
+    val productWordsForY = Mux(!lastWord, Vec(productRAMs.map(ram => ram.readSync(ymWordCountNext))), productLasts) // FIXME
+    //    val xMontWordsForY = Mux(!lastWord, Vec(xMontRAMs.map(ram => ram.readAsync(ymWordCount))), xMontLasts)
+    val xMontWordsForY = Mux(!lastWord, Vec(xMontRAMs.map(ram => ram.readSync(ymWordCountNext))), xMontLasts)
+    //    val radixSquareWordForY = Mux(!lastWord, radixSquareWordRAM.readAsync(ymCount), U(0, w bits))
+    val radixSquareWordForY = Mux(!lastWord, radixSquareWordRAM.readSync(ymCountNext), U(0, w bits))
 
     val wordsForY = Vec(UInt(w bits), parallelFactor)
     wordsForY.foreach(_.clearAll())
@@ -254,7 +263,8 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     montMult.io.YWordIns := routerToY.toDes
 
     // BLOCK flow6
-    val modulusWordForM = Mux(!lastWord, modulusWordRAM.readAsync(ymCount), U(0, w bits))
+    //    val modulusWordForM = Mux(!lastWord, modulusWordRAM.readAsync(ymCount), U(0, w bits))
+    val modulusWordForM = Mux(!lastWord, modulusWordRAM.readSync(ymCountNext), U(0, w bits)) // FIXME
     when(isFeedingYM)(montMult.io.MWordIns.foreach(_ := modulusWordForM)) // M is from the modulusRAM)
 
     // BLOCK flow9
