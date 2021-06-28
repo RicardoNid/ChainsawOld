@@ -174,7 +174,7 @@ class MontExpSystolicTest extends AnyFunSuite {
       (0 until simTimes).foreach(_ => sim())
     }
     //    if (doSynth) VivadoSynth(new MontMulPE(testWordSize))
-    //    if (doSynth) VivadoSynth(new MontMulSystolicParallel(MontConfig(lMs = testSizes, parallel = true)))
+    if (doSynth) VivadoSynth(new MontMulSystolicParallel(MontConfig(lMs = testSizes, parallel = true)))
     if (doSynth) VivadoSynth(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true)))
     if (doImpl) VivadoImpl(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true)))
   }

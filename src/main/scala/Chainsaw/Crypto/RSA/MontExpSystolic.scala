@@ -36,9 +36,7 @@ case class MontExpSystolic(config: MontConfig) extends Component {
 
   // BLOCK: OPERATOR
   val montMult = MontMulSystolicParallel(config)
-  montMult.io.run.clear() // pre-assign / set the controls
-  montMult.io.run.allowOverride // pre-assign / set the controls
-  montMult.io.mode := Mux(io.start, io.mode, modeReg)
+  montMult.io.mode := modeReg
   Seq(montMult.io.xiIns, montMult.io.MWordIns, montMult.io.YWordIns).foreach { dataIn => // pre-assign the data inputs X,Y,M
     dataIn.foreach(_.clearAll())
     dataIn.allowOverride
@@ -79,7 +77,7 @@ case class MontExpSystolic(config: MontConfig) extends Component {
   val eCounter = MultiCountCounter(es.map(BigInt(_)), modeReg)
   val roundCounter = Counter(rounds(0), inc = eCounter.willOverflow) // rounds are the same
 
-  val ymCount = montMult.fsm.MYWordIndex // following logics are valid with the requirement that w is a power of 2
+  val ymCount = eCounter.value(ramIndexLength + wordAddrLength - 1 downto 0) // following logics are valid with the requirement that w is a power of 2
   val ymRAMCount = ymCount.splitAt(wordAddrLength)._1.asUInt // higher part- the RAM count
   val ymWordCount = ymCount.splitAt(wordAddrLength)._2.asUInt // lower part - the word count
 
@@ -122,28 +120,27 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     // for readability, we pre-define some "timing" at the beginning
 
     val montMultRunning = RUNs.map(isActive(_)).xorR
-    val feedMYNow = out(roundCounter.value === U(0) && montMultRunning)
-    val MYWordIndex = out(eCounter.value(eCounter.value.getBitsWidth - 2 downto 0))
-    val feedXNow = out(eCounter.value < MuxOH(io.mode, pPerInstance.map(U(_))) && montMultRunning)
-    val firstRount = (roundCounter.value === U(0) && montMultRunning)
-//    val lastRound = out(roundCounter.willOverflowIfInc && montMultRunning)
-//    val lastWord = out(eCounter.willOverflowIfInc && montMultRunning)
-//    val lastCycle = out(roundCounter.willOverflow && montMultRunning)
+    val isFeedingYM = roundCounter.value === U(0) && montMultRunning
+    val isFeedingX = eCounter.value < MuxOH(modeReg, pPerInstance.map(U(_))) && montMultRunning
+    val lastWord = eCounter.willOverflowIfInc && montMultRunning
+    val firstRound = roundCounter.value === U(0) && montMultRunning
+    val firstWord = eCounter.value === U(0)
+    val lastRound = roundCounter.willOverflowIfInc && montMultRunning
+    val lastCycle = roundCounter.willOverflow && montMultRunning // last round && last word
+    val MontMultValid = Delay(roundCounter.willOverflowIfInc, 2, init = False)
+
+    montMult.io.firstRound := firstRound
+    montMult.io.firstWord := firstWord
+    montMult.io.lastCycle := lastCycle
 
     val initOver = initCounter.willOverflow
-    def setMontMult() = montMult.io.run.set()
-    val montMultOver = montMult.fsm.lastCycle
+    val montMultOver = lastCycle
+
     val lastMontMult = lastExponentBit
-    val lastRound = montMult.fsm.lastRound
-    val firstWord = ymCount === U(0)
-    val lastWord = montMult.fsm.lastWord
-    val isFeedingX = montMult.fsm.feedXNow
-    val isFeedingYM = montMult.fsm.feedMYNow
     val shouldWriteBack = isActive(PRE) || isActive(MULT) || isActive(SQUARE)
     val MontExpValid = RegInit(False) // will be implemented below
-    val MontMultValids = RegNext(montMult.io.valids, init = montMult.io.valids.getZero) // delay valid for one cycle as we need to shift it
-    val isWritingBack = MontMultValids(0) && !MontExpValid
-    val writeBackLastWord = montMult.io.valids(0).fall()
+    val isWritingBack = MontMultValid && !MontExpValid
+    val writeBackLastWord = MontMultValid.fall()
 
     IDLE.whenIsActive(when(io.start)(goto(INIT)))
     INIT.whenIsActive(when(initOver)(goto(PRE)))
@@ -161,7 +158,8 @@ case class MontExpSystolic(config: MontConfig) extends Component {
       when(io.start)(goto(INIT))
         .otherwise(goto(IDLE))
     })
-    when(montMultRunning)(setMontMult()) // control the montMult module
+
+    when(montMultRunning)(eCounter.increment())
     SQUARE.whenIsNext(when(montMultOver)(exponentCounter.increment())) // SQUARE is the first operation for each exponent bit, so exponent moves
     POST.onEntry(exponentCounter.clear())
     // BLOCK STATE WORKLOAD
@@ -260,9 +258,23 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     when(isFeedingYM)(montMult.io.MWordIns.foreach(_ := modulusWordForM)) // M is from the modulusRAM)
 
     // BLOCK flow9
+    val channelAvailable = Vec(Bool(), parallelFactor)
+    channelAvailable := channelAvailable.getZero
+    switch(True) {
+      lMs.indices.foreach { i =>
+        val starterIds = startersAtModes(i)
+        is(modeReg(i)) {
+          starterIds.foreach { j =>
+            channelAvailable(j) := True
+          }
+        }
+      }
+    }
+
     when(isActive(POST) && lastRound)(MontExpValid.set()) // set valid of the final result at the last round of POST
     when(io.valids(0).fall())(MontExpValid.clear()) // and cleared when the continuous output ends, then wait for next POST
     io.dataOuts := shiftedMontMultOutputs
+    val MontMultValids = RegNext(Vec(channelAvailable.map(_ && MontMultValid)), init = channelAvailable.getZero)
     io.valids.zip(MontMultValids).foreach { case (io, mult) => io := mult && MontExpValid } // delay the valid of montMult for shifting
   }
   val debug = new Area {

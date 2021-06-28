@@ -21,7 +21,6 @@ class MontMulSystolicParallelTest extends AnyFunSuite {
         import dut._
         import config._
         clockDomain.forkStimulus(2)
-        io.start #= false
         clockDomain.waitSampling()
 
         def push(X: BigInt, Y: BigInt, M: BigInt, channel: Int = 0) = {
@@ -41,10 +40,9 @@ class MontMulSystolicParallelTest extends AnyFunSuite {
           val currentP = lMs(mode) / lMs.min * (p / parallelFactor)
           println(s"currentP = $currentP")
 
-          io.start #= true
           io.mode #= BigInt(1) << mode
           clockDomain.waitSampling()
-          io.start #= false
+
           //          io.mode #= BigInt(0)
           (0 until rounds(mode)).foreach { r =>
 

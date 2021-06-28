@@ -174,6 +174,25 @@ BRAM: 0
 
 Frequency: 227.32439190725162 MHz
 
+after removal of fsm in MontMul
+
+MontMul without counters and fsm
+
+    LUT: 14544
+    FF: 14088
+    DSP: 0
+    BRAM: 0
+
+    Frequency: 375.0937734433608 MHz
+
+MontExp with more counters(extracted from MontMul)
+
+    LUT: 18048
+    FF: 14989
+    DSP: 0
+    BRAM: 0
+
+    Frequency: 222.37046920168999 MHz
 
 problems on
 X5     : 84b28f8e 5e24ee17 a890fadb f4e03f1d 5cb62a72 508b6331 db205a90 4c458466 68479085 71d09542 76af441c 2569c4b3 2b681d74 9040e383 8434b282 001711e7
