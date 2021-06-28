@@ -195,6 +195,7 @@ MontExp with more counters(extracted from MontMul)
     Frequency: 222.37046920168999 MHz
 
 after more removal
+readAsync with binary
 
 MontMul
     LUT: 14537
@@ -221,6 +222,79 @@ MontExp
     BRAM: 0
 
     Frequency: 232.23409196470038 MHz
+
+readAsync -> readSync
+
+LUT: 17968
+FF: 15272
+DSP: 0
+BRAM: 0
+
+Frequency: 236.29489603024572 MHz
+
+serial -> oneHot(readSync + oneHot)
+
+LUT: 18199
+FF: 15289
+DSP: 0
+BRAM: 0
+
+Frequency: 248.26216484607747 MHz
+
+readAsync with oneHot
+
+LUT: 18354
+FF: 14470
+DSP: 0
+BRAM: 0
+
+Frequency: 235.7934449422306 MHz
+
+readSync + oneHot is the final choice
+clean up some time marks
+
+LUT: 18062
+FF: 15285
+DSP: 0
+BRAM: 0
+
+Frequency: 251.76233635448136 MHz
+
+32bit -> 16 bit
+
+LUT: 16983
+FF: 15345
+DSP: 0
+BRAM: 0
+
+Frequency: 282.0078962210942 MHz
+
+2048 only, 32bit
+
+LUT: 7208
+FF: 7017
+DSP: 0
+BRAM: 0
+
+Frequency: 311.81789834736514 MHz
+
+2048 only, 32bit
+
+LUT: 7208
+FF: 7017
+DSP: 0
+BRAM: 0
+
+Frequency: 311.81789834736514 MHz
+
+2048 only, 16bit
+
+LUT: 7701
+FF: 7387
+DSP: 0
+BRAM: 0
+
+Frequency: 359.3244699964067 MHz
 
 problems on
 X5     : 84b28f8e 5e24ee17 a890fadb f4e03f1d 5cb62a72 508b6331 db205a90 4c458466 68479085 71d09542 76af441c 2569c4b3 2b681d74 9040e383 8434b282 001711e7

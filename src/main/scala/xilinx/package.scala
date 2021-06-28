@@ -30,7 +30,9 @@ package object xilinx {
 
   val defaultVivadoConfig = VivadoConfig( // default vivadoConfig for linux
     xilinxDeviceFamily = UltraScale,
+    //    xilinxDeviceFamily = Series7,
     devicePart = "xczu7ev-ffvc1156-2-e", // ZCU104
+    //    devicePart = "xc7vx690tffg1761-2", // VC709
     processortCount = 10
   )
 }

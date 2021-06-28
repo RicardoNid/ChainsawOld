@@ -12,27 +12,26 @@ case class MontExpTestCase(modeId: Int, changeKey: Boolean = true,
 
 class MontExpSystolicTest extends AnyFunSuite {
 
-
   test("testMontExpSystolicHardwareWithROM") {
 
-    val doGen = false
-    val doSim = false
+    //    val testSizes = Seq(512, 1024, 2048, 3072, 4096)
+    val testSizes = Seq(2048)
+    val testWordSize = 64
+    //        val testWordSize = 32
+    //    val testWordSize = 16
+    val testConfig = MontConfig(lMs = testSizes, w = testWordSize, parallel = true)
+
+    val doGen = false // generate HDL in project directory
+    val doSim = false // do verilator simulation
     val simTimes = 1
-    val doSynth = true
-    val doImpl = false
+    val doSynth = false // do vivado synthesis
+    val doImpl = false // do vivado implementation
     val comparStageByStage = false
 
-    val testCases = Seq(
-      MontExpTestCase(0),
-      MontExpTestCase(0, false),
-      MontExpTestCase(1),
-      MontExpTestCase(1, false),
-      MontExpTestCase(2),
-      MontExpTestCase(2, false),
-      MontExpTestCase(3),
-      MontExpTestCase(3, false),
-      MontExpTestCase(4)
-    )
+    // this will go through every mode
+    val testCases = testSizes.indices.map(i =>
+      Seq(MontExpTestCase(i), MontExpTestCase(i, false))).flatten
+
 
     //    val badCase = MontExpTestCase(2, true, true,
     //      BigInt("3413545443985113752419844809784064354432606935877924366288225382664406136211942824284432162052750832330323501573250034712681840284632560827574113734113980506590600535120596800223465077193205191477768017463559600865112388609798703680332122187031514708932866204348626900865142963706285322309991749308163012476300877554748739773723459764897544204147908689094921784968596513819376200199639664857808549805619124184404656127142375404078705315282986097317121116421703670660157545447595721535141826531263098419286343867952423753789989786969319953424635121282000722851539703733244829187900903557843461636068903981098152902"),
@@ -42,12 +41,10 @@ class MontExpSystolicTest extends AnyFunSuite {
     //
     //    val testCases = Seq.fill(1)(badCase)
 
-    val testSizes = Seq(512, 1024, 2048, 3072, 4096)
-    val testWordSize = 32
-    if (doGen) GenRTL(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true))) // for a quick semantic test
+    if (doGen) GenRTL(new MontExpSystolic(testConfig)) // for a quick semantic test
     if (doSim) {
       def sim() = {
-        SimConfig.withWave.compile(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true))).doSim { dut =>
+        SimConfig.withWave.compile(new MontExpSystolic(testConfig)).doSim { dut =>
           import dut._
           import dut.config._
 
@@ -109,7 +106,7 @@ class MontExpSystolicTest extends AnyFunSuite {
                 val dutResults = Seq.fill(currentInstanceNumber)(ArrayBuffer[BigInt]())
                 // monitors
                 val montMultCount = testExponent.toString(2).tail.map(_.asDigit + 1).sum + 2 + 20
-                val runtime = config.IIs(modeId) * montMultCount + es(modeId) + 10
+                val runtime = testConfig.IIs(modeId) * montMultCount + es(modeId) + 10
                 println(s"estimated MontMultCount = $montMultCount, estimated runtime = $runtime")
                 val starterIds = (0 until parallelFactor).filter(_ % groupPerInstance(modeId) == 0)
                   .take(parallelFactor / groupPerInstance(modeId))
@@ -174,8 +171,24 @@ class MontExpSystolicTest extends AnyFunSuite {
       (0 until simTimes).foreach(_ => sim())
     }
     //    if (doSynth) VivadoSynth(new MontMulPE(testWordSize))
-    if (doSynth) VivadoSynth(new MontMulSystolicParallel(MontConfig(lMs = testSizes, parallel = true)))
-    if (doSynth) VivadoSynth(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true)))
-    if (doImpl) VivadoImpl(new MontExpSystolic(MontConfig(lMs = testSizes, parallel = true)))
+    if (doSynth) VivadoSynth(new MontMulSystolicParallel(testConfig))
+    if (doSynth) VivadoSynth(new MontExpSystolic(testConfig))
+    if (doImpl) VivadoImpl(new MontExpSystolic(testConfig))
+
+    val duts = Seq(
+      MontConfig(lMs = Seq(2048), w = 16),
+      MontConfig(lMs = Seq(2048), w = 32),
+      MontConfig(lMs = Seq(512, 1024, 2048, 3072, 4096), w = 16),
+      MontConfig(lMs = Seq(512, 1024, 2048, 3072, 4096), w = 32)
+    )
+    val names = Seq(
+      "2048_16",
+      "2048_32",
+      "all_16",
+      "all_32"
+    )
+    duts.zip(names).foreach{ case (config, name) =>
+      GenRTL(new MontMulSystolicParallel(config), name = name)
+    }
   }
 }

@@ -291,8 +291,8 @@ package object Chainsaw extends RealFactory {
     def err = ErrorNumber(value)
   }
 
-  def GenRTL[T <: Component](gen: => T, print: Boolean = false) = {
-    val report = SpinalConfig().generateSystemVerilog(gen)
+  def GenRTL[T <: Component](gen: => T, print: Boolean = false, name: String = "temp") = {
+    val report = SpinalConfig(netlistFileName = name).generateSystemVerilog(gen)
     println(report.rtlSourcesPaths
       .map(Paths.get(_))
       .map(path => if (path.isAbsolute) path else path.toAbsolutePath)
@@ -300,8 +300,8 @@ package object Chainsaw extends RealFactory {
     if (print) println(report.getRtlString())
   }
 
-  def VivadoSynth[T <: Component](gen: => T): Unit = {
-    val report = VivadoFlow(design = gen, "temp", "synthWorkspace/temp").doit()
+  def VivadoSynth[T <: Component](gen: => T, name: String = "temp"): Unit = {
+    val report = VivadoFlow(design = gen, name, s"synthWorkspace/$name").doit()
     report.printArea()
     report.printFMax()
   }

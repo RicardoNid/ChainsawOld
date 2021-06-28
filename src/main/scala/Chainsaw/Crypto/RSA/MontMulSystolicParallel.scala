@@ -9,7 +9,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
   val io = new Bundle {
     // control
     val mode = in Bits (lMs.size bits) // one-hot, provided by the external control logic
-    val firstRound, firstWord, lastCycle = in Bool()
+    val firstRound, firstWord, MontMultOver = in Bool()
     val xiIns = in Vec(UInt(1 bits), parallelFactor)
     val YWordIns = in Vec(UInt(w bits), parallelFactor)
     val MWordIns = in Vec(UInt(w bits), parallelFactor)
@@ -24,7 +24,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
   }
 
   /**
-   * @see [[https://www.notion.so/RSA-ECC-59bfcca42cd54253ad370defc199b090 "MontMult-PEs" in this page]]
+   * @see [[https://www.notion.so/RSA-ECC-59bfcca42cd54253ad370defc199b090 "MontSystolic-PEs" in this page]]
    */
   // BLOCK PEs
   val PEs = (0 until p).map(_ => new MontMulPE(w))
@@ -35,7 +35,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
   buffers.foreach(buffer => buffer.init(MontMulPEFlow(w).getZero)) // clear when not connected
 
   /**
-   * @see [[https://www.notion.so/RSA-ECC-59bfcca42cd54253ad370defc199b090 "MontMult-Connections" in this page]]
+   * @see [[https://www.notion.so/RSA-ECC-59bfcca42cd54253ad370defc199b090 "MontSystolic-Connections" in this page]]
    */
   // BLOCK Connections
   PEs.init.zip(PEs.tail).foreach { case (prev, next) => next.io.flowIn := prev.io.flowOut }
@@ -50,7 +50,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
     when(io.firstWord)(setXiNow := True)
   }
   // FIXME: this will lead the first bits of the most significant bit of S to be different from the original just ignore that, as it is don't care anyway
-  when(io.lastCycle)(buffers.foreach(_.control.SetXi := False)) // clean up the setXi from last task
+  when(io.MontMultOver)(buffers.foreach(_.control.SetXi := False)) // clean up the setXi from last task
 
   switch(True) {
     lMs.indices.foreach { i =>
@@ -73,7 +73,7 @@ case class MontMulSystolicParallel(config: MontConfig) extends Component {
 
 
   /**
-   * @see [[https://www.notion.so/RSA-ECC-59bfcca42cd54253ad370defc199b090 "MontMult-Outputs" in this page]]
+   * @see [[https://www.notion.so/RSA-ECC-59bfcca42cd54253ad370defc199b090 "MontSystolic-Outputs" in this page]]
    */
   println(s"outputProviders are ${outputProviders.mkString(" ")}")
   val outputPEs = outputProviders.map(PEs(_))

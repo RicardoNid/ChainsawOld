@@ -16,7 +16,7 @@ import scala.math.{ceil, floor}
 case class MontConfig(lMs: Seq[Int] = Seq(512, 1024, 2048, 3072, 4096),
                       w: Int = 32,
                       pe: Int = 17,
-                      parallel: Boolean = false) {
+                      parallel: Boolean = true) {
 
   val parallelFactor = if (parallel) lMs.max / lMs.min else 1
   val p = if (parallel) floor((lMs.max + 2 + 1).toDouble / w).toInt else pe // when parallel, p = e - 1
@@ -40,6 +40,7 @@ case class MontConfig(lMs: Seq[Int] = Seq(512, 1024, 2048, 3072, 4096),
 
   if (!parallel) require(p <= es.min, "currently, we would require p <= e as p > e leads to grouped input and thus, more complex input pattern")
   if (parallel) require(lMs.forall(_ % lMs.min == 0), s"for parallel architecture, supported sizes must be multiples of the minimum size")
+  require(isPow2(w) && w >= 16)
 
   // the index of PE that provides the result(starts from 0)
   // FIXME: the parallel situation is only for RSA size
