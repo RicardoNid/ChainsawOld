@@ -16,9 +16,9 @@ class MontExpSystolicTest extends AnyFunSuite {
   test("testMontExpSystolicHardwareWithROM") {
 
     val doGen = false
-    val doSim = true
+    val doSim = false
     val simTimes = 1
-    val doSynth = false
+    val doSynth = true
     val doImpl = false
     val comparStageByStage = false
 
@@ -115,7 +115,7 @@ class MontExpSystolicTest extends AnyFunSuite {
                   .take(parallelFactor / groupPerInstance(modeId))
                 val currentDataOuts = io.dataOuts.indices.filter(starterIds.contains(_)).map(io.dataOuts(_))
 
-                def montMulResultMonitor() = if (montMult.io.valids(0).toBoolean) dutResults.zip(io.dataOuts).foreach { case (buffer, signal) => buffer += signal.toBigInt }
+                def montMulResultMonitor() = if (fsm.MontMultValid.toBoolean) dutResults.zip(io.dataOuts).foreach { case (buffer, signal) => buffer += signal.toBigInt }
                 def montExpResultMonitor() = if (io.valids(0).toBoolean) dutResults.zip(currentDataOuts).foreach { case (buffer, signal) => buffer += signal.toBigInt }
 
                 startAMontExp()

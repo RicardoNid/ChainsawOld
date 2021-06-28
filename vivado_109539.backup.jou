@@ -1,0 +1,18 @@
+#-----------------------------------------------------------
+# Vivado v2019.2 (64-bit)
+# SW Build 2708876 on Wed Nov  6 21:39:14 MST 2019
+# IP Build 2700528 on Thu Nov  7 00:09:20 MST 2019
+# Start of session at: Sun Jun 27 23:50:55 2021
+# Process ID: 109539
+# Current directory: /home/ltr/IdeaProjects/Chainsaw
+# Command line: vivado /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp_synth.dcp
+# Log file: /home/ltr/IdeaProjects/Chainsaw/vivado.log
+# Journal file: /home/ltr/IdeaProjects/Chainsaw/vivado.jou
+#-----------------------------------------------------------
+start_gui
+open_checkpoint /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp_synth.dcp
+open_checkpoint /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp_synth.dcp
+report_timing_summary -delay_type min_max -report_unconstrained -check_timing_verbose -max_paths 10 -input_pins -routable_nets -name timing
+close_project
+open_checkpoint /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp_synth.dcp
+report_timing_summary -delay_type min_max -report_unconstrained -check_timing_verbose -max_paths 10 -input_pins -routable_nets -name timing

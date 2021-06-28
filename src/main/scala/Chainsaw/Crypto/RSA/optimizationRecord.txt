@@ -194,6 +194,34 @@ MontExp with more counters(extracted from MontMul)
 
     Frequency: 222.37046920168999 MHz
 
+after more removal
+
+MontMul
+    LUT: 14537
+    FF: 14088
+    DSP: 0
+    BRAM: 0
+
+    Frequency: 394.9447077409163 MHz
+
+MontExp
+
+| CLB LUTs*                  | 17808 |     0 |    230400 |  7.73 |
+|   LUT as Logic             | 16985 |     0 |    230400 |  7.37 |
+|   LUT as Memory            |   823 |     0 |    101760 |  0.81 |
+|     LUT as Distributed RAM |   816 |     0 |           |       |
+|     LUT as Shift Register  |     7 |     0 |           |       |
+| CLB Registers              | 14460 |     0 |    460800 |  3.14 |
+|   Register as Flip Flop    | 14460 |     0 |    460800 |  3.14 |
+|   Register as Latch        |     0 |     0 |    460800 |  0.00 |
+
+    LUT: 17808
+    FF: 14460
+    DSP: 0
+    BRAM: 0
+
+    Frequency: 232.23409196470038 MHz
+
 problems on
 X5     : 84b28f8e 5e24ee17 a890fadb f4e03f1d 5cb62a72 508b6331 db205a90 4c458466 68479085 71d09542 76af441c 2569c4b3 2b681d74 9040e383 8434b282 001711e7
 M      : 0b3a1a49 b079da3b e7e732a3 f456b098 3be03660 6d9e28c6 aad902c3 614f9a96 c4b8ff28 933d518c 7c3db140 6cb54a7c ceb34717 c2aea4ed 0dba4258 e6e48dc5
