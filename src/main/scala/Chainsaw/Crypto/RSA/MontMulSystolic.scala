@@ -66,8 +66,8 @@ case class MontConfig(lMs: Seq[Int] = Seq(512, 1024, 2048, 3072, 4096),
       s"\n\tword size w = $w, " +
       s"\n\tnumber of PE p = $p" +
       s"\n\tdepth of queue = ${es.max - p}" +
-      s"\n\testimated area is , for Xilinx UltraScale, fMax >=" +
-      s"\n\testimated area is , for TSMC 40nm technology, fMax >=" +
+      //      s"\n\testimated area is , for Xilinx UltraScale, fMax >=" +
+      //      s"\n\testimated area is , for TSMC 40nm technology, fMax >=" +
       s"\n********AREA/TIMING********" +
       s"\n********WORKING STATUS********" +
       s"\n\tlMs:                     ${lMs.map(_.toString.padTo(10, ' ')).mkString("")}" +

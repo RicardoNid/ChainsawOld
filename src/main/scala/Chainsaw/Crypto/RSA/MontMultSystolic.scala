@@ -2,7 +2,7 @@ package Chainsaw.Crypto.RSA
 
 import spinal.core._
 
-case class MontMulSystolicParallel(config: MontConfig) extends Component {
+case class MontMultSystolic(config: MontConfig) extends Component {
 
   import config._
 

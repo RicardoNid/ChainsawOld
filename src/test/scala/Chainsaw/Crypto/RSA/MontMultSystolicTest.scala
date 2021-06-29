@@ -7,7 +7,7 @@ import spinal.core.sim.{SimConfig, _}
 import scala.collection.mutable.ArrayBuffer
 import scala.math.ceil
 
-class MontMulSystolicParallelTest extends AnyFunSuite {
+class MontMultSystolicTest extends AnyFunSuite {
 
   test("testMontMulParallelHardware") {
     //    GenRTL(new MontMulSystolic(8, 4, 8))
@@ -17,7 +17,7 @@ class MontMulSystolicParallelTest extends AnyFunSuite {
       val testWordSize = 32
       val testPENumber = ceil((testSizes.min + 1).toDouble / testWordSize).toInt - 1 // number of words
 
-      SimConfig.withWave.compile(new MontMulSystolicParallel(MontConfig(testSizes, testWordSize, testPENumber, parallel = true))).doSim { dut =>
+      SimConfig.withWave.compile(new MontMultSystolic(MontConfig(testSizes, testWordSize, testPENumber, parallel = true))).doSim { dut =>
         import dut._
         import config._
         clockDomain.forkStimulus(2)
@@ -52,12 +52,12 @@ class MontMulSystolicParallelTest extends AnyFunSuite {
                 io.MWordIns(portId) #= MWords(i)
               }
               if (i < currentP) io.xiIns(portId) #= XBits(r * currentP + i)
-              if (io.valids(portId).toBoolean) dutResults += io.dataOuts(portId).toBigInt
+              //              if (io.valids(portId).toBoolean) dutResults += io.dataOuts(portId).toBigInt
               clockDomain.waitSampling()
             }
           }
           (0 until es(mode)).foreach { _ =>
-            if (io.valids(portId).toBoolean) dutResults += io.dataOuts(portId).toBigInt
+            //            if (io.valids(portId).toBoolean) dutResults += io.dataOuts(portId).toBigInt
             clockDomain.waitSampling()
           }
           val golden = MontAlgos.Arch1MM(X, Y, M, w, print = true)

@@ -37,7 +37,7 @@ case class MontExpSystolic(config: MontConfig) extends Component {
   val exponentLengthReg = RegNextWhen(io.exponentLengthIn, io.start, init = U(0))
 
   // BLOCK: OPERATOR
-  val montMult = MontMulSystolicParallel(config)
+  val montMult = MontMultSystolic(config)
   montMult.io.mode := modeReg
   Seq(montMult.io.xiIns, montMult.io.MWordIns, montMult.io.YWordIns).foreach { dataIn => // pre-assign the data inputs X,Y,M
     dataIn.foreach(_.clearAll())

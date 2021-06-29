@@ -292,7 +292,7 @@ package object Chainsaw extends RealFactory {
   }
 
   def GenRTL[T <: Component](gen: => T, print: Boolean = false, name: String = "temp") = {
-    val report = SpinalConfig(netlistFileName = name).generateSystemVerilog(gen)
+    val report = SpinalConfig(netlistFileName = s"$name.sv").generateSystemVerilog(gen)
     println(report.rtlSourcesPaths
       .map(Paths.get(_))
       .map(path => if (path.isAbsolute) path else path.toAbsolutePath)
