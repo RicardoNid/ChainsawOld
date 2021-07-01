@@ -11,8 +11,7 @@ class MontExpRouter[T <: BitVector](config: MontConfig, hardType: HardType[T], N
   val selectCount = in UInt (log2Up(parallelFactor) bits)
   val src = in Vec(hardType, parallelFactor)
   val toDes = out Vec(hardType, parallelFactor)
-
-  toDes.foreach(_.clearAll())
+  toDes.foreach(_.clearAll()) // pre-assign
 
   switch(True) { // for different modes
     lMs.indices.foreach { modeId => // traverse each mode, as each mode run instances of different size lM

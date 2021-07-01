@@ -306,8 +306,8 @@ package object Chainsaw extends RealFactory {
     report.printFMax()
   }
 
-  def VivadoImpl[T <: Component](gen: => T): Unit = {
-    val report = VivadoFlow(design = gen, "temp", "synthWorkspace/temp", vivadoTask = VivadoTask(taskType = IMPL)).doit()
+  def VivadoImpl[T <: Component](gen: => T, name: String = "temp"): Unit = {
+    val report = VivadoFlow(design = gen, name, s"synthWorkspace/$name", vivadoTask = VivadoTask(taskType = IMPL)).doit()
     report.printArea()
     report.printFMax()
   }

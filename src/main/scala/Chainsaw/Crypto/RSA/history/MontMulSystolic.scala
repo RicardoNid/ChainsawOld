@@ -1,9 +1,7 @@
-package Chainsaw.Crypto.RSA
+package Chainsaw.Crypto.RSA.history
 
 import Chainsaw._
 import spinal.core._
-import spinal.lib._
-import spinal.lib.fsm._
 
 import scala.math.{ceil, floor}
 

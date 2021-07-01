@@ -20,7 +20,7 @@ case class MontExpSystolic(config: MontConfig) extends Component {
   // TODO: improve fmax
   require(isPow2(w) && isPow2(lMs.min))
 
-  val readAsyncMode = false
+  val readAsyncMode = true
 
   val io = new Bundle {
     val start = in Bool()
@@ -73,6 +73,7 @@ case class MontExpSystolic(config: MontConfig) extends Component {
   val exponentBitSelect = splitPoints.init.zip(splitPoints.tail).map { case (start, end) => exponentCounter.value(end - 1 downto start) }
   val exponentWordCount = exponentCounter.splitAt(bitAddrLength)._1.asUInt
   val exponentBitCount = exponentCounter.splitAt(bitAddrLength)._2.asUInt
+
   val currentExponentBit = exponentWordRAM(exponentWordCount)(exponentBitCount)
   val lastExponentBit = exponentCounter.value === (exponentLengthReg - 1)
 
@@ -83,12 +84,10 @@ case class MontExpSystolic(config: MontConfig) extends Component {
   val ymRAMCount = ymCount.splitAt(wordAddrLength)._1.asUInt // higher part- the RAM count
   val ymWordCount = ymCount.splitAt(wordAddrLength)._2.asUInt // lower part - the word count
 
-  // FIXME try readSync
   val xWordCountNext = xCounter.valueNext(bitAddrLength + wordAddrLength - 1 downto bitAddrLength)
   val ymCountNext = eCounter.valueNext(ramIndexLength + wordAddrLength - 1 downto 0)
   val ymWordCountNext = ymCountNext.splitAt(wordAddrLength)._2.asUInt // lower part - the word count
 
-  // TODO: make it behave correctly at "last"
   val wordMax = MuxOH(modeReg, lMs.map(lM => U(lM / w - 1, ymCount.getBitsWidth bits)))
   val delayedYmCount = Delay(ymCount, 3)
   val outputCounter = Mux(delayedYmCount > wordMax, U(0), delayedYmCount) // it's like a multicounter, but driven by the ymCount
@@ -123,10 +122,11 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     val IDLE = StateEntryPoint()
     val INIT, PRE, MULT, SQUARE, POST = new State()
     val RUNs = Seq(PRE, MULT, SQUARE, POST)
-    // BLOCK STATE TRANSITION
+
     /**
      * @see [[https://www.notion.so/RSA-ECC-59bfcca42cd54253ad370defc199b090 "MontExp-Time Marks" in this page]]
      */
+    // BLOCK TIME MARK
     val montMultRunning = RUNs.map(isActive(_)).xorR
     val isFeedingYM = roundCounter.value === U(0)
     val isFeedingX = eCounter.value < MuxOH(modeReg, pPerInstance.map(U(_))) && montMultRunning
@@ -151,6 +151,7 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     val isWritingBack = MontMultValid && !lastMontMult
     val writeBackLastWord = MontMultValid.fall()
 
+    // BLOCK STATE TRANSITION
     IDLE.whenIsActive(when(io.start)(goto(INIT)))
     INIT.whenIsActive(when(initOver)(goto(PRE)))
     PRE.whenIsActive(when(montMultOver)(goto(SQUARE)))

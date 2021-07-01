@@ -1,13 +1,7 @@
-package Chainsaw.Crypto.RSA
-
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.sim._
-import spinal.lib.fsm._
+package Chainsaw.Crypto.RSA.history
 
 import Chainsaw._
-import Chainsaw.Real
+import spinal.core._
 
 class CaseExample extends Component {
   val input = in UInt (4 bits)

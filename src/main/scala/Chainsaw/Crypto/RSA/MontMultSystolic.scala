@@ -1,5 +1,6 @@
 package Chainsaw.Crypto.RSA
 
+import Chainsaw.Crypto.RSA.history.MontConfig
 import spinal.core._
 
 case class MontMultSystolic(config: MontConfig) extends Component {
@@ -16,7 +17,7 @@ case class MontMultSystolic(config: MontConfig) extends Component {
     val dataOuts = out Vec(UInt(w bits), parallelFactor)
   }
 
-  val dataIns = Vec(MontMulPEDataFlow(w), parallelFactor)
+  val dataIns = Vec(MontMultPEDataFlow(w), parallelFactor)
   dataIns.zipWithIndex foreach { case (dataIn, i) =>
     dataIn.SWord := U(0)
     dataIn.MWord := io.MWordIns(i)
@@ -27,19 +28,19 @@ case class MontMultSystolic(config: MontConfig) extends Component {
    * @see [[https://www.notion.so/RSA-ECC-59bfcca42cd54253ad370defc199b090 "MontSystolic-PEs" in this page]]
    */
   // BLOCK PEs
-  val PEs = (0 until p).map(_ => new MontMulPE(w))
+  val PEs = (0 until p).map(_ => new MontMultPE(w))
 
   val groupStarters = PEs.indices.filter(_ % pPerGroup == 0).map(PEs(_))
   val groupEnders = PEs.indices.filter(_ % pPerGroup == pPerGroup - 1).map(PEs(_))
   val buffers = groupEnders.map(pe => RegNext(pe.io.flowOut)) // queue with depth = 1
-  buffers.foreach(buffer => buffer.init(MontMulPEFlow(w).getZero)) // clear when not connected
+  buffers.foreach(buffer => buffer.init(MontMultPEFlow(w).getZero)) // clear when not connected
 
   /**
    * @see [[https://www.notion.so/RSA-ECC-59bfcca42cd54253ad370defc199b090 "MontSystolic-Connections" in this page]]
    */
   // BLOCK Connections
   PEs.init.zip(PEs.tail).foreach { case (prev, next) => next.io.flowIn := prev.io.flowOut }
-  PEs.head.io.flowIn := MontMulPEFlow(w).getZero // pre-assign
+  PEs.head.io.flowIn := MontMultPEFlow(w).getZero // pre-assign
   PEs.foreach(_.io.xi := U(0)) // pre-assign
 
   val inputNow, setXiNow = Bool()
@@ -50,7 +51,7 @@ case class MontMultSystolic(config: MontConfig) extends Component {
     when(io.firstWord)(setXiNow := True)
   }
   // FIXME: this will lead the first bits of the most significant bit of S to be different from the original just ignore that, as it is don't care anyway
-  when(io.MontMultOver)(buffers.foreach(_.control.SetXi := False)) // clean up the setXi from last task
+  when(io.MontMultOver)(buffers.foreach(_.control.setXi := False)) // clean up the setXi from last task
 
   switch(True) {
     lMs.indices.foreach { i =>
@@ -63,7 +64,7 @@ case class MontMultSystolic(config: MontConfig) extends Component {
           val starter = PEs(j * pPerGroup)
           val wrapAroundBuffer = buffers(j + groupCount - 1)
           starter.io.flowIn.data := Mux(inputNow, dataIns(j), wrapAroundBuffer.data)
-          starter.io.flowIn.control.SetXi := Mux(setXiNow, setXiNow, wrapAroundBuffer.control.SetXi)
+          starter.io.flowIn.control.setXi := Mux(setXiNow, setXiNow, wrapAroundBuffer.control.setXi)
           // TODO: try max_fanout/reg duplication as xi fanout is huge for 4096
           (j * pPerGroup until (j + groupCount) * pPerGroup).foreach(id => PEs(id).io.xi := io.xiIns(j))
         }
