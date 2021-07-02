@@ -53,6 +53,19 @@ case class XILINX_BRAM_PORT(dataWidth: Int, addressWidth: Int) extends Bundle wi
     dataIn := data
   }
 
+  def simRead(addrIn: BigInt) = {
+    addr #= addrIn
+    en #= true
+    we #= false
+  }
+
+  def simWrite(addrIn: BigInt, data: BigInt) = {
+    addr #= addrIn
+    en #= true
+    we #= true
+    dataIn #= data
+  }
+
   def preAssign(): Unit = {
     addr.clearAll()
     addr.allowOverride
@@ -207,9 +220,17 @@ object XILINX_BRAM18E2 {
     val readNum = 3
     def mWnRSim() = {
       SimConfig.withWave.compile(new MemoryArea()).doSimUntilVoid { dut =>
-        dut.globalClockDomain.forkStimulus(8)
+        import dut._
+        globalClockDomain.forkStimulus(8)
         import dut.globalClokingArea._
         ramClockDomain.forkStimulus(2)
+
+        val outerMonitor = fork {
+          while (true){
+            globalClockDomain.waitSampling()
+            println(io.reads.map(_.dataOut.toBigInt).mkString(" "))
+          }
+        }
 
         io.writes.foreach { port =>
           port.we #= false
@@ -290,6 +311,5 @@ object XILINX_BRAM18E2 {
     }
 
     mWnRSim()
-    //    bramSim()
   }
 }
