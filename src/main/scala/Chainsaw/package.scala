@@ -359,4 +359,8 @@ package object Chainsaw extends RealFactory {
       bldr.result.replace("_", "")
     }
   }
+
+  implicit class MoreSimClockDomainPimper(cd: ClockDomain){
+    // TODO: more
+  }
 }

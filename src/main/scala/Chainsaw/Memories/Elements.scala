@@ -4,6 +4,14 @@ import Chainsaw._
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.sim._
+import spinal.lib.fsm._
+
+import Chainsaw._
+import Chainsaw.Real
 
 case class XILINX_BRAM_PORT(dataWidth: Int, addressWidth: Int) extends Bundle with IMasterSlave {
   val dataIn = Bits(dataWidth bits)
@@ -32,15 +40,13 @@ case class XILINX_BRAM_PORT(dataWidth: Int, addressWidth: Int) extends Bundle wi
     dataIn := writePort.dataIn
   }
 
-  def read(addrIn: UInt) = {
+  def doRead(addrIn: UInt) = {
     addr := addrIn
     en := True
     we := False
-    dataIn := dataIn.getZero // TODO: don't care
-    dataOut
   }
 
-  def write(addrIn: UInt, data: Bits) = {
+  def doWrite(addrIn: UInt, data: Bits) = {
     addr := addrIn
     en := True
     we := True
@@ -133,10 +139,12 @@ case class mWnRRAM(m: Int, n: Int) extends Component {
   ram.ioA.preAssign()
   ram.ioB.preAssign()
 
+  val writeAddr = io.writes.map(port => RegNext(port.addr))
   val writeData = io.writes.head.dataIn +: io.writes.tail.map(port => RegNext(port.dataIn))
-  val writeAddr = io.writes.head.addr +: io.writes.tail.map(port => RegNext(port.addr))
-  val readAddr = io.reads.map(port => RegNext(port.addr))
+  val readAddr = io.reads.head.addr +: io.reads.tail.map(port => RegNext(port.addr))
   val readData = io.reads.init.map(port => Reg(port.dataOut)) :+ io.reads.last.dataOut
+  Seq(writeAddr, writeData, readAddr, readData).foreach(_.foreach(_.addTag(crossClockDomain)))
+
   io.reads.foreach(_.dataOut.allowOverride)
   io.reads.init.zip(readData.init).foreach { case (port, reg) => port.dataOut := reg }
 
@@ -145,75 +153,143 @@ case class mWnRRAM(m: Int, n: Int) extends Component {
 
     (0 until n).foreach { readIndex =>
       is(U(readIndex)) {
-        readData(readIndex) := ram.ioA.read(readAddr(readIndex))
+        ram.ioA.addr := readAddr(readIndex)
+        ram.ioA.en := True
+        ram.ioA.we := False
+        if (readIndex != 0) readData(readIndex - 1) := ram.ioA.dataOut
       }
     }
     (0 until m).foreach { writeIndex =>
       is(U(writeIndex + n)) {
-        ram.ioA.write(writeAddr(writeIndex), writeData(writeIndex))
+        ram.ioA.doWrite(writeAddr(writeIndex), writeData(writeIndex))
+        if (writeIndex == 0) readData(n - 1) := ram.ioA.dataOut
       }
     }
   }
 }
 
 case class MemoryArea() extends Component {
-  val m0 = XILINX_BRAM36E2()
+  val globalClockDomain = ClockDomain.external("global",
+    config = ClockDomainConfig(resetKind = BOOT))
 
-  val dataWidth = 4 * (8 + 1) // core width = 36
-  val addressWidth = 10
+  val globalClokingArea = new ClockingArea(globalClockDomain) {
+    val ramClockDomain = ClockDomain.external("ramClockDomain",
+      config = ClockDomainConfig(
+        resetKind = BOOT, resetActiveLevel = HIGH)
+    )
 
-  val io0 = slave(XILINX_BRAM_PORT(dataWidth, addressWidth))
-  val io1 = slave(XILINX_BRAM_PORT(dataWidth, addressWidth))
+    // default clocking area
+    val io = new Bundle {
+      val writes = Seq.fill(1)(slave(XILINX_BRAM_PORT_WRITE(18, 10)))
+      val reads = Seq.fill(3)(slave(XILINX_BRAM_PORT_READ(18, 10)))
+      val forClock = out Bool
+    }
 
-  io0 <> m0.ioA
-  io1 <> m0.ioB
+    // ram clocking area
+    val ramClockingArea = new ClockingArea(ramClockDomain) {
+      val mem = mWnRRAM(1, 3)
+      mem.ram.bram.simPublic()
+    }
+    io.writes.zip(ramClockingArea.mem.io.writes).foreach { case (outer, inner) => outer <> inner }
+    io.reads.zip(ramClockingArea.mem.io.reads).foreach { case (outer, inner) => outer <> inner }
+
+    io.forClock := RegNext(io.reads(0).dataOut.lsb)
+  }
 }
 
 object XILINX_BRAM18E2 {
   def main(args: Array[String]): Unit = {
-    GenRTL(new mWnRRAM(1, 3))
+    GenRTL(new MemoryArea())
     //    VivadoSynth(new MemoryArea)
     //    VivadoImpl(new mWnRRAM(1, 3))
-    SimConfig.withWave.compile(new mWnRRAM(1, 3)).doSim { dut =>
-      import dut._
-      clockDomain.forkStimulus(2)
 
-      def write(port: Int, addr: BigInt, data: BigInt) = {
-        io.writes(port).addr #= addr
-        io.writes(port).dataIn #= data
-        io.writes(port).en #= true
-        io.writes(port).we #= true
+    val writeNum = 1
+    val readNum = 3
+    def mWnRSim() = {
+      SimConfig.withWave.compile(new MemoryArea()).doSimUntilVoid { dut =>
+        dut.globalClockDomain.forkStimulus(8)
+        import dut.globalClokingArea._
+        ramClockDomain.forkStimulus(2)
+
+        io.writes.foreach { port =>
+          port.we #= false
+          port.en #= false
+          port.dataIn #= 0
+          port.addr #= 0
+        }
+
+        def write(port: Int, addr: BigInt, data: BigInt) = {
+          io.writes(port).addr #= addr
+          io.writes(port).dataIn #= data
+          io.writes(port).en #= true
+          io.writes(port).we #= true
+        }
+
+        def read(port: Int, addr: BigInt) = {
+          val readPort = io.reads(port)
+          readPort.addr #= addr
+          readPort.en #= true
+          readPort.dataOut.toInt
+        }
+
+        def read123() = {
+          read(0, 1)
+          read(1, 2)
+          read(2, 3)
+        }
+
+
+        def doWR(addr: Int, data: Int) = {
+          write(0, addr, data)
+          read123()
+          sleep(8)
+        }
+
+        doWR(1, 13)
+        doWR(2, 17)
+        doWR(3, 19)
+        doWR(3, 19)
+        doWR(3, 19)
+        doWR(3, 19)
+
+        simSuccess()
       }
-
-      def read(port: Int, addr: BigInt) = {
-        val readPort = io.reads(port)
-        readPort.addr #= addr
-        readPort.en #= true
-        readPort.dataOut.toInt
-      }
-
-      write(0, 0, 13)
-      clockDomain.waitSampling()
-      write(0, 1, 17)
-      read(0, 1)
-      read(1, 2)
-      read(2, 3)
-      clockDomain.waitSampling()
-      write(0, 2, 19)
-      read(0, 1)
-      read(1, 2)
-      read(2, 3)
-      clockDomain.waitSampling()
-      write(0, 3, 23)
-      read(0, 1)
-      read(1, 2)
-      read(2, 3)
-      clockDomain.waitSampling()
-      write(0, 4, 29)
-      read(0, 1)
-      read(1, 2)
-      read(2, 3)
-      sleep(20)
     }
+    def bramSim() = {
+      SimConfig.withWave.compile(new XILINX_BRAM18E2).doSim { dut =>
+        import dut._
+        def doRead(portId: Int, addr: BigInt) = {
+          val port = if (portId == 0) ioA else ioB
+          port.addr #= addr
+          port.en #= true
+          port.we #= false
+        }
+        def doWrite(portId: Int, addr: BigInt, data: BigInt) = {
+          val port = if (portId == 0) ioA else ioB
+          port.addr #= addr
+          port.dataIn #= data
+          port.en #= true
+          port.we #= true
+        }
+
+        clockDomain.forkStimulus(2)
+        clockDomain.waitSampling()
+        doWrite(0, 0, 1)
+        doWrite(1, 12, 5)
+        clockDomain.waitSampling()
+        doRead(0, 0)
+        doRead(1, 12)
+        clockDomain.waitSampling()
+        doRead(0, 0)
+        doRead(1, 12)
+        clockDomain.waitSampling()
+        doRead(0, 0)
+        doRead(1, 12)
+        sleep(20)
+      }
+    }
+
+    mWnRSim()
+    //    bramSim()
   }
 }

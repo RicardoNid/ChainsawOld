@@ -19,6 +19,8 @@ package object xilinx {
     val UltraScale, Series7 = Value
   }
 
+  object XilinxClockDomainConfig
+
   import XilinxDeviceFamily._
 
   def xilinxCDConfig = ClockDomainConfig( // recommended by Xilinx UG901
