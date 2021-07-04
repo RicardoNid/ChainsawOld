@@ -360,7 +360,10 @@ package object Chainsaw extends RealFactory {
     }
   }
 
-  implicit class MoreSimClockDomainPimper(cd: ClockDomain){
+  implicit class MoreSimClockDomainPimper(cd: ClockDomain) {
     // TODO: more
+
   }
+
+  val XilinxClockConfig = ClockDomainConfig(resetKind = BOOT)
 }
