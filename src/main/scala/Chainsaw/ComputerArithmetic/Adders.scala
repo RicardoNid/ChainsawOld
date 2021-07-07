@@ -29,32 +29,25 @@ case class Adder(config: AdderConfig) extends Component {
   import config._
 
   val io = new Bundle {
-    val x, y, s = Bits(bitWidth bits)
-    val cIn = if (hasCIn) Bool() else null
-    val cOut = if (hasCOut) Bool() else null
-    val overFlow = if (hasOverflow) Bool() else null
-    in(x, y, cIn)
-    out(s, cOut)
+    val x, y = in Bits (bitWidth bits)
+    val s = out Bits (bitWidth bits)
+    val cIn = if (hasCIn) in Bool() else null
+    val cOut = if (hasCOut) out Bool() else null
+    val overFlow = if (hasOverflow) out Bool() else null
   }
 
-  val Seq(x, y, s) = Seq(io.x, io.y, io.s)
-  val cIn, cOut = Bool()
-  val fullSum = Bits(bitWidth + 1 bits)
-
   // connection of the inner part and the outer part, handle the conditional ports
-  if (hasCIn) cIn := io.cIn else cIn := False
-  if (hasCOut) io.cOut := cOut
-  io.s := fullSum(bitWidth - 1 downto 0)
-  cOut := fullSum.msb
-
   val coreAdder = CoreAdder(bitWidth, adderType, hasOverflow && signed && !hasCOut)
-  coreAdder.x := x.asUInt
-  coreAdder.y := y.asUInt
-  coreAdder.cIn := cIn.asUInt
-  fullSum := coreAdder.fullSum.asBits
+  coreAdder.x := io.x.asUInt
+  coreAdder.y := io.y.asUInt
+  if (hasCIn) coreAdder.cIn := io.cIn.asUInt else coreAdder.cIn := U"0"
+  if (hasCOut) io.cOut := coreAdder.fullSum.msb
+  io.s := coreAdder.fullSum(bitWidth - 1 downto 0).asBits
 
   if (hasOverflow) {
     if (signed && !hasCOut) io.overFlow := coreAdder.fullSum.msb ^ coreAdder.cSMS
+    else if (!signed && !hasCOut) io.overFlow := coreAdder.fullSum.msb
+    else io.overFlow := False // when hasCOut, no overflow
   }
 }
 
@@ -71,7 +64,7 @@ case class CoreAdder(bitWidth: Int, adderType: AdderType, needCSMS: Boolean) ext
       val FAs = (0 until bitWidth).map(i => FA(x(i), y(i), carrys(i)))
       carrys.tail.zip(FAs.init).foreach { case (carry, fa) => carry := fa.carry }
       fullSum := (FAs.last.carry ## FAs.map(_.sum).asBits()).asUInt
-      cSMS := carrys.last
+      if (needCSMS) cSMS := carrys.last
     }
   }
 
@@ -79,16 +72,24 @@ case class CoreAdder(bitWidth: Int, adderType: AdderType, needCSMS: Boolean) ext
 
 object Adder {
   def main(args: Array[String]): Unit = {
-    val config = AdderConfig(4, RCA, true, true, signed = false)
+    val config = AdderConfig(4, RCA, hasCIn = true, hasCOut = false, signed = false)
     GenRTL(Adder(config))
-    SimConfig.withWave.compile(new Adder(config)).doSim { dut =>
+    SimConfig.withWave.compile(new Adder(config) {
+      val combined = if (config.hasCOut) io.cOut ## io.s else io.s
+      val trueSum = if (config.signed) combined.asSInt else combined.asUInt
+      trueSum.simPublic()
+    }).doSim { dut =>
       import dut._
-      io.x #= BigInt("1001", 2) // -7/9
-      io.y #= BigInt("1011", 2) // -5/11
-      io.cIn #= true // -1/1
-      sleep(1)
-      if (dut.config.signed) assert(io.cOut.toBigInt * (-16) + io.s.toBigInt == BigInt(-13))
-      else assert(io.cOut.toBigInt * 16 + io.s.toBigInt == BigInt(21))
+      def testOnce() = {
+        io.x.randomize()
+        io.y.randomize()
+        io.cIn.randomize()
+        val overflow = io.overFlow.toBoolean
+        val correct = trueSum.toBigInt == io.x.toBigInt + io.y.toBigInt + io.cIn.toBigInt
+        assert(overflow ^ correct) // only one of them can be true
+        sleep(1)
+      }
+      (0 until 100).foreach(_ => testOnce())
     }
   }
 }
