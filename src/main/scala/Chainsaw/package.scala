@@ -366,4 +366,6 @@ package object Chainsaw extends RealFactory {
   }
 
   val XilinxClockConfig = ClockDomainConfig(resetKind = BOOT)
+
+  type HardInt = BitVector with Num[_ >: SInt with UInt <: BitVector with Num[_ >: SInt with UInt] with MinMaxProvider with DataPrimitives[_ >: SInt with UInt] with BitwiseOp[_ >: SInt with UInt]] with MinMaxProvider with DataPrimitives[_ >: SInt with UInt <: BitVector with Num[_ >: SInt with UInt] with MinMaxProvider with DataPrimitives[_ >: SInt with UInt] with BitwiseOp[_ >: SInt with UInt]] with BitwiseOp[_ >: SInt with UInt <: BitVector with Num[_ >: SInt with UInt] with MinMaxProvider with DataPrimitives[_ >: SInt with UInt] with BitwiseOp[_ >: SInt with UInt]]
 }
