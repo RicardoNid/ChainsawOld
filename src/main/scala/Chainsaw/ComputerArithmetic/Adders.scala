@@ -43,7 +43,7 @@ case class Adder(config: AdderConfig) extends Component {
   }
 
   // connection of the inner part and the outer part, handle the conditional ports
-  val coreAdder = basicAdder(bitWidth, adderType)
+  val coreAdder = BasicAdder(bitWidth, adderType)
   coreAdder.x := io.x.asUInt
   coreAdder.y := io.y.asUInt
   if (hasCIn) coreAdder.cIn := io.cIn.asUInt else coreAdder.cIn := U"0"
@@ -76,95 +76,3 @@ case class Adder(config: AdderConfig) extends Component {
   else io.cOut := coreAdder.fullSum.msb
 }
 
-
-/** The unsigned binary adder with carry in and out, it is the core of adder design
- *
- * @param bitWidth
- * @param adderType
- */
-case class basicAdder(bitWidth: Int, adderType: AdderType) extends Component {
-  val x, y = in UInt (bitWidth bits)
-  val cIn = in UInt (1 bits)
-  val fullSum = out UInt (bitWidth + 1 bits)
-  val cSMS = out Bool() // c_{k-1}
-
-  adderType match {
-    case RAW => {
-      fullSum := (x +^ y + cIn)
-      cSMS := (x(bitWidth - 2 downto 0) +^ y(bitWidth - 2 downto 0) + cIn).msb
-    }
-    case RCA => {
-      val carrys = cIn.asBool +: (0 until bitWidth - 1).map(_ => Bool())
-      val FAs = (0 until bitWidth).map(i => FA(x(i), y(i), carrys(i)))
-      carrys.tail.zip(FAs.init).foreach { case (carry, fa) => carry := fa.carry }
-      fullSum := (FAs.last.carry ## FAs.map(_.sum).asBits()).asUInt
-      cSMS := carrys.last
-    }
-  }
-}
-
-object Adder {
-  def main(args: Array[String]): Unit = {
-    val config = AdderConfig(4, RCA, hasCIn = true, hasCOut = true, signed = true, hasOverflow = false, doSaturation = false)
-
-    def value2C(number: BigInt, width: Int) = {
-      if (width == 1) number
-      else {
-        val binary = number.toString(2).padToLeft(width, '0')
-        -binary.head.asDigit * (BigInt(1) << number.bitLength - 1) + BigInt(binary.tail, 2)
-      }
-    }
-
-    def testAdder(config: AdderConfig) = {
-      SimConfig.withWave.compile(new Adder(config) {
-        val combined = if (config.hasCOut) io.cOut ## io.s else io.s
-        val dutFullSum = if (config.signed) combined.asSInt else combined.asUInt
-        dutFullSum.simPublic()
-      }).doSim { dut =>
-        import dut._
-        def testOnce() = {
-          io.x.randomize()
-          io.y.randomize()
-          if (dut.config.hasCIn) io.cIn.randomize()
-
-          // TODO: signed assertion
-          val valueX = if (dut.config.signed) value2C(io.x.toBigInt, dut.config.bitWidth) else io.x.toBigInt
-          val valueY = if (dut.config.signed) value2C(io.y.toBigInt, dut.config.bitWidth) else io.y.toBigInt
-          val valueCIn = if (dut.config.hasCIn) io.cIn.toBigInt else BigInt(0)
-          val valueDut = dutFullSum.toBigInt
-          val valueCorrect = valueX + valueY + valueCIn
-
-          val correct = valueDut == valueCorrect
-
-          if (dut.config.hasOverflow) {
-            val overflow = io.overflow.toBoolean
-            if (dut.config.doSaturation) {
-              val saturated = if (!dut.config.signed) coreAdder.x.maxValue
-              else if (valueX + valueY > 0) coreAdder.x.maxValue >> 1
-              else -((coreAdder.x.maxValue + 1) / 2)
-              val correctSaturation = overflow && (valueDut == saturated)
-              assert(correctSaturation ^ correct)
-            }
-            else assert(overflow ^ correct) // only one of them can be true
-          } else assert(correct)
-          sleep(1)
-        }
-        (0 until 100).foreach(_ => testOnce())
-      }
-    }
-
-    import scala.util.{Try, Success, Failure}
-    // traverse all possible configurations and test
-    val TF = Seq(true, false)
-    for (adderType <- AdderType.values; hasCIn <- TF; hasCOut <- TF; signed <- TF; hasOverflow <- TF; doSaturation <- TF) {
-      val config = Try(AdderConfig(4, adderType, hasCIn, hasCOut, signed, hasOverflow, doSaturation))
-      config match {
-        case Failure(exception) =>
-        case Success(value) => {
-          printlnGreen(s"start testing ${value.toString}")
-          testAdder(value)
-        }
-      }
-    }
-  }
-}

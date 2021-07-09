@@ -368,4 +368,12 @@ package object Chainsaw extends RealFactory {
   val XilinxClockConfig = ClockDomainConfig(resetKind = BOOT)
 
   type HardInt = BitVector with Num[_ >: SInt with UInt <: BitVector with Num[_ >: SInt with UInt] with MinMaxProvider with DataPrimitives[_ >: SInt with UInt] with BitwiseOp[_ >: SInt with UInt]] with MinMaxProvider with DataPrimitives[_ >: SInt with UInt <: BitVector with Num[_ >: SInt with UInt] with MinMaxProvider with DataPrimitives[_ >: SInt with UInt] with BitwiseOp[_ >: SInt with UInt]] with BitwiseOp[_ >: SInt with UInt <: BitVector with Num[_ >: SInt with UInt] with MinMaxProvider with DataPrimitives[_ >: SInt with UInt] with BitwiseOp[_ >: SInt with UInt]]
+
+  def value2C(number: BigInt, width: Int) = {
+    if (width == 1) number
+    else {
+      val binary = number.toString(2).padToLeft(width, '0')
+      -binary.head.asDigit * (BigInt(1) << number.bitLength - 1) + BigInt(binary.tail, 2)
+    }
+  }
 }
