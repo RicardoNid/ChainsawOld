@@ -14,6 +14,7 @@ import spinal.lib._
  */
 // TODO: implement this for multiple streams
 // TODO: implement punctuations and arbitrary codeRate
+
 case class ConvencConfig(length: Int, gens: Array[Int])
 
 class Convenc(input: Bool, config: ConvencConfig) extends ImplicitArea[Vec[Bool]] with Testable {
@@ -34,13 +35,15 @@ class Convenc(input: Bool, config: ConvencConfig) extends ImplicitArea[Vec[Bool]
 
   override def implicitValue: Vec[Bool] = Vec(rets)
 
-  def referenceModel(bits: Array[Boolean]) = {
-    eng.putVariable("bits", bits)
-    eng.eval(s"trellis = poly2trellis(${config.length}, ${config.gens.asMatlab});")
-    eng.eval(s"convenc(bits, trellis);")
-    val ret = eng.getVariable("ans").asInstanceOf[Array[Boolean]]
-    ret
-  }
+  //  def referenceModel(bits: Array[Boolean]) = {
+  //    eng.putVariable("bits", bits)
+  //    eng.eval(s"trellis = poly2trellis(${config.length}, ${config.gens.asMatlab});")
+  //    eng.eval(s"convenc(bits, trellis);")
+  //    val ret = eng.getVariable("ans").asInstanceOf[Array[Boolean]]
+  //    ret
+  //  }
+
+  def referenceModel(bits: Array[Double]) = MatlabRef.convenc(bits, config)
 
   override val getTimingInfo: TimingInfo = TimingInfo(7168, 7168, 1, 7200)
 }

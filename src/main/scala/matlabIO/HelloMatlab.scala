@@ -2,30 +2,57 @@ package matlabIO
 
 import com.mathworks.engine.MatlabEngine
 import com.mathworks.matlab.types._
+
+import java.lang.Thread.sleep
+import java.time.{Duration, Instant}
 import scala.collection.JavaConversions._
 
 object HelloMatlab {
   @throws[Exception]
   def main(args: Array[String]): Unit = {
-    // start session
-    val eng = MatlabEngine.startMatlab
-    eng.eval(s"cd ${matlabWorkingSpace.toString}")
+    // SYNC/ASYNC
+    def testDuration(func: => Unit): Unit = {
+      val start = Instant.now()
+      func
+      val end = Instant.now()
+      val duration = Duration.between(start, end)
+      println(duration.toMillis)
+    }
+    testDuration(MatlabEngine.startMatlab()) // start the engine takes about 3000 milliseconds
+    testDuration(MatlabEngine.startMatlabAsync()) // the Future[MatlabEngine] object is returned instantly, takes 2 milliseconds
+    testDuration { // the whole process still takes 3000 milliseconds
+      val eng = MatlabEngine.startMatlabAsync()
+      sleep(3000) // but you can do something else here without extra cost
+      eng.get()
+    }
 
-    // generally, use array for vectors, use double for elements
-    // put and get variable
-    eng.putVariable("a", Array.tabulate(2, 3)(_ + _))
-    eng.eval(s"b = sum(a)")
-    val c: Array[Double] = eng.getVariable("b")
-    println(c.mkString(" "))
+    // feval/eval
+    val eng = AsyncEng.get()
+    println(eng.feval[Double]("sin", Array(0.05)))
+    //    println(eng.feval[Double]("sin", 0.05)) // wrong, 0.05 is not an array
 
-    // evaluate function
-    val qfunc: Double = eng.feval("qfuncinv", Array(0.1))
-    println(qfunc)
+    eng.putVariable("input", 0.05)
+    eng.eval("sin(input)")
+    println(eng.getVariable[Double]("ans"))
 
-    eng.eval(s"trellis = poly2trellis(7, [171,133])")
-    val struct: Struct = eng.getVariable("trellis")
-    println(struct.keySet().mkString(" "))
-    val result = struct.get("numInputSymbols")
-    eng.close()
+    // about array size
+    val anotherComplex = Array(new MComplex(1, 2)) //
+    eng.putVariable("anotherComplex", anotherComplex)
+    val ret = eng.getVariable[MComplex]("anotherComplex")
+    println(ret.getClass)
+    val retArray = try {
+      eng.getVariable[Array[MComplex]]("anotherComplex")
+    } catch {
+      case _ => println("failed")
+    }
+
+    // jagged array
+    val jagged = Array(Array(1, 2), Array(1, 2, 3))
+    eng.putVariable("jagged", jagged)
+    println(eng.getVariable[Array[Array[Int]]]("jagged").map(_.mkString(" ")).mkString("\n"))
+
+    import Chainsaw._
+    println(eng.getVariable[MComplex]("complex"))
+
   }
 }
