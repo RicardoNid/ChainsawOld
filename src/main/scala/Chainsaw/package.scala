@@ -373,4 +373,13 @@ package object Chainsaw extends RealFactory {
       -binary.head.asDigit * (BigInt(1) << number.bitLength - 1) + BigInt(binary.tail, 2)
     }
   }
+
+  // some methods for using BigInt as string of bits
+  implicit class BigIntUtil(bigInt: BigInt) {
+    def toBinary = bigInt.toString(2)
+  }
+
+  implicit class BitStringUtil(string: String) {
+    def toBigIntAsBinary = BigInt(string)
+  }
 }

@@ -4,43 +4,42 @@ import matlabIO._
 import Chainsaw._
 
 object Algos {
-  def vitdec(bits: Array[Double], constLen: Int, codeGens: Array[Int], tblen: Int): Array[Double] = {
-    // TODO: replace with my own implementations
-    val trellis = MatlabRef.poly2trellis(constLen, codeGens)
+  def vitdec(bits: Array[Double], constLen: Int, codeGens: Array[Int], tblen: Int, verbose: Boolean = false): Array[Double] = {
 
     val decimalCodeGens = codeGens.map(value => BigInt(value.toString, 8).toInt)
     val k0 = 1
     val n0 = decimalCodeGens.size
     val K = constLen
 
-    var paths = Seq.fill(1 << K)("")
-    var metrics = 0 +: Seq.fill(1 << K - 1)(n0 * tblen) // a safe init value, could be smaller in magnitude
-
     // matlab add to left and shift right to construct next states
-    def branch(state: Int) = Array(state, state + (1 << (K - 1))) // two branch from a current state, add 1/0 to the left
-    def encode(input: Int) = decimalCodeGens
+    def branch(state: Int): Array[Int] = Array(state, state + (1 << (K - 1))) // two branch from a current state, add 1/0 to the left
+    def encode(input: Int): Int = decimalCodeGens // convenc
       .map(gen => BigInt(gen & input) // code gen as mask
         .toString(2).map(_.asDigit).reduce(_ ^ _)) // xorR
       .reverse.zipWithIndex.map { case (i, exp) => i * (1 << exp) }.sum
-    def getHamming(a: Double, b: Double) = (BigInt(a.toInt) ^ BigInt(b.toInt)).toString(2).map(_.asDigit).sum
+    def getHamming(a: Double, b: Double) = (BigInt(a.toInt) ^ BigInt(b.toInt)) // xor: finding differences
+      .toString(2).map(_.asDigit).sum
 
+    // build the trellis
     val outputs = (0 until (1 << (K - 1)))
       .map(i => branch(i).map(encode).map(_.toDouble)).toArray
     val nextStates = (0 until (1 << (K - 1)))
       .map(i => branch(i).map(_ >> 1).map(_.toDouble)).toArray
 
-    val goldenOutputs = trellis.get("outputs").asInstanceOf[Array[Array[Double]]]
-    val goldenNextStates = trellis.get("nextStates").asInstanceOf[Array[Array[Double]]]
+    def checkTrellis() = {
+      val trellis = MatlabRef.poly2trellis(constLen, codeGens)
+      val goldenOutputs = trellis.get("outputs").asInstanceOf[Array[Array[Double]]]
+      val goldenNextStates = trellis.get("nextStates").asInstanceOf[Array[Array[Double]]]
+      require(nextStates.formatted == goldenNextStates.formatted, "nextStates different from Matlab")
+      require(outputs.formatted == goldenOutputs.formatted, "nextStates different from Matlab")
+    }
+    checkTrellis()
 
-    println(outputs.formatted)
-    println("-" * 20)
-    println(goldenOutputs.formatted)
-
-    require(nextStates.formatted == goldenNextStates.formatted)
-    require(outputs.formatted == goldenOutputs.formatted)
-
-
+    var paths = Seq.fill(1 << K)("")
+    var metrics = 0 +: Seq.fill(1 << K - 1)(n0 * tblen) // TODO: a safe init value, could be smaller in magnitude
+    var determinedBits = ""
     val frames = bits.grouped(n0).toArray
+    // the decoding process
     frames.indices.foreach { i =>
       val frameValue = frames(i).reverse.zipWithIndex.map { case (d, i) => d * (1 << i) }.sum
       val hammings = outputs.map(_.map(getHamming(_, frameValue)))
@@ -50,7 +49,7 @@ object Algos {
         .map { case (state, metricAndPath) => state -> metricAndPath }.sorted.grouped(n0) // group the candidates for each next state
         .map(_.sortBy(_._2._1).head).toArray // keep the one with smallest metric
 
-      def tabulate() = {
+      def tabulate() = { // TODO: learn a framework to deal with these problems, something like pandas
         val indices = 0 until 1 << (K - 1)
         def int2Bin = (value: Int) => BigInt(value).toString(2).padToLeft(K - 1, '0')
         val stateStrings = indices.map(int2Bin)
@@ -70,42 +69,54 @@ object Algos {
           Seq(line0, line1).mkString("\n")
         }.mkString("\n")
 
+        println("-" * 6 * (K + 2))
         println("received: " + frames(i).map(_.toInt).mkString(""))
-        println(Seq("state","next","output","metric","hamming","new").map(_.padToLeft(K + 2, ' ')).mkString(""))
+        println(Seq("s", "ns", "o", "m", "ham", "nm").map(_.padToLeft(K + 2, ' ')).mkString(""))
+        println("-" * 6 * (K + 2))
         println(fullString)
+        println(s"true result bits: ${paths(0)}")
+        println(s"determined bits: $determinedBits")
+        println(s"fixed tblen has no effect: ${paths(0).zip(determinedBits).forall { case (c, c1) => c == c1 }}")
       }
-      tabulate()
+      if (verbose) tabulate()
 
       metrics = updated.map(_._2._1)
       paths = updated.map(_._2._2)
-
-      println("-" * 20)
+      if (i >= tblen) determinedBits += paths(0)(i - tblen)
     }
 
-    paths(0).map(_.asDigit.toDouble).toArray
+    val ret = determinedBits + paths(0).takeRight(tblen)
+    ret.map(_.asDigit.toDouble).toArray
   }
 
   def main(args: Array[String]): Unit = {
-    val constLen = 7
-    val codeGens = Array(171, 133)
-    //    val constLen = 3
-    //    val codeGens = Array(7, 4)
-    val tblen = constLen
-    val testCaseLen = 20 * constLen
 
-    val testCase = ((0 until testCaseLen).map(_ => DSPRand.nextInt(2).toDouble) ++ Seq.fill(tblen)(0.0)).toArray
+    //    val constLen = 7
+    //    val codeGens = Array(171, 133)
+    //    val tblen = constLen
+    //    val testCaseLen = 20 * constLen
 
-    val trellis = MatlabRef.poly2trellis(constLen, codeGens)
-    val coded = MatlabRef.convenc(testCase, trellis)
-    val golden = MatlabRef.vitdec(coded, trellis, tblen)
+    // to explore the viterbi algo, use the following example of (2,1,3) convolutional code
+    val constLen = 3
+    val codeGens = Array(7, 4)
+    val tblen = constLen * 3
+    val testCaseLen = 100
 
-    val ours = vitdec(coded, constLen, codeGens, 10)
-    val inputString = testCase.map(_.toInt).mkString("")
-    val ourString = ours.map(_.toInt).mkString("") // TODO: find out the condition for matlab to have correct result
-    if(inputString == ourString) printlnGreen("vitdec succeed")
+    (0 until 100).foreach { _ =>
+      val flushingBits = Seq.fill(constLen - 1)(0.0) // bits to reset the decoder registers, assuring the end state is S_0(all zeor)
+      val testCase = ((0 until testCaseLen).map(_ => DSPRand.nextInt(2).toDouble) ++ Seq.fill(constLen - 1)(0.0)).toArray
+      val trellis = MatlabRef.poly2trellis(constLen, codeGens)
+      val coded = MatlabRef.convenc(testCase, trellis)
+      // a random noise, when this is applied, tblen = K is not enough, in our test, we take tblen = 5K
+      coded(DSPRand.nextInt(testCaseLen)) = 1 - coded(DSPRand.nextInt(testCaseLen))
+      val golden = MatlabRef.vitdec(coded, trellis, tblen)
 
+      val ours = vitdec(coded, constLen, codeGens, tblen, verbose = true)
+      val inputString = testCase.map(_.toInt).mkString("")
+      val ourString = ours.map(_.toInt).mkString("") // TODO: find out the condition for matlab to have correct result
+      require(inputString == ourString)
+    }
+    printlnGreen("vitdec succeed")
 
-
-    println(golden.map(_.toInt).reverse.mkString(""))
   }
 }
