@@ -35,16 +35,16 @@ object Algos {
     }
     checkTrellis()
 
-    var paths = Seq.fill(1 << K)("")
+    var paths = Seq.fill(1 << K)(" " * tblen)
     var metrics = 0 +: Seq.fill(1 << K - 1)(n0 * tblen) // TODO: a safe init value, could be smaller in magnitude
     var determinedBits = ""
     val frames = bits.grouped(n0).toArray
     // the decoding process
     frames.indices.foreach { i =>
       val frameValue = frames(i).reverse.zipWithIndex.map { case (d, i) => d * (1 << i) }.sum
-      val hammings = outputs.map(_.map(getHamming(_, frameValue)))
+      val hammings = outputs.map(_.map(getHamming(_, frameValue))) // BMU
       val candidateMetrics = metrics.zip(hammings).map { case (metric, hams) => hams.map(_ + metric) }
-      val candidatePaths = paths.map(path => Array("0", "1").map(path + _))
+      val candidatePaths = paths.map(path => Array("0", "1").map(bit => (path + bit).takeRight(tblen)))
       val updated = nextStates.flatten.zip(candidateMetrics.flatten.zip(candidatePaths.flatten)) // next states with candidate metrics and paths
         .map { case (state, metricAndPath) => state -> metricAndPath }.sorted.grouped(n0) // group the candidates for each next state
         .map(_.sortBy(_._2._1).head).toArray // keep the one with smallest metric
@@ -59,30 +59,33 @@ object Algos {
           val line0 = Seq(stateStrings(j), nextStateStrings(j)(0),
             int2Bin(outputs(j)(0).toInt),
             metrics(j).toString, hammings(j)(0).toString,
-            candidateMetrics(j)(0).toString.padToLeft(2, ' '))
+            candidateMetrics(j)(0).toString.padToLeft(2, ' '),
+            "  " + paths(j))
             .map(_.padToLeft(K + 2, ' ')).mkString("")
           val line1 = Seq("", nextStateStrings(j)(1),
             int2Bin(outputs(j)(1).toInt),
             "", hammings(j)(1).toString,
-            candidateMetrics(j)(1).toString.padToLeft(2, ' '))
+            candidateMetrics(j)(1).toString.padToLeft(2, ' '),
+            "")
             .map(_.padToLeft(K + 2, ' ')).mkString("")
           Seq(line0, line1).mkString("\n")
         }.mkString("\n")
 
         println("-" * 6 * (K + 2))
         println("received: " + frames(i).map(_.toInt).mkString(""))
-        println(Seq("s", "ns", "o", "m", "ham", "nm").map(_.padToLeft(K + 2, ' ')).mkString(""))
+        println(Seq("s", "ns", "o", "m", "ham", "nm", "path").map(_.padToLeft(K + 2, ' ')).mkString(""))
         println("-" * 6 * (K + 2))
         println(fullString)
         println(s"true result bits: ${paths(0)}")
         println(s"determined bits: $determinedBits")
-        println(s"fixed tblen has no effect: ${paths(0).zip(determinedBits).forall { case (c, c1) => c == c1 }}")
+        // no effect when paths have agreement on the first bit
+        println(s"fixed tblen has no effect: ${paths.forall(path => path(0) == paths(0)(0))}")
       }
       if (verbose) tabulate()
 
       metrics = updated.map(_._2._1)
+      if (i >= tblen) determinedBits += paths(0)(0)
       paths = updated.map(_._2._2)
-      if (i >= tblen) determinedBits += paths(0)(i - tblen)
     }
 
     val ret = determinedBits + paths(0).takeRight(tblen)
@@ -93,16 +96,16 @@ object Algos {
 
     //    val constLen = 7
     //    val codeGens = Array(171, 133)
-    //    val tblen = constLen
-    //    val testCaseLen = 20 * constLen
+    //    val tblen = constLen * 6
+    //    val testCaseLen = 2000 * constLen
 
-    // to explore the viterbi algo, use the following example of (2,1,3) convolutional code
+    //     to explore the viterbi algo, use the following example of (2,1,3) convolutional code
     val constLen = 3
     val codeGens = Array(7, 4)
     val tblen = constLen * 3
-    val testCaseLen = 100
+    val testCaseLen = 20
 
-    (0 until 100).foreach { _ =>
+    (0 until 1).foreach { _ =>
       val flushingBits = Seq.fill(constLen - 1)(0.0) // bits to reset the decoder registers, assuring the end state is S_0(all zeor)
       val testCase = ((0 until testCaseLen).map(_ => DSPRand.nextInt(2).toDouble) ++ Seq.fill(constLen - 1)(0.0)).toArray
       val trellis = MatlabRef.poly2trellis(constLen, codeGens)
@@ -114,6 +117,7 @@ object Algos {
       val ours = vitdec(coded, constLen, codeGens, tblen, verbose = true)
       val inputString = testCase.map(_.toInt).mkString("")
       val ourString = ours.map(_.toInt).mkString("") // TODO: find out the condition for matlab to have correct result
+      println(inputString)
       require(inputString == ourString)
     }
     printlnGreen("vitdec succeed")

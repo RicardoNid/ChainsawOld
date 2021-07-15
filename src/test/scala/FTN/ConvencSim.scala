@@ -35,7 +35,7 @@ class ConvencSim(config: ConvencConfig) extends ConvencDUT(config) with DSPSimTi
   override def isValid(refResult: Array[Double], dutResult: Array[Double]): Boolean = refResult.zip(dutResult).forall(pair => pair._1 == pair._2)
 
   override def messageWhenInvalid(testCase: Array[Double], refResult: Array[Double], dutResult: Array[Double]): String = {
-    val rowCount = config.gens.length
+    val rowCount = config.codeGens.length
     val refOutput = (0 until rowCount).map(i => refResult.zipWithIndex.filter(_._2 % rowCount == i).map(_._1).map(_.toInt).mkString(" ")).mkString("\n")
     val dutOutput = (0 until rowCount).map(i => dutResult.zipWithIndex.filter(_._2 % rowCount == i).map(_._1).map(_.toInt).mkString(" ")).mkString("\n")
     s"testCase: ${testCase.map(_.toInt).mkString(" ")}\ngolden:\n${refOutput}\nyours:\n${dutOutput}\n"
