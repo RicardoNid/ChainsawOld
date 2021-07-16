@@ -15,8 +15,6 @@ import spinal.lib._
 // TODO: implement this for multiple streams
 // TODO: implement punctuations and arbitrary codeRate
 
-case class ConvencConfig(constLen: Int, codeGens: Array[Int])
-
 class Convenc(input: Bool, config: ConvencConfig) extends ImplicitArea[Vec[Bool]] with Testable {
 
   def octal2BinaryString(gen: Int) =
@@ -24,9 +22,9 @@ class Convenc(input: Bool, config: ConvencConfig) extends ImplicitArea[Vec[Bool]
 
   val genCount = config.codeGens.length
 
-  val trellises = config.codeGens.map(octal2BinaryString).map(_.takeRight(config.constLen))
+  val trellises = config.codeGens.map(octal2BinaryString).map(_.takeRight(config.K))
   printlnWhenDebug("trellises: \n" + trellises.mkString("\n"))
-  val regs = Vec(RegInit(False), config.constLen)
+  val regs = Vec(RegInit(False), config.K)
   regs.head := input
   regs.init.zip(regs.tail).foreach { case (prev, next) => next := prev }
 

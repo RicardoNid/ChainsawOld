@@ -1,71 +1,96 @@
 package FTN
 
-import matlabIO._
 import Chainsaw._
+import matlabIO._
+
+import scala.collection.mutable.ArrayBuffer
+
+case class ConvencConfig(constLen: Int, codeGens: Array[Int]) {
+
+  val m = codeGens.length
+  val n = 1
+  val K = constLen
+  val decimalCodeGens = codeGens.map(value => BigInt(value.toString, 8).toInt)
+  def encode(input: Int): Int = decimalCodeGens // convenc, used to generate the expected output
+    .map(gen => (gen & input) // code gen used as mask
+      .toBinaryString.map(_.asDigit).reduce(_ ^ _)) // xorR
+    .reverse.zipWithIndex.map { case (i, exp) => i * (1 << exp) }.sum // array of bits -> number
+  def branch(state: Int): Array[Int] = Array(state, state + (1 << (K - 1))) // two branch from a current state, add 1/0 to the left
+
+  // infos needed for building the decoder
+  val states: Array[Int] = (0 until (1 << (K - 1))).toArray
+  val transitions: Array[Array[Int]] = states.map(i => branch(i)) // including all K(rather than K-1 state bits), size = 2^(K-1) * 2
+  val nextStates: Array[Array[Int]] = transitions.map(_.map(_ >> 1)) // next states listed in the order of current state, size = 2^(K-1) * 2
+  val expectedOutputs: Array[Array[Int]] = transitions.map(_.map(encode)) // expected output which match the transitions
+
+  def checkTrellis(): Unit = { // using the matlab model to for trellis info validation
+    val trellis = MatlabRef.poly2trellis(constLen, codeGens)
+    val goldenOutputs = trellis.get("outputs").asInstanceOf[Array[Array[Double]]].map(_.map(_.toInt))
+    val goldenNextStates = trellis.get("nextStates").asInstanceOf[Array[Array[Double]]].map(_.map(_.toInt))
+    require(nextStates.formatted == goldenNextStates.formatted, "nextStates different from Matlab")
+    require(expectedOutputs.formatted == goldenOutputs.formatted, "expectedOutputs different from Matlab")
+  }
+  try {
+    checkTrellis()
+  } catch {
+    case _ => println("no matlab environment available, trellis validation skipped ")
+  }
+}
 
 object Algos {
-  def vitdec(bits: Array[Double], constLen: Int, codeGens: Array[Int], tblen: Int, verbose: Boolean = false): Array[Double] = {
+  def vitdec(bits: Array[Double], config: ConvencConfig, tblen: Int,
+             verbose: Boolean = false, debug: Boolean = false): Array[Double] = {
 
-    val decimalCodeGens = codeGens.map(value => BigInt(value.toString, 8).toInt)
+    import config._ // the trellis infos are built in the config
+
     val k0 = 1
-    val n0 = decimalCodeGens.size
+    val n0 = decimalCodeGens.length
     val K = constLen
 
-    // matlab add to left and shift right to construct next states
-    def branch(state: Int): Array[Int] = Array(state, state + (1 << (K - 1))) // two branch from a current state, add 1/0 to the left
-    def encode(input: Int): Int = decimalCodeGens // convenc
-      .map(gen => BigInt(gen & input) // code gen as mask
-        .toString(2).map(_.asDigit).reduce(_ ^ _)) // xorR
-      .reverse.zipWithIndex.map { case (i, exp) => i * (1 << exp) }.sum
-    def getHamming(a: Double, b: Double) = (BigInt(a.toInt) ^ BigInt(b.toInt)) // xor: finding differences
-      .toString(2).map(_.asDigit).sum
+    // build the trellis infos
+    def getHamming(a: Int, b: Int) = (a ^ b).toBinaryString.map(_.asDigit).sum // xor generate 1 when different
 
-    // build the trellis
-    val outputs = (0 until (1 << (K - 1)))
-      .map(i => branch(i).map(encode).map(_.toDouble)).toArray
-    val nextStates = (0 until (1 << (K - 1)))
-      .map(i => branch(i).map(_ >> 1).map(_.toDouble)).toArray
-
-    def checkTrellis() = {
-      val trellis = MatlabRef.poly2trellis(constLen, codeGens)
-      val goldenOutputs = trellis.get("outputs").asInstanceOf[Array[Array[Double]]]
-      val goldenNextStates = trellis.get("nextStates").asInstanceOf[Array[Array[Double]]]
-      require(nextStates.formatted == goldenNextStates.formatted, "nextStates different from Matlab")
-      require(outputs.formatted == goldenOutputs.formatted, "nextStates different from Matlab")
-    }
-    checkTrellis()
-
-    var paths = Seq.fill(1 << K)(" " * tblen)
+    var paths = Seq.fill(1 << K)("")
     var metrics = 0 +: Seq.fill(1 << K - 1)(n0 * tblen) // TODO: a safe init value, could be smaller in magnitude
+    var selectionsRAM = ArrayBuffer[String]()
     var determinedBits = ""
+
+    // the decoding process: keep writing selections to the RAM
     val frames = bits.grouped(n0).toArray
-    // the decoding process
     frames.indices.foreach { i =>
-      val frameValue = frames(i).reverse.zipWithIndex.map { case (d, i) => d * (1 << i) }.sum
-      val hammings = outputs.map(_.map(getHamming(_, frameValue))) // BMU
-      val candidateMetrics = metrics.zip(hammings).map { case (metric, hams) => hams.map(_ + metric) }
-      val candidatePaths = paths.map(path => Array("0", "1").map(bit => (path + bit).takeRight(tblen)))
-      val updated = nextStates.flatten.zip(candidateMetrics.flatten.zip(candidatePaths.flatten)) // next states with candidate metrics and paths
-        .map { case (state, metricAndPath) => state -> metricAndPath }.sorted.grouped(n0) // group the candidates for each next state
-        .map(_.sortBy(_._2._1).head).toArray // keep the one with smallest metric
+      val frameValue: Int = frames(i).map(_.toInt).reverse.zipWithIndex.map { case (d, i) => d * (1 << i) }.sum // array of bits -> number
+      val deltaMetrics = expectedOutputs.map(_.map(getHamming(_, frameValue))) // BMU
 
-      def tabulate() = { // TODO: learn a framework to deal with these problems, something like pandas
-        val indices = 0 until 1 << (K - 1)
-        def int2Bin = (value: Int) => BigInt(value).toString(2).padToLeft(K - 1, '0')
-        val stateStrings = indices.map(int2Bin)
-        val nextStateStrings = nextStates.map(_.map(value => int2Bin(value.toInt)))
+      val candidateMetrics = metrics.zip(deltaMetrics).map { case (metric, hams) => hams.map(_ + metric) }
+      val candidatePaths = paths.map(path => Array("0", "1").map(bit => path + bit)) // record the full path in software for debugging
+      val selectionPairs = nextStates.flatten.zip(candidateMetrics.flatten.zip(candidatePaths.flatten)) // next states with candidate metrics and paths
+        .map { case (state, metricAndPath) => state -> metricAndPath }.sortBy(_._1).grouped(n0).toSeq // group the candidates for each next state
+      val updated = selectionPairs.map(_.minBy(_._2._1)).toArray // keep the one with smallest metric
 
-        val fullString = indices.map { j =>
-          val line0 = Seq(stateStrings(j), nextStateStrings(j)(0),
-            int2Bin(outputs(j)(0).toInt),
-            metrics(j).toString, hammings(j)(0).toString,
-            candidateMetrics(j)(0).toString.padToLeft(2, ' '),
-            "  " + paths(j))
+      val metricPairs = selectionPairs.map(_.map(_._2._1))
+      val selections = metricPairs.map(pair => if (pair(0) <= pair(1)) 0 else 1)
+      if(debug){
+        println(s"at frame $i")
+        println(s"hammings lower to higher")
+        println(s"selections lower to higher: ${BigInt(selections.mkString(""), 2).toString(16)}")
+      }
+
+      def int2Bin = (value: Int) => BigInt(value).toString(2).padToLeft(K - 1, '0')
+      def tabulate(): Unit = { // TODO: find a framework to deal with these problems, something like pandas
+        println("-" * 6 * (K + 2))
+        println(s"frame $i")
+        val nextStateStrings = nextStates.map(_.map(value => int2Bin(value)))
+        val fullString = states.map { state =>
+          val line0 = Seq(int2Bin(state), nextStateStrings(state)(0),
+            int2Bin(expectedOutputs(state)(0)),
+            metrics(state).toString, deltaMetrics(state)(0).toString,
+            candidateMetrics(state)(0).toString.padToLeft(2, ' '),
+            "  " + paths(state))
             .map(_.padToLeft(K + 2, ' ')).mkString("")
-          val line1 = Seq("", nextStateStrings(j)(1),
-            int2Bin(outputs(j)(1).toInt),
-            "", hammings(j)(1).toString,
-            candidateMetrics(j)(1).toString.padToLeft(2, ' '),
+          val line1 = Seq("", nextStateStrings(state)(1),
+            int2Bin(expectedOutputs(state)(1)),
+            "", deltaMetrics(state)(1).toString,
+            candidateMetrics(state)(1).toString.padToLeft(2, ' '),
             "")
             .map(_.padToLeft(K + 2, ' ')).mkString("")
           Seq(line0, line1).mkString("\n")
@@ -76,51 +101,84 @@ object Algos {
         println(Seq("s", "ns", "o", "m", "ham", "nm", "path").map(_.padToLeft(K + 2, ' ')).mkString(""))
         println("-" * 6 * (K + 2))
         println(fullString)
-        println(s"true result bits: ${paths(0)}")
+        println(s"true result bits: ${paths.head}")
         println(s"determined bits: $determinedBits")
         // no effect when paths have agreement on the first bit
-        println(s"fixed tblen has no effect: ${paths.forall(path => path(0) == paths(0)(0))}")
+        if (i > 0) println(s"fixed tblen has no effect: ${paths.forall(path => path(0) == paths.head(0))}")
       }
       if (verbose) tabulate()
 
+      // 2-forward and 1-backward
+      def traceBack(partialSelections: Array[String], end: Boolean = false, verbose: Boolean = false): String = { // trace back, according to the previous selections
+        var currentState = 0
+        var outputBits = ""
+        partialSelections.reverse.foreach { selections =>
+          if (verbose) print(s"${int2Bin(currentState)} -> ${selections(currentState)} -> ")
+          val previousState = int2Bin(currentState).tail + selections(currentState) // concatenate the selection bit to the right and drop the leftmost bit
+          outputBits += int2Bin(currentState).head // export the leftmost bit which is the
+          currentState = BigInt(previousState, 2).toInt
+        }
+        if (end) outputBits.reverse else outputBits.reverse.take(tblen)
+      }
+
       metrics = updated.map(_._2._1)
-      if (i >= tblen) determinedBits += paths(0)(0)
       paths = updated.map(_._2._2)
+
+      // the control logic of traceback: traceback when RAM is full / at the end
+      val end = i == frames.length - 1
+      selectionsRAM += selections.mkString("")
+      if (selectionsRAM.length == 2 * tblen || end) {
+        if (verbose) println(s"traceback at $i")
+        determinedBits += traceBack(selectionsRAM.toArray, end)
+        if (!end) selectionsRAM = selectionsRAM.takeRight(tblen) else selectionsRAM.clear()
+      }
     }
 
-    val ret = determinedBits + paths(0).takeRight(tblen)
+    //    val ret = determinedBits + paths.head.takeRight(tblen) // the way that saves the paths
+    val ret = determinedBits // the way that saves the previous state and trace back
     ret.map(_.asDigit.toDouble).toArray
+  }
+
+  // generate testCase for vitdec
+  def vitdecTestCase(config: ConvencConfig, testCaseLen: Int, noiseNumber: Int = 0) = {
+    import config._
+    val flushingBits: Seq[Double] = Seq.fill(constLen - 1)(0.0) // bits to reset the decoder registers, assuring the end state is S_0(all zero)
+    val testCase: Array[Double] = ((0 until testCaseLen).map(_ => DSPRand.nextInt(2).toDouble) ++ flushingBits).toArray
+    val trellis: MStruct = MatlabRef.poly2trellis(constLen, codeGens)
+    val coded: Array[Double] = MatlabRef.convenc(testCase, trellis)
+    // random error bits
+    (0 until noiseNumber).foreach(_ => coded(DSPRand.nextInt(testCaseLen)) = 1 - coded(DSPRand.nextInt(testCaseLen)))
+    coded
   }
 
   def main(args: Array[String]): Unit = {
 
-    //    val constLen = 7
-    //    val codeGens = Array(171, 133)
-    //    val tblen = constLen * 6
-    //    val testCaseLen = 2000 * constLen
+    val constLen = 7
+    val codeGens = Array(171, 133)
+    val tblen = constLen * 6
+    val testCaseLen = 30 * constLen
+    val noiseNumber = 5 // number of random errors
 
-    //     to explore the viterbi algo, use the following example of (2,1,3) convolutional code
-    val constLen = 3
-    val codeGens = Array(7, 4)
-    val tblen = constLen * 3
-    val testCaseLen = 20
+    //         to explore the viterbi algo, use the following example of (2,1,3) convolutional code
+    //        val constLen = 3
+    //        val codeGens = Array(7, 4)
+    //        val tblen = constLen * 6
+    //        val testCaseLen = 100
 
-    (0 until 1).foreach { _ =>
-      val flushingBits = Seq.fill(constLen - 1)(0.0) // bits to reset the decoder registers, assuring the end state is S_0(all zeor)
-      val testCase = ((0 until testCaseLen).map(_ => DSPRand.nextInt(2).toDouble) ++ Seq.fill(constLen - 1)(0.0)).toArray
+    var success = 0
+    val total = 1000
+    (0 until total).foreach { i =>
+      val coded = vitdecTestCase(ConvencConfig(constLen, codeGens), testCaseLen, noiseNumber)
       val trellis = MatlabRef.poly2trellis(constLen, codeGens)
-      val coded = MatlabRef.convenc(testCase, trellis)
-      // a random noise, when this is applied, tblen = K is not enough, in our test, we take tblen = 5K
-      coded(DSPRand.nextInt(testCaseLen)) = 1 - coded(DSPRand.nextInt(testCaseLen))
       val golden = MatlabRef.vitdec(coded, trellis, tblen)
-
-      val ours = vitdec(coded, constLen, codeGens, tblen, verbose = true)
-      val inputString = testCase.map(_.toInt).mkString("")
-      val ourString = ours.map(_.toInt).mkString("") // TODO: find out the condition for matlab to have correct result
-      println(inputString)
-      require(inputString == ourString)
+      val ours = vitdec(coded, ConvencConfig(constLen, codeGens), tblen, verbose = false)
+      if (golden.map(_.toInt).mkString("") == ours.map(_.toInt).mkString("")) success += 1
+      //      require(golden.map(_.toInt).mkString("") == ours.map(_.toInt).mkString(""),
+      //        s"golden: ${golden.map(_.toInt).mkString("")}\n" +
+      //          s"yours:  ${ours.map(_.toInt).mkString("")}"
+      //      )
+      if (i % 100 == 99) println(s"${(i / 100 + 1) * 100} done, $success / ${(i / 100 + 1) * 100} succeed")
     }
-    printlnGreen("vitdec succeed")
-
+    printlnGreen(s"vitdec, $success / $total succeed ")
   }
 }
