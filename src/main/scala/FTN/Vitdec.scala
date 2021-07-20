@@ -59,15 +59,22 @@ class Vitdec(config: ConvencConfig, tblen: Int, noTrackBack: Boolean = false, de
 
   // control
   val frameCounter = Counter(tblen)
-  val stackCounter = Counter(2, inc = frameCounter.willOverflow)
+  val stackCounter = Counter(4, inc = frameCounter.willOverflow)
 
-  val padding = RegInit(False)
-  when(io.dataIn.last)(padding := True)
-  when(padding && frameCounter.willOverflow)(padding := False)
+  val trailing = RegInit(False)
+  when(io.dataIn.last)(trailing := True)
 
-  val selectionBits = Mux(padding, SelectionType.getZero, selections.toSeq.asBits())
+  val trailingCountDown = Reg(UInt(2 bits)) // TODO: shorten the trailing periods by a better output scheme, thus improve the utilization
+  when(io.dataIn.last) {
+    when(frameCounter.willOverflow)(trailingCountDown := U(2, 2 bits))
+      .otherwise(trailingCountDown := U(3, 2 bits))
+  }
+  when(frameCounter.willOverflow)(trailingCountDown := trailingCountDown - 1)
+  when(trailingCountDown === U(0, 2 bits) && frameCounter.willOverflow)(trailing := False)
 
-  when(io.dataIn.fire || padding) { // initialization at the first cycle
+  val selectionBits = Mux(trailing, SelectionType.getZero, selections.toSeq.asBits())
+
+  when(io.dataIn.fire || trailing) { // initialization at the first cycle
     // TODO: will this manner lead to redundant adders?
     frameCounter.increment()
     addrWA.increment()
@@ -80,6 +87,7 @@ class Vitdec(config: ConvencConfig, tblen: Int, noTrackBack: Boolean = false, de
     metrics.head := 0
     metrics.tail.foreach(_ := U(Metric.maxValue / 2).resized)
     frameCounter.clear()
+    stackCounter.clear()
     addrWA.clear()
     addrWB.value := (ramDepth - tblen) // regard ramDepth as 0
     addrRA := ramDepth - 1 // 2 for write to read propagation
@@ -110,10 +118,10 @@ class Vitdec(config: ConvencConfig, tblen: Int, noTrackBack: Boolean = false, de
   val outputStackA = Stack(Bool(), tblen)
   val outputStackB = Stack(Bool(), tblen)
   when(traceBackA) {
-    outputStackB.push(traceBackStateB(K-3)) // MSB of the next state
+    outputStackB.push(traceBackStateB(K - 3)) // MSB of the next state
     io.dataOut.fragment := outputStackA.pop()
   }.otherwise {
-    outputStackA.push(traceBackStateA(K-3))
+    outputStackA.push(traceBackStateA(K - 3))
     io.dataOut.fragment := outputStackB.pop()
   }
 
@@ -137,8 +145,12 @@ class Vitdec(config: ConvencConfig, tblen: Int, noTrackBack: Boolean = false, de
     tblenMet := frameCounter.willOverflow
   }
 
-  io.dataOut.valid := frameCounter >= tblen
-  io.dataOut.last := False
+  io.dataOut.last := Delay(io.dataIn.last, ramDepth)
+  val validReg = RegInit(False)
+  when(stackCounter.willOverflow)(validReg.set())
+  when(io.dataOut.last)(validReg.clear()) // TODO: find a better way
+
+  io.dataOut.valid := validReg
 }
 
 class HammingFromExpected(expected: BigInt, width: Int) extends Component {
@@ -166,7 +178,7 @@ object HammingFromExpected {
     val FTNConvConfig = ConvencConfig(7, Array(171, 133))
     val FTNConvTBlen = FTNConvConfig.K * 6
     //    GenRTL(new Vitdec(FTNConvConfig, FTNConvTBlen))
-    VivadoSynth(new Vitdec(FTNConvConfig, FTNConvTBlen, debug = true))
+    VivadoSynth(new Vitdec(FTNConvConfig, FTNConvTBlen, debug = false))
 
     val constLen = 7
     val codeGens = Array(171, 133)

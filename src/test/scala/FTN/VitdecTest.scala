@@ -2,14 +2,8 @@ package FTN
 
 import org.scalatest.funsuite.AnyFunSuite
 import spinal.core.sim._
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.sim._
-import spinal.lib.fsm._
 
-import Chainsaw._
-import Chainsaw.Real
+import scala.collection.mutable.ArrayBuffer
 
 class VitdecTest extends AnyFunSuite {
 
@@ -20,7 +14,7 @@ class VitdecTest extends AnyFunSuite {
 
     SimConfig.withWave.compile(new Vitdec(config, tblen, debug = true)).doSim { dut =>
       import dut._
-      val testcase = Algos.vitdecTestCase(config = config, testCaseLen, noiseNumber = 10)
+      val testCases = Seq.fill(2)(Algos.vitdecTestCase(config = config, testCaseLen, noiseNumber = 10))
       clockDomain.forkStimulus(2)
       io.dataIn.valid #= false
       io.dataIn.last #= false
@@ -35,11 +29,28 @@ class VitdecTest extends AnyFunSuite {
           clockDomain.waitSampling()
         }
       }
+      def peekBubble() = {
+        io.dataIn.valid #= false
+        io.dataIn.last #= false
+      }
 
-      peekAFlow(testcase)
-      peekAFlow(testcase)
+      // monitor
+      val dutResult = ArrayBuffer[Double]()
+      fork {
+        if (io.dataOut.valid.toBoolean) {
+          val bit = if (io.dataOut.fragment.toBoolean) 1.0 else 0.0
+          dutResult += bit
+        }
+      }
 
-      Algos.vitdec(testcase, config, tblen, verbose = false, debug = true)
+      testCases.foreach{testCase =>
+        peekAFlow(testCase)
+        peekBubble()
+        clockDomain.waitSampling(3 * tblen)
+      }
+
+      val golden = testCases.map(testCase => Algos.vitdec(testCase, config, tblen, verbose = false, debug = false)).flatten
+      assert(dutResult.zip(golden).forall{ case (d, d1) => d == d1})
     }
   }
 }
