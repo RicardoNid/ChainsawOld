@@ -6,15 +6,14 @@ import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm.StateMachine
 
-// the interface follow the Xilinx IP
-
+// the interface does not follow the Xilinx IP
 
 /** For a (m,n,K) Viterbi decoder whose output rate is n / m and constraint length is K
  *
  * @param input organized as a vector of m Bits, for hard-coded, Bits are only one bit
  * @param config
  */
-class Vitdec(config: ConvencConfig, tblen: Int, noTrackBack: Boolean = false) extends Component {
+class Vitdec(config: ConvencConfig, tblen: Int, noTrackBack: Boolean = false, debug: Boolean = false) extends Component {
 
   // TODO: currently, we implement for n = 1, hard-coded only, expand this in the future
   // TODO: leave it as an exercise
@@ -22,25 +21,81 @@ class Vitdec(config: ConvencConfig, tblen: Int, noTrackBack: Boolean = false) ex
   import config._
 
   val io = new Bundle {
-    val frame = in Bits (m bits)
-    val decoded = out Bool() // as n = 1
-    val selections = out Bits((1 << (K - 1)) bits)  
-    val valid = out Bool()
+    val dataIn = slave Flow Fragment(Bits(m bits))
+    val dataOut = master Flow Fragment(Bool())
   }
 
-  // BMU
+  // BM
   // TODO: smllest amount of Mem, but high fan-out, may need to be optimized later
   val hammingLUTs = (0 until (1 << m)).map(expected => new HammingFromExpected(expected, m))
-  hammingLUTs.foreach(_.input := io.frame)
-  val hammings: Seq[Array[UInt]] = expectedOutputs.map(_.map(expected => hammingLUTs(expected).output))
+  hammingLUTs.foreach(_.input := io.dataIn.fragment)
+  val hammings = Vec(expectedOutputs.map(_.map(expected => hammingLUTs(expected).output)).flatten)
 
-  // ACS
-  val metrics: Seq[UInt] = states.map(_ => Reg(UInt(4 bits))) // TODO: find a proper upper bound
-  val newMetrics = states.indices.map(i => Array(metrics(i) + hammings(i)(0), metrics(i) + hammings(i)(1))).flatten
-  val candMetrics = nextStates.flatten.zip(newMetrics).sortBy(_._1).map(_._2).grouped(2).toArray // construct the connections by sorting
-  val selections = candMetrics.map(pair => pair(0) <= pair(1)) // select 0
-  val selectedMetrics = selections.zip(candMetrics).map { case (bool, ints) => Mux(bool, ints(0), ints(1)) }
+  // ACS, take hammings from BM and make selections
+  val metricWidth = 5
+  def Metric = UInt(metricWidth bits)
+  val metrics: Seq[UInt] = states.map(_ => Reg(Metric)) // TODO: find a proper upper bound
+
+  val newMetrics = states.map(_ => Array.fill(2)(Metric)).flatten // TODO: merge
+  newMetrics.indices.foreach(i => newMetrics(i) := metrics(i / 2) + hammings(i))
+
+  val candMetrics = nextStates.flatten.zip(newMetrics) // construct the connections by sorting
+    .sortBy(_._1).map(_._2).grouped(2).toArray // zip + sortBy + map: sort A by B
+  val selections = candMetrics.map(pair => pair(0) > pair(1))
+  val selectionBits = selections.toSeq.asBits()
+  val selectedMetrics = selections.zip(candMetrics).map { case (bool, ints) => Mux(bool, ints(1), ints(0)) }
   metrics.zip(selectedMetrics).foreach { case (reg, selected) => reg := selected } // update metrics
+
+  val rising = io.dataIn.fire.rise()
+  rising.simPublic()
+
+  def SelectionType = Bits(selections.length bits)
+  val ramDepth = 4 * tblen
+  val selectionRAMA = Mem(SelectionType, ramDepth)
+  val selectionRAMB = Mem(SelectionType, ramDepth)
+  val addrWA = Counter(ramDepth)
+  val addrWB = Counter(ramDepth)
+  val addrRA = cloneOf(addrWA.value).setAsReg()
+  val addrRB = cloneOf(addrWB.value).setAsReg()
+
+  // control
+  val frameCounter = Counter(tblen)
+  val stackCounter = Counter(2, inc = frameCounter.willOverflow)
+  when(io.dataIn.fire) { // initialization at the first cycle
+    // TODO: will this manner lead to redundant adders?
+    frameCounter.increment()
+    addrWA.increment()
+    addrWB.increment()
+    when(addrRA === 0)(addrRA := ramDepth - 1)
+      .otherwise(addrRA := addrRA - 1)
+    when(addrRB === 0)(addrRB := ramDepth - 1)
+      .otherwise(addrRB := addrRB - 1)
+  }.otherwise { // initialization at the gap
+    metrics.head := 0
+    metrics.tail.foreach(_ := U(Metric.maxValue / 2).resized)
+    frameCounter.clear()
+    addrWA.clear()
+    addrWB.value := (ramDepth - tblen) // regard ramDepth as 0
+    addrRA := ramDepth - 1 // 2 for write to read propagation
+    addrRB := tblen - 1
+  }
+
+  selectionRAMA(addrWA) := selectionBits
+  selectionRAMB(addrWB) := selectionBits
+  val traceBackInputA = selectionRAMA.readSync(addrRA)
+  val traceBackInputB = selectionRAMB.readSync(addrRB)
+
+  // traceback iteration
+  val traceBackStart = Delay(frameCounter.willOverflow, 1, init = False)
+  val traceBackStateA = Reg(UInt(K - 1 bits))
+  val previousBitA = traceBackInputA(traceBackStateA)
+  when(traceBackStart && !stackCounter.lsb)(traceBackStateA.clearAll()) // traceback start
+    .otherwise(traceBackStateA := traceBackStateA(K - 3 downto 0) @@ previousBitA)
+
+  val traceBackStateB = Reg(UInt(K - 1 bits))
+  val previousBitB = traceBackInputB(traceBackStateB)
+  when(traceBackStart && stackCounter.lsb)(traceBackStateB.clearAll())
+    .otherwise(traceBackStateB := traceBackStateB(K - 3 downto 0) @@ previousBitB)
 
   // if you don't want to trace back, the bits of paths need to be saved
   // the main problem is, you need to overwrite many bits in a cycle, which means you need to implement the storage by regs
@@ -50,21 +105,24 @@ class Vitdec(config: ConvencConfig, tblen: Int, noTrackBack: Boolean = false) ex
     val candPaths = nextStates.flatten.zip(newPaths).sortBy(_._1).map(_._2).grouped(2).toArray // construct the connections by sorting
     val selectedPaths = selections.zip(candPaths).map { case (bool, bits) => Mux(bool, bits(0), bits(1)) }
     paths.zip(selectedPaths).foreach { case (reg, selected) => reg := selected } // update path
-    io.decoded := paths(0).msb
+    io.dataOut.fragment := paths(0).msb
   } else {
-    
+
   }
 
-  io.decoded := metrics(0).msb
-  io.selections := selections.toSeq.asBits()
+  io.dataOut.fragment := metrics(0).msb
 
-  val docodeCounter = CounterFreeRun(K * 100)
-  io.valid := docodeCounter >= tblen
+  val debugs = (debug) generate new Area {
+    val selectionsOut = out(SelectionType)
+    selectionsOut := selections.reverse.toSeq.asBits()
+    val tblenMet = out Bool()
+    tblenMet := frameCounter.willOverflow
+  }
 
-//  val fsm = new StateMachine{
-//
-//  }
+  io.dataOut.valid := frameCounter >= tblen
+  io.dataOut.last := False
 }
+
 
 class HammingFromExpected(expected: BigInt, width: Int) extends Component {
   val input = in Bits (width bits)
@@ -90,8 +148,8 @@ object HammingFromExpected {
   def main(args: Array[String]): Unit = {
     val FTNConvConfig = ConvencConfig(7, Array(171, 133))
     val FTNConvTBlen = FTNConvConfig.K * 6
-    GenRTL(new Vitdec(FTNConvConfig, FTNConvTBlen))
-    VivadoSynth(new Vitdec(FTNConvConfig, FTNConvTBlen))
+    //    GenRTL(new Vitdec(FTNConvConfig, FTNConvTBlen))
+    VivadoSynth(new Vitdec(FTNConvConfig, FTNConvTBlen, debug = true))
 
     val constLen = 7
     val codeGens = Array(171, 133)
@@ -105,7 +163,7 @@ object HammingFromExpected {
       clockDomain.waitSampling()
 
       frames.foreach { frame =>
-        io.frame #= frame
+        io.dataIn.fragment #= frame
         clockDomain.waitSampling()
       }
     }

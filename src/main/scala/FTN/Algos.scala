@@ -51,7 +51,7 @@ object Algos {
     def getHamming(a: Int, b: Int) = (a ^ b).toBinaryString.map(_.asDigit).sum // xor generate 1 when different
 
     var paths = Seq.fill(1 << K)("")
-    var metrics = 0 +: Seq.fill(1 << K - 1)(n0 * tblen) // TODO: a safe init value, could be smaller in magnitude
+    var metrics = 0 +: Seq.fill(1 << K - 1)(15) // TODO: a safe init value, could be smaller in magnitude
     var selectionsRAM = ArrayBuffer[String]()
     var determinedBits = ""
 
@@ -69,10 +69,14 @@ object Algos {
 
       val metricPairs = selectionPairs.map(_.map(_._2._1))
       val selections = metricPairs.map(pair => if (pair(0) <= pair(1)) 0 else 1)
-      if(debug){
-        println(s"at frame $i")
-        println(s"hammings lower to higher")
-        println(s"selections lower to higher: ${BigInt(selections.mkString(""), 2).toString(16)}")
+
+      if (debug) { // for hardware debug
+        println(s"at frame $i, received =  ${int2Bin(frameValue).takeRight(m)}")
+        println(s"current metrics: ${metrics.take(10).mkString(" ")}...")
+        println(s"hammings: ${deltaMetrics.flatten.take(10).mkString(" ")}...")
+        println(s"selections: ${BigInt(selections.mkString(""), 2).toString(16)}")
+        //        println(s"new metric pairs for nextStates: ${metricPairs.flatten.take(10).mkString(" ")}" )
+        println(s"selections: ${selections.take(10).mkString(" ")}")
       }
 
       def int2Bin = (value: Int) => BigInt(value).toString(2).padToLeft(K - 1, '0')
@@ -113,11 +117,12 @@ object Algos {
         var currentState = 0
         var outputBits = ""
         partialSelections.reverse.foreach { selections =>
-          if (verbose) print(s"${int2Bin(currentState)} -> ${selections(currentState)} -> ")
+          if (debug) print(s"${int2Bin(currentState)} -> ${selections(currentState)} -> ")
           val previousState = int2Bin(currentState).tail + selections(currentState) // concatenate the selection bit to the right and drop the leftmost bit
           outputBits += int2Bin(currentState).head // export the leftmost bit which is the
           currentState = BigInt(previousState, 2).toInt
         }
+        if (debug) println()
         if (end) outputBits.reverse else outputBits.reverse.take(tblen)
       }
 
@@ -128,7 +133,7 @@ object Algos {
       val end = i == frames.length - 1
       selectionsRAM += selections.mkString("")
       if (selectionsRAM.length == 2 * tblen || end) {
-        if (verbose) println(s"traceback at $i")
+        if (debug) println(s"traceback at $i")
         determinedBits += traceBack(selectionsRAM.toArray, end)
         if (!end) selectionsRAM = selectionsRAM.takeRight(tblen) else selectionsRAM.clear()
       }

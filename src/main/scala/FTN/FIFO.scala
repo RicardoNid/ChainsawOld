@@ -9,6 +9,7 @@ import spinal.lib.fsm._
 import Chainsaw._
 import Chainsaw.Real
 
+// test the function and performance of FIFO and Stack
 class FIFO extends Component {
   def dataType = Bits(4 bits)
   val innerFIFO = StreamFifo(dataType, 8)
@@ -34,3 +35,5 @@ object FIFO {
     }
   }
 }
+
+

@@ -11,6 +11,41 @@ trait EasyFIFO[T <: Data] {
   def pop(): T
 }
 
+
+class Stack[T <: Data](dataType: HardType[T], depth: Int) extends StreamStack(dataType, depth) {
+  def init(): Unit = {
+    io.push.valid := False
+    io.pop.ready := False
+    io.push.payload.assignFromBits(B(BigInt(0), io.push.payload.getBitsWidth bits)) // avoid latch
+  }
+
+  def push(data: T): Unit = {
+    io.push.valid := True
+    io.push.payload := data.resized
+  }
+
+  def pop(): T = {
+    io.pop.ready := True
+    io.pop.payload
+  }
+
+  def clear(): Unit = {
+    io.flush := True
+  }
+
+  def clearAndPush(data: T):Unit = {
+
+  }
+}
+
+object Stack {
+  def apply[T <: Data](dataType: HardType[T], depth: Int): Stack[T] = {
+    val ret = new Stack(dataType, depth)
+    ret.init()
+    ret
+  }
+}
+
 class FIFO[T <: Data](dataType: HardType[T], depth: Int) extends StreamFifo(dataType, depth) with EasyFIFO[T] {
   def init(): Unit = {
     io.push.valid := False
@@ -63,7 +98,71 @@ object FIFO {
   }
 }
 
-class multi(counts: Seq[BigInt], modeOH: Bits) extends Counter(start = 0, end = counts.max){
+class StreamStack[T <: Data](dataType: HardType[T], depth: Int) extends Component {
+  // TODO: merge adders, improve performance
+  require(depth >= 0)
+  val io = new Bundle {
+    val push = slave Stream (dataType)
+    val pop = master Stream (dataType)
+    val flush = in Bool() default (False)
+    val occupancy = out UInt (log2Up(depth + 1) bits)
+    val availability = out UInt (log2Up(depth + 1) bits)
+  }
+
+  // when depth = 0/1, stack behaves the same as a FIFO
+  val bypass = (depth == 0) generate new Area {
+    io.push >> io.pop
+    io.occupancy := 0
+    io.availability := 0
+  }
+  val oneStage = (depth == 1) generate new Area {
+    io.push.m2sPipe(flush = io.flush) >> io.pop
+    io.occupancy := U(io.pop.valid)
+    io.availability := U(!io.pop.valid)
+  }
+
+  val logic = (depth > 1) generate new Area {
+    val ram = Mem(dataType, depth)
+    val ptrNext = UInt(log2Up(depth) bits)
+    val ptr = RegNext(ptrNext, U(0)) // for pushing, starts at 0, popping starts at prt - 1
+
+    val pushing = io.push.fire
+    val popping = io.pop.fire
+    val full = ptr === depth
+    val empty = ptr === 0
+
+    io.push.ready := !full
+    io.pop.valid := !empty | io.push.fire
+
+    val justWritten = RegNext(pushing, False)
+    val temp = RegNextWhen(io.push.payload, pushing)
+
+    when(pushing) {
+      io.pop.payload := io.push.payload // bypass
+    }.elsewhen(justWritten) {
+      io.pop.payload := temp
+    }.otherwise {
+      io.pop.payload := ram.readSync(ptrNext - 1) // prefetch
+    }
+
+    ptrNext := ptr
+    when(pushing && !popping) {
+      ram(ptr) := io.push.payload // write synchronously
+      ptrNext := ptr + 1
+    }.elsewhen(popping && !pushing) {
+      ptrNext := ptr - 1
+    }
+
+    io.occupancy := ptr
+    io.availability := depth - ptr
+
+    when(io.flush) {
+      ptr.clearAll()
+    }
+  }
+}
+
+class multi(counts: Seq[BigInt], modeOH: Bits) extends Counter(start = 0, end = counts.max) {
   override val willOverflowIfInc = (value === MuxOH(modeOH, counts.map(count => U(count - 1, log2Up(counts.max) bits))))
 }
 

@@ -315,11 +315,9 @@ package object Chainsaw extends RealFactory {
     report.printFMax()
   }
 
-
   val synthWorkspace = "/home/ltr/IdeaProjects/Chainsaw/synthWorkspace"
 
   implicit class SpinalLiterals(private val sc: StringContext) {
-
 
     /** Q Format literal, we follow the same definition as Xilinx, where MQN stands for a (M + N + 1) bits signed fixed point number with N fractional bits and M integer bits
      *

@@ -8,7 +8,7 @@ case class BlockRamConfig(
                          )
 
 /** General BRAM model for FPGAs
- *
+ * BRAMs are natively synchronous both at read and write port
  */
 case class BlockRam(dataWidth: Int, addressWidth: Int) extends Component {
 
