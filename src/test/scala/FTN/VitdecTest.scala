@@ -23,6 +23,7 @@ class VitdecTest extends AnyFunSuite {
       val testcase = Algos.vitdecTestCase(config = config, testCaseLen, noiseNumber = 10)
       clockDomain.forkStimulus(2)
       io.dataIn.valid #= false
+      io.dataIn.last #= false
       clockDomain.waitSampling(2)
 
       def peekAFlow(testcase: Array[Double]) = {

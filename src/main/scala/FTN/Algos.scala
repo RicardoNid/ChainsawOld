@@ -16,7 +16,6 @@ case class ConvencConfig(constLen: Int, codeGens: Array[Int]) {
       .toBinaryString.map(_.asDigit).reduce(_ ^ _)) // xorR
     .reverse.zipWithIndex.map { case (i, exp) => i * (1 << exp) }.sum // array of bits -> number
   def branch(state: Int): Array[Int] = Array(state, state + (1 << (K - 1))) // two branch from a current state, add 1/0 to the left
-
   // infos needed for building the decoder
   val states: Array[Int] = (0 until (1 << (K - 1))).toArray
   val transitions: Array[Array[Int]] = states.map(i => branch(i)) // including all K(rather than K-1 state bits), size = 2^(K-1) * 2
@@ -74,9 +73,9 @@ object Algos {
         println(s"at frame $i, received =  ${int2Bin(frameValue).takeRight(m)}")
         println(s"current metrics: ${metrics.take(10).mkString(" ")}...")
         println(s"hammings: ${deltaMetrics.flatten.take(10).mkString(" ")}...")
-        println(s"selections: ${BigInt(selections.mkString(""), 2).toString(16)}")
+        println(s"selections: ${BigInt(selections.reverse.mkString(""), 2).toString(16)}")
         //        println(s"new metric pairs for nextStates: ${metricPairs.flatten.take(10).mkString(" ")}" )
-        println(s"selections: ${selections.take(10).mkString(" ")}")
+        println(s"selections: ${selections.reverse.take(10).mkString(" ")}")
       }
 
       def int2Bin = (value: Int) => BigInt(value).toString(2).padToLeft(K - 1, '0')
@@ -141,6 +140,7 @@ object Algos {
 
     //    val ret = determinedBits + paths.head.takeRight(tblen) // the way that saves the paths
     val ret = determinedBits // the way that saves the previous state and trace back
+    if (debug) println(s"final Result $ret")
     ret.map(_.asDigit.toDouble).toArray
   }
 

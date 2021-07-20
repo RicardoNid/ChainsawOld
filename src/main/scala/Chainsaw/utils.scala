@@ -32,10 +32,6 @@ class Stack[T <: Data](dataType: HardType[T], depth: Int) extends StreamStack(da
   def clear(): Unit = {
     io.flush := True
   }
-
-  def clearAndPush(data: T):Unit = {
-
-  }
 }
 
 object Stack {

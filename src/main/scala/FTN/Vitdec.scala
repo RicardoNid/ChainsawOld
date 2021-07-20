@@ -42,7 +42,6 @@ class Vitdec(config: ConvencConfig, tblen: Int, noTrackBack: Boolean = false, de
   val candMetrics = nextStates.flatten.zip(newMetrics) // construct the connections by sorting
     .sortBy(_._1).map(_._2).grouped(2).toArray // zip + sortBy + map: sort A by B
   val selections = candMetrics.map(pair => pair(0) > pair(1))
-  val selectionBits = selections.toSeq.asBits()
   val selectedMetrics = selections.zip(candMetrics).map { case (bool, ints) => Mux(bool, ints(1), ints(0)) }
   metrics.zip(selectedMetrics).foreach { case (reg, selected) => reg := selected } // update metrics
 
@@ -61,7 +60,14 @@ class Vitdec(config: ConvencConfig, tblen: Int, noTrackBack: Boolean = false, de
   // control
   val frameCounter = Counter(tblen)
   val stackCounter = Counter(2, inc = frameCounter.willOverflow)
-  when(io.dataIn.fire) { // initialization at the first cycle
+
+  val padding = RegInit(False)
+  when(io.dataIn.last)(padding := True)
+  when(padding && frameCounter.willOverflow)(padding := False)
+
+  val selectionBits = Mux(padding, SelectionType.getZero, selections.toSeq.asBits())
+
+  when(io.dataIn.fire || padding) { // initialization at the first cycle
     // TODO: will this manner lead to redundant adders?
     frameCounter.increment()
     addrWA.increment()
@@ -87,19 +93,33 @@ class Vitdec(config: ConvencConfig, tblen: Int, noTrackBack: Boolean = false, de
 
   // traceback iteration
   val traceBackStart = Delay(frameCounter.willOverflow, 1, init = False)
+  val traceBackA = !stackCounter.lsb // mark the leading half of tracing back A
+  val traceBackB = stackCounter.lsb
+
   val traceBackStateA = Reg(UInt(K - 1 bits))
   val previousBitA = traceBackInputA(traceBackStateA)
-  when(traceBackStart && !stackCounter.lsb)(traceBackStateA.clearAll()) // traceback start
+  when(traceBackA.rise())(traceBackStateA.clearAll()) // traceback start
     .otherwise(traceBackStateA := traceBackStateA(K - 3 downto 0) @@ previousBitA)
 
   val traceBackStateB = Reg(UInt(K - 1 bits))
   val previousBitB = traceBackInputB(traceBackStateB)
-  when(traceBackStart && stackCounter.lsb)(traceBackStateB.clearAll())
+  when(traceBackB.rise())(traceBackStateB.clearAll())
     .otherwise(traceBackStateB := traceBackStateB(K - 3 downto 0) @@ previousBitB)
+
+  // output
+  val outputStackA = Stack(Bool(), tblen)
+  val outputStackB = Stack(Bool(), tblen)
+  when(traceBackA) {
+    outputStackB.push(traceBackStateB(K-3)) // MSB of the next state
+    io.dataOut.fragment := outputStackA.pop()
+  }.otherwise {
+    outputStackA.push(traceBackStateA(K-3))
+    io.dataOut.fragment := outputStackB.pop()
+  }
 
   // if you don't want to trace back, the bits of paths need to be saved
   // the main problem is, you need to overwrite many bits in a cycle, which means you need to implement the storage by regs
-  if (noTrackBack) {
+  if (noTrackBack) { // register exchange scheme
     val paths = states.map(_ => Reg(Bits(tblen bits)))
     val newPaths = states.indices.map(i => Array(paths(i)(tblen - 2 downto 0) ## B"0", paths(i)(tblen - 2 downto 0) ## B"1")).flatten
     val candPaths = nextStates.flatten.zip(newPaths).sortBy(_._1).map(_._2).grouped(2).toArray // construct the connections by sorting
@@ -110,11 +130,9 @@ class Vitdec(config: ConvencConfig, tblen: Int, noTrackBack: Boolean = false, de
 
   }
 
-  io.dataOut.fragment := metrics(0).msb
-
   val debugs = (debug) generate new Area {
     val selectionsOut = out(SelectionType)
-    selectionsOut := selections.reverse.toSeq.asBits()
+    selectionsOut := selectionBits
     val tblenMet = out Bool()
     tblenMet := frameCounter.willOverflow
   }
@@ -122,7 +140,6 @@ class Vitdec(config: ConvencConfig, tblen: Int, noTrackBack: Boolean = false, de
   io.dataOut.valid := frameCounter >= tblen
   io.dataOut.last := False
 }
-
 
 class HammingFromExpected(expected: BigInt, width: Int) extends Component {
   val input = in Bits (width bits)
