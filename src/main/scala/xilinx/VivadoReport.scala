@@ -47,8 +47,8 @@ class VivadoReport(workspacePath: String,
   val BRAM = if (deviceFamily == UltraScale) getIntAfter("Block RAM Tile") else 0
 
   private val targetPeriod = (if (frequencyTarget != null) frequencyTarget else 400 MHz).toTime
-  private val slack = getDoubleBefore("required time - arrival time")
-  val Frequency = 1.0 / (targetPeriod.toDouble - slack * 1e-9)
+  private val slack = getDoubleBefore("required time - arrival time") //
+  val Frequency = 1.0 / (targetPeriod.toDouble - slack * 1e-9) // 1 / (T - WNS)
 
 
   def printArea() = println(s"LUT: ${LUT}\nFF: ${FF}\nDSP: ${DSP}\nBRAM: ${BRAM}\n")

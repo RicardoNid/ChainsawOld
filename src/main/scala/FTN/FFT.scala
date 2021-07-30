@@ -82,13 +82,20 @@ class FFT(input: Vec[Real], inverse: Boolean = false) extends DSPArea[Vec[Real],
   }
 }
 
-class FFTDUT(N: Int, inverse: Boolean) extends DSPDUTTiming[Vec[Real], Vec[Real]] {
+class FFTDUT(N: Int, inverse: Boolean = false) extends DSPDUTTiming[Vec[Real], Vec[Real]] {
+
   override val input: Vec[Real] =
     if (inverse) in(in Vec(Real(-1.5 * N, 2.5 * N, (-15 + log2Up(N)) exp).withRoundingError, N * 2))
     else in Vec(Real(-1.5, 2.5, -15 exp).withRoundingError, N * 2)
   val fft = new FFT(input, inverse)
   override val output: Vec[Real] = out(fft.implicitValue)
   override val timing: TimingInfo = fft.timing
+}
+
+object FFTDUT {
+  def main(args: Array[String]): Unit = {
+    VivadoSynth(new FFTDUT(256))
+  }
 }
 
 

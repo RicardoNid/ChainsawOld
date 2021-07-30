@@ -14,14 +14,11 @@ import spinal.lib.fsm.StateMachine
  * @param config
  */
 class Vitdec(config: ConvencConfig, tblen: Int, noTrackBack: Boolean = false, debug: Boolean = false) extends Component {
-
-  // TODO: currently, we implement for n = 1, hard-coded only, expand this in the future
-  // TODO: leave it as an exercise
-
+  // TODO: currently, we implement for n = 1, hard-coded only, support more complex mode in the future
   import config._
 
   val io = new Bundle {
-    val dataIn = slave Flow Fragment(Bits(m bits))
+    val dataIn = slave Stream Fragment(Bits(m bits))
     val dataOut = master Flow Fragment(Bool())
   }
 
@@ -145,12 +142,14 @@ class Vitdec(config: ConvencConfig, tblen: Int, noTrackBack: Boolean = false, de
     tblenMet := frameCounter.willOverflow
   }
 
-  io.dataOut.last := Delay(io.dataIn.last, ramDepth)
+  io.dataOut.last := Delay(io.dataIn.last, ramDepth, init = False)
   val validReg = RegInit(False)
   when(stackCounter.willOverflow)(validReg.set())
   when(io.dataOut.last)(validReg.clear()) // TODO: find a better way
 
   io.dataOut.valid := validReg
+  io.dataIn.ready := !trailing
+  LatencyAnalysis
 }
 
 class HammingFromExpected(expected: BigInt, width: Int) extends Component {

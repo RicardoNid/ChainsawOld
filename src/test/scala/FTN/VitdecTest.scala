@@ -8,7 +8,9 @@ import scala.collection.mutable.ArrayBuffer
 class VitdecTest extends AnyFunSuite {
 
   test("testViterbi") {
-    val config = ConvencConfig(7, Array(171, 133))
+    val constLen = 7
+    val codeGens = Array(171, 133)
+    val config = ConvencConfig(constLen, codeGens)
     val tblen = config.constLen * 6
     val testCaseLen = tblen * 5
 
@@ -37,20 +39,29 @@ class VitdecTest extends AnyFunSuite {
       // monitor
       val dutResult = ArrayBuffer[Double]()
       fork {
-        if (io.dataOut.valid.toBoolean) {
-          val bit = if (io.dataOut.fragment.toBoolean) 1.0 else 0.0
-          dutResult += bit
+        while (true) {
+          if (io.dataOut.valid.toBoolean) {
+            val bit = if (io.dataOut.fragment.toBoolean) 1.0 else 0.0
+            dutResult += bit
+          }
+          clockDomain.waitSampling()
         }
       }
 
-      testCases.foreach{testCase =>
+      testCases.foreach { testCase =>
         peekAFlow(testCase)
         peekBubble()
-        clockDomain.waitSampling(3 * tblen)
+        clockDomain.waitSampling(4 * tblen)
       }
+      clockDomain.waitSampling()
 
-      val golden = testCases.map(testCase => Algos.vitdec(testCase, config, tblen, verbose = false, debug = false)).flatten
-      assert(dutResult.zip(golden).forall{ case (d, d1) => d == d1})
+      val trellis = MatlabRef.poly2trellis(constLen, codeGens)
+      // verified by Matlab
+      println(dutResult.length)
+      val golden = testCases.map(testCase => MatlabRef.vitdec(testCase, trellis, tblen)).flatten
+      println(dutResult.map(_.toInt).mkString(""))
+      println(golden.map(_.toInt).mkString(""))
+//      assert(dutResult.zip(golden).forall { case (d, d1) => d == d1 })
     }
   }
 }
