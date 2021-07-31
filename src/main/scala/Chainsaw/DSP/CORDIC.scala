@@ -1,12 +1,10 @@
 package Chainsaw.DSP
 
+import Chainsaw._
 import breeze.numerics._
 import spinal.core._
-import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
-import Chainsaw.Real
-import Chainsaw._
 
 object AlgebraicMode extends Enumeration {
   type AlgebraicMode = Value
@@ -28,10 +26,10 @@ object CordicPipe extends Enumeration {
   val MAXIMUM, HALF, NONE = Value
 }
 
-import AlgebraicMode._
-import CordicArch._
-import CordicPipe._
-import RotationMode._
+import Chainsaw.DSP.AlgebraicMode._
+import Chainsaw.DSP.CordicArch._
+import Chainsaw.DSP.CordicPipe._
+import Chainsaw.DSP.RotationMode._
 
 case class CordicConfig(algebricMode: AlgebraicMode, rotationMode: RotationMode,
                         cordicArch: CordicArch = PARALLEL, cordicPipe: CordicPipe = MAXIMUM,

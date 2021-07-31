@@ -3,6 +3,7 @@ package xilinx.dsp48e2
 import Chainsaw._
 import spinal.core._
 import spinal.core.sim._
+import xilinx.dsp48e2.MULTMODE.AD0B1
 
 // ports for cascading
 case class DSPCASC() extends Bundle {
@@ -53,6 +54,7 @@ case class DSPRSTs() extends Bundle {
 class DSP48E2(attrs: DSPAttrs) extends BlackBox {
 
   addGenerics(attrs.generics: _*)
+  println(attrs.AMULTSEL)
 
   val CLK = in Bool()
   // control
@@ -118,7 +120,11 @@ class DSP48E2(attrs: DSPAttrs) extends BlackBox {
     CASCDATAIN.all.foreach(signal => signal := signal.getZero)
   }
 
-  def AD0B1C0(A: SInt, B: SInt, C: SInt, D: SInt): SInt = { // postfix expression, 0 for addition, 1 for multiplication
+  // for symmetric FIR
+  // postfix expression, 0 for addition, 1 for multiplication
+  // AD0B1C0 means (A + D) * B + C
+  def AD0B1C0(A: SInt, B: SInt, C: SInt, D: SInt): SInt = {
+    require(attrs.multMode == AD0B1)
     INST.ALUMODE := B"0000" // result = Z + W + X + Y + CIN
     INST.OPMODE := B"110000101" // W = C, Z = 0, X,Y = M
     INST.CARRYINSEL := B"000" // CIN = CARRYIN
@@ -142,7 +148,7 @@ import xilinx.dsp48e2.MULTMODE._
 
 object SYMFIR {
   def apply(): DSP48E2 = {
-    val ret = new DSP48E2(DSPAttrBuilder().setMult(AD_B).setLatency(4).build)
+    val ret = new DSP48E2(DSPAttrBuilder().setMult(AD0B1).setLatency(4).build)
     ret.preassign()
     ret
   }
@@ -157,7 +163,7 @@ class DSPDUT extends Component {
   val D = in SInt (27 bits)
   val p = out SInt (48 bits)
 
-  val attr = DSPAttrBuilder().setMult(AD_B).setLatency(4).build // Multiplier, latency = 4
+  val attr = DSPAttrBuilder().setMult(AD0B1).setLatency(4).build // Multiplier, latency = 4
   val dsp = SYMFIR()
   p := RegNext(dsp.AD0B1C0(A, B, C, D))
 }
@@ -165,10 +171,9 @@ class DSPDUT extends Component {
 object DSPDUT extends App {
   //  GenRTL(new DSPDUT)
   //
-  //  // FIXME: the problem of glbl.gsr and tristate
+  // FIXME: the problem of glbl.gsr and tristate
+  // FIXME: the problem of #1
   SimConfig.withWave
-    //    .addIncludeDir("src/main/resources")
-    //    .addRtl("src/main/resources/glbl.v")
     .addRtl("src/main/resources/DSP48E2.v")
     .compile(new DSPDUT).doSim { dut =>
     import dut._

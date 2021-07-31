@@ -1,5 +1,12 @@
 package xilinx.dsp48e2
 
+object MULTMODE extends Enumeration {
+  type MULTMODE = Value
+  // postfix expression
+  val AB1, AD0B1, AAD01, AD0AD01 = Value
+}
+import MULTMODE._
+
 class DSPAttrs() {
 
   // cascading strategy
@@ -11,6 +18,7 @@ class DSPAttrs() {
   var AMULTSEL = "A"
   var BMULTSEL = "B"
   var PREADDINSEL = "A"
+  var multMode = AB1
 
   // pipeline strategy
   // stage1 & 2
@@ -32,14 +40,11 @@ class DSPAttrs() {
     "DREG" -> DREG, "ADREG" -> ADREG,
     "INMODEREG" -> INMODEREG, "ALUMODEREG" -> ALUMODEREG, "OPMODEREG" -> OPMODEREG,
     "CARRYINREG" -> CARRYINREG, "CARRYINSELREG" -> CARRYINSELREG,
-    "PREG" -> PREG)
+    "PREG" -> PREG,
+    "AMULTSEL" -> AMULTSEL, "BMULTSEL" -> BMULTSEL, "PREADDINSEL" -> PREADDINSEL, "USE_MULT" -> USE_MULT
+  )
 }
 
-object MULTMODE extends Enumeration {
-  type MULTMODE = Value
-  // _ means *, AB means A + B, _2 means square, the first is 27 bits, the second is 18 bits
-  val A_B, AD_B, A_AD, AD_2 = Value
-}
 
 // builder of DSPAttrs
 class DSPAttrBuilder {
@@ -53,21 +58,21 @@ class DSPAttrBuilder {
     this
   }
 
-  import MULTMODE._
-
   def setMult(multMODE: MULTMODE): DSPAttrBuilder = {
+    USE_MULT = "MULTIPLY"
     multMODE match {
-      case A_B => AMULTSEL = "A"; BMULTSEL = "B"; PREADDINSEL = "A";
-      case AD_B => AMULTSEL = "AD"; BMULTSEL = "B"; PREADDINSEL = "A";
-      case A_AD => AMULTSEL = "A"; BMULTSEL = "AD"; PREADDINSEL = "A";
-      case AD_2 => AMULTSEL = "AD"; BMULTSEL = "AD"; PREADDINSEL = "A";
+      case AB1 => AMULTSEL = "A"; BMULTSEL = "B"; PREADDINSEL = "A";
+      case AD0B1 => AMULTSEL = "AD"; BMULTSEL = "B"; PREADDINSEL = "A";
+      case AAD01 => AMULTSEL = "A"; BMULTSEL = "AD"; PREADDINSEL = "A";
+      case AD0AD01 => AMULTSEL = "AD"; BMULTSEL = "AD"; PREADDINSEL = "A";
     }
+    multMode = multMODE
     this
   }
 
   def setALU() = {}
 
-  // following strategy is available for MAC
+  // FIXME: following strategy is only available for MAC
   def setLatency(latency:Int) = {
     def setStage(stage: Int, set: Boolean) = {
       val value = if (set) 1 else 0
@@ -96,6 +101,13 @@ class DSPAttrBuilder {
       case 4 => Seq(1, 2, 3, 4)
     }
     (1 to 4).foreach(i => if (sets.contains(i)) setStage(i, true) else setStage(i, false))
+
+    latency match {
+      case 4 => AREG = 2; ACASCREG = 2; BREG = 2; BCASCREG = 2;
+      case 3 => AREG = 1; ACASCREG = 1; BREG = 1; BCASCREG = 1;
+      case _ => AREG = 0; ACASCREG = 0; BREG = 0; BCASCREG = 0;
+    }
+
     this
   }
 

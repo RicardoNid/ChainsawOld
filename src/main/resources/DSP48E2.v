@@ -341,7 +341,7 @@ module DSP48E2 #(
   wire [4:0] INMODE_in;
   wire [8:0] OPMODE_in;
 
-  assign ACIN_in = ACIN;
+//  assign ACIN_in = ACIN;
 //  assign ALUMODE_in[0] = (ALUMODE[0] !== 1'bz) && (ALUMODE[0] ^ IS_ALUMODE_INVERTED_REG[0]); // rv 0
 //  assign ALUMODE_in[1] = (ALUMODE[1] !== 1'bz) && (ALUMODE[1] ^ IS_ALUMODE_INVERTED_REG[1]); // rv 0
 //  assign ALUMODE_in[2] = (ALUMODE[2] !== 1'bz) && (ALUMODE[2] ^ IS_ALUMODE_INVERTED_REG[2]); // rv 0
@@ -517,6 +517,7 @@ module DSP48E2 #(
 //  assign RSTP_in = (RSTP !== 1'bz) && (RSTP ^ IS_RSTP_INVERTED_REG); // rv 0
 
 // change the tri-state
+  assign ACIN_in = ACIN;
   assign ALUMODE_in[0] =  (ALUMODE[0] ^ IS_ALUMODE_INVERTED_REG[0]); // rv 0
   assign ALUMODE_in[1] =  (ALUMODE[1] ^ IS_ALUMODE_INVERTED_REG[1]); // rv 0
   assign ALUMODE_in[2] =  (ALUMODE[2] ^ IS_ALUMODE_INVERTED_REG[2]); // rv 0

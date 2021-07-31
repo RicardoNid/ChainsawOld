@@ -83,4 +83,30 @@ package object matlabIO {
   implicit class MatlabArray2[T](array: Seq[Seq[T]]) {
     def asMatlab = "[" + array.map(_.mkString(", ")).mkString("; ") + "]"
   }
+
+  val epsilon = 1e-4
+
+  implicit class ComplexUtil(complex: MComplex) {
+    def *(that: MComplex) = new MComplex(
+      complex.real * that.real - complex.imag * complex.imag,
+      complex.real * that.imag + complex.imag * that.real)
+
+    def +(that: MComplex) = new MComplex(
+      complex.real + that.real,
+      complex.imag - that.imag
+    )
+
+    def -(that: MComplex) = new MComplex(
+      complex.real - that.real,
+      complex.imag - that.imag
+    )
+
+    def sameAs(that: MComplex) =
+      (complex.real - that.real).abs < epsilon &&
+        (complex.imag - that.imag).abs < epsilon
+
+    def conj = new MComplex(complex.real, -complex.imag)
+
+    def unary_- = new MComplex(-complex.real, -complex.imag)
+  }
 }

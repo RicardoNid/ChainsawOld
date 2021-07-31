@@ -1,4 +1,4 @@
-package Chainsaw.DSP
+package Chainsaw.DSP.FFT
 
 import spinal.core._
 import Chainsaw.Real

@@ -12,7 +12,5 @@ import java.time.Duration
 
 object Draft {
   def main(args: Array[String]): Unit = {
-
-
   }
 }

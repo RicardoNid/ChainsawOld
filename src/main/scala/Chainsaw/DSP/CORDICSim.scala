@@ -1,24 +1,7 @@
 package Chainsaw.DSP
 
-import Chainsaw.DSP.AlgebraicMode._
-import Chainsaw.DSP.CordicArch._
-import Chainsaw.DSP.RotationMode._
-import Chainsaw.{DSPSimTiming, Double2Fix, Fix2Double, TimingInfo, ChainsawDebug, sameFixedSeq}
-import breeze.numerics._
-import breeze.numerics.constants.Pi
+import Chainsaw.{TimingInfo, _}
 import spinal.core._
-import spinal.core.sim._
-import spinal.lib.{Delay, Flow, master, slave}
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.sim._
-import spinal.lib.fsm._
-
-import Chainsaw._
-import Chainsaw.Real
-
-import scala.util.Random
 
 case class CordicSimData(x: Double, y: Double, z: Double) {
   override def toString: String = s"x: $x, y: $y, z: $z"
