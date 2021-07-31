@@ -7,6 +7,7 @@ import org.jgrapht.nio.dot.{DOTExporter, DOTImporter}
 import java.io.{StringReader, StringWriter}
 import scala.collection.JavaConversions._
 
+// SFG which contains binary operators only
 class BinarySFG extends DirectedMultigraph[Int, DefaultEdge](classOf[DefaultEdge]) {
 
   def copy = this.clone().asInstanceOf[BinarySFG]
