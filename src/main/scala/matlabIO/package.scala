@@ -88,7 +88,7 @@ package object matlabIO {
 
   implicit class ComplexUtil(complex: MComplex) {
     def *(that: MComplex) = new MComplex(
-      complex.real * that.real - complex.imag * complex.imag,
+      complex.real * that.real - complex.imag * that.imag,
       complex.real * that.imag + complex.imag * that.real)
 
     def +(that: MComplex) = new MComplex(
