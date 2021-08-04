@@ -2,85 +2,80 @@ package FTN
 
 import Chainsaw._
 import spinal.core._
-import spinal.core.sim._
 import spinal.lib._
-import matlabIO._
 
-import scala.collection.mutable.ArrayBuffer
+/** High-throughput interlever that implements matrix interleaving
+ * @param row
+ * @param col
+ * for matrix interleaver, the de-interleaver is an interleaver that exchange the original row and col
+ * @param parallelFactor bits number per cycle, determines the throughput
+ * @param forward
+ */
+case class Interleaver(row: Int, col: Int, parallelFactor: Int) extends Component {
 
-class Interleaver() extends Component {
-
-  val run = in Bool()
+  val running = in Bool()
   val we = in Bool()
 
-  val dataIn = in Bits (4 bits)
-  val dataOut = out Bits (4 bits)
+  val dataIn = in Bits (parallelFactor bits)
+  val dataOut = out Bits (parallelFactor bits)
 
-  val rams = Seq.fill(4)(Mem(Bits(1 bits), 4)) // mapped to 32 RAM32M16, each consumes 8 LUTs
-  val count = Counter(4, inc = run)
+  require(
+    Seq(parallelFactor, row, col).forall(isPow2(_)) && // this can be removed if shifter works
+      parallelFactor >= (row max col) &&
+      parallelFactor % row == 0 &&
+      parallelFactor % col == 0 &&
+      (row * col) % parallelFactor == 0)
 
-  val dataInShifted: Bits = dataIn.rotateRight(count.value)
-  val dataInPacked: Vec[Bits] = dataInShifted.subdivideIn(4 slices)
+  val packSize = (parallelFactor / row) * (parallelFactor / col) // (intersection size of input and output)
+  def packType = Bits(packSize bits)
+  val squareSize = parallelFactor / packSize
 
-  val outputAddresses = Vec(Reg(UInt(log2Up(4) bits)), 4)
-  outputAddresses.zipWithIndex.foreach { case (addr, i) => addr.init(i) }
+  val rams = Seq.fill(squareSize)(Mem(packType, squareSize))
+  val count = Counter(squareSize, inc = running)
 
-  val dataOutPacked = Vec(Bits(1 bits), 4)
-  val dataOutShifted = dataOutPacked.reverse.asBits.rotateLeft(count.value)
+  // wiring dataIn
+  val dataInRearranged = cloneOf(dataIn)
+  (0 until parallelFactor).foreach { i =>
+    val bitId = parallelFactor - 1 - i
+    val mapped = (i % (parallelFactor / col)) * col + i / (parallelFactor / col)
+    val mappedBitId = parallelFactor - 1 - mapped
+    dataInRearranged(bitId) := dataIn(mappedBitId)
+  }
+  val dataInShifted: Bits = dataInRearranged.rotateRight(count.value << log2Up(packSize))
+  val dataInPacked = dataInShifted.subdivideIn(squareSize slices).reverse // dataInPacked(0) holds the MSBs
 
-  dataOutPacked.foreach(_.clearAll())
-  when(run) {
+  val dataUnpacked = Bits(parallelFactor bits)
+  dataUnpacked.clearAll()
+
+  // square interleave
+  val outputAddresses = Vec(Reg(UInt(log2Up(squareSize) bits)), squareSize)
+  outputAddresses.zipWithIndex.foreach { case (addr, i) => addr.init(i) } //
+  when(running) {
     when(we) {
-      (0 until 4).foreach(i => rams(3 - i)(count.value) := dataInPacked(i))
+      rams.zip(dataInPacked).foreach { case (ram, data) => ram(count.value) := data } // ram(0) holds theMSBs
     }.otherwise {
-      (0 until 4).foreach(i => dataOutPacked(i) := rams(i).readAsync(outputAddresses(i)))
+      dataUnpacked := rams.zip(outputAddresses).map { case (ram, addr) => ram.readAsync(addr) }.reverse.asBits()
       outputAddresses.zip(outputAddresses.tail :+ outputAddresses.head).foreach { case (left, right) => right := left }
     }
   }
 
-  dataOut := dataOutShifted
+  val dataOutShifted = dataUnpacked.rotateLeft(count.value << 2)
+
+  // wiring dataOut
+  (0 until parallelFactor).foreach { i =>
+    val bitId = parallelFactor - 1 - i
+
+    val packId = i / packSize
+    val rowId = packId * (parallelFactor / col) + i % (parallelFactor / col)
+    val colId = i % packSize / (parallelFactor / col)
+
+    val mapped = colId * row + rowId
+    val mappedBitId = parallelFactor - 1 - mapped
+    dataOut(mappedBitId) := dataOutShifted(bitId)
+  }
 }
 
 object Interleaver extends App {
-  GenRTL(new Interleaver)
-  SimConfig.withWave.compile(new Interleaver).doSim { dut =>
-    import dut._
-
-    val eng = AsyncEng.get()
-    clockDomain.forkStimulus(2)
-
-    run #= false
-    we #= false
-    clockDomain.waitSampling()
-
-    val inputBlock = ArrayBuffer[Int]()
-    val outputBlock = ArrayBuffer[Int]()
-
-    (0 until 4).foreach { i =>
-      run #= true
-      val input = DSPRand.nextInt(16)
-      dataIn #=  input
-      inputBlock ++= input.toBinaryString.padToLeft(4, '0').map(_.asDigit)
-      we #= true
-      clockDomain.waitSampling()
-    }
-
-    (0 until 4).foreach { i =>
-      run #= true
-      we #= false
-      clockDomain.waitSampling()
-      outputBlock ++= dataOut.toBigInt.toString(2).padToLeft(4, '0').map(_.asDigit)
-    }
-
-    println(inputBlock.grouped(4).toArray.map(_.mkString("")).mkString("\n"))
-    printlnGreen("golden")
-    val golden = eng.feval[Array[Int]]("matintrlv", inputBlock.toArray, Array(4), Array(4))
-    println(golden.grouped(4).toArray.map(_.mkString("")).mkString("\n"))
-    printlnGreen("yours")
-    val yours = outputBlock
-    println(outputBlock.grouped(4).toArray.map(_.mkString("")).mkString("\n"))
-
-    assert(golden.mkString("") == yours.mkString(""))
-  }
-  //  VivadoSynth(new Interleaver)
+    VivadoSynth(new Interleaver(32,128,128), name = "Interleaver")
+    VivadoSynth(new Interleaver(128,32,128), name = "DeInterleaver")
 }
