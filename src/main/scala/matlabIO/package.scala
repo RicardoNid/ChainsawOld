@@ -107,6 +107,8 @@ package object matlabIO {
 
     def conj = new MComplex(complex.real, -complex.imag)
 
+    def modulus = scala.math.sqrt(complex.real * complex.real + complex.imag * complex.imag)
+
     def unary_- = new MComplex(-complex.real, -complex.imag)
   }
 }

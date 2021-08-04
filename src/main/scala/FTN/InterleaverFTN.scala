@@ -5,13 +5,14 @@ import spinal.core._
 import spinal.lib._
 
 /** High-throughput interlever that implements matrix interleaving
+ *
  * @param row
  * @param col
- * for matrix interleaver, the de-interleaver is an interleaver that exchange the original row and col
+ *                       for matrix interleaver, the de-interleaver is an interleaver that exchange the original row and col
  * @param parallelFactor bits number per cycle, determines the throughput
  * @param forward
  */
-case class Interleaver(row: Int, col: Int, parallelFactor: Int) extends Component {
+case class InterleaverFTN(row: Int, col: Int, parallelFactor: Int) extends Component {
 
   val running = in Bool()
   val we = in Bool()
@@ -26,7 +27,9 @@ case class Interleaver(row: Int, col: Int, parallelFactor: Int) extends Componen
       parallelFactor % col == 0 &&
       (row * col) % parallelFactor == 0)
 
-  val packSize = (parallelFactor / row) * (parallelFactor / col) // (intersection size of input and output)
+  val packRow = parallelFactor / col
+  val packCol = parallelFactor / row
+  val packSize = packRow * packCol // (intersection size of input and output)
   def packType = Bits(packSize bits)
   val squareSize = parallelFactor / packSize
 
@@ -34,13 +37,15 @@ case class Interleaver(row: Int, col: Int, parallelFactor: Int) extends Componen
   val count = Counter(squareSize, inc = running)
 
   // wiring dataIn
+  // TODO: examine the logic cost of this part
   val dataInRearranged = cloneOf(dataIn)
   (0 until parallelFactor).foreach { i =>
     val bitId = parallelFactor - 1 - i
-    val mapped = (i % (parallelFactor / col)) * col + i / (parallelFactor / col)
+    val mapped = (i % packRow) * col + i / packRow
     val mappedBitId = parallelFactor - 1 - mapped
     dataInRearranged(bitId) := dataIn(mappedBitId)
   }
+
   val dataInShifted: Bits = dataInRearranged.rotateRight(count.value << log2Up(packSize))
   val dataInPacked = dataInShifted.subdivideIn(squareSize slices).reverse // dataInPacked(0) holds the MSBs
 
@@ -48,6 +53,8 @@ case class Interleaver(row: Int, col: Int, parallelFactor: Int) extends Componen
   dataUnpacked.clearAll()
 
   // square interleave
+  // TODO: extract this as a module and optimize it
+  printlnGreen(s"build a $squareSize * $squareSize virtual array, using $squareSize RAMs for interleaving")
   val outputAddresses = Vec(Reg(UInt(log2Up(squareSize) bits)), squareSize)
   outputAddresses.zipWithIndex.foreach { case (addr, i) => addr.init(i) } //
   when(running) {
@@ -59,15 +66,15 @@ case class Interleaver(row: Int, col: Int, parallelFactor: Int) extends Componen
     }
   }
 
-  val dataOutShifted = dataUnpacked.rotateLeft(count.value << 2)
+  val dataOutShifted = dataUnpacked.rotateLeft(count.value << log2Up(packSize))
 
   // wiring dataOut
   (0 until parallelFactor).foreach { i =>
     val bitId = parallelFactor - 1 - i
 
     val packId = i / packSize
-    val rowId = packId * (parallelFactor / col) + i % (parallelFactor / col)
-    val colId = i % packSize / (parallelFactor / col)
+    val rowId = packId * packRow + i % packRow
+    val colId = i % packSize / packRow
 
     val mapped = colId * row + rowId
     val mappedBitId = parallelFactor - 1 - mapped
@@ -75,7 +82,7 @@ case class Interleaver(row: Int, col: Int, parallelFactor: Int) extends Componen
   }
 }
 
-object Interleaver extends App {
-    VivadoSynth(new Interleaver(32,128,128), name = "Interleaver")
-    VivadoSynth(new Interleaver(128,32,128), name = "DeInterleaver")
+object InterleaverFTN extends App {
+  VivadoSynth(new InterleaverFTN(32, 128, 128), name = "Interleaver")
+  VivadoSynth(new InterleaverFTN(128, 32, 128), name = "DeInterleaver")
 }

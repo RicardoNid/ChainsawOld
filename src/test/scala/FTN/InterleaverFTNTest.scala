@@ -8,9 +8,9 @@ import spinal.core.sim._
 
 import scala.collection.mutable.ArrayBuffer
 
-class InterleaverTest extends AnyFunSuite {
+class InterleaverFTNTest extends AnyFunSuite {
   test("testInterleaver for FTN") {
-    SimConfig.withWave.compile(new Interleaver(16, 16, 32)).doSim { dut =>
+    SimConfig.withWave.compile(new InterleaverFTN(32, 128, 256)).doSim { dut =>
       import dut._
 
       val eng = AsyncEng.get()
@@ -20,19 +20,19 @@ class InterleaverTest extends AnyFunSuite {
       we #= false
       clockDomain.waitSampling()
 
-      val inputBlock = ArrayBuffer[Int]()
-      val outputBlock = ArrayBuffer[Int]()
-
       val latency = row * col / parallelFactor
+      val inputs = (0 until latency).map { _ =>
+        val bytes = Array.fill(parallelFactor / 8)(1.toByte)
+        DSPRand.nextBytes(bytes)
+        BigInt(bytes).abs
+      }
+      val inputFlatten = inputs.map(_.toString(2).padToLeft(parallelFactor, '0').map(_.asDigit)).flatten
+      val outputFlatten = ArrayBuffer[Int]()
+
       (0 until latency).foreach { i =>
         running #= true
         we #= true
-        val bytes = Array.fill(parallelFactor / 8)(1.toByte)
-        DSPRand.nextBytes(bytes)
-        val input = BigInt(bytes).abs
-        dataIn #= input
-        inputBlock ++= input.toString(2).padToLeft(parallelFactor, '0').map(_.asDigit)
-
+        dataIn #= inputs(i)
         clockDomain.waitSampling()
       }
 
@@ -40,20 +40,20 @@ class InterleaverTest extends AnyFunSuite {
         running #= true
         we #= false
         clockDomain.waitSampling()
-        outputBlock ++= dataOut.toBigInt.toString(2).padToLeft(parallelFactor, '0').map(_.asDigit)
+        outputFlatten ++= dataOut.toBigInt.toString(2).padToLeft(parallelFactor, '0').map(_.asDigit)
       }
 
       // reference model
-      val golden = eng.feval[Array[Int]]("matintrlv", inputBlock.toArray, Array(row), Array(col))
-      val yours = outputBlock
+      val golden = eng.feval[Array[Int]]("matintrlv", inputFlatten.toArray, Array(row), Array(col))
+      val yours = outputFlatten
 
       println(golden.mkString(""))
       println(yours.mkString(""))
-      printlnGreen("I/O at the first cycle")
+      printlnGreen("first cycle of I/O ")
       println(golden.take(parallelFactor).mkString(""))
       println(yours.take(parallelFactor).mkString(""))
 
-      golden.grouped(parallelFactor).zip(outputBlock.grouped(parallelFactor)).zipWithIndex
+      golden.grouped(parallelFactor).zip(outputFlatten.grouped(parallelFactor)).zipWithIndex
         .foreach { case ((ints, ints1), i) => if (ints.sum != ints1.sum) println(s"${ints.sum}, ${ints1.sum}, $i") }
 
       assert(golden.mkString("") == yours.mkString(""))
