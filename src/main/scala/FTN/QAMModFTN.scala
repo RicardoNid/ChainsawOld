@@ -4,16 +4,16 @@ import Chainsaw._
 import matlabIO._
 import spinal.core._
 
-case class QAMModFTN(bitAlloc: Array[Int]) extends Component {
+case class QAMModFTN(bitAlloc: Array[Int], resolution: Int) extends Component {
 
+  val wordWidth = 1 + 1 - resolution
   val bitAllocatedMax = bitAlloc.max
   val parallelFactor = bitAlloc.length
 
   val dataIn = in Bits (bitAlloc.sum bits)
-  val dataOut = out Vec(Bits(12 bits), parallelFactor)
+  val dataOut = out Vec(Bits(wordWidth * 2 bits), parallelFactor) // each one is a complex number
 
-  // TODO: avoid high fan-out
-  val eng = AsyncEng.get()
+  val eng = AsyncEng.get() // TODO: decouple with matlab
 
   val QAMValues: Seq[Seq[MComplex]] = (1 to bitAllocatedMax).map { i => // Normalization done here
     val M = 1 << i
@@ -31,8 +31,9 @@ case class QAMModFTN(bitAlloc: Array[Int]) extends Component {
   println(QAMValues.map(_.mkString(" ")).mkString("\n"))
 
   // TODO: merge them together
-  val QAMROMReals = QAMValues.map(values => Mem(values.map(complex => SF(complex.real, 1 exp, 6 bits))))
-  val QAMROMImags = QAMValues.map(values => Mem(values.map(complex => SF(complex.imag, 1 exp, 6 bits))))
+  printlnGreen(resolution)
+  val QAMROMReals = QAMValues.map(values => Mem(values.map(complex => SF(complex.real, 1 exp, resolution exp))))
+  val QAMROMImags = QAMValues.map(values => Mem(values.map(complex => SF(complex.imag, 1 exp, resolution exp))))
 
   val ends = (0 until parallelFactor).map(i => bitAlloc.take(i + 1).sum)
   val starts = 0 +: ends.init
@@ -52,6 +53,6 @@ case class QAMModFTN(bitAlloc: Array[Int]) extends Component {
 
 object QAMModFTN extends App {
   val originalAllocation = Array.fill(128)(4)
-  GenRTL(new QAMModFTN(originalAllocation))
-  VivadoSynth(new QAMModFTN(originalAllocation), name = "QAM")
+  GenRTL(new QAMModFTN(originalAllocation, -6))
+  VivadoSynth(new QAMModFTN(originalAllocation, -6), name = "QAM")
 }
