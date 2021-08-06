@@ -113,6 +113,26 @@ package object Chainsaw extends RealFactory {
     }
   }
 
+  implicit class SimSFixPimper(sf: SFix){
+    import sf._
+
+    def #=(value: BigDecimal): Unit = {
+      assert(value <= maxValue, s"Literal $value is too big to be assigned in $this")
+      assert(value >= minValue, s"Literal $value is too small to be assigned in this $this")
+
+      val shift = -minExp
+      val ret = if (shift >= 0) // ret this is the "binary string" of value at specific precision
+        (value * BigDecimal(BigInt(1) << shift)).toBigInt
+      else
+        (value / BigDecimal(BigInt(1) << -shift)).toBigInt
+      setLong(raw, ret.toLong)
+    }
+
+    def #=(value: Double): Unit = #=(BigDecimal(value))
+
+    def toDouble() = raw.toBigInt.toDouble / (1 << -minExp)
+  }
+
   implicit class SimRealPimper(r: Real) {
 
     import r._

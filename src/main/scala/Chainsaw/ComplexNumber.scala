@@ -8,7 +8,7 @@ import spinal.core._
  * @param R real part of the complex number
  * @param I imaginary part of the complex number
  */
-class ComplexNumber(R: SFix, I: SFix) extends Bundle {
+case class ComplexNumber(R: SFix, I: SFix) extends Bundle {
   val real: SFix = R
   val imag: SFix = I
 
@@ -17,12 +17,34 @@ class ComplexNumber(R: SFix, I: SFix) extends Bundle {
   def -(that: ComplexNumber): ComplexNumber = ComplexNumber(real - that.real, imag - that.imag)
 
   // ALGO: 6.10
-  def *(that: ComplexNumber): ComplexNumber = {
-    val E = real - imag
-    val Z = that.real * E
-    val R = ((that.real - that.imag) * imag + Z).truncated
-    val I = ((that.real + that.imag) * real - Z).truncated
-    ComplexNumber(R, I)
+  def *(that: ComplexNumber)(implicit pipelined: Boolean = false): ComplexNumber = {
+
+    // original, directly from algo 6.10
+    //        val E = real - imag
+    //        val Z = that.real * E
+    //        val R = ((that.real - that.imag) * imag + Z).truncated
+    //        val I = ((that.real + that.imag) * real - Z).truncated
+
+    // improved, using more variables for pipelining
+    // stage 0
+    val A = that.real + that.imag
+    val B = real - imag
+    val C = that.real - that.imag
+    // stage 1
+    val D = A * real
+    val E = that.real * B
+    val F = imag * C
+    val delayedDEF = if (pipelined) Seq(D, E, F).map(RegNext(_)) else Seq(D, E, F) // retiming
+    val D1 = delayedDEF(0)
+    val E1 = delayedDEF(1)
+    val F1 = delayedDEF(2)
+    // stage 2
+    val I = (D1 - E1).truncated
+    val R = (E1 + F1).truncated
+    val R1 = if(pipelined) RegNext(R) else R
+    val I1 = if(pipelined) RegNext(I) else I
+
+    ComplexNumber(R1, I1)
   }
 
   // * i
@@ -37,14 +59,6 @@ object ComplexNumber {
 
   private val zero = globalType
   zero := 0.0
-
-  def apply(): Unit = {
-
-  }
-
-  def apply(R: SFix = zero, I: SFix = zero): ComplexNumber = {
-    new ComplexNumber(R, I)
-  }
 
   def apply(R: Double, I: Double) = {
     val real, imag = globalType
