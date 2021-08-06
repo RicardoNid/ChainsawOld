@@ -4,7 +4,8 @@ import Chainsaw._
 import matlabIO._
 import spinal.core._
 
-case class QAMModFTN(bitAlloc: Array[Int], resolution: Int) extends Component {
+// TODO: change this to be dynamic
+case class QammodFTN(bitAlloc: Array[Int], resolution: Int) extends Component {
 
   val wordWidth = 1 + 1 - resolution
   val bitAllocatedMax = bitAlloc.max
@@ -51,8 +52,8 @@ case class QAMModFTN(bitAlloc: Array[Int], resolution: Int) extends Component {
   }
 }
 
-object QAMModFTN extends App {
+object QammodFTN extends App {
   val originalAllocation = Array.fill(128)(4)
-  GenRTL(new QAMModFTN(originalAllocation, -6))
-  VivadoSynth(new QAMModFTN(originalAllocation, -6), name = "QAM")
+  GenRTL(new QammodFTN(originalAllocation, -6))
+  VivadoSynth(new QammodFTN(originalAllocation, -6), name = "QAM")
 }

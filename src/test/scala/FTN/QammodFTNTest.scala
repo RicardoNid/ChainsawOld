@@ -1,19 +1,11 @@
 package FTN
 
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.sim._
-import spinal.lib.fsm._
-
 import Chainsaw._
-import Chainsaw.Real
-
 import matlabIO._
-
 import org.scalatest.funsuite.AnyFunSuite
+import spinal.core.sim._
 
-class QAMModFTNTest extends AnyFunSuite {
+class QammodFTNTest extends AnyFunSuite {
 
   test("test qammod for FTN") {
     // 1. for fixed allocated Bits
@@ -21,7 +13,7 @@ class QAMModFTNTest extends AnyFunSuite {
     val bitAllocated = 4
     val bitAlloc = Array.fill(parallelFactor)(bitAllocated)
 
-    SimConfig.withWave.compile(new QAMModFTN(bitAlloc, -10)).doSim { dut =>
+    SimConfig.withWave.compile(new QammodFTN(bitAlloc, -10)).doSim { dut =>
 
       val bytes = Array.fill(bitAlloc.sum / 8)(1.toByte)
       DSPRand.nextBytes(bytes)

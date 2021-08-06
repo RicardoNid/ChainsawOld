@@ -11,6 +11,21 @@ import Chainsaw.Real
 
 import matlabIO._
 
-class Tx extends Component {
+class Tx(parallelFactor: Int) extends Component {
+  val dataIn = Bits(parallelFactor bits)
 
+  val convencConfig = ConvencConfig(7, Array(171, 133))
+  val convencFTN = ConvencFTN(convencConfig, parallelFactor)
+
+  convencFTN.dataIn := dataIn
+  val coded = convencFTN.dataOut
+
+  val interleaverFTN = InterleaverFTN(32, 128, parallelFactor * 2)
+  interleaverFTN.dataIn := coded
+  val interleaved = interleaverFTN.dataOut
+
+  val bitAlloc = Array.fill(parallelFactor)(4)
+  val qammodFTN = QammodFTN(bitAlloc, parallelFactor)
+  qammodFTN.dataIn := interleaved
+  val dataOut = qammodFTN.dataOut
 }

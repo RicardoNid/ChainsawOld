@@ -42,16 +42,17 @@ class InterleaverFTNTest extends AnyFunSuite {
         clockDomain.waitSampling()
         outputFlatten ++= dataOut.toBigInt.toString(2).padToLeft(parallelFactor, '0').map(_.asDigit)
       }
+      val yours = outputFlatten
 
       // reference model
       val golden = eng.feval[Array[Int]]("matintrlv", inputFlatten.toArray, Array(row), Array(col))
-      val yours = outputFlatten
 
-      println(golden.mkString(""))
-      println(yours.mkString(""))
+
+      println("golden: " + toWordsHexString(BigInt(golden.mkString(""), 2), parallelFactor, latency * parallelFactor / parallelFactor))
+      println("yours:  " + toWordsHexString(BigInt(yours.mkString(""), 2), parallelFactor, latency * parallelFactor / parallelFactor))
       printlnGreen("first cycle of I/O ")
-      println(golden.take(parallelFactor).mkString(""))
-      println(yours.take(parallelFactor).mkString(""))
+      println("golden: " +toWordsHexString(BigInt(golden.take(parallelFactor).mkString(""), 2), parallelFactor, 1))
+      println("yours:  " +toWordsHexString(BigInt(yours.take(parallelFactor).mkString(""), 2), parallelFactor, 1))
 
       golden.grouped(parallelFactor).zip(outputFlatten.grouped(parallelFactor)).zipWithIndex
         .foreach { case ((ints, ints1), i) => if (ints.sum != ints1.sum) println(s"${ints.sum}, ${ints1.sum}, $i") }

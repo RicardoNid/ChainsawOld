@@ -3,6 +3,7 @@ package Chainsaw
 import spinal.core._
 
 // TODO: extend this from Data
+
 /**
  * @param R real part of the complex number
  * @param I imaginary part of the complex number
@@ -23,6 +24,10 @@ class ComplexNumber(R: SFix, I: SFix) extends Bundle {
     val I = ((that.real + that.imag) * real - Z).truncated
     ComplexNumber(R, I)
   }
+
+  // * i
+  // TODO: verify whether 0 - imag has bad effect or not
+  def multiplyI = ComplexNumber(imag.getZero - imag, real)
 
   // TODO: deprecate after extending ComplexNumber from Data
   def tap: ComplexNumber = ComplexNumber(RegNext(real), RegNext(imag))

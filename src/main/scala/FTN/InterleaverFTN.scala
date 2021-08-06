@@ -6,8 +6,8 @@ import spinal.lib._
 
 /** High-throughput interlever that implements matrix interleaving
  *
- * @param row
- * @param col
+ * @param row            the semantic is the same as row of Matlab matintrlv
+ * @param col            the semantic is the same as row of Matlab matintrlv
  *                       for matrix interleaver, the de-interleaver is an interleaver that exchange the original row and col
  * @param parallelFactor bits number per cycle, determines the throughput
  * @param forward
@@ -83,6 +83,6 @@ case class InterleaverFTN(row: Int, col: Int, parallelFactor: Int) extends Compo
 }
 
 object InterleaverFTN extends App {
-  VivadoSynth(new InterleaverFTN(32, 128, 128), name = "Interleaver")
-  VivadoSynth(new InterleaverFTN(128, 32, 128), name = "DeInterleaver")
+  VivadoSynth(new InterleaverFTN(32, 128, 256), name = "Interleaver")
+  //  VivadoSynth(new InterleaverFTN(128, 32, 128), name = "DeInterleaver")
 }

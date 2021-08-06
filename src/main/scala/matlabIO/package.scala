@@ -93,7 +93,7 @@ package object matlabIO {
 
     def +(that: MComplex) = new MComplex(
       complex.real + that.real,
-      complex.imag - that.imag
+      complex.imag + that.imag
     )
 
     def -(that: MComplex) = new MComplex(
