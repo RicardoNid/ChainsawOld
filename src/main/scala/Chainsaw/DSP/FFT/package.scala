@@ -26,7 +26,7 @@ package object FFT {
   }
   def WNnk(N: Int, n: Int, k: Int): MComplex = WNnk(N, n * k)
 
-  // in fact, it is a radix-r builder, "butterfly" can be replaced by radix-r DFT
+  // build radix-r Cooley-Tukey FFT by the "block" and "parallel line" given
   def radixRBuilder[T](input: Seq[T], radix: Int, block: Seq[T] => Seq[T], parallelLine: Seq[T] => Seq[T]): Seq[T] = {
     val N = input.size
     require(isPow2(N))
@@ -48,6 +48,42 @@ package object FFT {
     }
     recursiveBuild(input)
   }
+
+
+  // build radix-r Cooley-Tukey FFT by the "block" and "parallel line" given
+  def cooleyTukeyBuilder[T](input: Seq[T], factors: Seq[Int], block: Seq[T] => Seq[T], parallelLines: (Seq[Seq[T]], Int, Int) => Seq[Seq[T]]): Seq[T] = {
+    def recursiveBuild(input: Seq[T], factors: Seq[Int]): Seq[T] = {
+      if (factors.size == 1) block(input)
+      else {
+        val N1 = factors.head
+        val N2 = input.size / N1
+
+        val input2D = Seq.tabulate(N2, N1)((n2, n1) => input(N2 * n1 + n2)) // 2D, each segment in a row
+        val afterBlock = input2D.map(block)
+        val afterParallel = parallelLines(afterBlock, N1, N2)
+        val input2DForRecursion = Seq.tabulate(N1, N2)((k1, n2) => afterParallel(n2)(k1))
+        val afterRecursion = input2DForRecursion.map(recursiveBuild(_, factors.tail))
+        val ret = Seq.tabulate(N2, N1)((k2, k1) => afterRecursion(k1)(k2)).flatten
+        ret
+      }
+    }
+    recursiveBuild(input, factors)
+  }
+
+  def cooleyTukeyCoeff(N1: Int, N2: Int) = Seq.tabulate(N2, N1)((n2, k1) => WNnk(N1 * N2, n2 * k1))
+
+  def ctFFT(input: Seq[MComplex]) = {
+    def factors = Seq(3,5,5)
+    def block(input: Seq[MComplex]) = eng.feval[Array[MComplex]]("fft", input.toArray).toSeq
+    def parallel(input: Seq[Seq[MComplex]], N1: Int, N2: Int) = {
+      input.zip(cooleyTukeyCoeff(N1, N2))
+        .map { case (complexes, complexes1) => complexes.zip(complexes1)
+          .map { case (complex, complex1) => complex * complex1 }
+        }
+    }
+    cooleyTukeyBuilder(input, factors, block, parallel)
+  }
+
 
   def digitReverse(input: Int, radix: Int, bitLength: Int): Int = {
     require(isPow2(radix))
