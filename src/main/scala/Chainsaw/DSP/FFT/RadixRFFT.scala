@@ -3,27 +3,28 @@ package Chainsaw.DSP.FFT
 import Chainsaw._
 import matlabIO._
 import spinal.core._
-import spinal.lib.Delay
+import spinal.lib._
 
-case class RadixRFFT(N: Int, wordWidth: Int) extends Component {
-  val peak = log2Up(N)
-  val resolution = -(wordWidth - 1 - peak)
-  def fixType() = SFix(peak exp, resolution exp)
-  val dataIn = in Vec(fixType(), 2 * N) // complex number stored in bits
-  val dataOut = out Vec(fixType(), 2 * N) // complex number stored in bits
+case class RadixRFFT(N: Int) extends Component {
+
+  val radix = 4
+  def isPowR(input: Int): Boolean = if (input == radix) true else isPowR(input / radix)
+
+  val dataWidth = 16
+  val coeffWidth = 16
+
+  val peak = log2Up(N) / 2
+  val resolution = -(dataWidth - 1 - peak)
+  def dataType() = SFix(peak exp, resolution exp)
+  def coeffType() = SFix(1 exp, -(coeffWidth - 2) exp)
+
+  val dataIn = in Vec(dataType(), 2 * N) // complex number stored in bits
+  val dataOut = out Vec(dataType(), 2 * N) // complex number stored in bits
   val dataInComplex = (0 until N).indices.map(i => ComplexNumber(dataIn(2 * i), dataIn(2 * i + 1)))
 
-  def toSFix: BigDecimal => SFix =
-    SF(_, peak exp, resolution exp)
+  def toSFix: BigDecimal => SFix = SF(_, 1 exp, -(coeffWidth - 2) exp)
 
   def DFT4(input: Seq[ComplexNumber]): Seq[ComplexNumber] = {
-    //    Seq(
-    //      input.reduce(_ + _),
-    //      input(0) - input(2) + (input(3) - input(1)).multiplyI,
-    //      input(0) + input(2) - input(1) - input(3),
-    //      input(0) - input(2) + (input(1) - input(3)).multiplyI
-    //    ).map(RegNext(_))
-
     val A = RegNext(input(0) + input(2))
     val B = RegNext(input(1) + input(3))
     val C = RegNext(input(0) - input(2))
@@ -47,13 +48,15 @@ case class RadixRFFT(N: Int, wordWidth: Int) extends Component {
           if (pipelined) Delay(data, 2) else data
         }
         else {
-          val retReal, retImag = fixType()
-          retReal := (data * toComplex(coeff)).real.truncated
-          retImag := (data * toComplex(coeff)).imag.truncated
+          val retReal, retImag = dataType()
+          val full = data * toComplex(coeff)
+          retReal := full.real.truncated
+          retImag := full.imag.truncated
           ComplexNumber(retReal, retImag)
         }
       }
-      RegNext(ret)
+      //      RegNext(ret)
+      ret
     }
   }
 
@@ -64,9 +67,11 @@ case class RadixRFFT(N: Int, wordWidth: Int) extends Component {
     dataOut(2 * i) := reorderedOutput(i).real
     dataOut(2 * i + 1) := reorderedOutput(i).imag
   }
+  println(s"expected latency = ${log2Up(N) / 2 * 2 + (log2Up(N) / 2 - 1) * 2}")
+  println(s"latency = ${LatencyAnalysis(dataIn(0).raw, dataOut(0).raw)}")
 }
 
 object RadixRFFT extends App {
-  //  GenRTL(new RadixRFFT(64, 16))
-  VivadoSynth(new RadixRFFT(64, 16))
+  //  VivadoSynth(new RadixRFFT(64))
+  VivadoSynth(new RadixRFFT(16))
 }

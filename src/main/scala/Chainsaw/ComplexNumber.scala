@@ -18,7 +18,6 @@ case class ComplexNumber(R: SFix, I: SFix) extends Bundle {
 
   // ALGO: 6.10
   def *(that: ComplexNumber)(implicit pipelined: Boolean = false): ComplexNumber = {
-
     // original, directly from algo 6.10
     //        val E = real - imag
     //        val Z = that.real * E
@@ -34,6 +33,12 @@ case class ComplexNumber(R: SFix, I: SFix) extends Bundle {
     val D = A * real
     val E = that.real * B
     val F = imag * C
+
+    //    println(s"complex multiplication invoke")
+    //    println(A.getBitsWidth, real.getBitsWidth)
+    //    println(that.real.getBitsWidth, B.getBitsWidth)
+    //    println(imag.getBitsWidth, C.getBitsWidth)
+    //    Seq(D, E, F).foreach(_.addAttribute("use_dsp", "yes"))
     val delayedDEF = if (pipelined) Seq(D, E, F).map(RegNext(_)) else Seq(D, E, F) // retiming
     val D1 = delayedDEF(0)
     val E1 = delayedDEF(1)
@@ -41,8 +46,8 @@ case class ComplexNumber(R: SFix, I: SFix) extends Bundle {
     // stage 2
     val I = (D1 - E1).truncated
     val R = (E1 + F1).truncated
-    val R1 = if(pipelined) RegNext(R) else R
-    val I1 = if(pipelined) RegNext(I) else I
+    val R1 = if (pipelined) RegNext(R) else R
+    val I1 = if (pipelined) RegNext(I) else I
 
     ComplexNumber(R1, I1)
   }

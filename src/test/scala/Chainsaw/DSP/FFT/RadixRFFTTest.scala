@@ -7,7 +7,7 @@ import spinal.core.sim._
 
 class RadixRFFTTest extends AnyFunSuite {
   test("testRadixRFFT") {
-    SimConfig.withWave.compile(new RadixRFFT(N = 64, wordWidth = 16)).doSim { dut =>
+    SimConfig.withWave.compile(new RadixRFFT(N = 16)).doSim { dut =>
       import dut._
       clockDomain.forkStimulus(2)
 
@@ -18,7 +18,7 @@ class RadixRFFTTest extends AnyFunSuite {
         dataIn(2 * i) #= testComplex(i).real
         dataIn(2 * i + 1) #= testComplex(i).imag
       }
-      clockDomain.waitSampling(20)
+      clockDomain.waitSampling(15)
 
       val eng = AsyncEng.get()
 
@@ -27,11 +27,10 @@ class RadixRFFTTest extends AnyFunSuite {
 
       val goldenDouble = golden.map(complex => Seq(complex.real, complex.imag)).flatten
       val yoursDouble = dataOut.map(_.toDouble())
-      val epsilon = 0.1
+      val epsilon = 0.5
+      println(s"golden: ${golden.map(complex => Seq(complex.real, complex.imag)).flatten.map(_.toString.take(6).padTo(6,'0')).mkString(" ")}")
+      println(s"yours:  ${dataOut.map(_.toDouble.toString.take(6).padTo(6,'0')).mkString(" ")}")
       assert(goldenDouble.zip(yoursDouble).forall { case (d, d1) => (d - d1).abs < epsilon })
-
-      //      println(s"golden: ${golden.map(complex => Seq(complex.real, complex.imag)).flatten.map(_.toString.take(6)).mkString(" ")}")
-      //      println(s"yours:  ${dataOut.map(_.toDouble.toString.take(6)).mkString(" ")}")
     }
   }
 }
