@@ -17,7 +17,7 @@ case class ComplexNumber(R: SFix, I: SFix) extends Bundle {
 
   def -(that: ComplexNumber): ComplexNumber = ComplexNumber(real - that.real, imag - that.imag)
 
-  def unary_-():ComplexNumber = ComplexNumber(-real, -imag)
+  def unary_-(): ComplexNumber = ComplexNumber(-real, -imag)
 
   // TODO: verify whether 0 - imag has bad effect or not
   def multiplyI = ComplexNumber(imag.getZero - imag, real)
@@ -30,6 +30,8 @@ case class ComplexNumber(R: SFix, I: SFix) extends Bundle {
     //        val R = ((that.real - that.imag) * imag + Z).truncated
     //        val I = ((that.real + that.imag) * real - Z).truncated
 
+    def delayed(signal: SFix) = if (pipelined) RegNext(signal) else signal
+
     // improved, using more variables for pipelining
     // stage 0
     val A = that.real + that.imag
@@ -39,19 +41,11 @@ case class ComplexNumber(R: SFix, I: SFix) extends Bundle {
     val D = A * real
     val E = that.real * B
     val F = imag * C
-
-    //    println(s"complex multiplication invoke")
-    //    println(A.getBitsWidth, real.getBitsWidth)
-    //    println(that.real.getBitsWidth, B.getBitsWidth)
-    //    println(imag.getBitsWidth, C.getBitsWidth)
-    //    Seq(D, E, F).foreach(_.addAttribute("use_dsp", "yes"))
-    val delayedDEF = if (pipelined) Seq(D, E, F).map(RegNext(_)) else Seq(D, E, F) // retiming
-    val D1 = delayedDEF(0)
-    val E1 = delayedDEF(1)
-    val F1 = delayedDEF(2)
+    Seq(D, E, F).foreach(_.addAttribute("use_dsp", "yes"))
     // stage 2
-    val I = (D1 - E1).truncated
-    val R = (E1 + F1).truncated
+    val I = (delayed(D) - delayed(E)).truncated
+    val R = (delayed(E) + delayed(F)).truncated
+    Seq(I, R).foreach(_.addAttribute("use_dsp", "no"))
     val R1 = if (pipelined) RegNext(R) else R
     val I1 = if (pipelined) RegNext(I) else I
 
@@ -59,8 +53,6 @@ case class ComplexNumber(R: SFix, I: SFix) extends Bundle {
   }
 
   // * i
-
-
   // TODO: deprecate after extending ComplexNumber from Data
   def tap: ComplexNumber = ComplexNumber(RegNext(real), RegNext(imag))
 }

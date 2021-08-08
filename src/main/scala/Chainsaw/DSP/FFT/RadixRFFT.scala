@@ -29,6 +29,7 @@ case class RadixRFFT(N: Int = 256) extends Component {
     val B = RegNext(input(1) + input(3))
     val C = RegNext(input(0) - input(2))
     val D = RegNext(input(1) - input(3))
+
     Seq(A + B, C - D.multiplyI, A - B, C + D.multiplyI).map(RegNext(_))
   }
 
@@ -37,7 +38,6 @@ case class RadixRFFT(N: Int = 256) extends Component {
     def toComplex(coeff: MComplex) = ComplexNumber(toCoeff(coeff.real), toCoeff(coeff.imag))
 
     val size = dataIn.size
-    val coeffs = radixRCoeff(size, 4, N)
     val coeffIndices = radixRCoeffIndices(size, 4, N)
 
     //    println(coeffs.grouped(4).map(_.mkString(" ")).mkString("\n"))
@@ -86,9 +86,20 @@ case class RadixRFFT(N: Int = 256) extends Component {
       }
     }
 
+    case class MultiplyWNnk(index: Int) extends Component {
+      setDefinitionName(s"MultiplyWNnk_$index")
+      val input = in(Vec(dataType(), 2))
+      val output = out(multiplyWNnk(ComplexNumber(input(0), input(1)), index))
+    }
+
+    printlnGreen(coeffIndices.mkString(" "))
+
     dataIn.zip(coeffIndices).map { case (data, index) =>
 
-      multiplyWNnk(data, index)
+      //      multiplyWNnk(data, index)
+      val multiplier = MultiplyWNnk(index)
+      multiplier.input := Vec(data.real, data.imag)
+      multiplier.output
 
       //      implicit val pipelined = true
       //      val ret = {
@@ -125,7 +136,6 @@ case class RadixRFFT(N: Int = 256) extends Component {
 }
 
 object RadixRFFT extends App {
-  //  VivadoSynth(new RadixRFFT(64))
-  VivadoSynth(new RadixRFFT(256), name = "radixRFFT")
-  //  GenRTL(new RadixRFFT(16))
+  //  GenRTL(new RadixRFFT())
+  val report = VivadoSynth(new RadixRFFT(), name = "radixRFFT")
 }

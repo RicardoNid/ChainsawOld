@@ -2,8 +2,7 @@ package Chainsaw.DSP
 
 import Chainsaw._
 import matlabIO._
-import spinal.core.{isPow2, _}
-
+import spinal.core._
 import scala.util.{Failure, Success, Try}
 
 package object FFT {
@@ -58,7 +57,7 @@ package object FFT {
     BigInt(digitStrings.reverse.mkString(""), 2).toInt
   }
 
-  def doDigitReverse[T](input: Seq[T], radix:Int) = {
+  def doDigitReverse[T](input: Seq[T], radix: Int) = {
     input.indices.map(i => input(digitReverse(i, radix, log2Up(input.size))))
   }
 
@@ -77,7 +76,7 @@ package object FFT {
     Seq.tabulate(radix, segmentSize)(baseGap * _ * _).flatten
   }
 
-  def radixRCoeff(size: Int, radix: Int, N: Int) =  radixRCoeffIndices(size, radix, N).map(i => WNnk(N, i))
+  def radixRCoeff(size: Int, radix: Int, N: Int) = radixRCoeffIndices(size, radix, N).map(i => WNnk(N, i))
 
   def parallelLine(dataIn: Seq[MComplex], radix: Int, N: Int) = {
     val size = dataIn.size
