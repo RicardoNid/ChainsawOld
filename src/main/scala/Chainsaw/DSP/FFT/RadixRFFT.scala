@@ -5,7 +5,7 @@ import matlabIO._
 import spinal.core._
 import spinal.lib._
 
-case class RadixRFFT(N: Int) extends Component {
+case class RadixRFFT(N: Int = 256) extends Component {
 
   val radix = 4
   def isPowR(input: Int): Boolean = if (input == radix) true else isPowR(input / radix)
@@ -22,7 +22,7 @@ case class RadixRFFT(N: Int) extends Component {
   val dataOut = out Vec(dataType(), 2 * N) // complex number stored in bits
   val dataInComplex = (0 until N).indices.map(i => ComplexNumber(dataIn(2 * i), dataIn(2 * i + 1)))
 
-  def toSFix: BigDecimal => SFix = SF(_, 1 exp, -(coeffWidth - 2) exp)
+  def toCoeff: BigDecimal => SFix = SF(_, 1 exp, -(coeffWidth - 2) exp)
 
   def DFT4(input: Seq[ComplexNumber]): Seq[ComplexNumber] = {
     val A = RegNext(input(0) + input(2))
@@ -32,31 +32,78 @@ case class RadixRFFT(N: Int) extends Component {
     Seq(A + B, C - D.multiplyI, A - B, C + D.multiplyI).map(RegNext(_))
   }
 
-  def radix4Coeffs: Int => Seq[ComplexNumber] =
-    radixRCoeff(_, 4, N).map(coeff =>
-      ComplexNumber(toSFix(coeff.real), toSFix(coeff.imag)))
-
   def parallelLine(dataIn: Seq[ComplexNumber]) = {
+
+    def toComplex(coeff: MComplex) = ComplexNumber(toCoeff(coeff.real), toCoeff(coeff.imag))
+
     val size = dataIn.size
     val coeffs = radixRCoeff(size, 4, N)
-    def toComplex(coeff: MComplex) = ComplexNumber(toSFix(coeff.real), toSFix(coeff.imag))
+    val coeffIndices = radixRCoeffIndices(size, 4, N)
 
-    dataIn.zip(coeffs).map { case (data, coeff) =>
+    //    println(coeffs.grouped(4).map(_.mkString(" ")).mkString("\n"))
+
+    def multiplyWNnk(signal: ComplexNumber, index: Int): ComplexNumber = {
       implicit val pipelined = true
-      val ret = {
-        if (coeff.real == 1.0 && coeff.imag == 0) {
-          if (pipelined) Delay(data, 2) else data
-        }
-        else {
+
+      // multiply (1 - j) / sqrt(2)
+      def multiply1minusj(signal: ComplexNumber) = {
+        val retReal, retImag = dataType()
+        val A = signal.real + signal.imag
+        val B = signal.imag - signal.real
+        val A1 = if (pipelined) RegNext(A) else A
+        val B1 = if (pipelined) RegNext(B) else B
+        val fullReal = A1 * toCoeff(1 / scala.math.sqrt(2.0))
+        val fullImag = B1 * toCoeff(1 / scala.math.sqrt(2.0))
+        val fullReal1 = if (pipelined) RegNext(fullReal) else fullReal
+        val fullImag1 = if (pipelined) RegNext(fullImag) else fullImag
+        retReal := fullReal1.truncated
+        retImag := fullImag1.truncated
+        ComplexNumber(retReal, retImag)
+      }
+
+      def delayed(signal: ComplexNumber) = if (pipelined) Delay(signal, 2) else signal
+      // deal with trivial values
+      val trivialValue = if (N % 8 == 0 && index % (N / 8) == 0) index / (N / 8) else -1
+      //      printlnGreen(trivialValue)
+      trivialValue match {
+        case 0 => delayed(signal)
+        case 2 => delayed(-signal.multiplyI)
+        case 4 => delayed(-signal)
+        case 6 => delayed(signal.multiplyI)
+
+        case 1 => multiply1minusj(signal)
+        case 3 => multiply1minusj(-signal.multiplyI)
+        case 5 => multiply1minusj(-signal)
+        case 7 => multiply1minusj(signal.multiplyI)
+
+        case _ => {
           val retReal, retImag = dataType()
-          val full = data * toComplex(coeff)
+          val full = signal * toComplex(WNnk(N, index))
           retReal := full.real.truncated
           retImag := full.imag.truncated
           ComplexNumber(retReal, retImag)
         }
       }
-      //      RegNext(ret)
-      ret
+    }
+
+    dataIn.zip(coeffIndices).map { case (data, index) =>
+
+      multiplyWNnk(data, index)
+
+      //      implicit val pipelined = true
+      //      val ret = {
+      //        if (coeff.real == 1.0 && coeff.imag == 0) if (pipelined) Delay(data, 2) else data
+      //        else if (coeff.real == -1.0 && coeff.imag == 0) if (pipelined) Delay(-data, 2) else -data
+      //        else if (coeff.real == 0.0 && coeff.imag == 1.0) if (pipelined) Delay(data.multiplyI, 2) else data.multiplyI
+      //        else {
+      //          val retReal, retImag = dataType()
+      //          val full = data * toComplex(coeff)
+      //          retReal := full.real.truncated
+      //          retImag := full.imag.truncated
+      //          ComplexNumber(retReal, retImag)
+      //        }
+      //      }
+      //      ret
     }
   }
 
@@ -67,11 +114,18 @@ case class RadixRFFT(N: Int) extends Component {
     dataOut(2 * i) := reorderedOutput(i).real
     dataOut(2 * i + 1) := reorderedOutput(i).imag
   }
+
+  def expectedMult = {
+
+  }
+
+  //  println(s"expected DSP = ${(log2Up(N).toDouble - 2) / 2 * N * (9.toDouble / 16) * 3}")
   println(s"expected latency = ${log2Up(N) / 2 * 2 + (log2Up(N) / 2 - 1) * 2}")
   println(s"latency = ${LatencyAnalysis(dataIn(0).raw, dataOut(0).raw)}")
 }
 
 object RadixRFFT extends App {
   //  VivadoSynth(new RadixRFFT(64))
-  VivadoSynth(new RadixRFFT(16))
+  VivadoSynth(new RadixRFFT(256), name = "radixRFFT")
+  //  GenRTL(new RadixRFFT(16))
 }

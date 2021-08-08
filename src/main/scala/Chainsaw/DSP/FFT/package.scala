@@ -71,12 +71,13 @@ package object FFT {
   def elementWise(a: Seq[MComplex], b: Seq[MComplex], operator: (MComplex, MComplex) => MComplex) =
     a.zip(b).map { case (complex, complex1) => operator(complex, complex1) }
 
-  def radixRCoeff(size: Int, radix: Int, N: Int) = {
+  def radixRCoeffIndices(size: Int, radix: Int, N: Int) = {
     val segmentSize = size / radix
     val baseGap = N / size
-    val indices = Seq.tabulate(radix, segmentSize)(baseGap * _ * _).flatten
-    indices.map(i => WNnk(N, i))
+    Seq.tabulate(radix, segmentSize)(baseGap * _ * _).flatten
   }
+
+  def radixRCoeff(size: Int, radix: Int, N: Int) =  radixRCoeffIndices(size, radix, N).map(i => WNnk(N, i))
 
   def parallelLine(dataIn: Seq[MComplex], radix: Int, N: Int) = {
     val size = dataIn.size

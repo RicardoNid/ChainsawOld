@@ -406,4 +406,12 @@ package object Chainsaw extends RealFactory {
   implicit class BitStringUtil(string: String) {
     def toBigIntAsBinary = BigInt(string)
   }
+
+  implicit class SFixUtil(sf:SFix){
+    def unary_-() = {
+      val ret = SFix(sf.maxExp exp, sf.minExp exp)
+      ret.raw := -sf.raw
+      ret
+    }
+  }
 }

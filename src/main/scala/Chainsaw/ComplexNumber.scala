@@ -1,6 +1,7 @@
 package Chainsaw
 
 import spinal.core._
+import Chainsaw._
 
 // TODO: extend this from Data
 
@@ -15,6 +16,11 @@ case class ComplexNumber(R: SFix, I: SFix) extends Bundle {
   def +(that: ComplexNumber): ComplexNumber = ComplexNumber(real + that.real, imag + that.imag)
 
   def -(that: ComplexNumber): ComplexNumber = ComplexNumber(real - that.real, imag - that.imag)
+
+  def unary_-():ComplexNumber = ComplexNumber(-real, -imag)
+
+  // TODO: verify whether 0 - imag has bad effect or not
+  def multiplyI = ComplexNumber(imag.getZero - imag, real)
 
   // ALGO: 6.10
   def *(that: ComplexNumber)(implicit pipelined: Boolean = false): ComplexNumber = {
@@ -53,8 +59,7 @@ case class ComplexNumber(R: SFix, I: SFix) extends Bundle {
   }
 
   // * i
-  // TODO: verify whether 0 - imag has bad effect or not
-  def multiplyI = ComplexNumber(imag.getZero - imag, real)
+
 
   // TODO: deprecate after extending ComplexNumber from Data
   def tap: ComplexNumber = ComplexNumber(RegNext(real), RegNext(imag))

@@ -7,7 +7,7 @@ import spinal.core.sim._
 
 class RadixRFFTTest extends AnyFunSuite {
   test("testRadixRFFT") {
-    SimConfig.withWave.compile(new RadixRFFT(N = 16)).doSim { dut =>
+    SimConfig.withWave.compile(new RadixRFFT()).doSim { dut =>
       import dut._
       clockDomain.forkStimulus(2)
 
