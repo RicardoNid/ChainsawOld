@@ -18,7 +18,7 @@ import spinal.core.Component.{current, pop}
  */
 case class TrainCtrl(trainSize: Int, carSize: Int, iteration: Int) extends Component {
 
-  def passengerType() = UInt(11 bits) // use the MSB as a flag of the head of the car
+  def passengerType() = UInt(14 bits) // use the MSB as a flag of the head of the car
 
   val input = slave Stream passengerType()
   val output = master Stream passengerType()
@@ -114,7 +114,8 @@ case class TrainCtrl(trainSize: Int, carSize: Int, iteration: Int) extends Compo
       when(carArrive && currentCarIter === iteration + 1){
         output.valid := True
         getOffCounter.increment()
-        carIterCounterTriggers(currentCar) := True
+        when(input.fire)(carIters(currentCar) := U(1, log2Up(carCount) bits)) // when getOn and getOff happen together, skip the stage of empty
+          .otherwise(carIterCounterTriggers(currentCar) := True)
       }
         .elsewhen(getOffCounter.value =/= 0)(output.valid := True)
         .otherwise(output.valid := False)
@@ -125,6 +126,11 @@ case class TrainCtrl(trainSize: Int, carSize: Int, iteration: Int) extends Compo
   train.passengerIn := Mux(input.fire, input.payload, train.passengerOut)
   train.sideIn := passengerType().getZero
   output.payload := train.passengerOut
+
+  // for testing
+  val fire = out(input.fire)
+  val busy = out(currentCarIter =/= 0 || input.fire)
+  val validOutput = out(Mux(output.valid, train.passengerOut, passengerType().getZero))
 }
 
 object TrainCtrl extends App {
