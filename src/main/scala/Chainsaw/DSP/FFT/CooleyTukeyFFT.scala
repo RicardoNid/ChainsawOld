@@ -28,18 +28,18 @@ class CooleyTukeyFFT(N: Int) extends ImplicitArea[Vec[SFix]] {
 
     // group the input elements by n2, results in N2 groups for N1-point DFT
     val N2Groups: Seq[Array[MComplex]] = interleave(input, N2)
-    val stage1Results: Seq[MComplex] = N2Groups.map(FFTRef(_)).flatten // sub-DFT, can be substituted by any valid algo
+    val stage1Results: Seq[MComplex] = N2Groups.map(Refs.FFT(_)).flatten // sub-DFT, can be substituted by any valid algo
 
     val twiddleFactors = Array.tabulate(N2, N1)((n2: Int, k1: Int) => WNnk(N, n2 * k1)).flatten
     val twiddeledResults = stage1Results.zip(twiddleFactors).map(pair => pair._1 * pair._2).toArray
 
     // group the results by k1
     val N1Groups: Seq[Array[MComplex]] = interleave(twiddeledResults, N1)
-    val stage2Results = N1Groups.map(FFTRef(_)).flatten // sub-DFT
+    val stage2Results = N1Groups.map(Refs.FFT(_)).flatten // sub-DFT
 
     // validate
     val orderedResult = interleave(stage2Results, N1).flatten
-    assert(orderedResult.zip(FFTRef(input)).forall(pair => pair._1.sameAs(pair._2)))
+    assert(orderedResult.zip(Refs.FFT(input)).forall(pair => pair._1.sameAs(pair._2)))
     orderedResult
   }
 

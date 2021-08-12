@@ -23,7 +23,7 @@ object RaderDFT extends App {
   val input = Array.fill(7)(new MComplex(1, 1))
 
   raderDFT.Algo(input)
-  println(FFTRef(input).mkString(" "))
+  println(Refs.FFT(input).mkString(" "))
   // properties of WNnk, WNnk rotates around the unit circle
   println(WNnk(16, 1).conj.sameAs(WNnk(16, -1))) // symmetric
   println(WNnk(16, 1).sameAs(WNnk(16, 1 + 16))) // periodic
