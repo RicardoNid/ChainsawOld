@@ -1,1 +1,5 @@
-(70 * 2 + 86 * 4 + 78 * 3 + 100 * 3 + 86 * 2 + 90.83 * 2 + 98 * 3 + 80 * 5 ) / (2+4+3+3+2+2+3+5)
+import scala.collection.mutable.ArrayBuffer
+
+val list = ArrayBuffer(1,2,3)
+list(1) = 4
+list

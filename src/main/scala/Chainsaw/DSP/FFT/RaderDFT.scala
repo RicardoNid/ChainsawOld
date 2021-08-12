@@ -8,7 +8,7 @@ class RaderDFT {
   def Algo(input: Array[MComplex]) = {
     def getGenerator(modulus: Int) = {
       def isGenerator(element: Int): Boolean = (1 until modulus).map(i => Zp(modulus).pow(element, i).intValue()).toSet == (1 until modulus).toSet
-      (2 until modulus).dropWhile(!isGenerator(_)).head
+      (1 until modulus).dropWhile(!isGenerator(_)).head
     }
     val n = input.size
     val g = getGenerator(n)

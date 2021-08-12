@@ -1,8 +1,14 @@
 package Chainsaw.DSP.FFT
 
+import cc.redberry.rings.scaladsl._
+import cc.redberry.rings.primes._
 import matlabIO._
+import Chainsaw._
 
-object Algos {
+import scala.collection.{immutable, mutable}
+import scala.collection.mutable.ArrayBuffer
+
+object Algos extends App {
 
   // build radix-r Cooley-Tukey FFT by the "block" and "parallel line" given
   def cooleyTukeyBuilder[T](input: Seq[T], factors: Seq[Int],
@@ -25,12 +31,13 @@ object Algos {
         val N1 = factors.head
         val N2 = input.size / N1
 
-        val input2D = Seq.tabulate(N2, N1)((n2, n1) => input(N2 * n1 + n2)) // 2D, each segment in a row
+        val input2D = Seq.tabulate(N2, N1)((n2, n1) => input(N2 * n1 + n2)) // permutation 0
         val afterBlock = input2D.map(block)
         val afterParallel = twiddle(afterBlock)
-        val input2DForRecursion = Seq.tabulate(N1, N2)((k1, n2) => afterParallel(n2)(k1))
+
+        val input2DForRecursion = Seq.tabulate(N1, N2)((k1, n2) => afterParallel(n2)(k1)) // permutation 1
         val afterRecursion = input2DForRecursion.map(recursiveBuild(_, factors.tail))
-        val ret = Seq.tabulate(N2, N1)((k2, k1) => afterRecursion(k1)(k2)).flatten
+        val ret = Seq.tabulate(N2, N1)((k2, k1) => afterRecursion(k1)(k2)).flatten // permutation 2
         ret
       }
     }
@@ -52,4 +59,44 @@ object Algos {
     cooleyTukeyFFT(input, buildFactors(Seq(radix)))
   }
 
+
+  def CyclicConv(input: Seq[MComplex], coeff: Seq[MComplex], L: Int): Seq[MComplex] = {
+    require(L >= input.size && L >= coeff.size)
+    // TODO: expand this for different size relationship
+    val paddedInput = input.padTo(L, new MComplex(0, 0))
+    val paddedCoeff = coeff.padTo(L, new MComplex(0, 0)).reverse
+    (1 to L).map { i =>
+      val rotatedCoeff = paddedCoeff.takeRight(i) ++ paddedCoeff.take(L - i) // rotate right
+      paddedInput.zip(rotatedCoeff).map { case (complex, complex1) => complex * complex1 }.reduce(_ + _)
+    }
+  }
+
+  def raderDFT(input: Seq[MComplex]) = {
+    val N = input.size
+    require(SmallPrimes.isPrime(N))
+
+    def getGenerator(modulus: Int) = {
+      def isGenerator(element: Int): Boolean = (1 until modulus).map(i => Zp(modulus).pow(element, i).intValue()).toSet == (1 until modulus).toSet
+      (1 until modulus).dropWhile(!isGenerator(_)).head
+    }
+
+    val g = getGenerator(N)
+    val inputPermutation = (0 until N - 1).map(N - 1 - _).map(i => Zp(N).pow(g, i).intValue())
+    val coeffPermutation = (0 until N - 1).map(i => Zp(N).pow(g, i).intValue())
+    val outputPermutation = (0 until N - 1).map(i => Zp(N).pow(g, i).intValue())
+
+    val permutatedInput = inputPermutation.map(input(_))
+    val permutatedCoeff = coeffPermutation.map(WNnk(N, _) - new MComplex(1, 0))
+    val permutatedOutput: Seq[MComplex] = CyclicConv(permutatedInput, permutatedCoeff, N - 1)
+
+    val output: ArrayBuffer[MComplex] = ArrayBuffer.fill(N)(new MComplex(0, 0)) // output1, output2...output(N-1)
+    output(0) = input.reduce(_ + _)
+    permutatedOutput.zip(outputPermutation).foreach { case (complex, i) => output(i) = complex + output(0) }
+
+    output
+  }
+
+//  def winogradShortConvolution(input:Seq[MComplex], coeff:Seq[MComplex]):Seq[MComplex] = {
+//
+//  }
 }

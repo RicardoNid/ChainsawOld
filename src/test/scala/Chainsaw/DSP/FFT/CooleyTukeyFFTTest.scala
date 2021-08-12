@@ -5,9 +5,9 @@ import matlabIO._
 import org.scalatest.funsuite.AnyFunSuite
 import spinal.core.sim._
 
-class RadixRFFTTest extends AnyFunSuite {
+class CooleyTukeyFFTTest extends AnyFunSuite {
   test("testRadixRFFT") {
-    SimConfig.withWave.compile(new RadixRFFT(dataWidth = 16, coeffWidth = 16, factors = Seq(4,4,4,4))).doSim { dut =>
+    SimConfig.withWave.compile(new CooleyTukeyFFT(dataWidth = 16, coeffWidth = 16, factors = Seq(4,4,4,4))).doSim { dut =>
       import dut._
       clockDomain.forkStimulus(2)
 

@@ -1,53 +1,47 @@
 package Chainsaw.DSP.FFT
 
-import spinal.core._
+import Chainsaw._
 import matlabIO._
+import spinal.core._
+import spinal.lib._
 
-// TODO: implement
+case class CooleyTukeyFFT(N: Int = 256, dataWidth: Int, coeffWidth: Int, factors: Seq[Int]) extends Component {
 
-/** N-point FFT by Cooley-Tukey FFT algorithm, based on Winograd DFT algorithm, DSP with FPGA, algo 6.8, fig 6.12
- *
- * @param N length of FFT
- */
-class CooleyTukeyFFT(N: Int) extends ImplicitArea[Vec[SFix]] {
+  val peak = log2Up(N) / 2 // TODO: find a better strategy
+  val resolution = -(dataWidth - 1 - peak)
+  def dataType() = SFix(peak exp, resolution exp)
+  def coeffType() = SFix(1 exp, -(coeffWidth - 2) exp)
 
-  def primitiveAlgo(input: Array[MComplex], N2: Int) = {
-    require(N % N2 == 0)
-    val N1 = N / N2
+  val dataIn = in Vec(dataType(), 2 * N) // complex number stored in bits
+  val dataOut = out Vec(dataType(), 2 * N) // complex number stored in bits
+  val dataInComplex = (0 until N).indices.map(i => ComplexNumber(dataIn(2 * i), dataIn(2 * i + 1)))
 
-    // reorder and group
-    def interleave(input: Seq[MComplex], group: Int): Seq[Array[MComplex]] = {
-      val groupSize = input.size / group
-      val indices = Array.tabulate(group, groupSize)(_ + _ * group).flatten
-      indices.map(input(_)).grouped(groupSize).toSeq
-    }
+  def toCoeff: BigDecimal => SFix = SF(_, 1 exp, -(coeffWidth - 2) exp)
 
-    // property of interleave
-    //    val test = (1 until 12).map(i => new MComplex(i, i)).toArray
-    //    println(interleave(interleave(test,3).flatten,3).flatten.mkString(" "))
+  def DFT4(input: Seq[ComplexNumber]): Seq[ComplexNumber] = { // TODO: Implement DFTN, N is power of prime number
+    val A = RegNext(input(0) + input(2))
+    val B = RegNext(input(1) + input(3))
+    val C = RegNext(input(0) - input(2))
+    val D = RegNext(input(1) - input(3))
 
-    // group the input elements by n2, results in N2 groups for N1-point DFT
-    val N2Groups: Seq[Array[MComplex]] = interleave(input, N2)
-    val stage1Results: Seq[MComplex] = N2Groups.map(Refs.FFT(_)).flatten // sub-DFT, can be substituted by any valid algo
-
-    val twiddleFactors = Array.tabulate(N2, N1)((n2: Int, k1: Int) => WNnk(N, n2 * k1)).flatten
-    val twiddeledResults = stage1Results.zip(twiddleFactors).map(pair => pair._1 * pair._2).toArray
-
-    // group the results by k1
-    val N1Groups: Seq[Array[MComplex]] = interleave(twiddeledResults, N1)
-    val stage2Results = N1Groups.map(Refs.FFT(_)).flatten // sub-DFT
-
-    // validate
-    val orderedResult = interleave(stage2Results, N1).flatten
-    assert(orderedResult.zip(Refs.FFT(input)).forall(pair => pair._1.sameAs(pair._2)))
-    orderedResult
+    Seq(A + B, C - D.multiplyI, A - B, C + D.multiplyI).map(RegNext(_))
   }
 
-  override def implicitValue = ???
+  val mult: (ComplexNumber, Int, Int) => ComplexNumber = multiplyWNnk(_, _, _, dataType, coeffType, Seq(true, true))
+  val output = Algos.cooleyTukeyBuilder(dataInComplex, factors, DFT4, mult)
+  (0 until N).foreach { i =>
+    dataOut(2 * i) := output(i).real
+    dataOut(2 * i + 1) := output(i).imag
+  }
 
+
+  //  println(s"expected DSP = ${(log2Up(N).toDouble - 2) / 2 * N * (9.toDouble / 16) * 3}")
+  println(s"expected latency = ${log2Up(N) / 2 * 2 + (log2Up(N) / 2 - 1) * 2}")
+  println(s"latency = ${LatencyAnalysis(dataIn(0).raw, dataOut(0).raw)}")
 }
 
 object CooleyTukeyFFT extends App {
-  def apply(N: Int): CooleyTukeyFFT = new CooleyTukeyFFT(N)
-  CooleyTukeyFFT(12).primitiveAlgo(Array.fill(12)(new MComplex(1, 1)), 3)
+  GenRTL(new CooleyTukeyFFT(16, 16, 16, Seq(4, 4)), name = "FFT")
+  val report = VivadoSynth(new CooleyTukeyFFT(N = 256,
+    dataWidth = 16, coeffWidth = 16, factors = Seq(4, 4, 4, 4)), name = "radixRFFT")
 }

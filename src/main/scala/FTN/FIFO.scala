@@ -21,6 +21,8 @@ class FIFO extends Component {
 }
 
 object FIFO {
+
+
   def main(args: Array[String]): Unit = {
     GenRTL(new FIFO)
     SimConfig.withWave.compile(new FIFO).doSim { dut =>

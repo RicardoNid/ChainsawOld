@@ -23,5 +23,12 @@ object Refs {
     }
   }
 
+  def cyclicConvolution(input: Array[MComplex], coeff:Array[MComplex], length:Int): Array[MComplex] = {
+    val ret = Try(eng.feval[Array[MComplex]]("cconv", input, coeff, Array(length)))
+    ret match {
+      case Failure(exception) => eng.feval[Array[Double]]("cconv", input, coeff, Array(length)).map(new MComplex(_, 0))
+      case Success(value) => value
+    }
+  }
 
 }
