@@ -9,9 +9,10 @@ import Chainsaw._
  * @param R real part of the complex number
  * @param I imaginary part of the complex number
  */
-case class ComplexNumber(R: SFix, I: SFix) extends Bundle {
-  val real: SFix = R
-  val imag: SFix = I
+case class ComplexNumber(peak:Int, resolution:Int) extends Bundle {
+
+  val real = SFix(peak exp, resolution exp)
+  val imag = SFix(peak exp, resolution exp)
 
   def +(that: ComplexNumber): ComplexNumber = ComplexNumber(real + that.real, imag + that.imag)
 
@@ -84,10 +85,20 @@ object ComplexNumber {
   private val zero = globalType
   zero := 0.0
 
-  def apply(R: Double, I: Double) = {
+  def apply(R: SFix, I: SFix): ComplexNumber = {
+    require(R.maxExp == I.maxExp && R.minExp == I.minExp)
+    val peak = R.maxExp
+    val resolution = R.minExp
+    val ret = new ComplexNumber(peak, resolution)
+    ret.real := R
+    ret.imag := I
+    ret
+  }
+
+  def apply(R: Double, I: Double): ComplexNumber = {
     val real, imag = globalType
     real := R
     imag := I
-    new ComplexNumber(real, imag)
+    ComplexNumber(real, imag)
   }
 }
