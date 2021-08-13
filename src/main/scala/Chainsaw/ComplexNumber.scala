@@ -23,6 +23,13 @@ case class ComplexNumber(peak:Int, resolution:Int) extends Bundle {
   // TODO: verify whether 0 - imag has bad effect or not
   def multiplyI = ComplexNumber(imag.getZero - imag, real)
 
+  def *(that:SFix) ={
+    val R = real * that
+    val I = imag * that
+    Seq(R,I).foreach(_.addAttribute("use_dsp", "yes"))
+    ComplexNumber(R,I)
+  }
+
   // ALGO: 6.10
   def *(that: ComplexNumber)(implicit pipelined: Boolean = false): ComplexNumber = {
     // original, directly from algo 6.10

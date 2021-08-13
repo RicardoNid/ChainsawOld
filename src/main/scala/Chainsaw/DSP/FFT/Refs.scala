@@ -23,7 +23,7 @@ object Refs {
     }
   }
 
-  def cyclicConvolution(input: Array[MComplex], coeff:Array[MComplex], length:Int): Array[MComplex] = {
+  def cyclicConvolution(input: Array[MComplex], coeff: Array[MComplex], length: Int): Array[MComplex] = {
     val ret = Try(eng.feval[Array[MComplex]]("cconv", input, coeff, Array(length)))
     ret match {
       case Failure(exception) => eng.feval[Array[Double]]("cconv", input, coeff, Array(length)).map(new MComplex(_, 0))
@@ -31,4 +31,5 @@ object Refs {
     }
   }
 
+  def matIntrlv[T](input: Array[T], row: Int, col: Int) = eng.feval[Array[T]]("matintrlv", input, Array(row), Array(col))
 }

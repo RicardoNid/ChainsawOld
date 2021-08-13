@@ -15,12 +15,14 @@ trait CustomPrecision {
   val dataWidth: Int
   val coeffWidth: Int
 
-  val peak = log2Up(N) / 2 // TODO: find a better strategy
+  val peak = 6 // TODO: find a better strategy
   val resolution = -(dataWidth - 1 - peak)
 
   def dataType() = SFix(peak exp, resolution exp)
+  def complexDataType() =  ComplexNumber(peak, resolution)
 
   def coeffType() = SFix(1 exp, -(coeffWidth - 2) exp)
+  def coeffDataType() =  ComplexNumber(1, -(coeffWidth - 2))
 
   def toCoeff: BigDecimal => SFix = SF(_, 1 exp, -(coeffWidth - 2) exp)
 }

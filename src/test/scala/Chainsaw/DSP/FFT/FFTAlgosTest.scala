@@ -31,4 +31,12 @@ class FFTAlgosTest extends AnyFunSuite {
     Ns2.foreach(testAlgo(_, Algos.raderDFT))
     printlnGreen(s"test Rader DFT passed")
   }
+
+  test("CooleyTukey fast test"){
+    val Ns0 = Seq(24)
+    val factors = Seq(Seq(4, 6))
+    val algos = factors.map(factor => Algos.cooleyTukeyFFT(_: Seq[MComplex], factor))
+    Ns0.zip(algos).foreach { case (n, algo) => testAlgo(n, algo) }
+    printlnGreen(s"test CooleyTukey passed")
+  }
 }

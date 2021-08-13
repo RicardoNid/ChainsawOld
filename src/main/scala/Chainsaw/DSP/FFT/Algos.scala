@@ -31,13 +31,12 @@ object Algos extends App {
         val N1 = factors.head
         val N2 = input.size / N1
 
-        val input2D = Seq.tabulate(N2, N1)((n2, n1) => input(N2 * n1 + n2)) // permutation 0
+        val input2D = matIntrlv1D2D(input, N1, N2) // permutation 0
         val afterBlock = input2D.map(block)
         val afterParallel = twiddle(afterBlock)
-
-        val input2DForRecursion = Seq.tabulate(N1, N2)((k1, n2) => afterParallel(n2)(k1)) // permutation 1
+        val input2DForRecursion = matIntrlv2D2D(afterParallel, N2, N1) // permutation 1(transpose)
         val afterRecursion = input2DForRecursion.map(recursiveBuild(_, factors.tail))
-        val ret = Seq.tabulate(N2, N1)((k2, k1) => afterRecursion(k1)(k2)).flatten // permutation 2
+        val ret = matIntrlv2D1D(afterRecursion, N1, N2) // permutation 2
         ret
       }
     }
@@ -48,7 +47,7 @@ object Algos extends App {
   def cooleyTukeyCoeff(N1: Int, N2: Int) = cooleyTukeyCoeffIndices(N1, N2).map(_.map(WNnk(N1 * N2, _)))
 
   def cooleyTukeyFFT(input: Seq[MComplex], factors: Seq[Int]) = {
-    def block(input: Seq[MComplex]) = eng.feval[Array[MComplex]]("fft", input.toArray).toSeq
+    def block(input: Seq[MComplex]) = Refs.FFT(input.toArray).toSeq
     def mult(input: MComplex, index: Int, N: Int) = input * WNnk(N, index)
     cooleyTukeyBuilder(input, factors, block, mult)
   }
@@ -96,7 +95,9 @@ object Algos extends App {
     output
   }
 
-//  def winogradShortConvolution(input:Seq[MComplex], coeff:Seq[MComplex]):Seq[MComplex] = {
-//
-//  }
+  def matIntrlv[T](input: Seq[T], row: Int, col: Int): Seq[T] = Seq.tabulate(col, row)((i, j) => j * col + i).flatten.map(input(_))
+  def matIntrlv1D2D[T](input: Seq[T], row: Int, col: Int): Seq[Seq[T]] = Seq.tabulate(col, row)((i, j) => j * col + i).map(_.map(input(_)))
+  def matIntrlv2D2D[T](input: Seq[Seq[T]], row: Int, col: Int) = Seq.tabulate(col, row)((i, j) => input(j)(i)) // transpose
+  def matIntrlv2D1D[T](input: Seq[Seq[T]], row: Int, col: Int) = Seq.tabulate(col, row)((i, j) => input(j)(i)).flatten
+
 }
