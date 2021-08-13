@@ -111,7 +111,7 @@ case class TrainCtrl(trainSize: Int, carSize: Int, iteration: Int) extends Compo
     when(getOffCounter.value =/= 0)(getOffCounter.increment())
 
     val getOffService = new Area {
-      when(carArrive && currentCarIter === iteration + 1){
+      when(carArrive && currentCarIter === iteration + 1) {
         output.valid := True
         getOffCounter.increment()
         when(input.fire)(carIters(currentCar) := U(1, log2Up(carCount) bits)) // when getOn and getOff happen together, skip the stage of empty
@@ -134,5 +134,5 @@ case class TrainCtrl(trainSize: Int, carSize: Int, iteration: Int) extends Compo
 }
 
 object TrainCtrl extends App {
-
+  VivadoSynth(new TrainCtrl(128, 16, 10))
 }
