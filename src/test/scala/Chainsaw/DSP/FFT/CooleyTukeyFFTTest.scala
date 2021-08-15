@@ -31,7 +31,7 @@ class CooleyTukeyFFTTest extends AnyFunSuite {
     }
   }
 
-  test("testRadixRFFT") {
+  test("test Cooley Tukey FFT") {
 
     def testRadixR: Seq[Int] => Unit = testCooleyTukeyFFTHardware(64, 16, 16, _)
 

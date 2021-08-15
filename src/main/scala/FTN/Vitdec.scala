@@ -154,9 +154,9 @@ class Vitdec(config: ConvencConfig, tblen: Int, noTrackBack: Boolean = false, de
 
 class HammingFromExpected(expected: BigInt, width: Int) extends Component {
   val input = in Bits (width bits)
-  val contents = (0 until (1 << width)).map(i => (i ^ expected).toBinary.filter(_ == '1').size)
+  val contents = (0 until (1 << width)).map(i => (i ^ expected).toString(2).filter(_ == '1').size)
   contents.indices.foreach { i =>
-    println(s"expected: ${expected.toBinary.padToLeft(width, '0')}, " +
+    println(s"expected: ${expected.toString(2).padToLeft(width, '0')}, " +
       s"received: ${i.toBinaryString.padToLeft(width, '0')}, " +
       s"hamming: ${contents(i)}")
   }

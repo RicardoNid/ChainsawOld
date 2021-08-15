@@ -6,7 +6,6 @@ import org.scalatest.funsuite.AnyFunSuite
 
 class FFTAlgosTest extends AnyFunSuite {
 
-  val eng = AsyncEng.get()
   def same(a: Seq[MComplex], b: Seq[MComplex]) = a.zip(b).forall { case (complex, complex1) => complex.sameAs(complex1) }
   def testAlgo(N: Int, algo: Seq[MComplex] => Seq[MComplex]) = {
     val testCase = randComplex(N)

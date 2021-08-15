@@ -30,6 +30,4 @@ object Refs {
       case Success(value) => value
     }
   }
-
-  def matIntrlv[T](input: Array[T], row: Int, col: Int) = eng.feval[Array[T]]("matintrlv", input, Array(row), Array(col))
 }

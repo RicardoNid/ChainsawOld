@@ -31,6 +31,7 @@ object Algos extends App {
         val N1 = factors.head
         val N2 = input.size / N1
 
+        import DSP.interleave.Algos._
         val input2D = matIntrlv1D2D(input, N1, N2) // permutation 0
         val afterBlock = input2D.map(block)
         val afterParallel = twiddle(afterBlock)
@@ -95,9 +96,5 @@ object Algos extends App {
     output
   }
 
-  def matIntrlv[T](input: Seq[T], row: Int, col: Int): Seq[T] = Seq.tabulate(col, row)((i, j) => j * col + i).flatten.map(input(_))
-  def matIntrlv1D2D[T](input: Seq[T], row: Int, col: Int): Seq[Seq[T]] = Seq.tabulate(col, row)((i, j) => j * col + i).map(_.map(input(_)))
-  def matIntrlv2D2D[T](input: Seq[Seq[T]], row: Int, col: Int) = Seq.tabulate(col, row)((i, j) => input(j)(i)) // transpose
-  def matIntrlv2D1D[T](input: Seq[Seq[T]], row: Int, col: Int) = Seq.tabulate(col, row)((i, j) => input(j)(i)).flatten
 
 }

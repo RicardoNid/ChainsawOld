@@ -1,5 +1,3 @@
-import scala.collection.mutable.ArrayBuffer
+import Chainsaw._
 
-val list = ArrayBuffer(1,2,3)
-list(1) = 4
-list
+BigInt(10000).toWords(4, 4)

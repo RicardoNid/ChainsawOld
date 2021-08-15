@@ -12,6 +12,12 @@ import spinal.lib._
  * @param parallelFactor bits number per cycle, determines the throughput
  * @param forward
  */
+
+// TODO: implement initialization logic
+// TODO: implement ping-pong logic
+// TODO: implement grouped srl
+// TODO: implement coloring algo
+// TODO: bits should be a "datatype"
 case class InterleaverFTN(row: Int, col: Int, parallelFactor: Int) extends Component {
 
   val running = in Bool()

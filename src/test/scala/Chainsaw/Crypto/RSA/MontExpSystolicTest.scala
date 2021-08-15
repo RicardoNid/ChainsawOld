@@ -22,7 +22,7 @@ class MontExpSystolicTest extends AnyFunSuite {
     val doSynth = false // do vivado synthesis
     val doImpl = false // do vivado implementation
     val work = false
-    val comparStageByStage = true
+    val comparStageByStage = false
 
     // this will go through every mode
     def standardTestCases(config: MontConfig) =

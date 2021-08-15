@@ -10,7 +10,10 @@ import java.time.Instant
 import java.time.Duration
 
 
-object Draft {
-  def main(args: Array[String]): Unit = {
-  }
+object Draft extends App {
+  println(BigInt(35).toWords(4).mkString(" "))
+  println(BigInt(35).showWords(4).mkString(" "))
+  println(BigInt(35).showWordsHex(8).mkString(" "))
+
+  println(BigInt(35) ^ BigInt(23))
 }

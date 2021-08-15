@@ -17,6 +17,36 @@ package object Chainsaw extends RealFactory {
 
   // methods for padding
   // example: YWords = toWords(BigInt("1_1111_0000", 4, 3)), YWords(0) = 0, YWords(1) = 15, YWords(2) = 1(padded as 0001)
+
+  import scala.math.ceil
+
+  implicit class BigIntUtil(bi: BigInt) {
+
+    /** convert a long BitInt to multiple words, each as a new binary String, padded to the left when needed, useful for multi-precision algos
+     *
+     * order: MSB -> LAB
+     */
+    def showWords(wordSize: Int): Seq[String] = {
+      val wordCount = ceil(bi.toString(2).size.toDouble / wordSize).toInt
+      bi.toString(2).padToLeft(wordCount * wordSize, '0')
+        .grouped(wordSize).toSeq
+    }
+
+    def showWordsHex(wordSize: Int): Seq[String] = {
+      require(wordSize % 4 == 0)
+      val wordCount = ceil(bi.toString(2).size.toDouble / wordSize).toInt
+      bi.toString(16).grouped(wordSize).toSeq
+    }
+
+    /** convert a long BitInt to multiple words, each as a new BigInt, padded to the left when needed, useful for multi-precision algos
+     *
+     * order: MSB -> LSB
+     */
+    def toWords(wordSize: Int): Seq[BigInt] = bi.showWords(wordSize).map(BigInt(_, 2))
+
+  }
+
+
   def toWords(value: BigInt, w: Int, e: Int) = {
     value.toString(2).padToLeft(e * w, '0')
       .grouped(w).toArray.takeRight(e).map(BigInt(_, 2))
@@ -31,16 +61,6 @@ package object Chainsaw extends RealFactory {
   // from lsb to msb
   def toWordsHexString(value: BigInt, w: Int, e: Int) =
     toWords(value, w, e).map(_.toString(16).padToLeft(w / 4, '0') + " ").flatten.mkString("")
-
-  // print the padded number in hex form, so it appears the same as in gtkwave
-  def printPadded(name: String, value: BigInt, n: Int): Unit = {
-    require(n % 4 == 0)
-    val hex =
-      value.toString(2).padToLeft(n, '0')
-        .grouped(4).toArray.map(BigInt(_, 2).toString(16))
-        .mkString("")
-    println(s"$name = $hex")
-  }
 
   class StateDelayFixed(cyclesCount: UInt)(implicit stateMachineAccessor: StateMachineAccessor) extends State with StateCompletionTrait {
 
@@ -70,7 +90,7 @@ package object Chainsaw extends RealFactory {
     }
   }
 
-  implicit class MoreOnString(s: String) {
+  implicit class StringUtil(s: String) {
     def padToLeft(len: Int, elem: Char) = s.reverse.padTo(len, elem).reverse
   }
 
@@ -113,7 +133,8 @@ package object Chainsaw extends RealFactory {
     }
   }
 
-  implicit class SimSFixPimper(sf: SFix){
+  implicit class SimSFixPimper(sf: SFix) {
+
     import sf._
 
     def #=(value: BigDecimal): Unit = {
@@ -207,12 +228,9 @@ package object Chainsaw extends RealFactory {
   // ronding mode
   var ChainsawExpLowerBound = -65536
 
-  import com.mathworks.engine.MatlabEngine
+  import matlabIO._
 
-  lazy val eng = try {
-    println(s"Matlab Engine Started")
-    MatlabEngine.startMatlab
-  }
+  val eng = AsyncEng.get()
 
   def printlnWhenNumericDebug(content: Any) = if (ChainsawNumericDebug) printlnYellow(content)
 
@@ -398,21 +416,23 @@ package object Chainsaw extends RealFactory {
     }
   }
 
-  // some methods for using BigInt as string of bits
-  implicit class BigIntUtil(bigInt: BigInt) {
-    def toBinary = bigInt.toString(2)
-  }
-
   implicit class BitStringUtil(string: String) {
     def toBigIntAsBinary = BigInt(string)
   }
 
-  implicit class SFixUtil(sf:SFix){
+  implicit class SFixUtil(sf: SFix) {
     def unary_-() = {
       val ret = SFix(sf.maxExp exp, sf.minExp exp)
       ret.raw := -sf.raw
       ret
     }
+  }
+
+  implicit class VecUtil[T <: Data](vec: Vec[T]) {
+
+    // seems that Xilinx synth can implement this efficiently
+    def rotateLeft[T <: Data](that: UInt) = vec.asBits.rotateLeft(that * widthOf(vec.dataType))
+
   }
 
 }

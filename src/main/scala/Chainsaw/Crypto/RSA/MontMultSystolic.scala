@@ -1,6 +1,5 @@
 package Chainsaw.Crypto.RSA
 
-import Chainsaw.Crypto.RSA.history.MontConfig
 import spinal.core._
 
 case class MontMultSystolic(config: MontConfig) extends Component {

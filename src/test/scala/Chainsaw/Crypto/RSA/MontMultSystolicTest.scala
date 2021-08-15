@@ -1,6 +1,5 @@
 package Chainsaw.Crypto.RSA
 
-import Chainsaw.Crypto.RSA.history.MontConfig
 import Chainsaw.{toWords, _}
 import org.scalatest.funsuite.AnyFunSuite
 import spinal.core.sim.{SimConfig, _}
