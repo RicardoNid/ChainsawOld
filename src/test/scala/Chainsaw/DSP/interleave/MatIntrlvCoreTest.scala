@@ -92,11 +92,16 @@ class MatIntrlvCoreTest extends AnyFunSuite {
     val dataWidth = 8
     val dataType = HardType(UInt(dataWidth bits))
     def testMatIntrlvHardware(row: Int, col: Int, pFIn: Int, pFOut: Int) = {
-      SimConfig.withWave.compile(new MatIntrlv(row, col, pFIn, pFOut, dataType)).doSim { dut =>
+      SimConfig.withWave.compile(new MatIntrlv(row, col, pFIn, pFOut, dataType) {
+        dataOut.fire.simPublic()
+      }).doSim { dut =>
 
         val testData0, testData1 = (0 until row * col).map(_ => DSPRand.nextInt(1 << dataWidth))
         val transposed0 = Algos.matIntrlv(testData0, row, col)
         val transposed1 = Algos.matIntrlv(testData1, row, col)
+
+        val inputPeriod = row * col / pFIn
+        val outputPeriod = row * col / pFOut
 
         import dut.{clockDomain, dataIn, dataOut}
         def doRead() = {
@@ -112,58 +117,73 @@ class MatIntrlvCoreTest extends AnyFunSuite {
         def haltRead() = dataOut.ready #= false
         def haltWrite() = dataIn.valid #= false
 
+        // init
         clockDomain.forkStimulus(2)
         dataIn.valid #= false
         dataOut.ready #= false
         clockDomain.waitSampling()
 
-        val dutResult = ArrayBuffer[Seq[Int]]()
-        val monitor = fork {
-          while (true) {
-            if (dataOut.valid.toBoolean) dutResult += dataOut.payload.map(_.toInt)
+        def pingPongRound() = { // test for a full ping-pong period
+          val dutResult = ArrayBuffer[Seq[Int]]()
+          val monitor = fork {
+            while (true) {
+              // FIXME: fire doesn't work(null pointer), using valid & ready instead, temp
+              if (dataOut.valid.toBoolean && dataOut.ready.toBoolean) dutResult += dataOut.payload.map(_.toInt)
+              clockDomain.waitSampling()
+            }
+          }
+
+          clockDomain.waitSampling()
+          // input
+          testData0.grouped(pFIn).foreach { data =>
+            doWrite(data)
+            haltRead()
             clockDomain.waitSampling()
           }
-        }
 
-        // input
-        testData0.grouped(pFIn).foreach { data =>
-          doWrite(data)
+          // input + output
+          val period = inputPeriod max outputPeriod
+          (0 until period).foreach { i =>
+            if (i < inputPeriod) doWrite(testData1.grouped(pFIn).toSeq(i)) else haltWrite()
+            if (i < outputPeriod) doRead() else haltRead()
+            clockDomain.waitSampling()
+          }
+
+          // check 0
+          haltRead()
+          haltWrite()
           clockDomain.waitSampling()
+          transposed0.grouped(pFOut).toSeq.zip(dutResult).foreach { case (ints, ints1) => assertResult(expected = ints)(actual = ints1) }
+          dutResult.clear()
+
+          // output
+          (0 until outputPeriod).foreach { i =>
+            haltWrite()
+            doRead()
+            clockDomain.waitSampling()
+          }
+
+          // stop
+          haltRead()
+          haltWrite()
+
+          // check 1
+          transposed1.grouped(pFOut).toSeq.zip(dutResult).foreach { case (ints, ints1) => assertResult(expected = ints)(actual = ints1) }
+          dutResult.clear()
         }
 
-        val inputPeriod = row * col / pFIn
-        val outputPeriod = row * col / pFOut
-        // input + output
-        val period = inputPeriod max outputPeriod
-        (0 until period + 1).foreach { i =>
-          if (i < inputPeriod) doWrite(testData1.grouped(pFIn).toSeq(i))
-          if (i < outputPeriod + 1) doRead()
-          clockDomain.waitSampling()
-        }
-
-        // check 0
-        transposed0.grouped(pFOut).toSeq.zip(dutResult).foreach { case (ints, ints1) => assertResult(expected = ints)(actual = ints1) }
-        dutResult.clear()
-
-        // output
-        (0 until outputPeriod + 1).foreach { _ =>
-          doRead()
-          clockDomain.waitSampling()
-        }
-
-        // check 1
-        transposed1.grouped(pFOut).toSeq.zip(dutResult).foreach { case (ints, ints1) => assertResult(expected = ints)(actual = ints1) }
-
-        haltRead()
-        haltWrite()
-        clockDomain.waitSampling(20)
+        // test for several rounds, continuously
+        pingPongRound()
+        clockDomain.waitSampling()
+        pingPongRound()
+        pingPongRound()
       }
     }
 
-    def testMode0(row:Int, col:Int) = testMatIntrlvHardware(row, col, col, row)
-    testMode0(10,10)
-    testMode0(7,9)
-    testMode0(9,7)
+    def testMode0(row: Int, col: Int) = testMatIntrlvHardware(row, col, col, row)
+    testMode0(10, 10)
+    testMode0(7, 9)
+    testMode0(9, 7)
     printlnGreen("mode 0 tests passed")
     testMatIntrlvHardware(8, 8, 16, 16)
     testMatIntrlvHardware(32, 128, 128, 128)

@@ -11,7 +11,6 @@ import Chainsaw.Real
 
 trait CustomPrecision {
 
-  val N: Int
   val dataWidth: Int
   val coeffWidth: Int
 
