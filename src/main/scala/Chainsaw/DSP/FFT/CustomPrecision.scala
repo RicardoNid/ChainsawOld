@@ -18,7 +18,7 @@ trait CustomPrecision {
   val resolution = -(dataWidth - 1 - peak)
 
   def dataType() = SFix(peak exp, resolution exp)
-  def complexDataType() =  ComplexNumber(peak, resolution)
+  def complexDataType =  HardType(ComplexNumber(peak, resolution))
 
   def coeffType() = SFix(1 exp, -(coeffWidth - 2) exp)
   def coeffDataType() =  ComplexNumber(1, -(coeffWidth - 2))

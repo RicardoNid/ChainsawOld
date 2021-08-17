@@ -152,7 +152,7 @@ package object Chainsaw extends RealFactory {
 
     def #=(value: Double): Unit = #=(BigDecimal(value))
 
-    def toDouble() = raw.toBigInt.toDouble / (1 << -minExp)
+    def toDouble = raw.toBigInt.toDouble / (1 << -minExp)
   }
 
   implicit class SimRealPimper(r: Real) {
