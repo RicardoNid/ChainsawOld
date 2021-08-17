@@ -1,14 +1,9 @@
 package Chainsaw.DSP.interleave
 
+import Chainsaw._
 import org.scalatest.funsuite.AnyFunSuite
 import spinal.core._
 import spinal.core.sim._
-import spinal.lib._
-import spinal.sim._
-import spinal.lib.fsm._
-import Chainsaw._
-import Chainsaw.Real
-import spinal.core
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -99,11 +94,11 @@ class MatIntrlvCoreTest extends AnyFunSuite {
     def testMatIntrlvHardware(row: Int, col: Int, pFIn: Int, pFOut: Int) = {
       SimConfig.withWave.compile(new MatIntrlv(row, col, pFIn, pFOut, dataType)).doSim { dut =>
 
-        val testData0, testData1 = Seq.tabulate(row, col)((_, _) => DSPRand.nextInt(1 << dataWidth))
-        val transposed0 = Algos.matIntrlv2D2D(testData0, row, col)
-        val transposed1 = Algos.matIntrlv2D2D(testData1, row, col)
+        val testData0, testData1 = (0 until row * col).map(_ => DSPRand.nextInt(1 << dataWidth))
+        val transposed0 = Algos.matIntrlv(testData0, row, col)
+        val transposed1 = Algos.matIntrlv(testData1, row, col)
 
-        import dut._
+        import dut.{clockDomain, dataIn, dataOut}
         def doRead() = {
           dataOut.ready #= true
           dataOut.payload.map(_.toInt)
@@ -131,32 +126,33 @@ class MatIntrlvCoreTest extends AnyFunSuite {
         }
 
         // input
-        testData0.foreach { data =>
+        testData0.grouped(pFIn).foreach { data =>
           doWrite(data)
           clockDomain.waitSampling()
         }
 
+        val inputPeriod = row * col / pFIn
+        val outputPeriod = row * col / pFOut
         // input + output
-        val period = dut.row max dut.col
-        (0 until period).foreach { i =>
-          if (i < dut.row) doWrite(testData1(i))
-          if (i < dut.col) doRead()
+        val period = inputPeriod max outputPeriod
+        (0 until period + 1).foreach { i =>
+          if (i < inputPeriod) doWrite(testData1.grouped(pFIn).toSeq(i))
+          if (i < outputPeriod + 1) doRead()
           clockDomain.waitSampling()
         }
 
         // check 0
-        clockDomain.waitSampling()
-        transposed0.zip(dutResult).foreach { case (ints, ints1) => assertResult(expected = ints)(actual = ints1) }
+        transposed0.grouped(pFOut).toSeq.zip(dutResult).foreach { case (ints, ints1) => assertResult(expected = ints)(actual = ints1) }
         dutResult.clear()
 
         // output
-        (0 until dut.col).foreach { _ =>
+        (0 until outputPeriod + 1).foreach { _ =>
           doRead()
           clockDomain.waitSampling()
         }
 
         // check 1
-        transposed1.zip(dutResult).foreach { case (ints, ints1) => assertResult(expected = ints)(actual = ints1) }
+        transposed1.grouped(pFOut).toSeq.zip(dutResult).foreach { case (ints, ints1) => assertResult(expected = ints)(actual = ints1) }
 
         haltRead()
         haltWrite()
@@ -164,6 +160,13 @@ class MatIntrlvCoreTest extends AnyFunSuite {
       }
     }
 
+    def testMode0(row:Int, col:Int) = testMatIntrlvHardware(row, col, col, row)
+    testMode0(10,10)
+    testMode0(7,9)
+    testMode0(9,7)
+    printlnGreen("mode 0 tests passed")
     testMatIntrlvHardware(8, 8, 16, 16)
+    testMatIntrlvHardware(32, 128, 128, 128)
+    printlnGreen("mode 1 tests passed")
   }
 }

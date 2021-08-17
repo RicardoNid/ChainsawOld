@@ -22,33 +22,36 @@ import spinal.lib._
  * @param pFOut data number per cycle of output, determines the throughput
  */
 
-// TODO: implement initialization logic
-// TODO: implement ping-pong logic
-// TODO: implement grouped srl
+// TODO: implement reset/initialization logic
 // TODO: implement coloring algo
-// TODO: bits should be a "datatype"
-case class MatIntrlv[T <: Data](row: Int, col: Int, pFIn: Int, pFOut: Int, dataTpye: HardType[T]) extends Component {
+case class MatIntrlv[T <: Data](row: Int, col: Int, pFIn: Int, pFOut: Int, dataType: HardType[T]) extends Component {
 
   val mode =
-    if (pFIn == pFOut && pFIn % row == 0 && pFIn % col == 0 && (row * col) % pFIn == 0) 0
-    else if (pFIn == row && pFOut == col || (pFIn == col && pFOut == row)) 1
-    else 2
+    if (pFIn == col && pFOut == row) 0
+    else if (pFIn == pFOut && pFIn % row == 0 && pFIn % col == 0 && (row * col) % pFIn == 0) 1
+    else if (pFIn == row && pFOut == col || (pFIn == col && pFOut == row)) 2
+    else 3
 
-  val dataIn = slave Stream Vec(dataTpye, pFIn)
-  val dataOut = master Stream Vec(dataTpye, pFOut)
+  printlnGreen(s"interleaver is on mode $mode")
+
+  val dataIn = slave Stream Vec(dataType, pFIn)
+  val dataOut = master Stream Vec(dataType, pFOut)
 
   mode match {
-    case 0 => {
+    case 0 => // directly using the core
+      val core = MatIntrlvCore(row, col, dataType)
+      core.dataIn << dataIn
+      core.dataOut >> dataOut
 
+    case 1 => // packing + core
       // parameters for packing
       val packRow = pFIn / col
       val packCol = pFIn / row
       val packSize = packRow * packCol // (intersection size of input and output)
       val squareSize = pFIn / packSize
 
-      val packType = HardType(Bits(packSize * widthOf(dataTpye) bits))
+      val packType = HardType(Bits(packSize * widthOf(dataType) bits))
 
-      printlnGreen(squareSize)
       val core = MatIntrlvCore(squareSize, squareSize, packType)
 
       // packing input
@@ -76,7 +79,6 @@ case class MatIntrlv[T <: Data](row: Int, col: Int, pFIn: Int, pFOut: Int, dataT
           }
         }
       }
-    }
   }
 }
 
