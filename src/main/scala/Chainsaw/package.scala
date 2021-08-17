@@ -4,14 +4,17 @@ import breeze.numerics.constants.Pi
 import spinal.core._
 import spinal.core.internals.BaseNode
 import spinal.core.sim._
-import spinal.lib.fsm.{State, StateCompletionTrait, StateMachineAccessor, StateMachineSharableRegUInt, StateMachineSharableUIntKey}
+import spinal.lib.fsm._
 import spinal.sim._
 import xilinx.{ELABO, IMPL, VivadoFlow, VivadoTask}
 
 import java.nio.file.Paths
 import scala.collection.mutable.ArrayBuffer
-import scala.math.{BigInt, ceil, floor, pow}
+import scala.math.{BigInt, floor, pow}
 import scala.util.Random
+
+import spinal.core._
+import spinal.lib._
 
 package object Chainsaw extends RealFactory {
 
@@ -109,8 +112,6 @@ package object Chainsaw extends RealFactory {
     val signal = btToSignal(manager, r.raw)
     manager.getLong(signal) * scala.math.pow(2, r.minExp)
   }
-
-  import spinal.core.sim
 
   implicit class MoreBVPimper(bv: BitVector) {
     def #=(value: Array[Boolean]) = { //TODO improve perf
@@ -428,10 +429,27 @@ package object Chainsaw extends RealFactory {
     }
   }
 
+
   implicit class VecUtil[T <: Data](vec: Vec[T]) {
 
+    def vecShiftWrapper(bitsShift: UInt => Bits, that: UInt): Vec[T] = {
+      val ret = cloneOf(vec)
+      val shiftedBits: Bits = bitsShift((that * widthOf(vec.dataType)).resize(log2Up(widthOf(vec.asBits))))
+      ret.assignFromBits(shiftedBits)
+      ret
+    }
+
+    val bits = vec.asBits
+
     // seems that Xilinx synth can implement this efficiently
-    def rotateLeft[T <: Data](that: UInt) = vec.asBits.rotateLeft(that * widthOf(vec.dataType))
+    def rotateLeft(that: Int): Vec[T] = vecShiftWrapper(bits.rotateRight, that)
+    def rotateLeft(that: UInt): Vec[T] = vecShiftWrapper(bits.rotateRight, that)
+    def rotateRight(that: Int): Vec[T] = vecShiftWrapper(bits.rotateLeft, that)
+    def rotateRight(that: UInt): Vec[T] = vecShiftWrapper(bits.rotateLeft, that)
+
+  }
+
+  implicit class StreamUtil[T <: Data](stream: Stream[T]) {
 
   }
 

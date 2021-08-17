@@ -75,7 +75,7 @@ class MontMultSystolicTest extends AnyFunSuite {
         }
 
         def randRSASim(lN: Int = 512, channel: Int = 0) = {
-          val ref = new RSARef(lN)
+          val ref = new Refs(lN)
           push(ref.getPrivateValue, ref.getPrivateValue, ref.getModulus, channel)
         }
         (0 until 8).foreach(randRSASim(512, _)) // 8 in parallel

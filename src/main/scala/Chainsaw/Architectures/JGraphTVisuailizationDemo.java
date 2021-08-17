@@ -15,7 +15,7 @@ import java.awt.*;
  * A demo applet that shows how to use JGraphX to visualize JGraphT graphs. Applet based on
  * JGraphAdapterDemo.
  */
-public class JGraphXAdapterDemo
+public class JGraphTVisuailizationDemo
         extends
         JApplet {
     private static final long serialVersionUID = 2202072534703043194L;
@@ -31,7 +31,7 @@ public class JGraphXAdapterDemo
      * @param args command line arguments
      */
     public static void main(String[] args) {
-        JGraphXAdapterDemo applet = new JGraphXAdapterDemo();
+        JGraphTVisuailizationDemo applet = new JGraphTVisuailizationDemo();
         applet.init();
 
         JFrame frame = new JFrame();

@@ -52,7 +52,7 @@ class MontExpSystolicTest extends AnyFunSuite {
             val currentInstanceNumber = instanceNumber(modeId)
             val currentWordPerInstance = wordPerInstance(modeId)
 
-            val ref = new RSARef(currentTestSize)
+            val ref = new Refs(currentTestSize)
             ref.refresh()
             val testModulus = if (testcase.useGivenValue) testcase.M
             else if (testcase.changeKey) BigInt(ref.getModulus) else lastModulus

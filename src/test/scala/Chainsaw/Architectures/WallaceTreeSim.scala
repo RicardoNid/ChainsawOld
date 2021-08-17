@@ -1,4 +1,4 @@
-package Chainsaw.BuildingBlocks
+package Chainsaw.Architectures
 
 import Chainsaw.{Real, _}
 import org.scalatest.funsuite.AnyFunSuite

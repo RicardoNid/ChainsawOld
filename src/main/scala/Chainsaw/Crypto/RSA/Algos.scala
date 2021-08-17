@@ -6,7 +6,7 @@ import Chainsaw._
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 
-class RSAAlgo(lN: Int) {
+class Algos(lN: Int) {
 
   val Rho = BigInt(1) << lN
 
@@ -173,10 +173,10 @@ class RSAAlgo(lN: Int) {
   }
 }
 
-object RSAAlgo {
-  def apply(lN: Int): RSAAlgo = new RSAAlgo(lN)
+object Algos {
+  def apply(lN: Int): Algos = new Algos(lN)
   def main(args: Array[String]): Unit = {
-    val algo = new RSAAlgo(4)
+    val algo = new Algos(4)
     val a = 7
     val b = 8
     println(algo.R2MM(a,b,13))

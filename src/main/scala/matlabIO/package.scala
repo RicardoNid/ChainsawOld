@@ -84,8 +84,9 @@ package object matlabIO {
     def asMatlab = "[" + array.map(_.mkString(", ")).mkString("; ") + "]"
   }
 
-  val epsilon = 1e-4
-
+  /** Implement some basic operations of complex number
+   * @param complex
+   */
   implicit class ComplexUtil(complex: MComplex) {
     def *(that: MComplex) = new MComplex(
       complex.real * that.real - complex.imag * that.imag,
@@ -101,6 +102,7 @@ package object matlabIO {
       complex.imag - that.imag
     )
 
+    val epsilon = 1e-4
     def sameAs(that: MComplex) =
       (complex.real - that.real).abs < epsilon &&
         (complex.imag - that.imag).abs < epsilon

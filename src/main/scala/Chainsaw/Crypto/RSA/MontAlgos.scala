@@ -226,7 +226,7 @@ object MontAlgos {
     ret
   }
 
-  val ref = new RSARef(512)
+  val ref = new Refs(512)
 
   // modular multiplication
   def verifyMM(algo: (BigInt, BigInt, BigInt) => BigInt) = {

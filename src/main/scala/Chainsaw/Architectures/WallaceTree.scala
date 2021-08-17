@@ -1,11 +1,8 @@
-package Chainsaw.BuildingBlocks
+package Chainsaw.Architectures
 
+import Chainsaw.{Real, _}
 import spinal.core._
-import spinal.core.sim._
 import spinal.lib._
-import spinal.lib.fsm._
-import Chainsaw.Real
-import Chainsaw._
 
 import scala.collection.mutable.ListBuffer
 
