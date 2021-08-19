@@ -9,7 +9,7 @@ import Chainsaw._
  * @param R real part of the complex number
  * @param I imaginary part of the complex number
  */
-case class ComplexNumber(peak:Int, resolution:Int) extends Bundle {
+case class ComplexNumber(peak: Int, resolution: Int) extends Bundle {
 
   val real = SFix(peak exp, resolution exp)
   val imag = SFix(peak exp, resolution exp)
@@ -23,11 +23,11 @@ case class ComplexNumber(peak:Int, resolution:Int) extends Bundle {
   // TODO: verify whether 0 - imag has bad effect or not
   def multiplyI = ComplexNumber(imag.getZero - imag, real)
 
-  def *(that:SFix) ={
+  def *(that: SFix) = {
     val R = real * that
     val I = imag * that
-    Seq(R,I).foreach(_.addAttribute("use_dsp", "yes"))
-    ComplexNumber(R,I)
+    Seq(R, I).foreach(_.addAttribute("use_dsp", "yes"))
+    ComplexNumber(R, I)
   }
 
   // ALGO: 6.10
@@ -37,8 +37,10 @@ case class ComplexNumber(peak:Int, resolution:Int) extends Bundle {
     //        val Z = that.real * E
     //        val R = ((that.real - that.imag) * imag + Z).truncated
     //        val I = ((that.real + that.imag) * real - Z).truncated
+    //    def delayed(signal: SFix) = if (pipelined) RegNext(signal) else signal
 
-    def delayed(signal: SFix) = if (pipelined) RegNext(signal) else signal
+    def delayed[T <: Data](signal: T) = if (pipelined) RegNext(signal) else signal
+
 
     // improved, using more variables for pipelining
     // stage 0
@@ -60,7 +62,7 @@ case class ComplexNumber(peak:Int, resolution:Int) extends Bundle {
     ComplexNumber(R1, I1)
   }
 
-  def fastMult(that:ComplexNumber, pipeline:Seq[Boolean]) = {
+  def fastMult(that: ComplexNumber, pipeline: Seq[Boolean]) = {
 
     def delayed0(signal: SFix) = if (pipeline(0)) RegNext(signal) else signal
     def delayed1(signal: SFix) = if (pipeline(1)) RegNext(signal) else signal

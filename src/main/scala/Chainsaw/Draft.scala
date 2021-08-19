@@ -13,11 +13,20 @@ import spinal.lib.fsm._
 import Chainsaw._
 import Chainsaw.Real
 
+case class Latency() extends Component {
+  val dataIn = in(ComplexNumber(3, -5))
+  val dataOut = out(ComplexNumber(3, -5))
+  val delayed = true
+  if (delayed) dataOut.setAsReg()
+  dataOut := dataIn
+  LatencyAnalysis(dataIn.real.raw, dataOut.real.raw)
+}
+
 object Main {
 
   def main(args: Array[String]): Unit = {
 
-    StreamFifoCC
+    GenRTL(new Latency())
 
   }
 }
