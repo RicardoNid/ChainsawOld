@@ -23,7 +23,7 @@ package object FFT {
   def isPowR(input: Int, radix: Int): Boolean = if (input == radix) true else isPowR(input / radix, radix)
 
   def multiplyWNnk(signal: ComplexNumber, index: Int, N: Int,
-                   dataType: () => SFix, coeffType: () => SFix,
+                   dataType: HardType[SFix], coeffType: HardType[SFix],
                    pipeline: Seq[Boolean]): ComplexNumber = {
 
     def pipelined[T <: Data](signal: T, i: Int) = if (pipeline(i)) RegNext(signal) else signal

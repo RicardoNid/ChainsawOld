@@ -1,19 +1,23 @@
 package Chainsaw
 
-import com.mathworks.engine._
-import com.mathworks.matlab.types.Complex
-import com.mathworks.matlab.{types => MTypes}
+import java.io._
+import scala.collection.mutable.ArrayBuffer
+import scala.io._
+
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.sim._
+import spinal.lib.fsm._
+
 import Chainsaw._
+import Chainsaw.Real
 
-import java.lang.Thread.sleep
-import java.time.Instant
-import java.time.Duration
+object Main {
 
+  def main(args: Array[String]): Unit = {
 
-object Draft extends App {
-  println(BigInt(35).toWords(4).mkString(" "))
-  println(BigInt(35).showWords(4).mkString(" "))
-  println(BigInt(35).showWordsHex(8).mkString(" "))
+    StreamFifoCC
 
-  println(BigInt(35) ^ BigInt(23))
+  }
 }

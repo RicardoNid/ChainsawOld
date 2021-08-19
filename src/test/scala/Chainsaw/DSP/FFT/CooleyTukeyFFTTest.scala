@@ -56,7 +56,7 @@ class CooleyTukeyFFTTest() extends AnyFunSuite {
       dataWidth = dataWidth, coeffWidth = coeffWidth,
       factors1 = factors1, factors2 = factors2)).doSim { dut =>
 
-      val test = (0 until 2 * testLength).map(_ => (DSPRand.nextDouble() - 0.5) * 1)
+      val test = (0 until 2 * testLength).map(i => (i / 2).toDouble)
       val testComplex = (0 until testLength).map(i => new MComplex(test(2 * i), test(2 * i + 1))).toArray
 
       import dut.{clockDomain, dataIn, dataOut}
@@ -86,10 +86,10 @@ class CooleyTukeyFFTTest() extends AnyFunSuite {
       }
       dataIn.valid #= false
 
-      clockDomain.waitSampling(100)
+      clockDomain.waitSampling(50)
 
       val golden = Refs.FFT(testComplex)
-      println(dutResult.zip(golden).map{ case (complex, complex1) => complex.toString + "####" + complex1.toString}.mkString("\n"))
+      println(dutResult.zip(golden).map { case (complex, complex1) => complex.toString + "####" + complex1.toString }.mkString("\n"))
       assert(dutResult.nonEmpty)
       assert(golden.zip(dutResult).forall { case (complex, complex1) => complex.sameAs(complex1, epsilon = 0.5) })
     }
@@ -114,7 +114,7 @@ class CooleyTukeyFFTTest() extends AnyFunSuite {
   }
 
   test("test back-to-back Cooley-Tukey FFTs") {
-    testCooleyTukeyBackToBackHardware(256, 32, 16, 16, Seq(4, 4, 2), Seq(4, 2))
+    testCooleyTukeyBackToBackHardware(8, 4, 16, 16, Seq(4), Seq(2))
     printlnGreen(s"256-point as 32*8 back to back passed")
   }
 }

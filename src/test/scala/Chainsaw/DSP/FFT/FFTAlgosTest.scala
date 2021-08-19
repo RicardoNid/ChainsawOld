@@ -38,4 +38,9 @@ class FFTAlgosTest extends AnyFunSuite {
     Ns0.zip(algos).foreach { case (n, algo) => testAlgo(n, algo) }
     printlnGreen(s"test CooleyTukey passed")
   }
+
+  test("show ctfft"){
+    val testCase = (0 until 8).map(i => new MComplex(i,i))
+    Algos.cooleyTukeyFFT(testCase, Seq(4,2))
+  }
 }

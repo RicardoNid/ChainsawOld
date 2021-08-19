@@ -38,7 +38,7 @@ package object Chainsaw extends RealFactory {
     def showWordsHex(wordSize: Int): Seq[String] = {
       require(wordSize % 4 == 0)
       val wordCount = ceil(bi.toString(2).size.toDouble / wordSize).toInt
-      bi.toString(16).grouped(wordSize).toSeq
+      bi.toString(16).grouped(wordSize / 4).toSeq
     }
 
     /** convert a long BitInt to multiple words, each as a new BigInt, padded to the left when needed, useful for multi-precision algos
