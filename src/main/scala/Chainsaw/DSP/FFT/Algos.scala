@@ -13,14 +13,14 @@ object Algos extends App {
   // build radix-r Cooley-Tukey FFT by the "block" and "parallel line" given
   def cooleyTukeyBuilder[T](input: Seq[T], factors: Seq[Int],
                             block: Seq[T] => Seq[T],
-                            mult: (T, Int, Int) => T): Seq[T] = {
+                            mult: (T, Int, Int) => T, inverse: Boolean = false): Seq[T] = {
 
     def twiddle(input: Seq[Seq[T]]) = {
       val N1 = input.head.size
       val N2 = input.size
       input.zip(cooleyTukeyCoeffIndices(N1, N2))
         .map { case (ts, ints) => ts.zip(ints)
-          .map { case (t, i) => mult(t, i, N1 * N2) }
+          .map { case (t, i) => mult(t, if (!inverse) i else -i, N1 * N2) }
         }
     }
 
@@ -33,17 +33,17 @@ object Algos extends App {
 
         import DSP.interleave.Algos._
         val input2D = matIntrlv1D2D(input, N1, N2) // permutation 0
-        printlnGreen("after inter0")
-        println(input2D.map(_.mkString(" ")).mkString("\n"))
+        //        printlnGreen("after inter0")
+        //        println(input2D.map(_.mkString(" ")).mkString("\n"))
         val afterBlock = input2D.map(block) // N2 blocks, length = N1
-        printlnGreen("after N1 FFT")
-        println(afterBlock.map(_.mkString(" ")).mkString("\n"))
+        //        printlnGreen("after N1 FFT")
+        //        println(afterBlock.map(_.mkString(" ")).mkString("\n"))
         val afterParallel = twiddle(afterBlock)
-        printlnGreen("before inter1")
-        println(afterParallel.map(_.mkString(" ")).mkString("\n"))
+        //        printlnGreen("before inter1")
+        //        println(afterParallel.map(_.mkString(" ")).mkString("\n"))
         val input2DForRecursion = matIntrlv2D2D(afterParallel, N2, N1) // permutation 1(transpose)
         val afterRecursion = input2DForRecursion.map(recursiveBuild(_, factors.tail))
-        println(afterRecursion.map(_.mkString(" ")).mkString("\n"))
+        //        println(afterRecursion.map(_.mkString(" ")).mkString("\n"))
         val ret = matIntrlv2D1D(afterRecursion, N1, N2) // permutation 2
         ret
       }

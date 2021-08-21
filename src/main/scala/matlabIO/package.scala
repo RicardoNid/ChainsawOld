@@ -85,12 +85,15 @@ package object matlabIO {
   }
 
   /** Implement some basic operations of complex number
+   *
    * @param complex
    */
   implicit class ComplexUtil(complex: MComplex) {
-    def *(that: MComplex) = new MComplex(
+    def *(that: MComplex): MComplex = new MComplex(
       complex.real * that.real - complex.imag * that.imag,
       complex.real * that.imag + complex.imag * that.real)
+
+    def *(that: Double): MComplex = complex * new MComplex(that, 0)
 
     def +(that: MComplex) = new MComplex(
       complex.real + that.real,
@@ -102,7 +105,12 @@ package object matlabIO {
       complex.imag - that.imag
     )
 
-    def sameAs(that: MComplex, epsilon:Double = 1e-4) =
+    def /(that: Double) = new MComplex(
+      complex.real / that,
+      complex.imag / that
+    )
+
+    def sameAs(that: MComplex, epsilon: Double = 1e-4) =
       (complex.real - that.real).abs < epsilon &&
         (complex.imag - that.imag).abs < epsilon
 

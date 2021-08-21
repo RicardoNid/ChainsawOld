@@ -9,13 +9,13 @@ import scala.collection.mutable.ArrayBuffer
 
 class CooleyTukeyFFTTest() extends AnyFunSuite {
 
-  def testCooleyTukeyFFTHardware(testLength: Int, dataWidth: Int, coeffWidth: Int, factors: Seq[Int]) = {
-    SimConfig.withWave.compile(new CooleyTukeyFFTStream(N = testLength, dataWidth = dataWidth, coeffWidth = coeffWidth, factors = factors)).doSim { dut =>
+  def testCooleyTukeyFFTHardware(testLength: Int, dataWidth: Int, coeffWidth: Int, factors: Seq[Int], inverse: Boolean = false) = {
+    SimConfig.withWave.compile(new CooleyTukeyFFTStream(N = testLength, dataWidth = dataWidth, coeffWidth = coeffWidth, factors = factors, inverse = inverse)).doSim { dut =>
 
       val test = (0 until 2 * testLength).map(_ => (DSPRand.nextDouble() - 0.5) * 1)
       val testComplex = (0 until testLength).map(i => new MComplex(test(2 * i), test(2 * i + 1))).toArray
 
-      import dut._
+      import dut.{clockDomain, dataIn, dataOut}
       clockDomain.forkStimulus(2)
       dataIn.valid #= false
       dataOut.ready #= true
@@ -42,7 +42,7 @@ class CooleyTukeyFFTTest() extends AnyFunSuite {
 
       clockDomain.waitSampling(dut.core.latency + 10)
 
-      val golden = Refs.FFT(testComplex)
+      val golden = if (!inverse) Refs.FFT(testComplex) else Refs.IFFT(testComplex)
       assert(dutResult.nonEmpty)
       println(golden.mkString(" "))
       println(dutResult.mkString(" "))
@@ -57,7 +57,7 @@ class CooleyTukeyFFTTest() extends AnyFunSuite {
       factors1 = factors1, factors2 = factors2)).doSim { dut =>
 
       val test = (0 until 2 * testLength).map(i => (i / 2).toDouble)
-      val testComplex = (0 until testLength).map(i => new MComplex(test(2 * i), test(2 * i + 1))).toArray
+      val testComplex = (0 until testLength).map(i => new MComplex(DSPRand.nextDouble() - 0.5, DSPRand.nextDouble() - 0.5)).toArray
 
       import dut.{clockDomain, dataIn, dataOut}
       clockDomain.forkStimulus(2)
@@ -86,7 +86,7 @@ class CooleyTukeyFFTTest() extends AnyFunSuite {
       }
       dataIn.valid #= false
 
-      clockDomain.waitSampling(50)
+      clockDomain.waitSampling(200)
 
       val golden = Refs.FFT(testComplex)
       println(dutResult.zip(golden).map { case (complex, complex1) => complex.toString + "####" + complex1.toString }.mkString("\n"))
@@ -95,16 +95,24 @@ class CooleyTukeyFFTTest() extends AnyFunSuite {
     }
   }
 
-  test("test radix-r FFT, fully pipelined") {
+  test("test radix-r FFT and IFFT, fully pipelined") {
 
-    def testRadixR: Seq[Int] => Unit = testCooleyTukeyFFTHardware(64, 16, 16, _)
+    def testRadixR: (Seq[Int], Boolean) => Unit = testCooleyTukeyFFTHardware(64, 16, 16, _, _)
 
-    testRadixR(Seq.fill(6)(2)) // radix-2
+    // FFT
+    testRadixR(Seq.fill(6)(2), false) // radix-2
     printlnGreen(s"radix-2 FFT passed")
-    testRadixR(Seq.fill(3)(4)) // radix-4
+    testRadixR(Seq.fill(3)(4), false) // radix-4
     printlnGreen(s"radix-4 FFT passed")
-    testRadixR(Seq.fill(2)(8)) // radix-8
+    testRadixR(Seq.fill(2)(8), false) // radix-8
     printlnGreen(s"radix-8 FFT passed")
+    // IFFT
+    testRadixR(Seq.fill(6)(2), true) // radix-2
+    printlnGreen(s"radix-2 IFFT passed")
+    testRadixR(Seq.fill(3)(4), true) // radix-4
+    printlnGreen(s"radix-4 IFFT passed")
+    //    testRadixR(Seq.fill(2)(8), true) // radix-8
+    //    printlnGreen(s"radix-8 IFFT passed")
 
   }
 
@@ -114,7 +122,7 @@ class CooleyTukeyFFTTest() extends AnyFunSuite {
   }
 
   test("test back-to-back Cooley-Tukey FFTs") {
-    testCooleyTukeyBackToBackHardware(8, 4, 16, 16, Seq(4), Seq(2))
+    testCooleyTukeyBackToBackHardware(256, 32, 16, 16, Seq(4, 4, 2), Seq(4, 2))
     printlnGreen(s"256-point as 32*8 back to back passed")
   }
 }

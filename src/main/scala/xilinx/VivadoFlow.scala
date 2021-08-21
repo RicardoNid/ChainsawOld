@@ -15,7 +15,8 @@ class VivadoFlow[T <: Component](
                                   workspacePath: String,
                                   vivadoConfig: VivadoConfig,
                                   vivadoTask: VivadoTask,
-                                  force: Boolean = false
+                                  force: Boolean = false,
+                                  constraint: VivadoConstraint = VivadoConstraint() // no constraint by default
                                 ) {
 
   import vivadoConfig._
@@ -74,6 +75,7 @@ class VivadoFlow[T <: Component](
         script += "opt_design\n"
         script += "place_design\n"
         script += "route_design\n"
+        script += s"write_bitstream -force ${topModuleName}.bit\n"
         taskName = "impl"
       }
     }

@@ -15,6 +15,7 @@ import scala.util.Random
 
 import spinal.core._
 import spinal.lib._
+import matlabIO._
 
 package object Chainsaw extends RealFactory {
 
@@ -131,6 +132,13 @@ package object Chainsaw extends RealFactory {
         acc |= bit
       }
       setBigInt(bv, acc)
+    }
+  }
+
+  implicit class SimComplexPimper(cn: ComplexNumber) {
+    def #=(value: MComplex): Unit = {
+      cn.real #= value.real
+      cn.imag #= value.imag
     }
   }
 
@@ -427,6 +435,20 @@ package object Chainsaw extends RealFactory {
       ret.raw := -sf.raw
       ret
     }
+
+    def +^(that: SFix) = {
+      val (rawLeft, rawRight) = sf.alignLsb(that)
+      val ret = SFix(Math.max(sf.maxExp, that.maxExp) + 1 exp, Math.max(rawLeft.getBitsWidth, rawRight.getBitsWidth) + 1 bits)
+      ret.raw := (rawLeft +^ rawRight)
+      ret
+    }
+
+    def -^(that: SFix) = {
+      val (rawLeft, rawRight) = sf.alignLsb(that)
+      val ret = SFix(Math.max(sf.maxExp, that.maxExp) + 1 exp, Math.max(rawLeft.getBitsWidth, rawRight.getBitsWidth) + 1 bits)
+      ret.raw := (rawLeft -^ rawRight)
+      ret
+    }
   }
 
 
@@ -452,5 +474,11 @@ package object Chainsaw extends RealFactory {
   implicit class StreamUtil[T <: Data](stream: Stream[T]) {
 
   }
+
+  implicit class RandomUtil(rand: Random) {
+    def nextComplex() = new MComplex(rand.nextDouble(), rand.nextDouble())
+    def nextBigInt(bitLength:Int) = BigInt(rand.nextString(bitLength).map(_ % 2).mkString(""), 2)
+  }
+
 
 }
