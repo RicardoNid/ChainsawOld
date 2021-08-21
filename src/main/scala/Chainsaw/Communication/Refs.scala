@@ -8,7 +8,14 @@ import spinal.lib.fsm._
 
 import Chainsaw._
 import Chainsaw.Real
+import matlabIO._
+
 
 object Refs {
-//  def
+
+  def qammod(input: Array[Int], bitPerSymbol: Int, gray: Boolean = false): Array[MComplex] = {
+    if (bitPerSymbol == 1) Array(new MComplex(-1, 0), new MComplex(1, 0))
+    else if (!gray) eng.feval[Array[MComplex]]("qammod", input, Array(1 << bitPerSymbol))
+    else eng.feval[Array[MComplex]]("qammod", input, Array(1 << bitPerSymbol), "gray")
+  }
 }

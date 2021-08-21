@@ -140,6 +140,8 @@ package object Chainsaw extends RealFactory {
       cn.real #= value.real
       cn.imag #= value.imag
     }
+
+    def toComplex = new MComplex(cn.real.toDouble, cn.imag.toDouble)
   }
 
   implicit class SimSFixPimper(sf: SFix) {

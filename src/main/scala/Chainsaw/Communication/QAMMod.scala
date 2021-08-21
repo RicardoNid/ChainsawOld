@@ -15,7 +15,7 @@ import matlabIO._
  * @param gray          symbol order, binary when false, gray when true
  * @param customSymbols when you need to specify custom QAM values(different from Matlab)
  */
-case class QAMMod(bitAlloc: Seq[Int], powerAlloc: Seq[Double], symbolType: HardType[ComplexNumber],
+case class QAMMod(bitAlloc: Seq[Int], powAlloc: Seq[Double], symbolType: HardType[ComplexNumber],
                   gray: Boolean = true, customSymbols: Map[Int, Seq[MComplex]] = Map[Int, Seq[MComplex]]()) extends Component {
 
   val fixedType = HardType(symbolType().real)
@@ -33,7 +33,7 @@ case class QAMMod(bitAlloc: Seq[Int], powerAlloc: Seq[Double], symbolType: HardT
   val rmsValues = QAMValues.map(eng.feval[Double]("rms", _))
   // QAM LUT for each segment
   val QAMLUTs = bitAlloc.filter(_ != 0).zipWithIndex.map { case (bitAllocated, i) =>
-    val LUTValues = QAMValues(bitAllocated - 1).map(_ / rmsValues(bitAllocated - 1)).map(_ * powerAlloc(i))
+    val LUTValues = QAMValues(bitAllocated - 1).map(_ / rmsValues(bitAllocated - 1)).map(_ * powAlloc(i))
     Mem(LUTValues.map(CN(_, fixedType)))
   }
 
