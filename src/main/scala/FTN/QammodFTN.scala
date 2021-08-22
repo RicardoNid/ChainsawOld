@@ -1,59 +1,58 @@
 package FTN
 
-import Chainsaw._
-import matlabIO._
 import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.sim._
+import spinal.lib.fsm._
+
+import Chainsaw._
+
+import matlabIO._
 
 // TODO: change this to be dynamic
-case class QammodFTN(bitAlloc: Array[Int], resolution: Int) extends Component {
+case class QammodFTN(bitAlloc: Seq[Int], powAlloc: Seq[Double], period: Int) extends Component {
 
-  val wordWidth = 1 + 1 - resolution
-  val bitAllocatedMax = bitAlloc.max
-  val parallelFactor = bitAlloc.length
+  val symbolsFor3 = Seq(new MComplex(1, 1), new MComplex(1, -1))
+  val core = Communication.QAMMod(bitAlloc = bitAlloc, powAlloc = powAlloc, symbolType = complexType, customSymbols = Map(3 -> symbolsFor3))
 
-  val dataIn = in Bits (bitAlloc.sum bits)
-  val dataOut = out Vec(Bits(wordWidth * 2 bits), parallelFactor) // each one is a complex number
+  val symbolCount = bitAlloc.size / period
+  val inType = HardType(Bits(bitAlloc.sum / period bits))
+  val outType = HardType(Vec(complexType, symbolCount))
 
-  val eng = AsyncEng.get() // TODO: decouple with matlab
+  val dataIn = slave Flow Fragment(inType)
+  val dataOut = master Flow Fragment(cloneOf(outType))
 
-  val QAMValues: Seq[Seq[MComplex]] = (1 to bitAllocatedMax).map { i => // Normalization done here
-    val M = 1 << i
-    val values = (0 until M).toArray
-    i match {
-      case 1 => Seq(1, -1).map(new MComplex(_, 0))
-      case _ =>
-        val symbols = eng.feval[Array[MComplex]]("qammod", values, Array(M))
-        val sum = symbols.map(complex => complex.real * complex.real + complex.imag * complex.imag).sum
-        val rms = scala.math.sqrt(sum / symbols.size)
-        symbols.toSeq.map(complex => new MComplex(complex.real / rms, complex.imag / rms))
-    }
-  }
+  // input logic
+  val counterIn = Counter(period, inc = dataIn.fire)
+  when(!dataIn.fire)(counterIn.clear())
 
-  println(QAMValues.map(_.mkString(" ")).mkString("\n"))
+  val serial2parallel = Vec(Reg(inType), period)
+  serial2parallel(counterIn.value) := dataIn.payload
 
-  // TODO: merge them together
-  printlnGreen(resolution)
-  val QAMROMReals = QAMValues.map(values => Mem(values.map(complex => SF(complex.real, 1 exp, resolution exp))))
-  val QAMROMImags = QAMValues.map(values => Mem(values.map(complex => SF(complex.imag, 1 exp, resolution exp))))
+  core.dataIn.payload := serial2parallel.asBits
+  core.dataIn.valid := counterIn.willOverflow
 
-  val ends = (0 until parallelFactor).map(i => bitAlloc.take(i + 1).sum)
-  val starts = 0 +: ends.init
-  val segments = ends.zip(starts).map { case (end, start) =>
-    bitAlloc.sum - 1 - start downto bitAlloc.sum - end
-  }
+  // output logic
+  val counterOut = Counter(period)
+  when(core.dataOut.fire)(counterOut.increment())
+  when(!(counterOut.value === 0))(counterOut.increment())
 
-  dataOut.zip(bitAlloc.zip(segments)).foreach { case (output, (bitAllocated, segment)) =>
-    bitAllocated match {
-      case 0 => // do nothing
-      case _ => output :=
-        QAMROMReals(bitAllocated - 1)(dataIn(segment).asUInt).asBits ##
-          QAMROMImags(bitAllocated - 1)(dataIn(segment).asUInt).asBits
-    }
-  }
+  val parallel2serial = Vec(Reg(outType), period)
+  // core.dataOut >> parallel2serial
+  parallel2serial.zipWithIndex.foreach { case (segment, i) => segment := Vec(core.dataOut.payload.slice(i * symbolCount, (i + 1) * symbolCount)) }
+
+  dataOut.payload.fragment := parallel2serial(counterOut.value)
+  dataOut.valid := RegNext(core.dataOut.valid, init = False)
+  // last identify the end of a frame
+  // TODO: should I cut the delay of the last data of serial2parallel and parallel2serial?
+  val latency = period + 1 + 1// serial2parallel + Qammod + parallel2serial
+  println(s"latency of QAMmod = $latency")
+  dataOut.last := Delay(dataIn.last, latency, init = False)
 }
 
 object QammodFTN extends App {
-  val originalAllocation = Array.fill(128)(4)
-  GenRTL(new QammodFTN(originalAllocation, -6))
-  VivadoSynth(new QammodFTN(originalAllocation, -6), name = "QAM")
+  val bitAlloc = Array.fill(128)(4)
+  val powAlloc = Array.fill(128)(1.0)
+  GenRTL(new QammodFTN(bitAlloc, powAlloc, period = 8))
 }

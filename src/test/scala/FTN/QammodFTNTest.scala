@@ -1,52 +1,72 @@
 package FTN
 
+import org.scalatest.funsuite.AnyFunSuite
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.sim._
+import spinal.lib.fsm._
+
+import scala.math._
 import Chainsaw._
 import matlabIO._
-import org.scalatest.funsuite.AnyFunSuite
-import spinal.core.sim._
+
+import scala.collection.mutable.ArrayBuffer
 
 class QammodFTNTest extends AnyFunSuite {
+  test("test qammod without bitAlloc and powAlloc") {
+    val pF = 256
+    val bitPerSymbol = 4
 
-  test("test qammod for FTN") {
-    // 1. for fixed allocated Bits
-    val parallelFactor = 128
-    val bitAllocated = 4
-    val bitAlloc = Array.fill(parallelFactor)(bitAllocated)
+    val bitAlloc = Seq.fill(pF)(bitPerSymbol)
+    val powAlloc = Seq.fill(pF)(1.0)
+    val period = 8
 
-    SimConfig.withWave.compile(new QammodFTN(bitAlloc, -10)).doSim { dut =>
+    SimConfig.withWave.compile(new QammodFTN(bitAlloc, powAlloc, period)).doSim { dut =>
+      import dut.{clockDomain, dataIn, dataOut}
+      clockDomain.forkStimulus(2)
+      dataIn.valid #= false
+      dataIn.last #= false
+      clockDomain.waitSampling()
 
-      val bytes = Array.fill(bitAlloc.sum / 8)(1.toByte)
-      DSPRand.nextBytes(bytes)
-      val input = BigInt(bytes).abs
-
-      import dut._
-
-      dataIn #= input
-      sleep(1)
-
-      val yours = dataOut.map { bits =>
-        val binaryString = bits.toBigInt.toString(2).padToLeft(2 * wordWidth, '0')
-        def signedToInt(binaryString: String): Int = {
-          binaryString.reverse.init.zipWithIndex.map { case (c, i) => c.asDigit * (1 << i) }.sum +
-            binaryString.head.asDigit * (-1) * (1 << (binaryString.size - 1))
+      val dutResult = ArrayBuffer[Seq[MComplex]]()
+      val monitor = fork {
+        while (true) {
+          dutResult += dataOut.payload.fragment.map(_.toComplex)
+          clockDomain.waitSampling()
         }
-        val real = binaryString.take(wordWidth)
-        val imag = binaryString.takeRight(wordWidth)
-        Seq(signedToInt(real).toDouble / (1 << -resolution), signedToInt(imag).toDouble / (1 << -resolution))
-      }.flatten
+      }
 
-      val eng = AsyncEng.get()
-      val inputInts: Array[Int] = input.toString(2).padToLeft(dut.bitAlloc.sum, '0')
-        .grouped(4).toArray
-        .map(_.mkString("")).map(BigInt(_, 2).intValue())
+      val testCase = bitAlloc.map(bitAllocated => DSPRand.nextInt(1 << bitAllocated)).toArray
+      val testBits = testCase.zip(bitAlloc).map { case (value, bitAllocated) =>
+        value.toBinaryString.padToLeft(bitAllocated, '0')
+      }.mkString("")
+        .grouped(bitAlloc.sum / period).map(BigInt(_, 2)).toSeq
+      printlnGreen(testBits.size)
 
-      val symbols = eng.feval[Array[MComplex]]("qammod", Array.tabulate(1 << bitAllocated)(i => i), Array(1 << bitAllocated))
-      val rms = eng.feval[Double]("rms", symbols)
-      val golden = eng.feval[Array[MComplex]]("qammod", inputInts, Array(1 << bitAllocated))
-        .map(complex => Seq(complex.real, complex.imag)).flatten.map(_ / rms)
-      println(yours.mkString(" "))
+      def testOneRound() = {
+        (0 until period).foreach { i =>
+          dataIn.valid #= true
+          dataIn.payload.fragment #= testBits(i)
+          clockDomain.waitSampling()
+        }
+      }
+
+      testOneRound()
+      dataIn.valid #= false
+      dataIn.last #= false
+      clockDomain.waitSampling(2)
+      testOneRound()
+
+      dataIn.valid #= false
+      dataIn.last #= false
+      clockDomain.waitSampling(period + 2)
+
+      val golden = Communication.Refs.qammod(testCase, bitPerSymbol).map(_ / sqrt(10))
+
       println(golden.mkString(" "))
-      assert(yours.zip(golden).forall { case (d, d1) => (d - d1).abs <= (1.0 / 16) })
+      println(dutResult.map(_.mkString(" ")).mkString("\n"))
+      //      assert(golden.zip(yours).forall { case (c0, c1) => c0.sameAs(c1, 0.01) })
     }
   }
 }
