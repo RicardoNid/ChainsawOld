@@ -1,6 +1,7 @@
 package Chainsaw.DSP.interleave
 
 import Chainsaw._
+import Chainsaw.matlabIO._
 
 object Refs {
 

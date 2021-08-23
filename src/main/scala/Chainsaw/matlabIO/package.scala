@@ -1,17 +1,20 @@
+package Chainsaw
+
 import com.mathworks.engine.MatlabEngine
 import com.mathworks.matlab.types
-import com.mathworks.matlab.types._
 
 import java.nio.file.Paths
 import scala.io.Source
 
 package object matlabIO {
 
-  var matlabWorkingSpace = java.nio.file.Paths.get("/home/ltr/IdeaProjects/Chainsaw/matlabWorkspace")
+  var matlabWorkingSpace = java.nio.file.Paths.get("./matlabWorkspace")
 
   val AsyncEng = if (MatlabEngine.findMatlab().nonEmpty) {
     MatlabEngine.connectMatlabAsync(MatlabEngine.findMatlab()(0))
   } else MatlabEngine.startMatlabAsync()
+
+  val eng = AsyncEng.get()
 
   type MComplex = types.Complex
   type MStruct = types.Struct

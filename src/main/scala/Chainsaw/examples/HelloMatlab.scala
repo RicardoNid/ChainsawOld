@@ -1,11 +1,10 @@
-package matlabIO
+package Chainsaw.examples
 
+import Chainsaw.matlabIO._
 import com.mathworks.engine.MatlabEngine
-import com.mathworks.matlab.types._
 
 import java.lang.Thread.sleep
 import java.time.{Duration, Instant}
-import scala.collection.JavaConversions._
 
 object HelloMatlab {
   @throws[Exception]
@@ -50,8 +49,6 @@ object HelloMatlab {
     val jagged = Array(Array(1, 2), Array(1, 2, 3))
     eng.putVariable("jagged", jagged)
     println(eng.getVariable[Array[Array[Int]]]("jagged").map(_.mkString(" ")).mkString("\n"))
-
-    import Chainsaw._
     println(eng.getVariable[MComplex]("complex"))
 
   }

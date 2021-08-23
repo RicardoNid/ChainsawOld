@@ -4,7 +4,7 @@ import Chainsaw.{DSPRand, eng}
 import com.mathworks.engine.MatlabEngine
 import com.mathworks.matlab.types._
 import scala.collection.JavaConversions._
-import matlabIO._
+import Chainsaw.matlabIO._
 
 object MatlabRef {
   val eng = AsyncEng.get()

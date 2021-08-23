@@ -1,7 +1,7 @@
 package Chainsaw.DSP
 
 import Chainsaw._
-import matlabIO._
+import Chainsaw.matlabIO._
 import spinal.core._
 import spinal.lib._
 

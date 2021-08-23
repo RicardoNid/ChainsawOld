@@ -13,7 +13,7 @@ import scala.util.Random
 
 import spinal.core._
 import spinal.lib._
-import matlabIO._
+import Chainsaw.matlabIO._
 
 import scala.math._
 
@@ -26,14 +26,18 @@ package object Chainsaw extends RealFactory {
 
   implicit class BigIntUtil(bi: BigInt) {
 
-    /** convert a long BitInt to multiple words, each as a new binary String, padded to the left when needed, useful for multi-precision algos
+    // following methods are designed to convert a long bit sequence to multiple segments, making debugging easier
+    /** convert a long BitInt to multiple words, each as a new binary String, padded to the left when needed
      *
-     * order: MSB -> LAB
+     * order:
+     *
+     * inside each element: LSB -> MSB
+     *
+     * between elements: LSB -> MSB(same logic as Bits -> Vec[Bool], which keeps the index unchanged)
      */
-    def showWords(wordSize: Int): Seq[String] = {
+    def showWords(wordSize: Int, radix: Int = 2): Seq[String] = {
       val wordCount = ceil(bi.toString(2).length.toDouble / wordSize).toInt
-      bi.toString(2).padToLeft(wordCount * wordSize, '0')
-        .grouped(wordSize).toSeq
+      bi.toString(2).padToLeft(wordCount * wordSize, '0').grouped(wordSize).toSeq
     }
 
     def showWordsHex(wordSize: Int): Seq[String] = {
@@ -42,7 +46,7 @@ package object Chainsaw extends RealFactory {
       bi.toString(16).grouped(wordSize / 4).toSeq
     }
 
-    /** convert a long BitInt to multiple words, each as a new BigInt, padded to the left when needed, useful for multi-precision algos
+    /** convert a long BigInt to multiple words, each as a new BigInt, padded to the left when needed, useful for multi-precision algos
      *
      * order: MSB -> LSB
      */
@@ -241,7 +245,6 @@ package object Chainsaw extends RealFactory {
 
   import matlabIO._
 
-  val eng = AsyncEng.get()
 
   def printlnWhenNumericDebug(content: Any) = if (ChainsawNumericDebug) printlnYellow(content)
 
@@ -390,8 +393,6 @@ package object Chainsaw extends RealFactory {
 
   val XilinxClockConfig = ClockDomainConfig(resetKind = BOOT)
 
-  type HardInt = BitVector with Num[_ >: SInt with UInt <: BitVector with Num[_ >: SInt with UInt] with MinMaxProvider with DataPrimitives[_ >: SInt with UInt] with BitwiseOp[_ >: SInt with UInt]] with MinMaxProvider with DataPrimitives[_ >: SInt with UInt <: BitVector with Num[_ >: SInt with UInt] with MinMaxProvider with DataPrimitives[_ >: SInt with UInt] with BitwiseOp[_ >: SInt with UInt]] with BitwiseOp[_ >: SInt with UInt <: BitVector with Num[_ >: SInt with UInt] with MinMaxProvider with DataPrimitives[_ >: SInt with UInt] with BitwiseOp[_ >: SInt with UInt]]
-
   def value2C(number: BigInt, width: Int) = {
     if (width == 1) number
     else {
@@ -400,8 +401,12 @@ package object Chainsaw extends RealFactory {
     }
   }
 
-  implicit class BitStringUtil(string: String) {
-    def toBigIntAsBinary = BigInt(string)
+  /** Add some utils when you treat string as binary number
+   */
+  implicit class BinaryStringUtil(s: String) {
+    def toBigInt = BigInt(s, 2)
+    def toUnsigned = s.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (1 << i) }.sum
+    def toSigned = s.tail.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (1 << i) }.sum - s.head.asDigit * (1 << s.length - 1)
   }
 
   implicit class SFixUtil(sf: SFix) {
@@ -447,7 +452,9 @@ package object Chainsaw extends RealFactory {
   }
 
   implicit class StreamUtil[T <: Data](stream: Stream[T]) {
+    def >=>(that: Stream[T]): Unit = {
 
+    }
   }
 
   implicit class RandomUtil(rand: Random) {

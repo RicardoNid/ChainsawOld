@@ -2,7 +2,7 @@ package Chainsaw
 
 import spinal.core._
 import Chainsaw._
-import matlabIO._
+import Chainsaw.matlabIO._
 
 // TODO: extend this from Data
 

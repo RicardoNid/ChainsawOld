@@ -8,7 +8,7 @@ import spinal.lib.fsm._
 
 import Chainsaw._
 import Chainsaw.Real
-import matlabIO._
+import Chainsaw.matlabIO._
 
 
 object Refs {

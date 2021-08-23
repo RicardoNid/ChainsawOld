@@ -1,6 +1,7 @@
 package FTN
 
 import Chainsaw._
+import Chainsaw.matlabIO._
 
 object Model {
   // Run matlab model

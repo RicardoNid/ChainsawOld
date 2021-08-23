@@ -10,7 +10,7 @@ import spinal.lib.fsm._
 import Chainsaw._
 import Chainsaw.Real
 
-import matlabIO._
+import Chainsaw.matlabIO._
 
 case class ComplexMult(pipeline:Int = 0) extends Component {
     val dataIn = in(Vec(ComplexNumber(7, -8), 2))

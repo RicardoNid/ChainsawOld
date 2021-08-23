@@ -2,7 +2,7 @@ package Chainsaw.DSP.FFT
 
 import cc.redberry.rings.scaladsl._
 import cc.redberry.rings.primes._
-import matlabIO._
+import Chainsaw.matlabIO._
 import Chainsaw._
 
 import scala.collection.{immutable, mutable}

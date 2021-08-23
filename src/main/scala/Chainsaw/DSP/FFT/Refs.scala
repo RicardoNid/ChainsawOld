@@ -1,6 +1,6 @@
 package Chainsaw.DSP.FFT
 
-import matlabIO._
+import Chainsaw.matlabIO._
 
 import scala.util.{Failure, Success, Try}
 
