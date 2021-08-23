@@ -478,8 +478,12 @@ package object Chainsaw extends RealFactory {
   }
 
   implicit class RandomUtil(rand: Random) {
+
     def nextComplex() = new MComplex(rand.nextDouble(), rand.nextDouble())
+
     def nextBigInt(bitLength:Int) = BigInt(rand.nextString(bitLength).map(_ % 2).mkString(""), 2)
+
+    def nextBinaryString(bitLength:Int): String = rand.nextString(bitLength).map(_ % 2).mkString("")
   }
 
 

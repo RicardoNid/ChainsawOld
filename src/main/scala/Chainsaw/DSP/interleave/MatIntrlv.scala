@@ -37,11 +37,14 @@ case class MatIntrlv[T <: Data](row: Int, col: Int, pFIn: Int, pFOut: Int, dataT
   val dataIn = slave Stream Vec(dataType, pFIn)
   val dataOut = master Stream Vec(dataType, pFOut)
 
+  var latency = 0
+
   mode match {
     case 0 => // directly using the core
       val core = MatIntrlvCore(row, col, dataType)
       core.dataIn << dataIn
       core.dataOut >> dataOut
+      latency = row max col
 
     case 1 => // packing + core
       // parameters for packing
@@ -53,6 +56,7 @@ case class MatIntrlv[T <: Data](row: Int, col: Int, pFIn: Int, pFOut: Int, dataT
       val packType = HardType(Bits(packSize * widthOf(dataType) bits))
 
       val core = MatIntrlvCore(squareSize, squareSize, packType)
+      latency = squareSize
 
       // packing input
       val dataInRearranged: Seq[T] = Algos.matIntrlv(dataIn.payload, packRow, col)
@@ -80,7 +84,6 @@ case class MatIntrlv[T <: Data](row: Int, col: Int, pFIn: Int, pFOut: Int, dataT
         }
       }
   }
-
 }
 
 object InterleaverFTN extends App {

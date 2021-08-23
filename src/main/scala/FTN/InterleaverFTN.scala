@@ -6,86 +6,26 @@ import spinal.lib._
 
 /** High-throughput interlever that implements matrix interleaving
  *
- * @param row            the semantic is the same as row of Matlab matintrlv
- * @param col            the semantic is the same as row of Matlab matintrlv
- *                       for matrix interleaver, the de-interleaver is an interleaver that exchange the original row and col
- * @param parallelFactor bits number per cycle, determines the throughput
- * @param forward
+ * @param row the semantic is the same as row of Matlab matintrlv
+ * @param col the semantic is the same as row of Matlab matintrlv
+ *            for matrix interleaver, the de-interleaver is an interleaver that exchange the original row and col
+ * @param pF  bits number per cycle, determines the throughput
  */
 
-// TODO: implement initialization logic
-// TODO: implement ping-pong logic
-// TODO: implement grouped srl
-// TODO: implement coloring algo
-// TODO: bits should be a "datatype"
-case class InterleaverFTN(row: Int, col: Int, parallelFactor: Int) extends Component {
+case class InterleaverFTN(row: Int, col: Int, pF: Int) extends Component {
 
-  val running = in Bool()
-  val we = in Bool()
+  val core = DSP.interleave.MatIntrlv(row, col, pF, pF, Bool())
+  val dataIn = slave Flow Fragment(Bits(pF bits))
+  val dataOut = master Flow Fragment(Bits(pF bits))
 
-  val dataIn = in Bits (parallelFactor bits)
-  val dataOut = out Bits (parallelFactor bits)
+  core.dataIn.valid := dataIn.valid
+  core.dataIn.payload := Vec(dataIn.fragment.asBools.reverse)
 
-  require(
-    Seq(parallelFactor, row, col).forall(isPow2(_)) && // this can be removed if shifter works
-      parallelFactor >= (row max col) &&
-      parallelFactor % row == 0 &&
-      parallelFactor % col == 0 &&
-      (row * col) % parallelFactor == 0)
+  core.dataOut.ready := True
+  dataOut.valid := core.dataOut.valid
+  dataOut.fragment := core.dataOut.payload.reverse.asBits()
 
-  val packRow = parallelFactor / col
-  val packCol = parallelFactor / row
-  val packSize = packRow * packCol // (intersection size of input and output)
-  def packType = Bits(packSize bits)
-  val squareSize = parallelFactor / packSize
-
-  val rams = Seq.fill(squareSize)(Mem(packType, squareSize))
-  val count = Counter(squareSize, inc = running)
-
-  // wiring dataIn
-  // TODO: examine the logic cost of this part
-  val dataInRearranged = cloneOf(dataIn)
-  (0 until parallelFactor).foreach { i =>
-    val bitId = parallelFactor - 1 - i
-    val mapped = (i % packRow) * col + i / packRow
-    val mappedBitId = parallelFactor - 1 - mapped
-    dataInRearranged(bitId) := dataIn(mappedBitId)
-  }
-
-  val dataInShifted: Bits = dataInRearranged.rotateRight(count.value << log2Up(packSize))
-  val dataInPacked = dataInShifted.subdivideIn(squareSize slices).reverse // dataInPacked(0) holds the MSBs
-
-  val dataUnpacked = Bits(parallelFactor bits)
-  dataUnpacked.clearAll()
-
-  // square interleave
-  // TODO: extract this as a module and optimize it
-  printlnGreen(s"build a $squareSize * $squareSize virtual array, using $squareSize RAMs for interleaving")
-  val outputAddresses = Vec(Reg(UInt(log2Up(squareSize) bits)), squareSize)
-  outputAddresses.zipWithIndex.foreach { case (addr, i) => addr.init(i) } //
-  when(running) {
-    when(we) {
-      rams.zip(dataInPacked).foreach { case (ram, data) => ram(count.value) := data } // ram(0) holds theMSBs
-    }.otherwise {
-      dataUnpacked := rams.zip(outputAddresses).map { case (ram, addr) => ram.readAsync(addr) }.reverse.asBits()
-      outputAddresses.zip(outputAddresses.tail :+ outputAddresses.head).foreach { case (left, right) => right := left }
-    }
-  }
-
-  val dataOutShifted = dataUnpacked.rotateLeft(count.value << log2Up(packSize))
-
-  // wiring dataOut
-  (0 until parallelFactor).foreach { i =>
-    val bitId = parallelFactor - 1 - i
-
-    val packId = i / packSize
-    val rowId = packId * packRow + i % packRow
-    val colId = i % packSize / packRow
-
-    val mapped = colId * row + rowId
-    val mappedBitId = parallelFactor - 1 - mapped
-    dataOut(mappedBitId) := dataOutShifted(bitId)
-  }
+  dataOut.last := Delay(dataIn.last, core.latency, init = False)
 }
 
 object InterleaverFTN extends App {

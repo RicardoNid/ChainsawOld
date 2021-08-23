@@ -13,9 +13,10 @@ import matlabIO._
 
 object Refs {
 
-  def qammod(input: Array[Int], bitPerSymbol: Int, gray: Boolean = false): Array[MComplex] = {
+  // the default scheme of Matlab is gray
+  def qammod(input: Array[Int], bitPerSymbol: Int, gray: Boolean = true): Array[MComplex] = {
     if (bitPerSymbol == 1) Array(new MComplex(-1, 0), new MComplex(1, 0))
-    else if (!gray) eng.feval[Array[MComplex]]("qammod", input, Array(1 << bitPerSymbol))
+    else if (!gray) eng.feval[Array[MComplex]]("qammod", input, Array(1 << bitPerSymbol), "bin")
     else eng.feval[Array[MComplex]]("qammod", input, Array(1 << bitPerSymbol), "gray")
   }
 }

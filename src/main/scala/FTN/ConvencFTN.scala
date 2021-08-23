@@ -2,38 +2,39 @@ package FTN
 
 import spinal.core._
 import spinal.lib._
+import Chainsaw._
 
 // (m, n, K) convolutional encoding
 // TODO: dynamic parallelFactor
 // currently, n = 1 only
-case class ConvencFTN(config: ConvencConfig, parallelFactor: Int) extends Component {
+case class ConvencFTN(config: ConvencConfig, pF: Int) extends Component {
 
   import config._
 
-  val dataIn = in Bits (parallelFactor bits)
-  val dataOut = out Bits (m * parallelFactor bits)
+  val dataIn = slave Flow Fragment(Bits(pF bits))
+  val dataOut = master Flow Fragment(Bits(m * pF bits))
 
-  def octal2BinaryString(gen: Int): String =
-    gen.toString.flatMap(_.asDigit.toBinaryString.reverse.padTo(3, '0').reverse)
+  /** Convert octal number(represented by decimal Int) to binary string
+   * @example 133 -> 1011011
+   */
+  def octal2BinaryString(octal: Int): String = {
+    val octalValue = octal.toString.map(_.asDigit).reverse.zipWithIndex.map{ case (digit, exp) => digit * (1 << (3 * exp))}.sum
+    octal.toString.flatMap(_.asDigit.toBinaryString.padToLeft(3, '0')).takeRight(log2Up(octalValue))
+  }
+  def convEncode(bits: Bits, codeGen: String) = bits.asBools.zip(codeGen).filter(_._2 == '1').map(_._1).xorR // convenc
 
-  // TODO: avoid high fan-out
-  val extractions = codeGens.map(octal2BinaryString).map(_.takeRight(constLen))
-  // used to keep the last bits for next iteration
-  val regs = (0 until K - 1).map(i => RegNext(dataIn(i)))
+  // used to keep the last bits for next cycle
+  val regs = RegInit(B(0, K - 1 bits))
+  when(dataIn.last)(regs := B(0, K - 1 bits))
+    .elsewhen(dataIn.fire)(regs := dataIn.fragment(K - 2 downto 0))
 
-  val codeds = Vec(Bits(parallelFactor bits), m)
+  val concatenated = regs ## dataIn.fragment
 
-  (0 until m).foreach { i =>
-    (0 until parallelFactor).foreach { j =>
-      val bitId = parallelFactor - 1 - j
-      val relatedIds = (0 until constLen).map(j - _)
-      def inputOrReg(id: Int) = if (id >= 0) dataIn(parallelFactor - 1 - id) else regs(-id - 1)
-      // TODO: implement the XOR by DSPs
-      codeds(i)(bitId) := relatedIds.map(inputOrReg(_)) // related bits
-        .zip(extractions(i)).filter(_._2 == '1').map(_._1) // filtered by the codeGen
-        .xorR // XOR
-    }
+  Seq.tabulate(pF, m) { (j, i) =>
+    val codeGen = octal2BinaryString(codeGens(i))
+    dataOut.fragment((j + 1) * m - 1 - i) := RegNext(convEncode(concatenated(j + K - 1 downto j), codeGen))
   }
 
-  (0 until m * parallelFactor).foreach(i => dataOut(i) := codeds(i % m)(i / m))
+  dataOut.last := RegNext(dataIn.last, init = False)
+  dataOut.valid := RegNext(dataIn.valid, init = False)
 }

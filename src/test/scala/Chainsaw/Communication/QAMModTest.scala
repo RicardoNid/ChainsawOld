@@ -34,6 +34,7 @@ class QAMModTest extends AnyFunSuite {
       val golden = Refs.qammod(testCase, bitPerSymbol).map(_ / sqrt(10))
       val yours = dataOut.payload.map(_.toComplex)
       println(yours.mkString(" "))
+      println(golden.mkString(" "))
       assert(golden.zip(yours).forall{ case (c0, c1) => c0.sameAs(c1, 0.01) })
     }
   }

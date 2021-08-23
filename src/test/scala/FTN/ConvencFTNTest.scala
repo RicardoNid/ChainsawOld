@@ -11,40 +11,63 @@ class ConvencFTNTest extends AnyFunSuite {
 
   test("testConvenc for FTN") {
     val config = ConvencConfig(7, Array(171, 133))
-    SimConfig.withWave.compile(new ConvencFTN(config, 128)).doSim { dut =>
-      import dut._
-      val eng = AsyncEng.get()
+    val pF = 128
+    SimConfig.withWave.compile(ConvencFTN(config, pF)).doSim { dut =>
+      import dut.{dataIn, dataOut, clockDomain}
       clockDomain.forkStimulus(2)
+      dataIn.valid #= false
+      dataIn.last #= false
+      clockDomain.waitSampling()
 
-      val latency = 64
-      val inputs = (0 until latency).map { _ =>
-        val bytes = Array.fill(parallelFactor / 8)(1.toByte)
-        DSPRand.nextBytes(bytes)
-        BigInt(bytes).abs
+      val dutResult = ArrayBuffer[String]()
+      val monitor = fork {
+        while (true) {
+          if (dataOut.valid.toBoolean) dutResult += dataOut.fragment.toBigInt.toString(2).padToLeft(pF * config.m, '0')
+          clockDomain.waitSampling()
+        }
       }
 
-      val inputFlatten = inputs.map(_.toString(2).padToLeft(parallelFactor, '0').map(_.asDigit)).flatten
-      val outputFlatten = ArrayBuffer[Int]()
+      val testCase = DSPRand.nextBinaryString(frameBitsCount)
+      val forMatlab = testCase.map(_.asDigit.toDouble).toArray
+      val forDut = testCase.grouped(pF).map(BigInt(_, 2)).toSeq
 
-      (0 until latency).foreach { i =>
-        dataIn #= inputs(i)
+      def testOneFrame() = {
+        forDut.indices.foreach { i =>
+          dataIn.valid #= true
+          dataIn.last #= (i == forDut.size - 1)
+          dataIn.fragment #= forDut(i)
+          clockDomain.waitSampling()
+        }
+      }
+
+      def rest() = {
+        dataIn.valid #= false
+        dataIn.last #= false
+        clockDomain.waitSampling(2)
+      }
+
+      def last() = {
+        dataIn.valid #= false
+        dataIn.last #= false
         clockDomain.waitSampling()
       }
 
-      (0 until latency).foreach { i =>
-        clockDomain.waitSampling()
-        outputFlatten ++= dataOut.toBigInt.toString(2).padToLeft(parallelFactor, '0').map(_.asDigit)
-      }
+      testOneFrame()
+      rest()
+      testOneFrame()
+      last()
 
       val trellis = MatlabRef.poly2trellis(dut.config.K, dut.config.codeGens)
-      val golden = MatlabRef.convenc(inputFlatten.toArray.map(_.toDouble), trellis).map(_.toInt)
-      val yours = outputFlatten
+      val oneFrame = MatlabRef.convenc(forMatlab, trellis).map(_.toInt).mkString("")
+      val golden = oneFrame + oneFrame
+      println(golden.size)
+      val yours = dutResult.mkString("")
+      println(yours.size)
 
-      println(golden.mkString(""))
-      println(yours.mkString(""))
+      assertResult(expected = golden)(actual = yours)
       printlnGreen("first cycle of I/O ")
-      println(golden.take(parallelFactor).mkString(""))
-      println(yours.take(parallelFactor).mkString(""))
+      println(golden.take(pF * config.m).mkString(""))
+      println(dutResult(0))
     }
   }
 

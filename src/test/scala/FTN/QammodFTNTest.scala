@@ -32,7 +32,7 @@ class QammodFTNTest extends AnyFunSuite {
       val dutResult = ArrayBuffer[Seq[MComplex]]()
       val monitor = fork {
         while (true) {
-          dutResult += dataOut.payload.fragment.map(_.toComplex)
+          if (dataOut.valid.toBoolean) dutResult += dataOut.payload.fragment.map(_.toComplex)
           clockDomain.waitSampling()
         }
       }
@@ -42,7 +42,6 @@ class QammodFTNTest extends AnyFunSuite {
         value.toBinaryString.padToLeft(bitAllocated, '0')
       }.mkString("")
         .grouped(bitAlloc.sum / period).map(BigInt(_, 2)).toSeq
-      printlnGreen(testBits.size)
 
       def testOneRound() = {
         (0 until period).foreach { i =>
@@ -62,10 +61,10 @@ class QammodFTNTest extends AnyFunSuite {
       dataIn.last #= false
       clockDomain.waitSampling(period + 2)
 
-      val golden = Communication.Refs.qammod(testCase, bitPerSymbol).map(_ / sqrt(10))
+      val golden = Communication.Refs.qammod(testCase, bitPerSymbol, gray = true).map(_ / sqrt(10))
+        .grouped(bitAlloc.size / period).toSeq
+      (golden ++ golden).zip(dutResult).forall { case (gold, dut) => gold.zip(dut).forall { case (g, d) => g.sameAs(d, 0.1) } }
 
-      println(golden.mkString(" "))
-      println(dutResult.map(_.mkString(" ")).mkString("\n"))
       //      assert(golden.zip(yours).forall { case (c0, c1) => c0.sameAs(c1, 0.01) })
     }
   }

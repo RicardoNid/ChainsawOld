@@ -1,6 +1,5 @@
 package FTN
 
-
 import Chainsaw._
 import matlabIO._
 import org.scalatest.funsuite.AnyFunSuite
@@ -9,55 +8,66 @@ import spinal.core.sim._
 import scala.collection.mutable.ArrayBuffer
 
 class InterleaverFTNTest extends AnyFunSuite {
-  test("testInterleaver for FTN") {
-    SimConfig.withWave.compile(new InterleaverFTN(32, 128, 256)).doSim { dut =>
-      import dut._
+  val row = 32
+  val col = 128
+  val pF = 128
+  test("test interleaverFTN") {
+    SimConfig.withWave.compile(InterleaverFTN(row, col, pF)).doSim { dut =>
+      import dut.{dataIn, dataOut, clockDomain}
 
-      val eng = AsyncEng.get()
       clockDomain.forkStimulus(2)
-
-      running #= false
-      we #= false
+      dataIn.valid #= false
+      dataIn.last #= false
       clockDomain.waitSampling()
 
-      val latency = row * col / parallelFactor
-      val inputs = (0 until latency).map { _ =>
-        val bytes = Array.fill(parallelFactor / 8)(1.toByte)
-        DSPRand.nextBytes(bytes)
-        BigInt(bytes).abs
-      }
-      val inputFlatten = inputs.map(_.toString(2).padToLeft(parallelFactor, '0').map(_.asDigit)).flatten
-      val outputFlatten = ArrayBuffer[Int]()
+      val testCase = DSPRand.nextBinaryString(frameBitsCount * convencConfig.m)
+      val forMatlab = testCase.map(_.asDigit).toArray
+      val forDut = testCase.grouped(pF).map(BigInt(_, 2)).toSeq
 
-      (0 until latency).foreach { i =>
-        running #= true
-        we #= true
-        dataIn #= inputs(i)
-        clockDomain.waitSampling()
+      val dutResult = ArrayBuffer[String]()
+      val monitor = fork {
+        while (true) {
+          if (dataOut.valid.toBoolean) dutResult += dataOut.fragment.toBigInt.toString(2).padToLeft(pF, '0')
+          clockDomain.waitSampling()
+        }
       }
 
-      (0 until latency).foreach { i =>
-        running #= true
-        we #= false
-        clockDomain.waitSampling()
-        outputFlatten ++= dataOut.toBigInt.toString(2).padToLeft(parallelFactor, '0').map(_.asDigit)
+      def testOneFrame() = {
+        forDut.indices.foreach { i =>
+          dataIn.fragment #= forDut(i)
+          dataIn.valid #= true
+          dataIn.last #= (i == forDut.size - 1)
+          clockDomain.waitSampling()
+        }
       }
-      val yours = outputFlatten
 
-      // reference model
-      val golden = eng.feval[Array[Int]]("matintrlv", inputFlatten.toArray, Array(row), Array(col))
+      def rest() = {
+        dataIn.valid #= false
+        dataIn.last #= false
+        clockDomain.waitSampling(2)
+      }
 
+      def last() = {
+        dataIn.valid #= false
+        dataIn.last #= false
+        clockDomain.waitSampling(dut.core.latency + 2)
+      }
 
-      println("golden: " + toWordsHexString(BigInt(golden.mkString(""), 2), parallelFactor, latency * parallelFactor / parallelFactor))
-      println("yours:  " + toWordsHexString(BigInt(yours.mkString(""), 2), parallelFactor, latency * parallelFactor / parallelFactor))
-      printlnGreen("first cycle of I/O ")
-      println("golden: " +toWordsHexString(BigInt(golden.take(parallelFactor).mkString(""), 2), parallelFactor, 1))
-      println("yours:  " +toWordsHexString(BigInt(yours.take(parallelFactor).mkString(""), 2), parallelFactor, 1))
+      testOneFrame()
+      rest()
+      testOneFrame()
+      last()
 
-      golden.grouped(parallelFactor).zip(outputFlatten.grouped(parallelFactor)).zipWithIndex
-        .foreach { case ((ints, ints1), i) => if (ints.sum != ints1.sum) println(s"${ints.sum}, ${ints1.sum}, $i") }
+      // first block
+      val depth = row * col
+      val golden = forMatlab.grouped(depth).map(DSP.interleave.Refs.matIntrlv(_, row, col).mkString("")).toSeq
+      val yours = dutResult.grouped(depth / pF).map(_.mkString("")).toSeq
 
-      assert(golden.mkString("") == yours.mkString(""))
+      println(golden.size)
+      println(yours.size)
+      println(s"${golden(0)}\n${yours(0)}")
+      println(golden.zip(yours).map { case (str, str1) => str == str1 }.mkString(" "))
+
     }
   }
 }
