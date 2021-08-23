@@ -105,9 +105,6 @@ case class ComplexNumber(peak: Int, resolution: Int) extends Bundle {
 
 object ComplexNumber {
 
-  private val zero = globalType
-  zero := 0.0
-
   def apply(R: SFix, I: SFix): ComplexNumber = {
     require(R.maxExp == I.maxExp && R.minExp == I.minExp)
     val peak = R.maxExp
@@ -118,8 +115,8 @@ object ComplexNumber {
     ret
   }
 
-  def apply(R: Double, I: Double): ComplexNumber = {
-    val real, imag = globalType
+  def apply(R: Double, I: Double, dataType: HardType[SFix]): ComplexNumber = {
+    val real, imag = dataType()
     real := R
     imag := I
     ComplexNumber(real, imag)

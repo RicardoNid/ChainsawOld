@@ -3,9 +3,10 @@ package Chainsaw.DSP
 import Chainsaw.DSP.AlgebraicMode.{CIRCULAR, HYPERBOLIC, LINEAR}
 import Chainsaw.DSP.CordicArch.PARALLEL
 import Chainsaw.DSP.RotationMode.{ROTATION, VECTORING}
-import Chainsaw.{DSPSimTiming, Double2Fix, Fix2Double, sameFixedSeq, _}
-import breeze.numerics._
-import breeze.numerics.constants.Pi
+import Chainsaw._
+import breeze.numerics.atanh
+
+import scala.math._
 import org.scalatest.funsuite.AnyFunSuite
 import spinal.core._
 import spinal.core.sim._
@@ -17,16 +18,16 @@ class CORDICSim(cordicConfig: CordicConfig) extends CORDICDUT(cordicConfig) with
   //  cordic.setStart(input.valid)
 
   override def poke(testCase: CordicSimData, input: CordicData): Unit = {
-    input.x.raw #= Double2Fix(testCase.x, 14)
-    input.y.raw #= Double2Fix(testCase.y, 14)
-    input.z.raw #= Double2Fix(testCase.z, 13)
+    input.x #= testCase.x
+    input.y #= testCase.y
+    input.z #= testCase.z
     clockDomain.waitSampling()
   }
 
   override def peek(output: CordicData): CordicSimData = {
-    val ret = CordicSimData(Fix2Double(output.x, 14),
-      Fix2Double(output.y, 14),
-      Fix2Double(output.z, 13))
+    val ret = CordicSimData(output.x.toDouble,
+      output.y.toDouble,
+      output.z.toDouble)
     clockDomain.waitSampling()
     ret
   }

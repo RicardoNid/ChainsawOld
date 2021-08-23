@@ -1,6 +1,3 @@
-import breeze.linalg.DenseVector
-import breeze.numerics._
-import breeze.numerics.constants.Pi
 import spinal.core._
 import spinal.core.internals.BaseNode
 import spinal.core.sim._
@@ -9,6 +6,7 @@ import spinal.sim._
 import xilinx.{ELABO, IMPL, VivadoFlow, VivadoTask}
 
 import java.nio.file.Paths
+import java.io.File
 import scala.collection.mutable.ArrayBuffer
 import scala.math.{BigInt, floor, pow}
 import scala.util.Random
@@ -16,6 +14,8 @@ import scala.util.Random
 import spinal.core._
 import spinal.lib._
 import matlabIO._
+
+import scala.math._
 
 package object Chainsaw extends RealFactory {
 
@@ -31,7 +31,7 @@ package object Chainsaw extends RealFactory {
      * order: MSB -> LAB
      */
     def showWords(wordSize: Int): Seq[String] = {
-      val wordCount = ceil(bi.toString(2).size.toDouble / wordSize).toInt
+      val wordCount = ceil(bi.toString(2).length.toDouble / wordSize).toInt
       bi.toString(2).padToLeft(wordCount * wordSize, '0')
         .grouped(wordSize).toSeq
     }
@@ -282,44 +282,15 @@ package object Chainsaw extends RealFactory {
     tmp
   }
 
-  // typedefs and numeric considerations
-  val naturalWidth = 6
-  val fractionalWidth = 10
-  val bitWidth = naturalWidth + fractionalWidth
-
-  def phaseType(resolution: Double = 0.001) = MySFix(Pi, -Pi, resolution) // [-Pi, Pi] for phase
-
-  def unitType(resolution: Double = 0.001) = MySFix(1, -1, resolution)
-
-  def globalType = SFix(peak = naturalWidth exp, resolution = -fractionalWidth exp)
-
-  def shortGlobalType = SFix((naturalWidth / 2) exp, -(fractionalWidth / 2) exp)
-
-  val testFFTLength = 8
-
   def sameFixed(a: Double, b: Double) = (abs(a - b) / abs((a + b) / 2)) < 0.05 || scala.math.abs(a - b) < 0.1
 
   def sameFixedSeq(v1: IndexedSeq[Double], v2: IndexedSeq[Double]) =
     v1.zip(v2).forall { case (c1, c2) => sameFixed(c1, c2) }
 
-  def sameFixedVector(v1: DenseVector[Double], v2: DenseVector[Double]) = sameFixedSeq(v1.toArray, v2.toArray)
-
-  //  def Double2Fix(value: Double) = floor(value * (1 << 4)).toInt // convert Double to valid stimulus for simulation
-  //  def Fix2Double(value: SFix) = value.raw.toBigInt.toDouble / pow(2, 4)
-  def Double2Fix(value: Double, fw: Int = fractionalWidth) = floor(value * (1 << fw)).toInt // convert Double to valid stimulus for simulation
-
-  def Fix2Double(value: SFix, fw: Int = fractionalWidth) = value.raw.toBigInt.toDouble / pow(2, fw)
-
   // OPTIMIZE: implement prime & factor by table
 
   val DSPRand = new Random(42) // using this as global random gen, with a fixed seed
 
-  def bs2i(bs: String) = bs.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (1 << i) }.sum
-
-  def bs2i2c(bs: String) = {
-    val values = bs.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (1 << i) }
-    values.dropRight(1).sum - values.last
-  }
 
   implicit class numericOp(value: Double) {
 
@@ -344,7 +315,9 @@ package object Chainsaw extends RealFactory {
   }
 
   def GenRTL[T <: Component](gen: => T, print: Boolean = false, name: String = "temp") = {
-    val report = SpinalConfig(netlistFileName = s"$name.sv").generateSystemVerilog(gen)
+    val targetDirectory = s"./elaboWorkspace/$name"
+    new File(targetDirectory).mkdir()
+    val report = SpinalConfig(netlistFileName = s"$name.sv", targetDirectory = targetDirectory).generateSystemVerilog(gen)
     println(report.rtlSourcesPaths
       .map(Paths.get(_))
       .map(path => if (path.isAbsolute) path else path.toAbsolutePath)
@@ -481,9 +454,9 @@ package object Chainsaw extends RealFactory {
 
     def nextComplex() = new MComplex(rand.nextDouble(), rand.nextDouble())
 
-    def nextBigInt(bitLength:Int) = BigInt(rand.nextString(bitLength).map(_ % 2).mkString(""), 2)
+    def nextBigInt(bitLength: Int) = BigInt(rand.nextString(bitLength).map(_ % 2).mkString(""), 2)
 
-    def nextBinaryString(bitLength:Int): String = rand.nextString(bitLength).map(_ % 2).mkString("")
+    def nextBinaryString(bitLength: Int): String = rand.nextString(bitLength).map(_ % 2).mkString("")
   }
 
 
