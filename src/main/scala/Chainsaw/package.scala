@@ -18,11 +18,12 @@ package object Chainsaw extends RealFactory {
   * following methods are designed for Real type*/
   var ChainsawNumericDebug = false
   var ChainsawExpLowerBound = -65536
-  def printlnWhenNumericDebug(content: Any) = if (ChainsawNumericDebug) printlnYellow(content)
+  def printlnWhenNumericDebug(content: Any): Unit = if (ChainsawNumericDebug) printlnYellow(content)
 
   implicit class SpinalLiterals(private val sc: StringContext) {
 
     /** Invoke QFormatParser and make using QFormat easier
+     *
      * @example val SF1Q3 = HardType(SFix("1Q3"))
      */
     def Q(args: Any*): QFormat = QFormatParser(getString(args))
@@ -48,7 +49,7 @@ package object Chainsaw extends RealFactory {
 
       val pi = sc.parts.iterator
       val ai = args.iterator
-      val bldr = new StringBuilder(pi.next().toString)
+      val bldr = new StringBuilder(pi.next())
 
       while (ai.hasNext) {
         if (ai.hasNext && !ai.next.isInstanceOf[List[_]]) bldr append ai.next
@@ -138,11 +139,9 @@ package object Chainsaw extends RealFactory {
     /** Use a random value in all values for simulation
      *
      */
-    def randomize() = r #= randomValue()
+    def randomize(): Unit = r #= randomValue()
 
     /** Judge whether the value is "close to" this, that is, the difference is within the error
-     *
-     * @param that
      */
     def ~=(that: Double) = (r.toDouble - that).abs <= r.error
 
@@ -166,6 +165,7 @@ package object Chainsaw extends RealFactory {
 
   /*
   * following methods are used to strengthen built-in simulation utils*/
+
   /** Simulation methods for signed fixed number
    */
   implicit class SimSFixPimper(sf: SFix) {
@@ -204,7 +204,7 @@ package object Chainsaw extends RealFactory {
   * following methods/implicit classes are used to make debugging(especially, peek, poke and print) easier */
   var ChainsawDebug = false
 
-  def printlnWhenDebug(content: Any) = if (ChainsawDebug) println(content)
+  def printlnWhenDebug(content: Any): Unit = if (ChainsawDebug) println(content)
 
   def printlnColored(content: Any)(color: String) = {
     print(color)
@@ -288,19 +288,14 @@ package object Chainsaw extends RealFactory {
       ret
     }
 
-    def +^(that: SFix) = {
+    def doAddSub(that: SFix, add: Boolean) = {
       val (rawLeft, rawRight) = sf.alignLsb(that)
       val ret = SFix(Math.max(sf.maxExp, that.maxExp) + 1 exp, Math.max(rawLeft.getBitsWidth, rawRight.getBitsWidth) + 1 bits)
-      ret.raw := (rawLeft +^ rawRight)
+      ret.raw := (if (add) rawLeft +^ rawRight else rawLeft -^ rawRight)
       ret
     }
-
-    def -^(that: SFix) = {
-      val (rawLeft, rawRight) = sf.alignLsb(that)
-      val ret = SFix(Math.max(sf.maxExp, that.maxExp) + 1 exp, Math.max(rawLeft.getBitsWidth, rawRight.getBitsWidth) + 1 bits)
-      ret.raw := (rawLeft -^ rawRight)
-      ret
-    }
+    def +^(that: SFix) = doAddSub(that, true)
+    def -^(that: SFix) = doAddSub(that, false)
   }
 
   implicit class VecUtil[T <: Data](vec: Vec[T]) {
