@@ -76,7 +76,7 @@ object Adder256DUT extends App {
     dut.io.last_in #= false
     dut.clockDomain.waitSampling(10)
 
-    println((op0 + op1).showWordsHex(8).mkString(" "))
+    println((op0 + op1).toWordStringsHex(8).mkString(" "))
   }
 }
 

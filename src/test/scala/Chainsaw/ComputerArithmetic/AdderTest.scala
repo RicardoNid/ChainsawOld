@@ -18,8 +18,8 @@ class AdderTest extends AnyFunSuite {
         io.y.randomize()
         if (dut.config.hasCIn) io.cIn.randomize()
 
-        val valueX = if (dut.config.signed) value2C(io.x.toBigInt, dut.config.bitWidth) else io.x.toBigInt
-        val valueY = if (dut.config.signed) value2C(io.y.toBigInt, dut.config.bitWidth) else io.y.toBigInt
+        val valueX = if (dut.config.signed) io.x.toBigInt.toSigned(dut.config.bitWidth) else io.x.toBigInt
+        val valueY = if (dut.config.signed) io.y.toBigInt.toSigned(dut.config.bitWidth) else io.y.toBigInt
         val valueCIn = if (dut.config.hasCIn) io.cIn.toBigInt else BigInt(0)
         val valueDut = dutFullSum.toBigInt
         val valueCorrect = valueX + valueY + valueCIn

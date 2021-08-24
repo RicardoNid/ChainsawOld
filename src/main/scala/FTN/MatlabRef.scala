@@ -1,6 +1,6 @@
 package FTN
 
-import Chainsaw.{DSPRand, eng}
+import Chainsaw._
 import com.mathworks.engine.MatlabEngine
 import com.mathworks.matlab.types._
 import scala.collection.JavaConversions._

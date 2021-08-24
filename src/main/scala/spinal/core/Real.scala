@@ -1,6 +1,7 @@
 package spinal.core
 
 import Chainsaw._
+import Chainsaw.Real
 
 import scala.collection.mutable.ArrayBuffer
 import scala.math.{abs, ceil, log, max, min, pow}

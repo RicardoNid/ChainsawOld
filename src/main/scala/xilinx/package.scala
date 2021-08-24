@@ -6,6 +6,8 @@ package object xilinx {
   // TODO: write a test for this
   var vivadoPath = "/tools/Xilinx/Vivado/2019.2/bin"
 
+  val XilinxClockConfig = ClockDomainConfig(resetKind = BOOT)
+
   sealed trait TaskType
 
   object ELABO extends TaskType

@@ -1,6 +1,6 @@
 package FTN
 
-import Chainsaw._
+import Chainsaw.{ComplexReal, _}
 import Chainsaw.matlabIO._
 import com.mathworks.matlab.types.Complex
 import spinal.core._

@@ -33,8 +33,7 @@ class CORDICSim(cordicConfig: CordicConfig) extends CORDICDUT(cordicConfig) with
   }
 
   override def isValid(refResult: CordicSimData, dutResult: CordicSimData): Boolean =
-    sameFixedSeq(Array(refResult.x, refResult.y, refResult.z),
-      Array(dutResult.x, dutResult.y, dutResult.z))
+    Seq(refResult.x, refResult.y, refResult.z).approximatelyEquals(Seq(dutResult.x, dutResult.y, dutResult.z), doubleEquals(_,_))
 
   override def messageWhenInvalid(testCase: CordicSimData, refResult: CordicSimData, dutResult: CordicSimData): String =
     s"\n[ERROR]\ninput: $testCase\ngolden: $refResult\nyours: $dutResult"

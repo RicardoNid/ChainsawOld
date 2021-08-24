@@ -1,6 +1,7 @@
 package Chainsaw
 
 import spinal.core._
+
 import scala.math._
 
 object width2Interval {

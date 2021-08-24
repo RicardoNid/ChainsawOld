@@ -1,108 +1,65 @@
+import Chainsaw.matlabIO._
 import spinal.core._
 import spinal.core.internals.BaseNode
 import spinal.core.sim._
-import spinal.lib.fsm._
-import spinal.sim._
-import xilinx.{ELABO, IMPL, VivadoFlow, VivadoTask}
-
-import java.nio.file.Paths
-import java.io.File
-import scala.collection.mutable.ArrayBuffer
-import scala.math.{BigInt, floor, pow}
-import scala.util.Random
-
-import spinal.core._
 import spinal.lib._
-import Chainsaw.matlabIO._
+import spinal.sim._
+import xilinx.{IMPL, VivadoFlow, VivadoTask}
 
+import java.io.File
+import java.nio.file.Paths
+import scala.collection.mutable.ArrayBuffer
 import scala.math._
+import scala.util.Random
 
 package object Chainsaw extends RealFactory {
 
-  // methods for padding
-  // example: YWords = toWords(BigInt("1_1111_0000", 4, 3)), YWords(0) = 0, YWords(1) = 15, YWords(2) = 1(padded as 0001)
+  /*
+  * following methods are designed for Real type*/
+  var ChainsawNumericDebug = false
+  var ChainsawExpLowerBound = -65536
+  def printlnWhenNumericDebug(content: Any) = if (ChainsawNumericDebug) printlnYellow(content)
 
-  import scala.math.ceil
+  implicit class SpinalLiterals(private val sc: StringContext) {
 
-  implicit class BigIntUtil(bi: BigInt) {
-
-    // following methods are designed to convert a long bit sequence to multiple segments, making debugging easier
-    /** convert a long BitInt to multiple words, each as a new binary String, padded to the left when needed
-     *
-     * order:
-     *
-     * inside each element: LSB -> MSB
-     *
-     * between elements: LSB -> MSB(same logic as Bits -> Vec[Bool], which keeps the index unchanged)
+    /** Invoke QFormatParser and make using QFormat easier
+     * @example val SF1Q3 = HardType(SFix("1Q3"))
      */
-    def showWords(wordSize: Int, radix: Int = 2): Seq[String] = {
-      val wordCount = ceil(bi.toString(2).length.toDouble / wordSize).toInt
-      bi.toString(2).padToLeft(wordCount * wordSize, '0').grouped(wordSize).toSeq
-    }
+    def Q(args: Any*): QFormat = QFormatParser(getString(args))
 
-    def showWordsHex(wordSize: Int): Seq[String] = {
-      require(wordSize % 4 == 0)
-      val wordCount = ceil(bi.toString(2).size.toDouble / wordSize).toInt
-      bi.toString(16).grouped(wordSize / 4).toSeq
-    }
-
-    /** convert a long BigInt to multiple words, each as a new BigInt, padded to the left when needed, useful for multi-precision algos
+    /** Q Format literal, we follow the same definition as Xilinx, where MQN stands for a (M + N + 1) bits signed fixed point number with N fractional bits and M integer bits
      *
-     * order: MSB -> LSB
+     * @see [[https://en.wikipedia.org/wiki/Q_(number_format) Q format]]
      */
-    def toWords(wordSize: Int): Seq[BigInt] = bi.showWords(wordSize).map(BigInt(_, 2))
-
-  }
-
-
-  def toWords(value: BigInt, w: Int, e: Int) = {
-    value.toString(2).padToLeft(e * w, '0')
-      .grouped(w).toArray.takeRight(e).map(BigInt(_, 2))
-      .reverse
-  }
-
-  def toWordStrings(value: BigInt, wordSize: Int, wordCount: Int) = {
-    value.toString(2).padToLeft(wordSize * wordCount, '0')
-      .grouped(wordSize).toSeq.takeRight(wordCount)
-  }
-
-  // from lsb to msb
-  def toWordsHexString(value: BigInt, w: Int, e: Int) =
-    toWords(value, w, e).map(_.toString(16).padToLeft(w / 4, '0') + " ").flatten.mkString("")
-
-  class StateDelayFixed(cyclesCount: UInt)(implicit stateMachineAccessor: StateMachineAccessor) extends State with StateCompletionTrait {
-
-    /** Create a StateDelay with an TimeNumber */
-    def this(time: TimeNumber)(implicit stateMachineAccessor: StateMachineAccessor) {
-      this((time * ClockDomain.current.frequency.getValue).toBigInt)
-    }
-
-    val cache = stateMachineAccessor.cacheGetOrElseUpdate(StateMachineSharableUIntKey, new StateMachineSharableRegUInt).asInstanceOf[StateMachineSharableRegUInt]
-    cache.addMinWidth(cyclesCount.getWidth)
-
-    whenIsActive {
-      cache.value := cache.value - 1
-      when(cache.value <= 1) {
-        doWhenCompletedTasks()
+    def QFormatParser(string: String): QFormat = {
+      val isUnsigned = string.contains("UQ")
+      val digits = {
+        if (string.contains("SQ")) string.split("SQ").map(_.toInt)
+        else if (string.contains("Q")) string.split("Q").map(_.toInt)
+        else if (string.contains("UQ")) string.split("UQ").map(_.toInt)
+        else throw new IllegalArgumentException("A QFormat must be like 1Q3, 1SQ3, or 1UQ3")
       }
+
+      require(digits.length == 2 && digits.forall(_ >= 0))
+      if (isUnsigned) UQ(digits(0) + digits(1), digits(1)) else SQ(digits(0) + digits(1) + 1, digits(1))
     }
 
-    onEntry {
-      cache.value := cyclesCount.resized
-    }
+    private def getString(args: Any*): String = {
 
-    whenIsNext {
-      when(cache.value <= 1) {
-        cache.value := cyclesCount.resized
+      val pi = sc.parts.iterator
+      val ai = args.iterator
+      val bldr = new StringBuilder(pi.next().toString)
+
+      while (ai.hasNext) {
+        if (ai.hasNext && !ai.next.isInstanceOf[List[_]]) bldr append ai.next
+        if (pi.hasNext && !pi.next.isInstanceOf[List[_]]) bldr append pi.next
       }
+
+      bldr.result.replace("_", "")
     }
   }
 
-  implicit class StringUtil(s: String) {
-    def padToLeft(len: Int, elem: Char) = s.reverse.padTo(len, elem).reverse
-  }
-
-  // btToSignal and getDouble are copied from spinal.core.sim package object, as they are private
+  //   btToSignal and getDouble are copied from spinal.core.sim package object, as they are private
   private def btToSignal(manager: SimManager, bt: BaseNode) = {
     if (bt.algoIncrementale != -1) {
       SimError(s"UNACCESSIBLE SIGNAL : $bt isn't accessible during the simulation.\n- To fix it, call simPublic() on it durring the elaboration.")
@@ -111,62 +68,32 @@ package object Chainsaw extends RealFactory {
     manager.raw.userData.asInstanceOf[ArrayBuffer[Signal]](bt.algoInt)
   }
 
+  //  implicit class MoreBVPimper(bv: BitVector) {
+  //    def #=(value: Array[Boolean]) = { //TODO improve perf
+  //      var acc = BigInt(0)
+  //      value.foreach { bit =>
+  //        acc = acc << 1
+  //        acc |= (if (bit) 1 else 0)
+  //      }
+  //      setBigInt(bv, acc)
+  //    }
+  //
+  //    def #=(value: Array[Int]) = { //TODO improve perf
+  //      require(value.forall(Array(0, 1).contains(_))) // value should contains only 0 and 1
+  //      var acc = BigInt(0)
+  //      value.foreach { bit =>
+  //        acc = acc << 1
+  //        acc |= bit
+  //      }
+  //      setBigInt(bv, acc)
+  //    }
+  //  }
+
   def getDouble(r: Real): Double = {
     if (r.getBitsWidth == 0) return 0
     val manager = SimManagerContext.current.manager
     val signal = btToSignal(manager, r.raw)
     manager.getLong(signal) * scala.math.pow(2, r.minExp)
-  }
-
-  implicit class MoreBVPimper(bv: BitVector) {
-    def #=(value: Array[Boolean]) = { //TODO improve perf
-      var acc = BigInt(0)
-      value.foreach { bit =>
-        acc = acc << 1
-        acc |= (if (bit) 1 else 0)
-      }
-      setBigInt(bv, acc)
-    }
-
-    def #=(value: Array[Int]) = { //TODO improve perf
-      require(value.forall(Array(0, 1).contains(_))) // value should contains only 0 and 1
-      var acc = BigInt(0)
-      value.foreach { bit =>
-        acc = acc << 1
-        acc |= bit
-      }
-      setBigInt(bv, acc)
-    }
-  }
-
-  implicit class SimComplexPimper(cn: ComplexNumber) {
-    def #=(value: MComplex): Unit = {
-      cn.real #= value.real
-      cn.imag #= value.imag
-    }
-
-    def toComplex = new MComplex(cn.real.toDouble, cn.imag.toDouble)
-  }
-
-  implicit class SimSFixPimper(sf: SFix) {
-
-    import sf._
-
-    def #=(value: BigDecimal): Unit = {
-      assert(value <= maxValue, s"Literal $value is too big to be assigned in $this")
-      assert(value >= minValue, s"Literal $value is too small to be assigned in this $this")
-
-      val shift = -minExp
-      val ret = if (shift >= 0) // ret this is the "binary string" of value at specific precision
-        (value * BigDecimal(BigInt(1) << shift)).toBigInt
-      else
-        (value / BigDecimal(BigInt(1) << -shift)).toBigInt
-      setLong(raw, ret.toLong)
-    }
-
-    def #=(value: Double): Unit = #=(BigDecimal(value))
-
-    def toDouble = raw.toBigInt.toDouble / (1 << -minExp)
   }
 
   implicit class SimRealPimper(r: Real) {
@@ -237,16 +164,45 @@ package object Chainsaw extends RealFactory {
     def randomValue = rv.map(_.randomValue())
   }
 
-  // debug mode
+  /*
+  * following methods are used to strengthen built-in simulation utils*/
+  /** Simulation methods for signed fixed number
+   */
+  implicit class SimSFixPimper(sf: SFix) {
+
+    import sf._
+
+    def #=(value: BigDecimal): Unit = {
+      assert(value <= maxValue, s"Literal $value is too big to be assigned in $this")
+      assert(value >= minValue, s"Literal $value is too small to be assigned in this $this")
+
+      val shift = -minExp
+      val ret = if (shift >= 0) // ret this is the "binary string" of value at specific precision
+        (value * BigDecimal(BigInt(1) << shift)).toBigInt
+      else
+        (value / BigDecimal(BigInt(1) << -shift)).toBigInt
+      setLong(raw, ret.toLong)
+    }
+
+    def #=(value: Double): Unit = #=(BigDecimal(value))
+
+    def toDouble = raw.toBigInt.toDouble / (1 << -minExp)
+  }
+
+  /** Simulation methods for complex number, based on SFix
+   */
+  implicit class SimComplexPimper(cn: ComplexNumber) {
+    def #=(value: MComplex): Unit = {
+      cn.real #= value.real
+      cn.imag #= value.imag
+    }
+
+    def toComplex = new MComplex(cn.real.toDouble, cn.imag.toDouble)
+  }
+
+  /*
+  * following methods/implicit classes are used to make debugging(especially, peek, poke and print) easier */
   var ChainsawDebug = false
-  var ChainsawNumericDebug = false
-  // ronding mode
-  var ChainsawExpLowerBound = -65536
-
-  import matlabIO._
-
-
-  def printlnWhenNumericDebug(content: Any) = if (ChainsawNumericDebug) printlnYellow(content)
 
   def printlnWhenDebug(content: Any) = if (ChainsawDebug) println(content)
 
@@ -256,44 +212,120 @@ package object Chainsaw extends RealFactory {
     print(Console.BLACK)
   }
 
+  def printlnRed(content: Any) = printlnColored(content)(Console.RED)
+  def printlnYellow(content: Any) = printlnColored(content)(Console.YELLOW)
+  def printlnBlue(content: Any) = printlnColored(content)(Console.BLUE)
   def printlnGreen(content: Any) = printlnColored(content)(Console.GREEN)
 
-  def printlnRed(content: Any) = printlnColored(content)(Console.RED)
-
-  def printlnYellow(content: Any) = printlnColored(content)(Console.YELLOW)
-
-  def MySFix(maxValue: Double, minValue: Double, resolution: Double): SFix = {
-    require(maxValue >= 0)
-    val maxExp0 = log2Up(floor(maxValue + 1).toInt)
-    val maxExp1 = log2Up(abs(minValue).toInt)
-    val maxExp = Array(maxExp0, maxExp1).max
-    val minExp = -log2Up(abs(1 / resolution).toInt)
-    SFix(maxExp exp, minExp exp)
-  }
-
-  def MySFix(maxValue: Double, resolution: Double): SFix = MySFix(maxValue, -maxValue, resolution)
-
-  /** SFix literal with an appropriated bitWidth
-   *
-   * @param value
-   * @param resolution
-   * @return
+  /** Methods for BigInt, especially for using it as a bit sequence in simulation and design initialization
    */
-  def MySF(value: Double, resolution: Double = 1.0) = {
-    val tmp = MySFix(value, resolution)
-    tmp := value
-    tmp
+  implicit class BigIntUtil(bi: BigInt) {
+
+    // following methods are designed to convert a long bit sequence to multiple segments, making debugging easier
+    /** convert a long BitInt to multiple words, each as a new binary String, padded to the left when needed
+     *
+     * order:
+     *
+     * inside each element: MSB -> LSB
+     *
+     * between elements: MSB -> LSB
+     */
+    def toWordStrings(wordSize: Int, radix: Int = 2): Seq[String] = {
+      require(wordSize % log2Up(radix) == 0)
+      val wordCount = ceil(bi.toString(radix).length.toDouble / wordSize).toInt
+      bi.toString(radix).padToLeft(wordCount * wordSize, '0').grouped(wordSize).toSeq
+    }
+    def toWordStringsHex: Int => Seq[String] = toWordStrings(_, 16)
+    def toWords(wordSize: Int): Seq[BigInt] = bi.toWordStrings(wordSize).map(BigInt(_, 2))
+
+    /** Regard BigInt(from sim) as a binary string and interpret it as 2's complement number
+     */
+    def toSigned(width: Int) = bi.toString(2).padToLeft(width, '0').toSigned
   }
 
-  def sameFixed(a: Double, b: Double) = (abs(a - b) / abs((a + b) / 2)) < 0.05 || scala.math.abs(a - b) < 0.1
+  /** Utils for Seq, which is the default type we use for collections
+   */
+  implicit class SeqUtil[T](seq: Seq[T]) {
+    def padToLeft(len: Int, elem: T) = seq.reverse.padTo(len, elem).reverse
+    def equals(that: Seq[T]) = seq.zip(that).forall { case (t, t1) => t == t1 }
+    def approximatelyEquals(that: Seq[T], approEquals: (T, T) => Boolean) = seq.zip(that).forall { case (t, t1) => approEquals(t, t1) }
+  }
 
-  def sameFixedSeq(v1: IndexedSeq[Double], v2: IndexedSeq[Double]) =
-    v1.zip(v2).forall { case (c1, c2) => sameFixed(c1, c2) }
+  /** An example of approEquals, which has a relative error bound and a absolute error bound
+   */
+  def doubleEquals(a: Double, b: Double, relative: Double = 0.05, absolute: Double = 0.1) =
+    (abs(a - b) / abs((a + b) / 2)) < relative || scala.math.abs(a - b) < absolute
 
-  // OPTIMIZE: implement prime & factor by table
+  /** Utils for string which you treat it as a binary number
+   */
+  implicit class BinaryStringUtil(s: String) {
+    def padToLeft(len: Int, elem: Char) = s.reverse.padTo(len, elem).reverse
+    def toBigInt = BigInt(s, 2)
+    def toUnsigned: BigInt = s.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (BigInt(1) << i) }.sum
+    def toSigned: BigInt = s.tail.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (BigInt(1) << i) }.sum - s.head.asDigit * (BigInt(1) << s.length - 1)
+  }
 
+  // use this val as Generator to keep the behavior consistency through the project
   val DSPRand = new Random(42) // using this as global random gen, with a fixed seed
 
+  /** Utils for Random to generate more different types of stimulus
+   */
+  implicit class RandomUtil(rand: Random) {
+
+    def nextComplex() = new MComplex(rand.nextDouble(), rand.nextDouble())
+
+    def nextBigInt(bitLength: Int) = BigInt(rand.nextString(bitLength).map(_ % 2).mkString(""), 2)
+
+    def nextBinaryString(bitLength: Int): String = rand.nextString(bitLength).map(_ % 2).mkString("")
+  }
+
+  /*
+  * following implicit class are used to strengthen built-in Types for more operations*/
+  implicit class SFixUtil(sf: SFix) {
+    def unary_-() = {
+      val ret = SFix(sf.maxExp exp, sf.minExp exp)
+      ret.raw := -sf.raw
+      ret
+    }
+
+    def +^(that: SFix) = {
+      val (rawLeft, rawRight) = sf.alignLsb(that)
+      val ret = SFix(Math.max(sf.maxExp, that.maxExp) + 1 exp, Math.max(rawLeft.getBitsWidth, rawRight.getBitsWidth) + 1 bits)
+      ret.raw := (rawLeft +^ rawRight)
+      ret
+    }
+
+    def -^(that: SFix) = {
+      val (rawLeft, rawRight) = sf.alignLsb(that)
+      val ret = SFix(Math.max(sf.maxExp, that.maxExp) + 1 exp, Math.max(rawLeft.getBitsWidth, rawRight.getBitsWidth) + 1 bits)
+      ret.raw := (rawLeft -^ rawRight)
+      ret
+    }
+  }
+
+  implicit class VecUtil[T <: Data](vec: Vec[T]) {
+
+    def vecShiftWrapper(bitsShift: UInt => Bits, that: UInt): Vec[T] = {
+      val ret = cloneOf(vec)
+      val shiftedBits: Bits = bitsShift((that * widthOf(vec.dataType)).resize(log2Up(widthOf(vec.asBits))))
+      ret.assignFromBits(shiftedBits)
+      ret
+    }
+
+    val bits = vec.asBits
+
+    // seems that Xilinx synth can implement this efficiently
+    def rotateLeft(that: Int): Vec[T] = vecShiftWrapper(bits.rotateRight, that)
+    def rotateLeft(that: UInt): Vec[T] = vecShiftWrapper(bits.rotateRight, that)
+    def rotateRight(that: Int): Vec[T] = vecShiftWrapper(bits.rotateLeft, that)
+    def rotateRight(that: UInt): Vec[T] = vecShiftWrapper(bits.rotateLeft, that)
+  }
+
+  implicit class StreamUtil[T <: Data](stream: Stream[T]) {
+    def >=>(that: Stream[T]): Unit = {
+
+    }
+  }
 
   implicit class numericOp(value: Double) {
 
@@ -317,6 +349,9 @@ package object Chainsaw extends RealFactory {
     def err = ErrorNumber(value)
   }
 
+  /*
+  * following methods are designed for doing synth/impl through command-line
+  * for these methods, the results are exported to a default dir in this project, the sub dir can be specific by name field*/
   def GenRTL[T <: Component](gen: => T, print: Boolean = false, name: String = "temp") = {
     val targetDirectory = s"./elaboWorkspace/$name"
     new File(targetDirectory).mkdir()
@@ -327,7 +362,7 @@ package object Chainsaw extends RealFactory {
       .mkString("\n"))
     if (print) println(report.getRtlString())
   }
-
+  val synthWorkspace = "/home/ltr/IdeaProjects/Chainsaw/synthWorkspace"
   def VivadoSynth[T <: Component](gen: => T, name: String = "temp"): Unit = {
     val report = VivadoFlow(design = gen, name, s"synthWorkspace/$name").doit()
     report.printArea()
@@ -339,132 +374,5 @@ package object Chainsaw extends RealFactory {
     report.printArea()
     report.printFMax()
   }
-
-  def VivadoElabo[T <: Component](gen: => T): Unit = {
-    val report = VivadoFlow(design = gen, "temp", "synthWorkspace/temp", vivadoTask = VivadoTask(taskType = ELABO)).doit()
-    report.printArea()
-    report.printFMax()
-  }
-
-  val synthWorkspace = "/home/ltr/IdeaProjects/Chainsaw/synthWorkspace"
-
-  implicit class SpinalLiterals(private val sc: StringContext) {
-
-    /** Q Format literal, we follow the same definition as Xilinx, where MQN stands for a (M + N + 1) bits signed fixed point number with N fractional bits and M integer bits
-     *
-     * @see [[https://en.wikipedia.org/wiki/Q_(number_format) Q format]]
-     */
-    def QFormatParser(string: String): QFormat = {
-      val isUnsigned = string.contains("UQ")
-      val digits = {
-        if (string.contains("SQ")) string.split("SQ").map(_.toInt)
-        else if (string.contains("Q")) string.split("Q").map(_.toInt)
-        else if (string.contains("UQ")) string.split("UQ").map(_.toInt)
-        else throw new IllegalArgumentException("A QFormat must be like 1Q3, 1SQ3, or 1UQ3")
-      }
-
-      require(digits.length == 2 && digits.forall(_ >= 0))
-      if (isUnsigned) UQ(digits(0) + digits(1), digits(1)) else SQ(digits(0) + digits(1) + 1, digits(1))
-
-    }
-
-    def Q(args: Any*): QFormat = QFormatParser(getString(args))
-
-    // TODO: find out how it works
-    private def getString(args: Any*): String = {
-
-      val pi = sc.parts.iterator
-      val ai = args.iterator
-      val bldr = new StringBuilder(pi.next().toString)
-
-      while (ai.hasNext) {
-        if (ai.hasNext && !ai.next.isInstanceOf[List[_]]) bldr append ai.next
-        if (pi.hasNext && !pi.next.isInstanceOf[List[_]]) bldr append pi.next
-      }
-
-      bldr.result.replace("_", "")
-    }
-  }
-
-  implicit class MoreSimClockDomainPimper(cd: ClockDomain) {
-    // TODO: more
-
-  }
-
-  val XilinxClockConfig = ClockDomainConfig(resetKind = BOOT)
-
-  def value2C(number: BigInt, width: Int) = {
-    if (width == 1) number
-    else {
-      val binary = number.toString(2).padToLeft(width, '0')
-      -binary.head.asDigit * (BigInt(1) << number.bitLength - 1) + BigInt(binary.tail, 2)
-    }
-  }
-
-  /** Add some utils when you treat string as binary number
-   */
-  implicit class BinaryStringUtil(s: String) {
-    def toBigInt = BigInt(s, 2)
-    def toUnsigned = s.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (1 << i) }.sum
-    def toSigned = s.tail.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (1 << i) }.sum - s.head.asDigit * (1 << s.length - 1)
-  }
-
-  implicit class SFixUtil(sf: SFix) {
-    def unary_-() = {
-      val ret = SFix(sf.maxExp exp, sf.minExp exp)
-      ret.raw := -sf.raw
-      ret
-    }
-
-    def +^(that: SFix) = {
-      val (rawLeft, rawRight) = sf.alignLsb(that)
-      val ret = SFix(Math.max(sf.maxExp, that.maxExp) + 1 exp, Math.max(rawLeft.getBitsWidth, rawRight.getBitsWidth) + 1 bits)
-      ret.raw := (rawLeft +^ rawRight)
-      ret
-    }
-
-    def -^(that: SFix) = {
-      val (rawLeft, rawRight) = sf.alignLsb(that)
-      val ret = SFix(Math.max(sf.maxExp, that.maxExp) + 1 exp, Math.max(rawLeft.getBitsWidth, rawRight.getBitsWidth) + 1 bits)
-      ret.raw := (rawLeft -^ rawRight)
-      ret
-    }
-  }
-
-
-  implicit class VecUtil[T <: Data](vec: Vec[T]) {
-
-    def vecShiftWrapper(bitsShift: UInt => Bits, that: UInt): Vec[T] = {
-      val ret = cloneOf(vec)
-      val shiftedBits: Bits = bitsShift((that * widthOf(vec.dataType)).resize(log2Up(widthOf(vec.asBits))))
-      ret.assignFromBits(shiftedBits)
-      ret
-    }
-
-    val bits = vec.asBits
-
-    // seems that Xilinx synth can implement this efficiently
-    def rotateLeft(that: Int): Vec[T] = vecShiftWrapper(bits.rotateRight, that)
-    def rotateLeft(that: UInt): Vec[T] = vecShiftWrapper(bits.rotateRight, that)
-    def rotateRight(that: Int): Vec[T] = vecShiftWrapper(bits.rotateLeft, that)
-    def rotateRight(that: UInt): Vec[T] = vecShiftWrapper(bits.rotateLeft, that)
-
-  }
-
-  implicit class StreamUtil[T <: Data](stream: Stream[T]) {
-    def >=>(that: Stream[T]): Unit = {
-
-    }
-  }
-
-  implicit class RandomUtil(rand: Random) {
-
-    def nextComplex() = new MComplex(rand.nextDouble(), rand.nextDouble())
-
-    def nextBigInt(bitLength: Int) = BigInt(rand.nextString(bitLength).map(_ % 2).mkString(""), 2)
-
-    def nextBinaryString(bitLength: Int): String = rand.nextString(bitLength).map(_ % 2).mkString("")
-  }
-
 
 }

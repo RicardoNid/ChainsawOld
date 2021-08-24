@@ -9,6 +9,7 @@ import scala.collection.mutable.ArrayBuffer
 
 
 object MontAlgos {
+
   def R2MM(X: BigInt, Y: BigInt, M: BigInt) = {
     require(X < M && Y < M)
     var S = BigInt(0)
@@ -42,17 +43,11 @@ object MontAlgos {
     S
   }
 
-//  // TODO: implement bit select implicit
-//  def toWords(value: BigInt, w: Int, e: Int) = {
-//    value.toString(2).padToLeft(e * w, '0')
-//      .grouped(w).toArray.map(BigInt(_, 2))
-//      .reverse
-//  }
-
   // Modifications
   // - all the index of C is 1 less than the original representation, as C(0) didn't appear at all in the original representation - no we don't
   // - we add C(0) in 2.4 for consistency of A and B
   // - in the j-loop, when j = e, no addition really happens, so it is treated specially
+  // FIXME: test not passed
   def MWR2MM(X: BigInt, Y: BigInt, M: BigInt, w: Int, print: Boolean = false) = {
     require(X < M && Y < M)
     val n = M.bitLength + 2
@@ -82,7 +77,6 @@ object MontAlgos {
       }
       SWords(e) = 0
     }
-    println(SWords.mkString(" "))
     val S = BigInt(SWords.take(e).reverse.map(_.toString(2).padToLeft(w, '0')).flatten.mkString(""), 2)
     S
   }
@@ -272,6 +266,7 @@ object MontAlgos {
       val algoResult = algo(x, e, modulus)
       val RingsResult = BigInt(ZN.pow(x, e).toByteArray)
       assert(algoResult < modulus)
+      val wordCount = modulus.bitLength / 32 + 1
       println(s"x      = ${toWordsHexString(x, 32, modulus.bitLength / 32 + 1)}")
       println(s"yours  = ${toWordsHexString(algoResult, 32, modulus.bitLength / 32 + 1)}")
       println(s"golden = ${toWordsHexString(RingsResult, 32, modulus.bitLength / 32 + 1)}")
@@ -282,13 +277,13 @@ object MontAlgos {
   }
 
   def main(args: Array[String]): Unit = {
-    //        algo.verifyMM(algo.R2MM)
-    //    algo.verifyMM(algo.MWR2MM(_, _, _, 4))
-    //    verifyMM(Arch1MM(_, _, _, 4))
-    //    verifyMM(Arch1MM(_, _, _, 16))
-    //    verifyMM(Arch1MM(_, _, _, 32))
-    //    verifyMM(Arch1MM(_, _, _, 64))
-    //    verifyMMP(R2MMP)
+
+    verifyMM(Arch1MM(_, _, _, 4))
+    verifyMM(Arch1MM(_, _, _, 16))
+    verifyMM(Arch1MM(_, _, _, 32))
+    verifyMM(Arch1MM(_, _, _, 64))
+    //    verifyMM(MWR2MM(_, _, _, 64))
+    verifyMMP(R2MMP)
     verifyME(Arch1ME(_, _, _, 32, true))
     //    R2MMP(13)
 
@@ -300,8 +295,8 @@ object MontAlgos {
 
     // step-by-step simulation for circuit
     //        println(MontAlgos.Arch1MM(BigInt(159), BigInt(148), 177, 4, print = true))
-    println(s"yours:  ${MontAlgos.MWR2MMAF(BigInt(159), BigInt(148), 177, 4)}")
-    println(s"ref  :  ${MontAlgos.MWR2MM(BigInt(159), BigInt(148), 177, 4)}")
+    //    println(s"yours:  ${MontAlgos.MWR2MMAF(BigInt(159), BigInt(148), 177, 4)}")
+    //    println(s"ref  :  ${MontAlgos.MWR2MM(BigInt(159), BigInt(148), 177, 4)}")
     //    println(MontAlgos.Arch1MM(BigInt(153), BigInt(147), 177, 4, print = true))
     //    println((checkstyleMontMul(159, 148, 177) << 1).toString(16))
     //    println((checkstyleMontMul(153, 147, 177) << 1).toString(16))

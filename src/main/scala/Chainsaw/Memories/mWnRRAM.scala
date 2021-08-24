@@ -2,6 +2,7 @@ package Chainsaw.Memories
 
 import collection.JavaConversions._
 import Chainsaw._
+import xilinx._
 import spinal.core._
 import spinal.lib._
 

@@ -101,6 +101,6 @@ object BigAdder extends App {
 
     dut.clockDomain.waitSampling(dut.latency)
 
-    println((op0 + op1).showWordsHex(8).mkString(" "))
+    println((op0 + op1).toWordStringsHex(8).mkString(" "))
   }
 }
