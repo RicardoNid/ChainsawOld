@@ -15,9 +15,10 @@ case class CompilerExample() extends Component {
   val f = Reg(UInt(4 bits))
   f := fComb
 
-  val gComb = UInt(4 bits)
-  val g = Reg(UInt(4 bits))
-  g := gComb
+  val gComb0, gComb1, gComb2, gComb3, gComb4, gComb5 = UInt(4 bits)
+  val g0, g1, g2, g3, g4, g5 = Reg(UInt(4 bits))
+  val gs = Seq(gComb0, gComb1, gComb2, gComb3, gComb4, gComb5)
+  gs.zip(Seq(g0, g1, g2, g3, g4, g5)).foreach { case (comb, reg) => reg := comb }
 
   val m = UInt(4 bits)
   val n = UInt(4 bits)
@@ -37,21 +38,25 @@ case class CompilerExample() extends Component {
   l := ram2.readWriteSync(addr, a, True, b.msb)
 
   // case 1
-  //  gComb := e + f
+  gComb0 := e + f
   // case 2, inhomogeneous - shortest path
-  //  gComb := a + e
+  gComb1 := a + e
   // case 3, self-loop - shortest path
-  //  gComb := g + e + f
+  gComb2 := g2 + e + f
   // case 4, go through a RAM whose write2read delay = 2
-  gComb := m
+  gComb3 := m
   // case 5, go through a RAM whose write2read delay = 1
-  //  gComb := n
+  gComb4 := n
   // case 6, go through a RAM with a readWrite port
-  //  gComb := l
+  gComb5 := l
 
   //  println(s"latency = ${MyLatencyAnalysis(a, g)}")
-  println(s"latency = ${MyLatencyAnalysis(a, g)}")
-  println(s"latency = ${LatencyAnalysis(a, g)}")
+  gs.zipWithIndex.foreach{ case(g,i) =>
+    printlnYellow(s"case $i")
+    val mine = MyLatencyAnalysis(a, g)
+    val ori = LatencyAnalysis(a, g)
+    assert(mine == ori)
+  }
 }
 
 object CompilerExample extends App {

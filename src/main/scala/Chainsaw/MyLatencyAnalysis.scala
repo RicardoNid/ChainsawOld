@@ -9,17 +9,15 @@ object MyLatencyAnalysis {
 
   def apply(paths: Expression*): Int = list(paths)
 
-  def list(paths: Seq[Expression]): Int = paths.init.zip(paths.tail).map { case (e0, e1) => impl(e0, e1) }.sum
+  def list(paths: Seq[Expression]): Int = paths.init.zip(paths.tail).map { case (e0, e1) => findShortest(e0, e1) }.sum
 
-  def impl(from: Expression, to: Expression): Int = {
+  def findShortest(from: Expression, to: Expression): Int = {
 
     var depth = 0
 
-    // init 3 pending queues
     // we need a "mark" for walked node, we generate one by allocateAlgoIncrementale
     // the specific value of walkedId has no effect
     val walkedId = GlobalData.get.allocateAlgoIncrementale()
-    println(s"walkedId = $walkedId")
 
     val currentQueue, prevQueue = new ArrayBuffer[BaseNode]
 
@@ -35,6 +33,7 @@ object MyLatencyAnalysis {
       Component.current.foreachReflectableNameables {
         case node: BaseType => if (node.algoIncrementale == walkedId) print(s"${node.getName()} ")
         case node: Mem[_] => if (node.algoIncrementale == walkedId) print(s"${node.getName()} ")
+        case _ =>
       }
       println()
     }
@@ -95,7 +94,7 @@ object MyLatencyAnalysis {
         // following are three kind of read ports, mem of these ports need to be handled independently, as the won't be visited by foreachDrivingExpression
         case that: MemReadSync => {
           // mem -> read delay = 1, so we add the mem to the prev queue
-          // at the same time, for other drivers(for example, addr -> read), delay = 0
+          // at the same time, for other drivers, delay = 0
           that.foreachDrivingExpression(input => if (traceBack(input, "readsync")) return true)
           prevQueue += that.mem
           false
