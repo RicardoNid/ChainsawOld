@@ -1,22 +1,23 @@
 package MultiRowCNN
 
 import spinal.core._
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.sim._
+import spinal.lib.fsm._
+
+import Chainsaw._
+
+import matlabIO._
 
 class CarryAdder(size: Int) extends Component {
-  val io = new Bundle {
-    val a = in UInt (size bits)
-    val b = in UInt (size bits)
-    val result = out UInt (size bits)
-  }
-  var c = False
-  for (i <- 0 until size) {
-    val x = io.a(i)
-    val y = io.b(i)
+  val a = in SFix(5 exp,-3 exp)
+  val b = in SFix(5 exp,-3 exp)
+  val result = out SFix(5 exp,-3 exp)
 
-    io.result(i) := x ^ y ^ c
-    c \= (x & y) | (x & c) | (y & c);
-  }
+  result := a + b
 }
 
-object RLT {
-}
+
+

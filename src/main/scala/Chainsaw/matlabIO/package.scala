@@ -5,6 +5,7 @@ import com.mathworks.matlab.types
 
 import java.nio.file.Paths
 import scala.io.Source
+import Chainsaw._
 
 package object matlabIO {
 
@@ -113,9 +114,10 @@ package object matlabIO {
       complex.imag / that
     )
 
-    def sameAs(that: MComplex, epsilon: Double = 1e-4) =
+    def sameAs(that: MComplex, epsilon: Double = 1e-4) = {
       (complex.real - that.real).abs < epsilon &&
         (complex.imag - that.imag).abs < epsilon
+    }
 
     def conj = new MComplex(complex.real, -complex.imag)
 

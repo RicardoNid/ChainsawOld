@@ -42,13 +42,13 @@ case class  QammodFTN(bitAlloc: Seq[Int], powAlloc: Seq[Double], period: Int) ex
   // last identify the end of a frame
   // TODO: should I cut the delay of the last data of serial2parallel and parallel2serial?
   val latency = period // serial2parallel + Qammod + parallel2serial
-  printlnGreen(s"latency of QAMmod = $latency")
+//  printlnGreen(s"latency of QAMmod = $latency")
   printlnGreen(s"latency of QAMmod = ${LatencyAnalysis(dataIn.fragment, dataOut.fragment(0).real.raw)}")
   dataOut.last := Delay(dataIn.last, latency, init = False)
 }
 
 object QammodFTN extends App {
-  val bitAlloc = Array.fill(128)(4)
-  val powAlloc = Array.fill(128)(1.0)
+  val bitAlloc = Array.fill(16)(4)
+  val powAlloc = Array.fill(16)(1.0)
   GenRTL(new QammodFTN(bitAlloc, powAlloc, period = 8))
 }

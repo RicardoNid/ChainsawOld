@@ -10,9 +10,9 @@ import scala.collection.mutable.ArrayBuffer
 class CooleyTukeyFFTTest() extends AnyFunSuite {
 
   def testCooleyTukeyFFTHardware(testLength: Int, dataWidth: Int, coeffWidth: Int, factors: Seq[Int], inverse: Boolean = false) = {
-    SimConfig.withWave.compile(new CooleyTukeyFFTStream(N = testLength, dataWidth = dataWidth, coeffWidth = coeffWidth, factors = factors, inverse = inverse)).doSim { dut =>
+    SimConfig.withWave.compile(CooleyTukeyFFTStream(N = testLength, dataWidth = dataWidth, coeffWidth = coeffWidth, factors = factors, inverse = inverse)).doSim { dut =>
 
-      val test = (0 until 2 * testLength).map(_ => (DSPRand.nextDouble() - 0.5) * 1)
+      val test = (0 until 2 * testLength).map(_ => (DSPRand.nextDouble() - 0.5) * 2)
       val testComplex = (0 until testLength).map(i => new MComplex(test(2 * i), test(2 * i + 1))).toArray
 
       import dut.{clockDomain, dataIn, dataOut}
@@ -32,6 +32,9 @@ class CooleyTukeyFFTTest() extends AnyFunSuite {
       }
 
       dataOut.ready #= true
+
+      val ret: IndexedSeq[(ComplexNumber, MComplex)] = dataIn.payload.zip(testComplex)
+
       dataIn.payload.zip(testComplex).foreach { case (port, complex) =>
         dataIn.valid #= true
         port.real #= complex.real
@@ -43,6 +46,7 @@ class CooleyTukeyFFTTest() extends AnyFunSuite {
       clockDomain.waitSampling(dut.core.latency + 10)
 
       val golden = if (!inverse) Refs.FFT(testComplex) else Refs.IFFT(testComplex)
+
       assert(dutResult.nonEmpty)
       println(golden.mkString(" "))
       println(dutResult.mkString(" "))

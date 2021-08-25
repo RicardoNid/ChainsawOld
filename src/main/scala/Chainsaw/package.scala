@@ -20,6 +20,28 @@ package object Chainsaw extends RealFactory {
   var ChainsawExpLowerBound = -65536
   def printlnWhenNumericDebug(content: Any): Unit = if (ChainsawNumericDebug) printlnYellow(content)
 
+  implicit class numericOp(value: Double) {
+
+    /** Rounding up to the nearest representable value
+     *
+     * @param ulp
+     */
+    def roundUp(implicit ulp: Double) = ceil(value / ulp) * ulp
+
+    def roundDown(implicit ulp: Double) = floor(value / ulp) * ulp
+
+    def roundAsScala(implicit ulp: Double) = (value / ulp).toInt * ulp
+
+    def roundAsScalaInt(implicit ulp: Double) = (value / ulp).toInt
+  }
+
+  case class ErrorNumber(value: Double)
+
+  implicit class MoreDoubleBuilder(value: Double) {
+
+    def err = ErrorNumber(value)
+  }
+
   implicit class SpinalLiterals(private val sc: StringContext) {
 
     /** Invoke QFormatParser and make using QFormat easier
@@ -250,6 +272,7 @@ package object Chainsaw extends RealFactory {
     def equals(that: Seq[T]) = seq.zip(that).forall { case (t, t1) => t == t1 }
     def approximatelyEquals(that: Seq[T], approEquals: (T, T) => Boolean) = seq.zip(that).forall { case (t, t1) => approEquals(t, t1) }
   }
+//  implicit def Seq2Vec[T <: Data](seq: Seq[T]): Vec[T] = Vec(seq)
 
   /** An example of approEquals, which has a relative error bound and a absolute error bound
    */
@@ -320,28 +343,6 @@ package object Chainsaw extends RealFactory {
     def >=>(that: Stream[T]): Unit = {
 
     }
-  }
-
-  implicit class numericOp(value: Double) {
-
-    /** Rounding up to the nearest representable value
-     *
-     * @param ulp
-     */
-    def roundUp(implicit ulp: Double) = ceil(value / ulp) * ulp
-
-    def roundDown(implicit ulp: Double) = floor(value / ulp) * ulp
-
-    def roundAsScala(implicit ulp: Double) = (value / ulp).toInt * ulp
-
-    def roundAsScalaInt(implicit ulp: Double) = (value / ulp).toInt
-  }
-
-  case class ErrorNumber(value: Double)
-
-  implicit class MoreDoubleBuilder(value: Double) {
-
-    def err = ErrorNumber(value)
   }
 
   /*
