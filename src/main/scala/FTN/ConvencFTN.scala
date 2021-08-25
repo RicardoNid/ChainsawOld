@@ -37,4 +37,6 @@ case class ConvencFTN(config: ConvencConfig, pF: Int) extends Component {
 
   dataOut.last := RegNext(dataIn.last, init = False)
   dataOut.valid := RegNext(dataIn.valid, init = False)
+
+  def latency = 1
 }

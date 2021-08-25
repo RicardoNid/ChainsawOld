@@ -46,21 +46,3 @@ class ConvencSim(config: ConvencConfig) extends ConvencDUT(config) with DSPSimTi
     messageWhenInvalid(testCase, refResult, dutResult)
   }
 }
-
-class testConvenc extends AnyFunSuite {
-  test("testConvenc") {
-    SimConfig.withWave.compile(new ConvencSim(ConvencConfig(7, Array(171, 133)))).doSim { dut =>
-      dut.sim()
-      // the actual case of FTN
-      eng.eval("cd /home/ltr/IdeaProjects/Chainsaw/src/main/scala/FTN/Matlab")
-      eng.eval("load './data/bits'")
-      val bits = eng.getVariable("bits").asInstanceOf[Array[Double]]
-      dut.insertTestCase(bits)
-      //      dut.insertTestCase(Array(false, false, false, false, false, true, true, true, true, true) :+ false)
-      //      dut.insertTestCase(Array.fill(10)(false) :+ false)
-      //      dut.insertTestCase(Array(true, false, true, false, true, false, true, false, true, false) :+ false)
-      val report = dut.simDone()
-      println(report.validLog)
-    }
-  }
-}

@@ -49,7 +49,7 @@ class ConvencFTNTest extends AnyFunSuite {
       def last() = {
         dataIn.valid #= false
         dataIn.last #= false
-        clockDomain.waitSampling()
+        clockDomain.waitSampling(dut.latency + 1)
       }
 
       testOneFrame()

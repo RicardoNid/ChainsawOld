@@ -21,6 +21,8 @@ case class Tx(pF: Int) extends Component {
   convencFTN.dataOut >> interleaverFTN.dataIn
   interleaverFTN.dataOut >> qammodFTN.dataIn
   qammodFTN.dataOut >> dataOut
+
+
 }
 
 object Tx {
