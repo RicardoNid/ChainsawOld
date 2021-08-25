@@ -1,13 +1,15 @@
 package Chainsaw.DSP.FFT
 
 import Chainsaw._
-import matlabIO._
-import org.scalatest.funsuite.AnyFunSuite
+import Chainsaw.matlabIO._
+import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should._
 import spinal.core.sim._
 
 import scala.collection.mutable.ArrayBuffer
 
-class CooleyTukeyFFTTest() extends AnyFunSuite {
+class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
 
   def testCooleyTukeyFFTHardware(testLength: Int, dataWidth: Int, coeffWidth: Int, factors: Seq[Int], inverse: Boolean = false) = {
     SimConfig.withWave.compile(CooleyTukeyFFTStream(N = testLength, dataWidth = dataWidth, coeffWidth = coeffWidth, factors = factors, inverse = inverse)).doSim { dut =>
@@ -92,13 +94,13 @@ class CooleyTukeyFFTTest() extends AnyFunSuite {
 
       val golden = Refs.FFT(testComplex)
       println(dutResult.zip(golden).map { case (complex, complex1) => complex.toString + "####" + complex1.toString }.mkString("\n"))
-      assert(dutResult.nonEmpty)
-      assert(golden.zip(dutResult).forall { case (complex, complex1) => complex.sameAs(complex1, epsilon = 0.5) })
+
+      dutResult should not be empty
+      golden shouldEqual dutResult // epsilon = 0.5
     }
   }
 
-  test("test radix-r FFT and IFFT, fully pipelined") {
-
+  "radix-r FFT and IFFT" should "pass the following tests" in {
     def testRadixR: (Seq[Int], Boolean) => Unit = testCooleyTukeyFFTHardware(64, 16, 16, _, _)
 
     // FFT
@@ -115,19 +117,16 @@ class CooleyTukeyFFTTest() extends AnyFunSuite {
     printlnGreen(s"radix-4 IFFT passed")
     //    testRadixR(Seq.fill(2)(8), true) // radix-8
     //    printlnGreen(s"radix-8 IFFT passed")
-
   }
 
-  test("test other Cooley-Tukey FFTs, fully pipelined") {
+  "other Cooley-Tukey FFTs" should "pass the following tests" in {
     //    testCooleyTukeyFFTHardware(75, 16, 16, Seq(3, 5, 5))
     printlnGreen(s"75-point as 3*5*5 passed")
   }
 
-  test("test back-to-back Cooley-Tukey FFTs") {
+  "back-to-back Cooley-Tukey FFTs" should "pass the following tests" in {
     testCooleyTukeyBackToBackHardware(256, 32, 16, 16, Seq(4, 4, 2), Seq(4, 2))
     printlnGreen(s"256-point as 32*8 back to back passed")
   }
+
 }
-
-
-

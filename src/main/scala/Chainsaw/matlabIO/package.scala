@@ -119,6 +119,13 @@ package object matlabIO {
         (complex.imag - that.imag).abs < epsilon
     }
 
+    override def equals(obj: Any) = {
+      obj match {
+        case complex: MComplex => this.sameAs(complex)
+        case _ => false
+      }
+    }
+
     def conj = new MComplex(complex.real, -complex.imag)
 
     def modulus = scala.math.sqrt(complex.real * complex.real + complex.imag * complex.imag)
