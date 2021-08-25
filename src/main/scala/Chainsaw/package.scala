@@ -272,7 +272,7 @@ package object Chainsaw extends RealFactory {
     def equals(that: Seq[T]) = seq.zip(that).forall { case (t, t1) => t == t1 }
     def approximatelyEquals(that: Seq[T], approEquals: (T, T) => Boolean) = seq.zip(that).forall { case (t, t1) => approEquals(t, t1) }
   }
-//  implicit def Seq2Vec[T <: Data](seq: Seq[T]): Vec[T] = Vec(seq)
+  //  implicit def Seq2Vec[T <: Data](seq: Seq[T]): Vec[T] = Vec(seq)
 
   /** An example of approEquals, which has a relative error bound and a absolute error bound
    */
@@ -295,7 +295,9 @@ package object Chainsaw extends RealFactory {
    */
   implicit class RandomUtil(rand: Random) {
 
-    def nextComplex() = new MComplex(rand.nextDouble(), rand.nextDouble())
+    def nextComplex(min: Double = 0, max: Double = 1) = new MComplex(
+      rand.nextDouble() * (max - min) + min,
+      rand.nextDouble() * (max - min) + min)
 
     def nextBigInt(bitLength: Int) = BigInt(rand.nextString(bitLength).map(_ % 2).mkString(""), 2)
 

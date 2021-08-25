@@ -4,8 +4,6 @@ import spinal.core._
 import Chainsaw._
 import Chainsaw.matlabIO._
 
-// TODO: extend this from Data
-
 /**
  * @param R real part of the complex number
  * @param I imaginary part of the complex number
@@ -69,32 +67,6 @@ case class ComplexNumber(peak: Int, resolution: Int) extends Bundle {
     ComplexNumber(R.pipelined, I.pipelined)
   }
 
-  def fastMult(that: ComplexNumber, pipeline: Seq[Boolean]) = {
-
-    def delayed0(signal: SFix) = if (pipeline(0)) RegNext(signal) else signal
-    def delayed1(signal: SFix) = if (pipeline(1)) RegNext(signal) else signal
-    def delayed2(signal: SFix) = if (pipeline(1)) RegNext(signal) else signal
-
-    // stage 0
-    val A = that.real + that.imag
-    val B = real - imag
-    val C = that.real - that.imag
-    // stage 1
-    val D = A * real
-    val E = that.real * B
-    val F = imag * C
-    Seq(D, E, F).foreach(_.addAttribute("use_dsp", "yes"))
-    // stage 2
-    val I = (delayed1(D) - delayed1(E)).truncated
-    val R = (delayed1(E) + delayed1(F)).truncated
-    Seq(I, R).foreach(_.addAttribute("use_dsp", "no"))
-    ComplexNumber(delayed2(R), delayed2(I))
-  }
-
-  // * i
-  // TODO: deprecate after extending ComplexNumber from Data
-  def tap: ComplexNumber = ComplexNumber(RegNext(real), RegNext(imag))
-
   def truncated(dataType: HardType[SFix]) = {
     val retReal, retImag = dataType()
     retReal := real.truncated
@@ -121,8 +93,6 @@ object ComplexNumber {
     imag := I
     ComplexNumber(real, imag)
   }
-
-
 }
 
 object CN {

@@ -8,7 +8,7 @@ class FFTAlgosTest extends AnyFunSuite {
 
   def same(a: Seq[MComplex], b: Seq[MComplex]) = a.zip(b).forall { case (complex, complex1) => complex.sameAs(complex1) }
   def testAlgo(N: Int, algo: Seq[MComplex] => Seq[MComplex]) = {
-    val testCase = randComplex(N)
+    val testCase = (0 until N).map(_ => DSPRand.nextComplex()).toArray
     println(algo(testCase).mkString(" ")) // to show that the algo really did something
     assert(same(algo(testCase), Refs.FFT(testCase)))
   }

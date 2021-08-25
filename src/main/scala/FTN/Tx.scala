@@ -26,6 +26,7 @@ case class Tx(pF: Int) extends Component {
 object Tx {
   def main(args: Array[String]): Unit = {
     GenRTL(Tx(64))
+    VivadoSynth(Tx(64))
   }
 }
 

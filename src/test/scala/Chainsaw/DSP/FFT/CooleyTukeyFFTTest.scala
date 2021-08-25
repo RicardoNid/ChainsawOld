@@ -33,8 +33,6 @@ class CooleyTukeyFFTTest() extends AnyFunSuite {
 
       dataOut.ready #= true
 
-      val ret: IndexedSeq[(ComplexNumber, MComplex)] = dataIn.payload.zip(testComplex)
-
       dataIn.payload.zip(testComplex).foreach { case (port, complex) =>
         dataIn.valid #= true
         port.real #= complex.real
@@ -43,13 +41,13 @@ class CooleyTukeyFFTTest() extends AnyFunSuite {
       clockDomain.waitSampling()
       dataIn.valid #= false
 
-      clockDomain.waitSampling(dut.core.latency + 10)
+      clockDomain.waitSampling(dut.core.latency + 1)
 
       val golden = if (!inverse) Refs.FFT(testComplex) else Refs.IFFT(testComplex)
 
-      assert(dutResult.nonEmpty)
       println(golden.mkString(" "))
       println(dutResult.mkString(" "))
+      assert(dutResult.nonEmpty)
       assert(golden.zip(dutResult).forall { case (complex, complex1) => complex.sameAs(complex1, epsilon = 0.5) })
     }
   }

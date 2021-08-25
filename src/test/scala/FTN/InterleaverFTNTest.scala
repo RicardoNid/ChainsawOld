@@ -50,7 +50,7 @@ class InterleaverFTNTest extends AnyFunSuite {
       def last() = {
         dataIn.valid #= false
         dataIn.last #= false
-        clockDomain.waitSampling(dut.core.latency + 2)
+        clockDomain.waitSampling(dut.core.latency + 1)
       }
 
       testOneFrame()
