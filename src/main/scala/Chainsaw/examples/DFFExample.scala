@@ -11,8 +11,8 @@ import matlabIO._
 case class DFFExample() extends Component {
   val dataIn = in UInt (4 bits)
   val dataOut = out UInt (4 bits)
-  val reg0 = createDFF0(UInt(4 bits))
-  val reg1 = createDFF1(UInt(4 bits))
+  val reg0 = RegSync(UInt(4 bits))
+  val reg1 = RegAsync(UInt(4 bits))
 
   val cross = UInt(4 bits)
   cross.addTag(crossClockDomain)
