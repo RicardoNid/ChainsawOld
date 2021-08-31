@@ -1,52 +1,55 @@
 package FTN
 
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.sim._
-import spinal.lib.fsm._
-
 import Chainsaw._
-import Chainsaw.Real
+import spinal.core._
+import spinal.lib._
 
-import matlabIO._
+case class FftFTN(iter: Boolean, inverse: Boolean) extends Component {
 
-class FftFTN {
+  val pF = if (iter) pFIter / 2 else pFNonIter / 2
+  val dataIn = slave Flow Fragment(Vec(complexType, pF))
+  val dataOut = master Flow Fragment(Vec(complexType, pF))
 
-  def Algo(X: Array[MComplex]): Array[Double] = {
+  var latency = 0
 
-    val N = X.size
-    val eng = AsyncEng.get()
+  def getFactors(pF: Int, factors: Seq[Int] = Seq(4)): Seq[Int] = {
+    val remained = pF / factors.product
+    if (remained < 4) factors :+ remained else getFactors(pF, factors :+ 4)
+  }
 
-    val XReal = X.map(_.real)
-    val XImag = X.map(_.imag)
+  if (iter) {
 
-    import scala.math.{sin, cos, Pi}
-    def n(k: Int) = sin(k * Pi / N)
-    def m(k: Int) = cos(k * Pi / N)
+    val core = DSP.FFT.CooleyTukeyFFTStream(pF, dataWidth = 12, coeffWidth = 8, getFactors(pF), inverse)
 
-    val YReal = 0.0 +: (1 until N).map(k => (m(k) * XImag(k) - XReal(k)) / n(k))
-    val YImag = 0.0 +: (1 until N).map(k => -(m(k) * XReal(k) + XImag(k)) / n(k))
+    latency = core.latency
 
-    val Y = YReal.zip(YImag).map { case (real, imag) => new MComplex(real, imag) }.toArray
-    val y = eng.feval[Array[MComplex]]("ifft", Y)
-    val x = y.map(complex => Array(complex.real, complex.imag)).flatten
+    core.dataIn.payload := dataIn.fragment
+    core.dataIn.valid := dataIn.valid
 
-    x
+    dataOut.last := Delay(dataIn.last, core.latency, init = False)
+
+    core.dataOut.ready := True
+    dataOut.valid := core.dataOut.valid
+    dataOut.fragment := core.dataOut.payload
+  } else {
+
+    val core = DSP.FFT.CooleyTukeyBackToBack(N = channelCount / 2, pF,
+      factors1 = getFactors(pF), factors2 = getFactors(channelCount / 2 / pF),
+      dataWidth = 12, coeffWidth = 8)
+
+    latency = core.latency
+
+    core.dataIn.payload := dataIn.fragment
+    core.dataIn.valid := dataIn.valid
+
+    dataOut.last := Delay(dataIn.last, core.latency, init = False)
+
+    core.dataOut.ready := True
+    dataOut.valid := core.dataOut.valid
+    dataOut.fragment := core.dataOut.payload
   }
 }
 
 object FftFTN extends App {
-
-  def apply(): FftFTN = new FftFTN()
-
-  val golden = (0 until 16).map(_ => DSPRand.nextInt(15) + 1).toArray // real sequence
-  val X = eng.feval[Array[MComplex]]("fft", golden)
-  println(X.mkString(" "))
-
-  val fftFTN = FftFTN()
-  val x = fftFTN.Algo(X)
-
-//  println(golden.mkString(" "))
-//  println(x.mkString(" "))
+  GenRTL(FftFTN(iter = false, inverse = true))
 }

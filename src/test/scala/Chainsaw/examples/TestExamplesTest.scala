@@ -3,28 +3,20 @@ package Chainsaw.examples
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.propspec.AnyPropSpec
 import org.scalatest.featurespec.AnyFeatureSpec
+import org.scalatest.matchers.should._
+import org.scalactic._
 
-class TestExamplesTest extends AnyFlatSpec {
+class TestExamplesTest extends AnyFlatSpec with Matchers {
 
-  "An empty Set" should "have size 0" in {
-    assert(Set.empty.size == 0)
+  "examples" should "show you how to use should matchers" in {
+    Set[Int]() shouldBe 'empty
+    Set[Int]() shouldBe  'empty
+
+    7 shouldEqual 6 +- 2
+
   }
 
-  it should "produce NoSuchElementException when head is invoked" in {
-    assertThrows[NoSuchElementException] {
-      Set.empty.head
-    }
-  }
 
-  val set2 = Set(1)
-
-  "Another set which has 1 element"should "have size 1" in {
-    assert(set2.size == 1)
-  }
-
-  it should "have same head and last" in {
-    assert(set2.head == set2.last)
-  }
 
 }
 

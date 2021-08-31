@@ -114,7 +114,7 @@ package object matlabIO {
       complex.imag / that
     )
 
-    def sameAs(that: MComplex, epsilon: Double = 1e-4) = {
+    def sameAs(that: MComplex, epsilon: Double = 0.5) = {
       (complex.real - that.real).abs < epsilon &&
         (complex.imag - that.imag).abs < epsilon
     }

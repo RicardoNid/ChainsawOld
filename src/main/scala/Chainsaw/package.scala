@@ -360,6 +360,7 @@ package object Chainsaw extends RealFactory {
       .mkString("\n"))
     if (print) println(report.getRtlString())
   }
+
   val synthWorkspace = "/home/ltr/IdeaProjects/Chainsaw/synthWorkspace"
   def VivadoSynth[T <: Component](gen: => T, name: String = "temp"): Unit = {
     val report = VivadoFlow(design = gen, name, s"synthWorkspace/$name").doit()

@@ -96,7 +96,7 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
       println(dutResult.zip(golden).map { case (complex, complex1) => complex.toString + "####" + complex1.toString }.mkString("\n"))
 
       dutResult should not be empty
-      golden shouldEqual dutResult // epsilon = 0.5
+      golden.zip(dutResult).forall{ case (complex, complex1) => complex.sameAs(complex1, 0.5)}
     }
   }
 

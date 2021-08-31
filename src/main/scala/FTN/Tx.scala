@@ -14,15 +14,17 @@ case class Tx(pF: Int) extends Component {
   val bitAlloc = Array.fill(channelCount / 2)(4)
   val powAlloc = Array.fill(channelCount / 2)(1.0)
   val qammodFTN = QammodFTN(bitAlloc, powAlloc, period = channelCount / pF)
+  val IfftFTN = FftFTN(iter = false, inverse = true)
 
-  val dataOut = out(cloneOf(qammodFTN.dataOut))
+  val dataOut = out(cloneOf(IfftFTN.dataOut))
 
   dataIn >> convencFTN.dataIn
   convencFTN.dataOut >> interleaverFTN.dataIn
   interleaverFTN.dataOut >> qammodFTN.dataIn
-  qammodFTN.dataOut >> dataOut
+  qammodFTN.dataOut >> IfftFTN.dataIn
+  IfftFTN.dataOut >> dataOut
 
-
+  def latency = convencFTN.latency + interleaverFTN.core.latency + qammodFTN.latency + IfftFTN.latency
 }
 
 object Tx {

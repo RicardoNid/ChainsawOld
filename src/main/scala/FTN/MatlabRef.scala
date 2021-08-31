@@ -14,8 +14,4 @@ object MatlabRef {
     eng.feval[Array[Double]]("vitdec", bits, trellis, Array(tblen.toDouble), "term", "hard") // why do they use cont?
   def convenc(bits:Array[Double], trellis: MStruct): Array[Double] =
     eng.feval[Array[Double]]("convenc", bits, trellis)
-
-  // FIXME: fake API
-  def convenc(bits:Array[Double], config: ConvencConfig): Array[Double] =
-    eng.feval[Array[Double]]("convenc", bits, config)
 }

@@ -40,3 +40,4 @@ case class ConvencFTN(config: ConvencConfig, pF: Int) extends Component {
 
   def latency = 1
 }
+
