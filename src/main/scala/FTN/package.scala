@@ -5,18 +5,28 @@ import spinal.sim._
 import spinal.lib.fsm._
 
 import Chainsaw._
-import Chainsaw.Real
+import Chainsaw.matlabIO._
 
 package object FTN {
+
+
+  def params: MStruct = {
+    eng.eval("cd /home/ltr/IdeaProjects/Chainsaw/matlabWorkspace/FTN326; \n" +
+      "channel = 3:226; \n" +
+      "InitPARAMS(2, channel); \n" +
+      "load PARAMS PARAMS")
+    eng.getVariable[MStruct]("PARAMS")
+  }
 
   val convencConfig = ConvencConfig(7, Array(171, 133))
 
   val channelCount = 512
+  val runningChannelCount = 448
 
   val OFDMSymbolPerFrame = 8
   val bitsPerSymbol = 4
 
-//  val bitsPerFrame = OFDMSymbolPerFrame * 2 * channelCount
+  //  val bitsPerFrame = OFDMSymbolPerFrame * 2 * channelCount
 
   val interleaveDepth = channelCount * 8
   val interleaveCol = 128
@@ -33,7 +43,8 @@ package object FTN {
   val coeffType = HardType(SFix(1 exp, -10 exp))
   val complexType = HardType(ComplexNumber(peak, resolution))
 
-  val frameBitsCount = 16 * channelCount
+  val frameBitsCount = 16 * runningChannelCount
+  val frameBitsCountPadded = 16 * runningChannelCount
 
   val pFNonIter = 64 // pF for non-iterative part, denoted as the pF of initially issued bits(from BitGen)
   val pFIter = 512

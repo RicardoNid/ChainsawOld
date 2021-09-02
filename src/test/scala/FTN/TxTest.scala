@@ -14,6 +14,9 @@ class TxTest extends AnyFlatSpec with Matchers {
     "cd ./matlabWorkspace/FTN326; \n" +
       "load bitsAllFrame; \n" +
       "load codedBitsAllFrame; \n")
+
+  println(s"fft size = ${params.get("FFTSize").asInstanceOf[Double]}")
+
   val bits = eng.getVariable[Array[Double]]("bitsAllFrame").map(_.toInt)
   val codedBits = eng.getVariable[Array[Double]]("codedBitsAllFrame").map(_.toInt)
   println(s"coded golden ${codedBits.mkString("")}")
@@ -58,8 +61,11 @@ class TxTest extends AnyFlatSpec with Matchers {
     println(convResult.map(_.toString(2).padToLeft(pFNonIter, '0')))
 
     "all the extracted data" should "have correct sizes" in{
-      testCases should have size (frameBitsCount / pFNonIter)
-      convResult should have size (frameBitsCount / pFNonIter)
+
+      import scala.math.ceil
+      val cycleCount = ceil(frameBitsCount.toDouble / pFNonIter).toInt
+      testCases should have size cycleCount
+      convResult should have size cycleCount
     }
 
   }

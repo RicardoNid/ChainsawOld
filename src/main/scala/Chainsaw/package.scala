@@ -396,4 +396,8 @@ package object Chainsaw extends RealFactory {
     }
     area.ret
   }
+
+  def nextMultiple(value:Int, base:Int) = {
+    (ceil(value.toDouble / base) * base).toInt
+  }
 }

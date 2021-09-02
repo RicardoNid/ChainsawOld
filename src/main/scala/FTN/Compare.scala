@@ -13,7 +13,8 @@ import matlabIO._
 object Compare extends App {
 
   eng.eval("cd ./matlabWorkspace/FTN326")
-  eng.eval("run main(0)")
+  eng.eval("channel = 3:226;")
+  eng.eval("run main(2, channel)")
   eng.eval("load bitsAllFrame")
   eng.eval("load codedBitsAllFrame")
   val bits = eng.getVariable[Array[Double]]("bitsAllFrame")
