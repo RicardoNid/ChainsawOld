@@ -20,7 +20,7 @@ class InterleaverFTNTest extends AnyFunSuite {
       dataIn.last #= false
       clockDomain.waitSampling()
 
-      val testCase = DSPRand.nextBinaryString(frameBitsCount * convencConfig.m)
+      val testCase = DSPRand.nextBinaryString(params.BitsPerFramePadded * convencConfig.m)
       val forMatlab = testCase.map(_.asDigit).toArray
       val forDut = testCase.grouped(pF).map(BigInt(_, 2)).toSeq
 

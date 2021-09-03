@@ -15,17 +15,15 @@ class TxTest extends AnyFlatSpec with Matchers {
       "load bitsAllFrame; \n" +
       "load codedBitsAllFrame; \n")
 
-  println(s"fft size = ${params.get("FFTSize").asInstanceOf[Double]}")
+  println(s"FFTSize = ${params.FFTSize}")
 
   val bits = eng.getVariable[Array[Double]]("bitsAllFrame").map(_.toInt)
   val codedBits = eng.getVariable[Array[Double]]("codedBitsAllFrame").map(_.toInt)
-  println(s"coded golden ${codedBits.mkString("")}")
 
   val testCases = bits.grouped(pFNonIter).toSeq.map(_.mkString(""))
   val forDut = testCases.map(BigInt(_, 2))
-  val forMatlab = testCases.map(_.map(_.asDigit.toDouble)).flatten.toArray
 
-  SimConfig.withWave.compile(new Tx(pFNonIter) {
+  SimConfig.withWave.compile(new Tx {
     convencFTN.dataOut.fragment.simPublic()
     convencFTN.dataOut.valid.simPublic()
   }).doSim { dut =>
@@ -58,14 +56,21 @@ class TxTest extends AnyFlatSpec with Matchers {
     printlnYellow(s"the total latency of Tx is ${dut.latency}")
     clockDomain.waitSampling(dut.latency + 1)
 
-    println(convResult.map(_.toString(2).padToLeft(pFNonIter, '0')))
+    val yourCodedStrings = convResult.map(_.toString(2).padToLeft(pFNonIter * 2, '0')).toArray
+    val goldenCodedStrings = codedBits.grouped(pFNonIter * 2).map(_.mkString("")).toArray
+    println(s"coded yours  \n${yourCodedStrings.take(4).mkString("\n")}")
+    println(s"coded golden \n${goldenCodedStrings.take(4).mkString("\n")}")
 
-    "all the extracted data" should "have correct sizes" in{
+    "all the extracted data" should "have correct sizes" in {
 
       import scala.math.ceil
-      val cycleCount = ceil(frameBitsCount.toDouble / pFNonIter).toInt
+      val cycleCount = ceil(params.BitsPerFramePadded.toDouble / pFNonIter).toInt
       testCases should have size cycleCount
       convResult should have size cycleCount
+    }
+
+    it should "be the same as golden" in {
+      yourCodedStrings shouldBe goldenCodedStrings
     }
 
   }

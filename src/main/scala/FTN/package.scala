@@ -1,38 +1,33 @@
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.sim._
-import spinal.lib.fsm._
-
 import Chainsaw._
 import Chainsaw.matlabIO._
+import spinal.core._
 
 package object FTN {
 
+  // algo parameters
+  case class FTNPARAMS(params: MStruct) {
+    // params on modulation(FFT/IFFT)
+    val FFTSize = params.get("FFTSize").asInstanceOf[Double].toInt
+    val CPLength = params.get("CPLength").asInstanceOf[Double].toInt
+    val DataCarrierPositions = params.get("DataCarrierPositions").asInstanceOf[Array[Double]]
+    val InterleaveRow = params.get("InterleaveRow").asInstanceOf[Double].toInt
+    val InterleaveCol = params.get("InterleaveCol").asInstanceOf[Double].toInt
+    val BitsPerFramePadded = params.get("BitsPerFramePadded").asInstanceOf[Double].toInt
+  }
 
-  def params: MStruct = {
+  lazy val params: FTNPARAMS = {
     eng.eval("cd /home/ltr/IdeaProjects/Chainsaw/matlabWorkspace/FTN326; \n" +
       "channel = 3:226; \n" +
       "InitPARAMS(2, channel); \n" +
-      "load PARAMS PARAMS")
-    eng.getVariable[MStruct]("PARAMS")
+      "load PARAMS PARAMS; \n" +
+      "PARAMS")
+    FTNPARAMS(eng.getVariable[MStruct]("PARAMS"))
   }
 
   val convencConfig = ConvencConfig(7, Array(171, 133))
 
-  val channelCount = 512
-  val runningChannelCount = 448
-
-  val OFDMSymbolPerFrame = 8
-  val bitsPerSymbol = 4
-
-  //  val bitsPerFrame = OFDMSymbolPerFrame * 2 * channelCount
-
-  val interleaveDepth = channelCount * 8
-  val interleaveCol = 128
-  val interleaveRow = interleaveDepth / interleaveCol
-
-  // precision of fixed-point number
+  // hardware parameters
+  // parameters on dataType
   val resolution = -7
   val peak = 4
   val wordWidth = 1 + peak - resolution
@@ -43,9 +38,6 @@ package object FTN {
   val coeffType = HardType(SFix(1 exp, -10 exp))
   val complexType = HardType(ComplexNumber(peak, resolution))
 
-  val frameBitsCount = 16 * runningChannelCount
-  val frameBitsCountPadded = 16 * runningChannelCount
-
-  val pFNonIter = 64 // pF for non-iterative part, denoted as the pF of initially issued bits(from BitGen)
+  val pFNonIter = 128 // pF for non-iterative part, denoted as the pF of initially issued bits(from BitGen)
   val pFIter = 512
 }

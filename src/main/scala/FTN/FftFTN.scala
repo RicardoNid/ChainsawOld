@@ -14,7 +14,7 @@ case class FftFTN(iter: Boolean, inverse: Boolean) extends Component {
 
   def getFactors(pF: Int, factors: Seq[Int] = Seq(4)): Seq[Int] = {
     val remained = pF / factors.product
-    if (remained < 4) factors :+ remained else getFactors(pF, factors :+ 4)
+    if (remained < 4 && remained > 1) factors :+ remained else if (remained == 1) factors else getFactors(pF, factors :+ 4)
   }
 
   if (iter) {
@@ -33,8 +33,12 @@ case class FftFTN(iter: Boolean, inverse: Boolean) extends Component {
     dataOut.fragment := core.dataOut.payload
   } else {
 
-    val core = DSP.FFT.CooleyTukeyBackToBack(N = channelCount / 2, pF,
-      factors1 = getFactors(pF), factors2 = getFactors(channelCount / 2 / pF),
+    println(s"fft back to back configuration:" +
+      s"\ncore1 ${getFactors(pF)}" +
+      s"\ncore2 ${getFactors(params.FFTSize / 2 / pF)}")
+
+    val core = DSP.FFT.CooleyTukeyBackToBack(N = params.FFTSize / 2, pF,
+      factors1 = getFactors(pF), factors2 = getFactors(params.FFTSize / 2 / pF),
       dataWidth = 12, coeffWidth = 8)
 
     latency = core.latency

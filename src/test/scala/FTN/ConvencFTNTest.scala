@@ -27,7 +27,7 @@ class ConvencFTNTest extends AnyFunSuite {
         }
       }
 
-      val testCase = DSPRand.nextBinaryString(frameBitsCount)
+      val testCase = DSPRand.nextBinaryString(params.BitsPerFramePadded)
       val forMatlab = testCase.map(_.asDigit.toDouble).toArray
       val forDut = testCase.grouped(pF).map(BigInt(_, 2)).toSeq
 
