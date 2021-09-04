@@ -11,7 +11,7 @@ case class QammodFTN(iter: Boolean) extends Component {
   // TODO: improve the logic
   // fetch parameters from Matlab results
   val pF = if (iter) pFIter * 2 else pFNonIter * 2 // 2 for convenc
-  val pFSymbol = pF / params.BitsPerSymbol
+  val pFSymbol = pF * 2 / params.BitsPerSymbol // size after hermitian expansion
   val period = params.CarrierNum * params.BitsPerSymbol / pF // period for P2S/S2P
   val bitAlloc = params.bitAlloc
   val powAlloc = params.powAlloc
@@ -25,8 +25,7 @@ case class QammodFTN(iter: Boolean) extends Component {
   val counterOut = Counter(period)
 
   // instantiate the core and other components
-  val core = Communication.QAMMod(bitAlloc = bitAlloc, powAlloc = powAlloc,
-    symbolType = qamSymbolType, customSymbols = Map(3 -> QAM8Symbols))
+  val core = Communication.QAMMod(bitAlloc = bitAlloc, powAlloc = powAlloc, symbolType = qamSymbolType)
   printlnGreen(s"qammod instantiated as: period = $period")
   // regs for P2S and S2P, along with their counters
   val serial2parallel = Vec(Reg(inType), period)
@@ -60,17 +59,22 @@ case class QammodFTN(iter: Boolean) extends Component {
 
   // output & padding
   val masks = params.bitMask.grouped(pFSymbol).toSeq // reshape the masks to have same size as the regs array
-  parallel2serial.zip(masks).zipWithIndex.foreach { case ((segment, valids), i) =>
-    segment := Vec(core.dataOut.payload.slice(i * pFSymbol, (i + 1) * pFSymbol))
-    segment.allowOverride
-    segment.zip(valids).foreach { case (complex, valid) => if (!valid) complex := ComplexNumber(0.0, 0.0, fixedType) }
+  val masked = core.dataOut.payload.zip(params.bitMask).map { case (complex, valid) => if (valid) complex else ComplexNumber(0.0, 0.0, fixedType) }
+  val conjed = masked.map(_.conj).reverse
+  val hermitianExpanded = Vec(masked ++ conjed)
+  //  //  val hermitian = core.dataOut.payload ++ Seq(ComplexNumber(0.0, 0.0, fixedType)) ++ core.dataOut.payload.tail.reverse.map(_.conj)
+  //  when(core.dataOut.fire){ // update when new round starts
+  //
+  //  }
+  when(counterOut.willOverflow){
+    parallel2serial.zipWithIndex.foreach { case (segment, i) => segment := Vec(hermitianExpanded.slice(i * pFSymbol, (i + 1) * pFSymbol)) }
   }
 
   dataOut.payload.fragment := parallel2serial(counterOut.value)
   dataOut.valid := core.dataOut.fire || !(counterOut.value === 0)
   // last identify the end of a frame
   // TODO: should I cut the delay of the last data of serial2parallel and parallel2serial?
-  val latency = period // serial2parallel + Qammod + parallel2serial
+  val latency = period + 2 // serial2parallel + Qammod + parallel2serial
   printlnGreen(s"logic latency of QAMmod    = $latency")
   //  printlnGreen(s"concrete latency of QAMmod = ${LatencyAnalysis(dataIn.fragment, dataOut.fragment(0).real.raw)}")
   dataOut.last := Delay(dataIn.last, latency, init = False)

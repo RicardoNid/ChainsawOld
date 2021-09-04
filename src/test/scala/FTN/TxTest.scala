@@ -4,16 +4,8 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should._
-import spinal.core.sim._
 import spinal.core._
 import spinal.core.sim._
-import spinal.lib._
-import spinal.sim._
-import spinal.lib.fsm._
-
-import Chainsaw._
-
-import matlabIO._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -24,7 +16,8 @@ class TxTest extends AnyFlatSpec with Matchers {
       "load bitsAllFrame; \n" +
       "load codedBitsAllFrame; \n" +
       "load interleavedBitsAllFrame; " +
-      "load mappedSymbolsAllFrame; \n"
+      "load mappedSymbolsAllFrame; \n" +
+      "load modulatedSymbolsAllFrame; \n"
   )
 
   println(s"FFTSize = ${params.FFTSize}")
@@ -33,6 +26,7 @@ class TxTest extends AnyFlatSpec with Matchers {
   val codedBits = eng.getVariable[Array[Double]]("codedBitsAllFrame").map(_.toInt)
   val interleavedBits = eng.getVariable[Array[Double]]("interleavedBitsAllFrame").map(_.toInt)
   val mappedSymbols = eng.getVariable[Array[MComplex]]("mappedSymbolsAllFrame")
+  val modulatedSymbols = eng.getVariable[Array[Double]]("modulatedSymbolsAllFrame").map(new MComplex(_, 0))
   //  println(s"mapped symbols")
   //  println(mappedSymbols.mkString(" "))
 
@@ -46,8 +40,10 @@ class TxTest extends AnyFlatSpec with Matchers {
     qammodFTN.dataOut.simPublic()
     qammodFTN.core.dataIn.simPublic()
     qammodFTN.remapped.simPublic()
+    qammodFTN.hermitianExpanded.simPublic()
+    IfftFTN.dataOut.simPublic()
   }).doSim { dut =>
-    import dut.{clockDomain, dataIn, convencFTN}
+    import dut.{clockDomain, convencFTN, dataIn}
 
     clockDomain.forkStimulus(2)
     dataIn.last #= false
@@ -70,12 +66,13 @@ class TxTest extends AnyFlatSpec with Matchers {
     }
 
     val convResults, interleavedResults, inputsForMap = ArrayBuffer[BigInt]()
-    val mappedResults = ArrayBuffer[MComplex]()
+    val mappedResults, modulatedResults = ArrayBuffer[MComplex]()
 
     setMonitor(dut.convencFTN.dataOut.valid, convencFTN.dataOut.fragment, convResults)
     setMonitor(dut.interleaverFTN.dataOut.valid, dut.interleaverFTN.dataOut.fragment, interleavedResults)
     setMonitor(dut.qammodFTN.core.dataIn.valid, dut.qammodFTN.remapped, inputsForMap)
     setComplexMonitor(dut.qammodFTN.dataOut.valid, dut.qammodFTN.dataOut.fragment, mappedResults)
+    setComplexMonitor(dut.IfftFTN.dataOut.valid, dut.IfftFTN.dataOut.fragment, modulatedResults)
 
     forDut.foreach { testCase =>
       dataIn.valid #= true
@@ -101,13 +98,19 @@ class TxTest extends AnyFlatSpec with Matchers {
     println(s"interleaved yours  \n${yourInterleavedStrings.take(4).mkString("\n")}")
     println(s"interleaved golden \n${goldenInterleavedStrings.take(4).mkString("\n")}")
 
-    // mapped results processing
-    val yourMappedResults = mappedResults.grouped(params.FFTSize / 2).map(_.map(_.toString(6)).mkString(" ")).toArray
-    val goldenMappedResults = mappedSymbols.grouped(params.FFTSize / 2).map(_.map(_.toString(6)).mkString(" ")).toArray
-    println(s"mapped yours  \n${yourMappedResults.take(4).mkString("\n")}")
-    println(s"mapped golden \n${goldenMappedResults.take(4).mkString("\n")}")
+    println(s"qammod input after S2P \n${inputsForMap.take(4).map(_.toString(2).padToLeft(1024, '0')).mkString("\n")}")
 
-    println(s"map input     \n${inputsForMap.take(4).map(_.toString(2).padToLeft(1024, '0')).mkString("\n")}")
+    // mapped results processing
+    val yourMappedStrings = mappedResults.grouped(params.FFTSize / 2).map(_.map(_.toString(6)).mkString(" ")).toArray
+    val goldenMappedStrings = mappedSymbols.grouped(params.FFTSize / 2).map(_.map(_.toString(6)).mkString(" ")).toArray
+    println(s"mapped yours  \n${yourMappedStrings.take(4).mkString("\n")}")
+    println(s"mapped golden \n${goldenMappedStrings.take(4).mkString("\n")}")
+
+    //
+    val yourModulatedStrings = modulatedResults.grouped(params.FFTSize).map(_.map(_.toString(6)).mkString(" ")).toArray
+    val goldenModulatedStrings = modulatedSymbols.grouped(params.FFTSize).map(_.map(_.toString(6)).mkString(" ")).toArray
+    println(s"modulated yours  \n${yourModulatedStrings.take(4).mkString("\n")}")
+    println(s"modulated golden \n${goldenModulatedStrings.take(4).mkString("\n")}")
 
     "all the extracted data" should "have correct sizes" in {
 
@@ -118,14 +121,19 @@ class TxTest extends AnyFlatSpec with Matchers {
       interleavedResults should have size cycleCount
 
 //      mappedResults should have size params.SymbolsPerChannel * params.CarrierNum
+//      mappedSymbols should have size params.SymbolsPerChannel * params.CarrierNum
     }
 
     it should "be the same as golden" in {
       yourCodedStrings shouldBe goldenCodedStrings // compare BigInt by binary string
       yourInterleavedStrings shouldBe goldenInterleavedStrings
-//      mappedResults.toArray shouldBe mappedSymbols
-//      assert(mappedResults.zip(mappedSymbols).forall{ case (yours, golden) => yours.sameAs(golden, epsilon = 1.0)})
-    }
+//      assert(mappedResults.zip(mappedSymbols).forall { case (yours, golden) => yours.sameAs(golden, epsilon = 0.1) })
 
+      //      // TODO: following code showed that custom symbols(QAM8) are not implemented correctly
+      //      println(mappedResults.zip(mappedSymbols).zipWithIndex
+      //        .filter { case ((c0, c1), i) => (c0 - c1).modulus > 0.5 }
+      //        .map { case ((c0, c1), i) => s"bitAllocated = ${params.bitAlloc(i % 256)}, powAllocated = ${params.powAlloc(i % 256)}, yours = $c0, golden = $c1" }
+      //        .mkString("\n"))
+    }
   }
 }

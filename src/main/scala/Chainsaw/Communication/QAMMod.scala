@@ -32,14 +32,10 @@ case class QAMMod(bitAlloc: Seq[Int], powAlloc: Seq[Double], symbolType: HardTyp
   }.toArray
 
   val rmsValues = QAMValues.map(eng.feval[Double]("rms", _))
-  printlnYellow(rmsValues.mkString(" "))
-  printlnYellow(FTN.params.QAMRms.mkString(" "))
   // QAM LUT for each segment
-
-  printlnYellow(bitAlloc.mkString(" "))
-  printlnYellow(powAlloc.mkString(" "))
+  import scala.math.sqrt
   val QAMLUTs = bitAlloc.filter(_ != 0).zipWithIndex.map { case (bitAllocated, i) =>
-    val LUTValues = QAMValues(bitAllocated - 1).map(_ / rmsValues(bitAllocated - 1)).map(_ * powAlloc(i))
+    val LUTValues = QAMValues(bitAllocated - 1).map(_ / rmsValues(bitAllocated - 1)).map(_ * sqrt(powAlloc(i)))
     printlnYellow(LUTValues.mkString(" "))
     Mem(LUTValues.map(CN(_, fixedType)))
   }

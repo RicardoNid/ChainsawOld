@@ -128,7 +128,7 @@ package object matlabIO {
 
     def toString(length: Int) =
       complex.real.toString.padTo(length, ' ').take(length) + " + " +
-        (complex.imag.toString).padTo(length - 1, ' ').take(length - 1) + "i"
+        (complex.imag.toString).padTo(length, ' ').take(length) + "i"
 
     def conj = new MComplex(complex.real, -complex.imag)
 
