@@ -114,7 +114,7 @@ package object matlabIO {
       complex.imag / that
     )
 
-    def sameAs(that: MComplex, epsilon: Double = 0.5) = {
+    def sameAs(that: MComplex, epsilon: Double = 1.0) = {
       (complex.real - that.real).abs < epsilon &&
         (complex.imag - that.imag).abs < epsilon
     }
@@ -125,6 +125,10 @@ package object matlabIO {
         case _ => false
       }
     }
+
+    def toString(length: Int) =
+      complex.real.toString.padTo(length, ' ').take(length) + " + " +
+        (complex.imag.toString).padTo(length - 1, ' ').take(length - 1) + "i"
 
     def conj = new MComplex(complex.real, -complex.imag)
 

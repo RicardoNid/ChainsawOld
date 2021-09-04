@@ -30,21 +30,32 @@ case class QAMMod(bitAlloc: Seq[Int], powAlloc: Seq[Double], symbolType: HardTyp
     (if (i == 1) customSymbols.getOrElse(i, Seq(new MComplex(-1, 0), new MComplex(1, 0))) // when all elements are purely real, they become Double
     else customSymbols.getOrElse(i, eng.feval[Array[MComplex]]("qammod", values, Array(M), "gray").toSeq)).toArray
   }.toArray
+
   val rmsValues = QAMValues.map(eng.feval[Double]("rms", _))
+  printlnYellow(rmsValues.mkString(" "))
+  printlnYellow(FTN.params.QAMRms.mkString(" "))
   // QAM LUT for each segment
+
+  printlnYellow(bitAlloc.mkString(" "))
+  printlnYellow(powAlloc.mkString(" "))
   val QAMLUTs = bitAlloc.filter(_ != 0).zipWithIndex.map { case (bitAllocated, i) =>
     val LUTValues = QAMValues(bitAllocated - 1).map(_ / rmsValues(bitAllocated - 1)).map(_ * powAlloc(i))
+    printlnYellow(LUTValues.mkString(" "))
     Mem(LUTValues.map(CN(_, fixedType)))
   }
 
-  val ends = (0 until bitAlloc.size).map(i => bitAlloc.take(i + 1).sum)
-  val starts = 0 +: ends.init
+  val filteredIndices = bitAlloc.zipWithIndex.filter(_._1 != 0).map(_._2)
+  val starts = filteredIndices.map(i => bitAlloc.take(i).sum)
+  val ends = filteredIndices.map(i => bitAlloc.take(i + 1).sum)
   val segments = ends.zip(starts).map { case (end, start) => bitAlloc.sum - 1 - start downto bitAlloc.sum - end }
 
   // using the input as address, reading the output from LUT(ROM)
+  dataOut.payload.foreach(_ := ComplexNumber(0.0,0.0, fixedType))
+  dataOut.payload.foreach(_.allowOverride)
   bitAlloc.filter(_ != 0).indices.foreach { i =>
     dataOut.payload(i) := QAMLUTs(i).readSync(dataIn.payload(segments(i)).asUInt)
   }
+
   dataOut.valid := RegNext(dataIn.valid, init = False)
 }
 

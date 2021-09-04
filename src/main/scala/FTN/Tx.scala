@@ -11,10 +11,7 @@ case class Tx() extends Component {
 
   val convencFTN = ConvencFTN(convencConfig, pF)
   val interleaverFTN = InterleaverFTN(params.InterleaveRow, params.InterleaveCol, pF * convencConfig.m)
-
-  val bitAlloc = Array.fill(params.FFTSize / 2)(4)
-  val powAlloc = Array.fill(params.FFTSize / 2)(1.0)
-  val qammodFTN = QammodFTN(bitAlloc, powAlloc, period = params.FFTSize / pF)
+  val qammodFTN = QammodFTN(iter = false)
   val IfftFTN = FftFTN(iter = false, inverse = true)
 
   val dataOut = out(cloneOf(IfftFTN.dataOut))

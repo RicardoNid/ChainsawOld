@@ -9,10 +9,31 @@ package object FTN {
     // params on modulation(FFT/IFFT)
     val FFTSize = params.get("FFTSize").asInstanceOf[Double].toInt
     val CPLength = params.get("CPLength").asInstanceOf[Double].toInt
-    val DataCarrierPositions = params.get("DataCarrierPositions").asInstanceOf[Array[Double]]
+
+    val CarrierNum = FFTSize / 2
+    val DataCarrierPositions = params.get("DataCarrierPositions").asInstanceOf[Array[Double]].map(_.toInt)
+
+    val QAMRms = params.get("QAMRms").asInstanceOf[Array[Double]]
+    val SpecialQAM8Symbols = params.get("SpecialQAM8Symbols").asInstanceOf[Array[MComplex]]
+
+    val QAMPositions = params.get("QAMPositions").asInstanceOf[Array[Double]].map(_.toInt)
+
     val InterleaveRow = params.get("InterleaveRow").asInstanceOf[Double].toInt
     val InterleaveCol = params.get("InterleaveCol").asInstanceOf[Double].toInt
     val BitsPerFramePadded = params.get("BitsPerFramePadded").asInstanceOf[Double].toInt
+    val BitsPerSymbol = params.get("BitsPerSymbol").asInstanceOf[Double].toInt
+    val SymbolsPerChannel = params.get("SymbolsPerChannel").asInstanceOf[Double].toInt
+
+    eng.eval("cd /home/ltr/IdeaProjects/Chainsaw/matlabWorkspace/FTN326; \n" +
+      "load bitAlloc bitAlloc; \n" +
+      "load powAlloc powAlloc ; \n"
+    )
+    val bitAlloc = eng.getVariable("bitAlloc").asInstanceOf[Array[Double]].map(_.toInt)
+    val powAlloc = eng.getVariable("powAlloc").asInstanceOf[Array[Double]]
+    val bitMask = (0 until CarrierNum).map(i => DataCarrierPositions.contains(i + 1)).toArray
+
+    printlnGreen(bitMask.mkString(" "))
+
   }
 
   lazy val params: FTNPARAMS = {
@@ -34,9 +55,12 @@ package object FTN {
 
   def toSFix(value: Double) = SF(value, peak exp, resolution exp)
 
-  val fixedType = HardType(SFix(peak exp, resolution exp))
+  val fixedType = HardType(SFix(1 exp, -10 exp))
   val coeffType = HardType(SFix(1 exp, -10 exp))
-  val complexType = HardType(ComplexNumber(peak, resolution))
+
+  val qamSymbolType = HardType(ComplexNumber(1, -10))
+  //  val complexType = HardType(ComplexNumber(peak, resolution))
+  val complexType = qamSymbolType
 
   val pFNonIter = 128 // pF for non-iterative part, denoted as the pF of initially issued bits(from BitGen)
   val pFIter = 512

@@ -22,7 +22,7 @@ class QammodFTNTest extends AnyFunSuite {
     val powAlloc = Seq.fill(pF)(1.0)
     val period = 8
 
-    SimConfig.withWave.compile(new QammodFTN(bitAlloc, powAlloc, period)).doSim { dut =>
+    SimConfig.withWave.compile(new QammodFTN(iter = false)).doSim { dut =>
       import dut.{clockDomain, dataIn, dataOut}
       clockDomain.forkStimulus(2)
       dataIn.valid #= false
