@@ -32,6 +32,8 @@ case class ComplexNumber(peak: Int, resolution: Int) extends Bundle {
 
   def >>(that: Int) = ComplexNumber(real >> that, imag >> that)
 
+  def <<(that: Int) = ComplexNumber(real << that, imag << that)
+
   // ALGO: 6.10
   def *(that: ComplexNumber)(implicit pipeline: Int = 0): ComplexNumber = {
 

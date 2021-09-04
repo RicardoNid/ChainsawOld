@@ -101,7 +101,9 @@ class TxTest extends AnyFlatSpec with Matchers {
     println(s"qammod input after S2P \n${inputsForMap.take(4).map(_.toString(2).padToLeft(1024, '0')).mkString("\n")}")
 
     // mapped results processing
-    val yourMappedStrings = mappedResults.grouped(params.FFTSize / 2).map(_.map(_.toString(6)).mkString(" ")).toArray
+    val mappedResultsHalf = mappedResults.grouped(params.FFTSize).toSeq.map(_.take(params.FFTSize / 2)).flatten
+    val yourMappedStrings = mappedResults.grouped(params.FFTSize).map(_.map(_.toString(6)).mkString(" ")).toArray
+    //    val yourMappedStrings = mappedResultsHalf.grouped(params.FFTSize / 2).map(_.map(_.toString(6)).mkString(" ")).toArray
     val goldenMappedStrings = mappedSymbols.grouped(params.FFTSize / 2).map(_.map(_.toString(6)).mkString(" ")).toArray
     println(s"mapped yours  \n${yourMappedStrings.take(4).mkString("\n")}")
     println(s"mapped golden \n${goldenMappedStrings.take(4).mkString("\n")}")
@@ -120,19 +122,21 @@ class TxTest extends AnyFlatSpec with Matchers {
       convResults should have size cycleCount
       interleavedResults should have size cycleCount
 
-//      mappedResults should have size params.SymbolsPerChannel * params.CarrierNum
-//      mappedSymbols should have size params.SymbolsPerChannel * params.CarrierNum
+      mappedResults should have size params.SymbolsPerChannel * params.CarrierNum * 2
+      mappedSymbols should have size params.SymbolsPerChannel * params.CarrierNum
     }
 
     it should "be the same as golden" in {
       yourCodedStrings shouldBe goldenCodedStrings // compare BigInt by binary string
       yourInterleavedStrings shouldBe goldenInterleavedStrings
-//      assert(mappedResults.zip(mappedSymbols).forall { case (yours, golden) => yours.sameAs(golden, epsilon = 0.1) })
+      assert(mappedResultsHalf.zip(mappedSymbols).forall { case (c0, c1) => c0.sameAs(c1, epsilon = 0.1) })
+
+      printlnRed(DSP.FFT.Refs.IFFT(mappedResults.take(512).toArray).mkString(" "))
 
       //      // TODO: following code showed that custom symbols(QAM8) are not implemented correctly
-      //      println(mappedResults.zip(mappedSymbols).zipWithIndex
+      //      println(mappedResultsHalf.zip(mappedSymbols).zipWithIndex
       //        .filter { case ((c0, c1), i) => (c0 - c1).modulus > 0.5 }
-      //        .map { case ((c0, c1), i) => s"bitAllocated = ${params.bitAlloc(i % 256)}, powAllocated = ${params.powAlloc(i % 256)}, yours = $c0, golden = $c1" }
+      //        .map { case ((c0, c1), i) => s"i = $i, bitAllocated = ${params.bitAlloc(i % 256)}, powAllocated = ${params.powAlloc(i % 256)}, yours = $c0, golden = $c1" }
       //        .mkString("\n"))
     }
   }

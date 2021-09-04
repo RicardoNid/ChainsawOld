@@ -54,11 +54,14 @@ package object FTN {
   val wordWidth = 1 + peak - resolution
 
   def toSFix(value: Double) = SF(value, peak exp, resolution exp)
-
-  val fixedType = HardType(SFix(1 exp, -10 exp))
   val coeffType = HardType(SFix(1 exp, -10 exp))
 
+  val qamFixedType = HardType(SFix(1 exp, -10 exp))
   val qamSymbolType = HardType(ComplexNumber(1, -10))
+
+  val ifftSymbolType = HardType(SFix(4 exp, -7 exp))
+
+
   //  val complexType = HardType(ComplexNumber(peak, resolution))
   val complexType = qamSymbolType
 

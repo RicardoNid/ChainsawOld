@@ -19,13 +19,11 @@ case class Tx() extends Component {
   dataIn >> convencFTN.dataIn
   convencFTN.dataOut >> interleaverFTN.dataIn
   interleaverFTN.dataOut >> qammodFTN.dataIn
+  //  qammodFTN.dataOut >> IfftFTN.dataIn
 
-  qammodFTN.dataOut >> IfftFTN.dataIn
-  //  val hermitian = qammodFTN.dataOut.fragment.tail.reverse.map(_.conj)
-  //  val symmetric = (qammodFTN.dataOut.fragment :+ ComplexNumber(0.0, 0.0, fixedType)) ++ hermitian
-  //  IfftFTN.dataIn.fragment := Vec(symmetric)
-  //  IfftFTN.dataIn.valid := qammodFTN.dataOut.valid
-  //  IfftFTN.dataIn.last := qammodFTN.dataOut.last
+  IfftFTN.dataIn.fragment := Vec(qammodFTN.dataOut.fragment.map(_ << 3))
+  IfftFTN.dataIn.last := qammodFTN.dataOut.last
+  IfftFTN.dataIn.valid := qammodFTN.dataOut.valid
 
   IfftFTN.dataOut >> dataOut
 

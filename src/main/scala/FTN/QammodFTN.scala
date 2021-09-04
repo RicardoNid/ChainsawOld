@@ -51,27 +51,29 @@ case class QammodFTN(iter: Boolean) extends Component {
 
   // connecting the core
   core.dataIn.payload := remapped
-  core.dataIn.valid := counterIn.willOverflow
+  core.dataIn.valid := RegNext(counterIn.willOverflow, init = False)
 
   // P2S logic
-  when(core.dataOut.fire)(counterOut.increment())
+  dataOut.payload.fragment := parallel2serial(counterOut.value)
+
+  val startWrite =  RegNext(core.dataOut.fire, init = False)
+  val writeHistory = History(startWrite, period, init = False)
+
+  when(startWrite)(counterOut.increment())
   when(!(counterOut.value === 0))(counterOut.increment())
+
+  dataOut.valid := writeHistory.vec.orR
 
   // output & padding
   val masks = params.bitMask.grouped(pFSymbol).toSeq // reshape the masks to have same size as the regs array
-  val masked = core.dataOut.payload.zip(params.bitMask).map { case (complex, valid) => if (valid) complex else ComplexNumber(0.0, 0.0, fixedType) }
+  val masked = core.dataOut.payload.zip(params.bitMask).map { case (complex, valid) => if (valid) complex else ComplexNumber(0.0, 0.0, qamFixedType) }
   val conjed = masked.map(_.conj).reverse
   val hermitianExpanded = Vec(masked ++ conjed)
-  //  //  val hermitian = core.dataOut.payload ++ Seq(ComplexNumber(0.0, 0.0, fixedType)) ++ core.dataOut.payload.tail.reverse.map(_.conj)
-  //  when(core.dataOut.fire){ // update when new round starts
-  //
-  //  }
-  when(counterOut.willOverflow){
+
+  when(core.dataOut.fire){
     parallel2serial.zipWithIndex.foreach { case (segment, i) => segment := Vec(hermitianExpanded.slice(i * pFSymbol, (i + 1) * pFSymbol)) }
   }
 
-  dataOut.payload.fragment := parallel2serial(counterOut.value)
-  dataOut.valid := core.dataOut.fire || !(counterOut.value === 0)
   // last identify the end of a frame
   // TODO: should I cut the delay of the last data of serial2parallel and parallel2serial?
   val latency = period + 2 // serial2parallel + Qammod + parallel2serial
