@@ -6,8 +6,10 @@ import spinal.lib._
 
 import scala.math.sqrt
 
-case class DFT(N: Int, dataWidth: Int, coeffWidth: Int, inverse: Boolean = false) extends Component with CustomPrecision {
+case class DFT(N: Int, inverse: Boolean = false,
+               dataType: HardType[SFix], coeffType: HardType[SFix]) extends Component {
 
+  val complexDataType = HardType(ComplexNumber(dataType().maxExp, dataType().minExp))
   val dataIn = in Vec(complexDataType(), N)
   val dataOut = out Vec(complexDataType(), N)
 
@@ -19,7 +21,8 @@ case class DFT(N: Int, dataWidth: Int, coeffWidth: Int, inverse: Boolean = false
     // for 2, 4, 8, use the given box
     case 2 => {
       if (!inverse) Vec(Seq(dataIn(0) + dataIn(1), dataIn(0) - dataIn(1)).map(RegNext(_)))
-      else Vec(Seq(dataIn(0) + dataIn(1), dataIn(0) - dataIn(1)).map(complex => RegNext(complex >> 1)))
+      //      else Vec(Seq(dataIn(0) + dataIn(1), dataIn(0) - dataIn(1)).map(complex => RegNext(complex >> 1)))
+      else Vec(Seq(dataIn(0) + dataIn(1), dataIn(0) - dataIn(1)))
     }
     case 4 => {
       val A = RegNext(dataIn(0) + dataIn(2))
@@ -27,10 +30,11 @@ case class DFT(N: Int, dataWidth: Int, coeffWidth: Int, inverse: Boolean = false
       val C = RegNext(dataIn(0) - dataIn(2))
       val D = RegNext(dataIn(1) - dataIn(3))
       if (!inverse) Vec(Seq(A + B, C - D.multiplyI, A - B, C + D.multiplyI).map(RegNext(_)))
-      else Vec(Seq(A + B, C + D.multiplyI, A - B, C - D.multiplyI).map(complex => RegNext(complex >> 2)))
+      //      else Vec(Seq(A + B, C + D.multiplyI, A - B, C - D.multiplyI).map(complex => RegNext(complex >> 2)))
+      else Vec(Seq(A + B, C + D.multiplyI, A - B, C - D.multiplyI))
     }
     case 8 => {
-      if(!inverse){
+      if (!inverse) {
         // stage 0
         val zipped = dataIn.take(4).zip(dataIn.takeRight(4))
         val A = RegNext(Vec(zipped.map { case (number, number1) => number + number1 } ++ zipped.map { case (number, number1) => number - number1 }))
@@ -49,10 +53,11 @@ case class DFT(N: Int, dataWidth: Int, coeffWidth: Int, inverse: Boolean = false
         val C = Vec(complexDataType(), 8)
         val CTemp = Vec(complexDataType(), 2) // for dataWidth
 
-        CTemp(0).real := (RegNext(B(5)) * toCoeff(1 / sqrt(2))).real.truncated
-        CTemp(0).imag := (RegNext(B(5)) * toCoeff(1 / sqrt(2))).imag.truncated
-        CTemp(1).real := (RegNext(B(7)) * toCoeff(1 / sqrt(2))).real.truncated
-        CTemp(1).imag := (RegNext(B(7)) * toCoeff(1 / sqrt(2))).imag.truncated
+        val sqrt2coeff = SF(1 / sqrt(2), coeffType().maxExp exp, coeffType().minExp exp)
+        CTemp(0).real := (RegNext(B(5)) * sqrt2coeff).real.truncated
+        CTemp(0).imag := (RegNext(B(5)) * sqrt2coeff).imag.truncated
+        CTemp(1).real := (RegNext(B(7)) * sqrt2coeff).real.truncated
+        CTemp(1).imag := (RegNext(B(7)) * sqrt2coeff).imag.truncated
 
         val CTempDelayed = RegNext(CTemp)
 
@@ -81,6 +86,7 @@ case class DFT(N: Int, dataWidth: Int, coeffWidth: Int, inverse: Boolean = false
     }
     // for 3, 5, 7, 9, use Rader-Winograd DFT
   }
+
   dataOut.zip(ret).foreach { case (out, ret) => out := ret.truncated(HardType(out.real)) }
   def latency = LatencyAnalysis(dataIn(0).real.raw, dataOut(0).real.raw).intValue()
 }

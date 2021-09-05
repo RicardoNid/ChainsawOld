@@ -110,9 +110,11 @@ class TxTest extends AnyFlatSpec with Matchers {
 
     //
     val yourModulatedStrings = modulatedResults.grouped(params.FFTSize).map(_.map(_.toString(6)).mkString(" ")).toArray
-    val goldenModulatedStrings = modulatedSymbols.grouped(params.FFTSize).map(_.map(_.toString(6)).mkString(" ")).toArray
+    val goldenModulatedStrings = modulatedSymbols.grouped(params.FFTSize).map(_.map(complex => (complex * params.FFTSize).toString(6)).mkString(" ")).toArray
     println(s"modulated yours  \n${yourModulatedStrings.take(4).mkString("\n")}")
     println(s"modulated golden \n${goldenModulatedStrings.take(4).mkString("\n")}")
+    println(s"statistic data:  \nmax = ${modulatedSymbols.map(_.real.abs).max * params.FFTSize}, " +
+      s"min = ${modulatedSymbols.map(_.real.abs).min * params.FFTSize}")
 
     "all the extracted data" should "have correct sizes" in {
 
@@ -130,6 +132,7 @@ class TxTest extends AnyFlatSpec with Matchers {
       yourCodedStrings shouldBe goldenCodedStrings // compare BigInt by binary string
       yourInterleavedStrings shouldBe goldenInterleavedStrings
       assert(mappedResultsHalf.zip(mappedSymbols).forall { case (c0, c1) => c0.sameAs(c1, epsilon = 0.1) })
+//      assert(modu.zip(mappedSymbols).forall { case (c0, c1) => c0.sameAs(c1, epsilon = 0.1) })
 
       printlnRed(DSP.FFT.Refs.IFFT(mappedResults.take(512).toArray).mkString(" "))
 

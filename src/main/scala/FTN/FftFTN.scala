@@ -1,4 +1,5 @@
 package FTN
+
 import Chainsaw._
 import spinal.core._
 import spinal.lib._
@@ -17,7 +18,7 @@ case class FftFTN(iter: Boolean, inverse: Boolean) extends Component {
   }
 
   if (iter) {
-    val core = DSP.FFT.CooleyTukeyFFTStream(pF, dataWidth = 16, coeffWidth = 8, getFactors(pF), inverse)
+    val core = DSP.FFT.CooleyTukeyFFTStream(pF, getFactors(pF), inverse, ifftFixedType, coeffFixedType)
 
     latency = core.latency
 
@@ -37,7 +38,7 @@ case class FftFTN(iter: Boolean, inverse: Boolean) extends Component {
 
     val core = DSP.FFT.CooleyTukeyBackToBack(N = params.FFTSize, pF,
       factors1 = getFactors(pF), factors2 = getFactors(params.FFTSize / pF),
-      dataWidth = 16, coeffWidth = 8, inverse = inverse)
+      inverse = inverse, ifftFixedType, coeffFixedType)
 
     latency = core.latency
 

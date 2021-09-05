@@ -99,6 +99,10 @@ object ComplexNumber {
     imag := I
     ComplexNumber(real, imag)
   }
+
+  def apply(dataType: HardType[SFix]): ComplexNumber = {
+    ComplexNumber(dataType().maxExp, dataType().minExp)
+  }
 }
 
 object CN {
