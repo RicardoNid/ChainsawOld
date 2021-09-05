@@ -6,8 +6,8 @@ import spinal.lib._
 case class FftFTN(iter: Boolean, inverse: Boolean) extends Component {
 
   val pF = if (iter) pFIter else pFNonIter
-  val dataIn = slave Flow Fragment(Vec(complexType, pF))
-  val dataOut = master Flow Fragment(Vec(complexType, pF))
+  val dataIn = slave Flow Fragment(Vec(ifftSymbolType, pF))
+  val dataOut = master Flow Fragment(Vec(ifftSymbolType, pF))
 
   var latency = 0
 
@@ -17,7 +17,7 @@ case class FftFTN(iter: Boolean, inverse: Boolean) extends Component {
   }
 
   if (iter) {
-    val core = DSP.FFT.CooleyTukeyFFTStream(pF, dataWidth = 12, coeffWidth = 8, getFactors(pF), inverse)
+    val core = DSP.FFT.CooleyTukeyFFTStream(pF, dataWidth = 16, coeffWidth = 8, getFactors(pF), inverse)
 
     latency = core.latency
 
@@ -37,7 +37,7 @@ case class FftFTN(iter: Boolean, inverse: Boolean) extends Component {
 
     val core = DSP.FFT.CooleyTukeyBackToBack(N = params.FFTSize, pF,
       factors1 = getFactors(pF), factors2 = getFactors(params.FFTSize / pF),
-      dataWidth = 12, coeffWidth = 8)
+      dataWidth = 16, coeffWidth = 8, inverse = inverse)
 
     latency = core.latency
 

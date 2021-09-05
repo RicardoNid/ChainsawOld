@@ -54,14 +54,14 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
     }
   }
 
-  def testCooleyTukeyBackToBackHardware(testLength: Int, pF: Int, dataWidth: Int, coeffWidth: Int, factors1: Seq[Int], factors2: Seq[Int]) = {
-    SimConfig.withWave.compile(new CooleyTukeyBackToBack(
+  def testCooleyTukeyBackToBackHardware(testLength: Int, pF: Int, dataWidth: Int, coeffWidth: Int, factors1: Seq[Int], factors2: Seq[Int], inverse: Boolean = false) = {
+    SimConfig.withWave.compile(CooleyTukeyBackToBack(
       N = testLength, pF = pF,
       dataWidth = dataWidth, coeffWidth = coeffWidth,
-      factors1 = factors1, factors2 = factors2)).doSim { dut =>
+      factors1 = factors1, factors2 = factors2, inverse = inverse)).doSim { dut =>
 
-      val test = (0 until 2 * testLength).map(i => (i / 2).toDouble)
-      val testComplex = (0 until testLength).map(i => new MComplex(DSPRand.nextDouble() - 0.5, DSPRand.nextDouble() - 0.5)).toArray
+      val testBase = (0 until testLength).map(i => new MComplex(DSPRand.nextDouble() - 0.5, DSPRand.nextDouble() - 0.5)).toArray
+      val testComplex = if(inverse) testBase.map(_ * 4) else testBase
 
       import dut.{clockDomain, dataIn, dataOut}
       clockDomain.forkStimulus(2)
@@ -92,10 +92,14 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
 
       clockDomain.waitSampling(200)
 
-      val golden = Refs.FFT(testComplex)
+      val golden = if (!inverse) Refs.FFT(testComplex) else Refs.IFFT(testComplex)
+
+      println(testComplex.grouped(4).toSeq.map(_.mkString(" ")).mkString("\n"))
+      println(testComplex.reduce(_ + _).real / 16.0, testComplex.reduce(_ + _).imag / 16.0)
+
       println(dutResult.zip(golden).map { case (complex, complex1) => complex.toString + "####" + complex1.toString }.mkString("\n"))
       dutResult should not be empty
-      assert(golden.zip(dutResult).forall{ case (complex, complex1) => complex.sameAs(complex1, 0.5)})
+      assert(golden.zip(dutResult).forall { case (complex, complex1) => complex.sameAs(complex1, 0.1) })
     }
   }
 
@@ -124,8 +128,14 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
   }
 
   "back-to-back Cooley-Tukey FFTs" should "pass the following tests" in {
-    testCooleyTukeyBackToBackHardware(256, 32, 16, 16, Seq(4, 4, 2), Seq(4, 2))
-    printlnGreen(s"256-point as 32*8 back to back passed")
+//    testCooleyTukeyBackToBackHardware(256, 32, 16, 16, Seq(4, 4, 2), Seq(4, 2))
+//    printlnGreen(s"256-point FFT as 32*8 back to back passed")
+//    testCooleyTukeyBackToBackHardware(256, 32, 16, 16, Seq(4, 4, 2), Seq(4, 2), inverse = true)
+//    printlnGreen(s"256-point IFFT as 32*8 back to back passed")
+//    testCooleyTukeyBackToBackHardware(16, 4, 16, 16, Seq(4), Seq(4), inverse = false)
+//    printlnGreen(s"16-point FFT as 4*4 back to back passed")
+    testCooleyTukeyBackToBackHardware(16, 4, 16, 16, Seq(4), Seq(4), inverse = true)
+    printlnGreen(s"16-point IFFT as 4*4 back to back passed")
   }
 
 }

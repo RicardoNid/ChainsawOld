@@ -21,7 +21,7 @@ case class Tx() extends Component {
   interleaverFTN.dataOut >> qammodFTN.dataIn
   //  qammodFTN.dataOut >> IfftFTN.dataIn
 
-  IfftFTN.dataIn.fragment := Vec(qammodFTN.dataOut.fragment.map(_ << 3))
+  IfftFTN.dataIn.fragment := Vec(qammodFTN.dataOut.fragment.map(_.truncated(ifftFixedType)))
   IfftFTN.dataIn.last := qammodFTN.dataOut.last
   IfftFTN.dataIn.valid := qammodFTN.dataOut.valid
 
