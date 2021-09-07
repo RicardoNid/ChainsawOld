@@ -65,9 +65,12 @@ case class QammodFTN(iter: Boolean) extends Component {
   dataOut.valid := writeHistory.vec.orR
 
   // output & padding
+  val zero = CN(new MComplex(0.0, 0.0), qamFixedType)
   val masks = params.bitMask.grouped(pFSymbol).toSeq // reshape the masks to have same size as the regs array
   val masked = core.dataOut.payload.zip(params.bitMask).map { case (complex, valid) => if (valid) complex else ComplexNumber(0.0, 0.0, qamFixedType) }
-  val conjed = masked.map(_.conj).reverse
+  //  val conjed = masked.map(_.conj).reverse
+  val conjed = (0 until 256).map(_ => zero).reverse
+  // TODO implement correst expansion
   val hermitianExpanded = Vec(masked ++ conjed)
 
   when(core.dataOut.fire){

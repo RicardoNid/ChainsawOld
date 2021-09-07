@@ -57,9 +57,9 @@ package object FTN {
   val coeffType = HardType(SFix(1 exp, -10 exp))
 
   val qamFixedType = HardType(SFix(1 exp, -10 exp))
-  val qamSymbolType = HardType(ComplexNumber(1, -10))
+  val qamSymbolType = HardType(ComplexNumber(qamFixedType))
 
-  val ifftFixedType = HardType(SFix(5 exp, -10 exp))
+  val ifftFixedType = HardType(SFix(7 exp, -8 exp))
   val ifftSymbolType = HardType(ComplexNumber(ifftFixedType))
 
   val coeffFixedType = HardType(SFix(1 exp, -11 exp))
