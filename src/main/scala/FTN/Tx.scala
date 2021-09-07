@@ -27,13 +27,15 @@ case class Tx() extends Component {
 
   IfftFTN.dataOut >> dataOut
 
+  Seq(dataIn, convencFTN.dataOut, interleaverFTN.dataOut, qammodFTN.dataOut, IfftFTN.dataOut).foreach(_.addAttribute("mark_debug"))
+
   def latency = convencFTN.latency + interleaverFTN.core.latency + qammodFTN.latency + IfftFTN.latency
 }
 
 object Tx {
   def main(args: Array[String]): Unit = {
     GenRTL(Tx())
-    VivadoSynth(Tx())
+    //    VivadoSynth(Tx())
   }
 }
 

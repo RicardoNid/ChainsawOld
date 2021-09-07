@@ -368,7 +368,7 @@ package object Chainsaw extends RealFactory {
     report.printFMax()
   }
 
-  def VivadoImpl[T <: Component](gen: => T, name: String = "temp"): Unit = {
+  def VivadoImpl[T <: Component](gen: => T, name: String = "temp", xdcPath: String = ""): Unit = {
     val report = VivadoFlow(design = gen, name, s"synthWorkspace/$name", vivadoTask = VivadoTask(taskType = IMPL)).doit()
     report.printArea()
     report.printFMax()
@@ -377,27 +377,27 @@ package object Chainsaw extends RealFactory {
   val config0 = ClockDomainConfig(resetKind = ASYNC)
   val config1 = ClockDomainConfig(resetKind = SYNC)
 
-  def RegAsync[T <: Data](dataType:HardType[T]): T = {
+  def RegAsync[T <: Data](dataType: HardType[T]): T = {
 
     val domain0 = ClockDomain.external("domain0", config0)
 
-    val area = new ClockingArea(domain0){
+    val area = new ClockingArea(domain0) {
       val ret = Reg(dataType)
     }
     area.ret
   }
 
-  def RegSync[T <: Data](dataType:HardType[T]): T = {
+  def RegSync[T <: Data](dataType: HardType[T]): T = {
 
     val domain1 = ClockDomain.external("domain1", config1)
 
-    val area = new ClockingArea(domain1){
+    val area = new ClockingArea(domain1) {
       val ret = Reg(dataType)
     }
     area.ret
   }
 
-  def nextMultiple(value:Int, base:Int) = {
+  def nextMultiple(value: Int, base: Int) = {
     (ceil(value.toDouble / base) * base).toInt
   }
 }

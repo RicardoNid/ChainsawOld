@@ -16,6 +16,7 @@ class VivadoFlow[T <: Component](
                                   vivadoConfig: VivadoConfig,
                                   vivadoTask: VivadoTask,
                                   force: Boolean = false,
+                                  xdcPath:String,
                                   constraint: VivadoConstraint = VivadoConstraint() // no constraint by default
                                 ) {
 
@@ -58,7 +59,7 @@ class VivadoFlow[T <: Component](
       else throw new IllegalArgumentException(s"invalid RTL source path $path")
     }
 
-    script += s"read_xdc doit.xdc\n"
+    script += (if(xdcPath.nonEmpty) s"read_xdc $xdcPath\n" else s"read_xdc doit.xdc\n")
 
     var taskName = ""
     taskType match {
@@ -130,6 +131,7 @@ object VivadoFlow {
                              workspacePath: String,
                              vivadoConfig: VivadoConfig = defaultVivadoConfig,
                              vivadoTask: VivadoTask = VivadoTask(),
-                             force: Boolean = true
-                           ) = new VivadoFlow(design, topModuleName, workspacePath, vivadoConfig, vivadoTask, force)
+                             force: Boolean = true,
+                             xdcPath:String = ""
+                           ) = new VivadoFlow(design, topModuleName, workspacePath, vivadoConfig, vivadoTask, force, xdcPath)
 }

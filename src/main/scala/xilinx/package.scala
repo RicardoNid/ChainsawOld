@@ -4,7 +4,7 @@ package object xilinx {
 
   // vivado path of your environment
   // TODO: write a test for this
-  var vivadoPath = "/tools/Xilinx/Vivado/2019.2/bin"
+  var vivadoPath = "/tools/Xilinx/Vivado/2020.1/bin"
 
   val XilinxClockConfig = ClockDomainConfig(resetKind = BOOT)
 
@@ -37,7 +37,8 @@ package object xilinx {
     //    xilinxDeviceFamily = Series7,
     //    devicePart = "xczu7ev-ffvc1156-2-e", // ZCU104
     //    devicePart = "xc7vx690tffg1761-2", // VC709
-    devicePart = "xcvu9p-flga2104-2-i", // VU9P for FTN
+    //    devicePart = "xcvu9p-flga2104-2-i", // VU9P for FTN
+    devicePart = "xc7z010", // ZYBO
     processortCount = 10
   )
 }
