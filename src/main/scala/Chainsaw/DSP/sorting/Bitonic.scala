@@ -38,8 +38,8 @@ case class Bitonic[T <: Data](dataType: HardType[T], n: Int, comparator: Seq[T] 
     if (step == maxStep) dataIn
     else {
       val upAndDown = (0 until n / step).map(_ % 2 == 1)
-      printlnGreen(s"step  = $step")
-      printlnGreen(s"up and down ${upAndDown.mkString(" ")}")
+      println(s"step  = $step")
+      println(s"up and down ${upAndDown.mkString(" ")}")
       val ordered = dataIn.grouped(step).toSeq.zip(upAndDown).map { case (data, up) => block(data, up) }.flatten
       val delayed = RegNext(Vec(ordered))
       whole(delayed, step << 1)
