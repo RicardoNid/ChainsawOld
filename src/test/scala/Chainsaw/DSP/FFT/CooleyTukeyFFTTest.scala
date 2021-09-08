@@ -23,11 +23,17 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
   val dataType = HardType(SFix(8 exp, -15 exp))
   val coeffType = HardType(SFix(1 exp, -14 exp))
 
-  def testCooleyTukeyFFTHardware(testLength: Int, factors: Seq[Int], inverse: Boolean = false, epsilon: Double = 0.1) = {
+  def testCooleyTukeyFFTHardware(testLength: Int, factors: Seq[Int], inverse: Boolean = false, epsilon: Double = 0.1, realSequence: Boolean = false) = {
     SimConfig.withWave.compile(CooleyTukeyFFTStream(N = testLength, factors = factors, inverse = inverse, dataType, coeffType)).doSim { dut =>
 
-      val test = (0 until 2 * testLength).map(_ => (DSPRand.nextDouble() - 0.5) * 2)
-      val testComplex = (0 until testLength).map(i => new MComplex(test(2 * i), test(2 * i + 1))).toArray
+      val testComplex: Array[MComplex] = if (!realSequence) (0 until testLength).map(_ => DSPRand.nextComplex(-1.0, 1.0)).toArray
+      else if (realSequence && !inverse) (0 until testLength).map(_ => (DSPRand.nextDouble() - 0.5) * 2).map(new MComplex(_, 0.0)).toArray
+      else {
+        val zero = new MComplex(0.0, 0.0)
+        val valid = (1 until testLength / 2).map(_ => DSPRand.nextComplex(-1.0, 1.0))
+        val conjed = valid.map(_.conj).reverse
+        (zero +: valid :+ zero) ++ conjed
+      }.toArray
 
       import dut.{clockDomain, dataIn, dataOut}
       clockDomain.forkStimulus(2)
@@ -59,8 +65,8 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
 
       val golden = if (!inverse) Refs.FFT(testComplex) else Refs.IFFT(testComplex).map(_ * testLength)
 
-      println(golden.mkString(" "))
-      println(dutResult.mkString(" "))
+      println(golden.map(_.toString(6)).mkString(" "))
+      println(dutResult.map(_.toString(6)).mkString(" "))
       assert(dutResult.nonEmpty)
       assert(golden.zip(dutResult).forall { case (complex, complex1) => complex.sameAs(complex1, epsilon = epsilon) })
     }
@@ -117,8 +123,10 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
     }
   }
 
+  def testRadixR(factors: Seq[Int], inverse: Boolean, epsilon: Double, realSequence: Boolean = false) =
+    testCooleyTukeyFFTHardware(factors.product, factors, inverse, epsilon, realSequence)
+
   "radix-r FFT and IFFT" should "pass the following tests" in {
-    def testRadixR: (Seq[Int], Boolean, Double) => Unit = testCooleyTukeyFFTHardware(64, _, _, _)
 
     // FFT
     testRadixR(Seq.fill(6)(2), false, 0.1) // radix-2
@@ -134,6 +142,13 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
     printlnGreen(s"radix-4 IFFT passed")
     //    testRadixR(Seq.fill(2)(8), true) // radix-8
     //    printlnGreen(s"radix-8 IFFT passed")
+
+  }
+
+  "radix-r,real-valued FFT and hermitian symmetric IFFT" should "pass the following tests" in {
+    // real-valued FFT / hermitian symmetric IFFT
+    testRadixR(Seq.fill(6)(2), inverse = true, epsilon = 0.5, realSequence = true)
+    printlnGreen(s"radix-2 hermitian symmetric IFFT passed")
   }
 
   "other Cooley-Tukey FFTs" should "pass the following tests" in {

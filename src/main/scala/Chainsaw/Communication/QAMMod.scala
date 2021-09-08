@@ -33,10 +33,12 @@ case class QAMMod(bitAlloc: Seq[Int], powAlloc: Seq[Double], symbolType: HardTyp
 
   val rmsValues = QAMValues.map(eng.feval[Double]("rms", _))
   // QAM LUT for each segment
+
   import scala.math.sqrt
+
   val QAMLUTs = bitAlloc.filter(_ != 0).zipWithIndex.map { case (bitAllocated, i) =>
     val LUTValues = QAMValues(bitAllocated - 1).map(_ / rmsValues(bitAllocated - 1)).map(_ * sqrt(powAlloc(i)))
-    printlnYellow(LUTValues.mkString(" "))
+    //    printlnYellow(LUTValues.mkString(" "))
     Mem(LUTValues.map(CN(_, fixedType)))
   }
 
@@ -46,7 +48,7 @@ case class QAMMod(bitAlloc: Seq[Int], powAlloc: Seq[Double], symbolType: HardTyp
   val segments = ends.zip(starts).map { case (end, start) => bitAlloc.sum - 1 - start downto bitAlloc.sum - end }
 
   // using the input as address, reading the output from LUT(ROM)
-  dataOut.payload.foreach(_ := ComplexNumber(0.0,0.0, fixedType))
+  dataOut.payload.foreach(_ := ComplexNumber(0.0, 0.0, fixedType))
   dataOut.payload.foreach(_.allowOverride)
   bitAlloc.filter(_ != 0).indices.foreach { i =>
     dataOut.payload(i) := QAMLUTs(i).readSync(dataIn.payload(segments(i)).asUInt)

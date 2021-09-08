@@ -56,7 +56,7 @@ case class QammodFTN(iter: Boolean) extends Component {
   // P2S logic
   dataOut.payload.fragment := parallel2serial(counterOut.value)
 
-  val startWrite =  RegNext(core.dataOut.fire, init = False)
+  val startWrite = RegNext(core.dataOut.fire, init = False)
   val writeHistory = History(startWrite, period, init = False)
 
   when(startWrite)(counterOut.increment())
@@ -68,19 +68,20 @@ case class QammodFTN(iter: Boolean) extends Component {
   val zero = CN(new MComplex(0.0, 0.0), qamFixedType)
   val masks = params.bitMask.grouped(pFSymbol).toSeq // reshape the masks to have same size as the regs array
   val masked = core.dataOut.payload.zip(params.bitMask).map { case (complex, valid) => if (valid) complex else ComplexNumber(0.0, 0.0, qamFixedType) }
-  //  val conjed = masked.map(_.conj).reverse
-  val conjed = (0 until 256).map(_ => zero).reverse
-  // TODO implement correst expansion
-  val hermitianExpanded = Vec(masked ++ conjed)
+  val conjed = masked.tail.map(_.conj).reverse
+  val hermitianExpanded = Vec((masked :+ zero) ++ conjed)
 
-  when(core.dataOut.fire){
+  //  val conjed = masked.map(_.conj).reverse
+  //  val hermitianExpanded = Vec(masked ++ conjed)
+
+  when(core.dataOut.fire) {
     parallel2serial.zipWithIndex.foreach { case (segment, i) => segment := Vec(hermitianExpanded.slice(i * pFSymbol, (i + 1) * pFSymbol)) }
   }
 
   // last identify the end of a frame
   // TODO: should I cut the delay of the last data of serial2parallel and parallel2serial?
   val latency = period + 2 // serial2parallel + Qammod + parallel2serial
-  printlnGreen(s"logic latency of QAMmod    = $latency")
+  //  printlnGreen(s"logic latency of QAMmod    = $latency")
   //  printlnGreen(s"concrete latency of QAMmod = ${LatencyAnalysis(dataIn.fragment, dataOut.fragment(0).real.raw)}")
   dataOut.last := Delay(dataIn.last, latency, init = False)
 }

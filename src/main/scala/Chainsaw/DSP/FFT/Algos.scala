@@ -37,7 +37,7 @@ object Algos extends App {
         //        println(input2D.map(_.mkString(" ")).mkString("\n"))
         val afterBlock = input2D.map(block) // N2 blocks, length = N1
         //        printlnGreen("after N1 FFT")
-        printlnGreen("before twiddle")
+        //        printlnGreen("before twiddle")
         //        println(afterBlock.map(_.mkString(" ")).mkString("\n"))
         val afterParallel = twiddle(afterBlock)
         //        printlnGreen("before inter1")
