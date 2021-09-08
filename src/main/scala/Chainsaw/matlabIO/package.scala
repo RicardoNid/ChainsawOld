@@ -22,6 +22,11 @@ package object matlabIO {
   type MHandleObject = types.HandleObject
   type MCellStr = types.CellStr
 
+  object MComplex{
+    def apply(real:Double, imag:Double): MComplex = new MComplex(real, imag)
+    def apply(real:Double): MComplex = new MComplex(real, 0)
+  }
+
   def writeFile(fileName: String, content: String) = {
     val filepath = Paths.get(matlabWorkingSpace.toString, fileName)
     val writer = new java.io.FileWriter(filepath.toFile)

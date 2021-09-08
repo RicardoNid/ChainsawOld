@@ -1,11 +1,11 @@
 package Chainsaw.DSP.FFT
 
-import cc.redberry.rings.scaladsl._
-import cc.redberry.rings.primes._
-import Chainsaw.matlabIO._
 import Chainsaw._
+import Chainsaw.matlabIO._
+import cc.redberry.rings.primes._
+import cc.redberry.rings.scaladsl._
+import spinal.core._
 
-import scala.collection.{immutable, mutable}
 import scala.collection.mutable.ArrayBuffer
 
 object Algos extends App {
@@ -93,16 +93,89 @@ object Algos extends App {
     val coeffPermutation = (0 until N - 1).map(i => Zp(N).pow(g, i).intValue())
     val outputPermutation = (0 until N - 1).map(i => Zp(N).pow(g, i).intValue())
 
-    val permutatedInput = inputPermutation.map(input(_))
-    val permutatedCoeff = coeffPermutation.map(WNnk(N, _) - new MComplex(1, 0))
-    val permutatedOutput: Seq[MComplex] = CyclicConv(permutatedInput, permutatedCoeff, N - 1)
+    val permutedInput = inputPermutation.map(input(_))
+    val permutedCoeff = coeffPermutation.map(WNnk(N, _) - new MComplex(1, 0))
+    val permutedOutput: Seq[MComplex] = CyclicConv(permutedInput, permutedCoeff, N - 1)
 
     val output: ArrayBuffer[MComplex] = ArrayBuffer.fill(N)(new MComplex(0, 0)) // output1, output2...output(N-1)
     output(0) = input.reduce(_ + _)
-    permutatedOutput.zip(outputPermutation).foreach { case (complex, i) => output(i) = complex + output(0) }
+    permutedOutput.zip(outputPermutation).foreach { case (complex, i) => output(i) = complex + output(0) }
 
     output
   }
 
+  def R2RealValuedFFT(input: Seq[Double], mode: Int): Seq[MComplex] = {
+    val N = input.size
+
+    def butterflyReal(data: Seq[Double]): Seq[Double] = {
+      val (data0, data1) = data.splitAt(data.length / 2)
+      val pairs = data0.zip(data1)
+      val out0 = pairs.map { case (d, d1) => d + d1 }
+      val out1 = pairs.map { case (d, d1) => d - d1 }
+      out0 ++ out1
+    }
+
+    def butterflyComplex(data: Seq[MComplex]) = {
+      val (data0, data1) = data.splitAt(data.length / 2)
+      val pairs = data0.zip(data1)
+      val out0 = pairs.map { case (d, d1) => d + d1 }
+      val out1 = pairs.map { case (d, d1) => d - d1 }
+      out0 ++ out1
+    }
+
+    def swap(data: Seq[Double]) = {
+      val (data0, data1) = data.splitAt(data.length / 2)
+      val pairs = data0.zip(data1)
+      pairs.map { case (d, d1) => new MComplex(d, -d1) }
+    }
+
+
+    val stageMax = log2Up(N)
+    // Fig1, CFFT
+    def fig1(data: Seq[MComplex], stage: Int): Seq[MComplex] = {
+      //      println(s"fig1 stage$stage")
+      if (stage == stageMax) butterflyComplex(data)
+      else {
+        val half = data.length / 2
+        val (butterflied0, butterflied1) = butterflyComplex(data).splitAt(half)
+        val indices = (0 until half).map(_ * 1 << (stage - 1))
+        val multiplied = butterflied1.zip(indices).map { case (complex, i) => complex * WNnk(N, i) }
+        fig1(butterflied0, stage + 1) ++ fig1(multiplied, stage + 1)
+      }
+    }
+
+    // Fig2, afterReduction
+    def fig2(data: Seq[Double], stage: Int): Seq[MComplex] = {
+      //      println(s"fig2 stage$stage")
+      if (stage == stageMax) butterflyReal(data).map(MComplex(_))
+      else {
+        val half = data.length / 2
+        val (butterflied0, butterflied1) = butterflyReal(data).splitAt(half)
+        val indices = (0 until half).map(_ * 1 << (stage - 1))
+        val multiplied = swap(butterflied1).zip(indices).map { case (complex, i) => complex * WNnk(N, i) }
+        if (multiplied.length > 1) fig2(butterflied0, stage + 1) ++ fig1(multiplied, stage + 2).padTo(half, MComplex(0))
+        else fig2(butterflied0, stage + 1) ++ multiplied.padTo(half, MComplex(0))
+      }
+    }
+
+    def bitReverse(data: Int) = BigInt(data.toBinaryString.padToLeft(log2Up(N), '0').reverse, 2).toInt
+    val reverseIndices = (0 until N).map(bitReverse)
+    mode match {
+      case 1 => {
+        val bitReversRet = fig1(input.map(MComplex(_)), 1)
+        reverseIndices.map(bitReversRet.apply(_)).take(N / 2)
+      }
+      case 2 => {
+        val bitReversRet = fig2(input, 1)
+        val dropped = (0 until N).filter { i =>
+          val up = 1 << log2Up(i + 1)
+          val level = up / 4
+          level != 0 && (i / level) % 4 == 3
+        }.map(bitReverse)
+        val orderedRet = reverseIndices.map(bitReversRet.apply(_))
+        (0 until (N / 2)).map(i => if (dropped.contains(i)) orderedRet(N - i).conj else orderedRet(i))
+      }
+    }
+  }
 
 }
