@@ -54,14 +54,31 @@ class FFTAlgosTest extends AnyFunSuite {
     val symmetric = valid ++ (zero +: conjed)
 
     val real = (0 until size).map(_ => (DSPRand.nextDouble() - 0.5) * 2)
-
-    val yours = Algos.R2RealValuedFFT(real, 2)
+    val yours = Algos.r2RealValuedFFT(real, 1)
     val golden = Refs.FFT(real.toArray.map(new MComplex(_, 0))).take(half)
 
     println(yours.mkString(" "))
     println(golden.mkString(" "))
     assert(yours.nonEmpty)
-    assert(yours.zip(golden).forall { case (your, gold) => your.sameAs(gold, 0.01)  })
+    assert(yours.zip(golden).forall { case (your, gold) => your.sameAs(gold, 0.01) })
 
+  }
+
+  test("hermitian symmetric test") {
+    val size = 16
+    val half = size / 2
+
+    val zero = new MComplex(0, 0)
+    val valid = zero +: (1 until half).map(_ => DSPRand.nextComplex(-1, 1))
+    val conjed = valid.tail.map(_.conj).reverse
+    val symmetric = valid ++ (zero +: conjed)
+
+    val yours = Algos.hermitianSymmetricIFFT(symmetric, 2)
+    val golden = Refs.IFFT(symmetric.toArray).map(_.real)
+
+    println(yours.mkString(" "))
+    println(golden.mkString(" "))
+    assert(yours.nonEmpty)
+    assert(yours.zip(golden).forall { case (your, gold) => (your - gold).abs < 0.01 })
   }
 }

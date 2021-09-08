@@ -104,33 +104,83 @@ object Algos extends App {
     output
   }
 
-  def R2RealValuedFFT(input: Seq[Double], mode: Int): Seq[MComplex] = {
+  def fold[T](data: Seq[T]) = data.take(data.length / 2).zip(data.takeRight(data.length / 2))
+
+  // transformations
+  def butterflyReal(data: Seq[Double]): Seq[Double] = fold(data).map { case (d, d1) => d + d1 } ++ fold(data).map { case (d, d1) => d - d1 }
+  def butterflyComplex(data: Seq[MComplex]): Seq[MComplex] = fold(data).map { case (d, d1) => d + d1 } ++ fold(data).map { case (d, d1) => d - d1 }
+  def swap(data: Seq[Double]) = fold(data).map { case (d, d1) => new MComplex(d, -d1) }
+
+  // reverse transformation
+  def butterflyRealR(data: Seq[Double]): Seq[Double] = fold(data).map { case (d, d1) => (d + d1) / 2 } ++ fold(data).map { case (d, d1) => (d - d1) / 2 }
+  def butterflyComplexR(data: Seq[MComplex]): Seq[MComplex] = fold(data).map { case (d, d1) => (d + d1) / 2 } ++ fold(data).map { case (d, d1) => (d - d1) / 2 }
+  def swapR(data: Seq[MComplex]): Seq[Double] = {
+    val reals = data.map(_.real)
+    val imags = data.map(complex => -complex.imag)
+    reals ++ imags
+  }
+
+  def bitReverse(N: Int, data: Int) = BigInt(data.toBinaryString.padToLeft(log2Up(N), '0').reverse, 2).toInt
+
+  def hermitianSymmetricIFFT(input: Seq[MComplex], mode: Int): Seq[MComplex] = {
+    import scala.collection.mutable.Stack
+
     val N = input.size
-
-    def butterflyReal(data: Seq[Double]): Seq[Double] = {
-      val (data0, data1) = data.splitAt(data.length / 2)
-      val pairs = data0.zip(data1)
-      val out0 = pairs.map { case (d, d1) => d + d1 }
-      val out1 = pairs.map { case (d, d1) => d - d1 }
-      out0 ++ out1
-    }
-
-    def butterflyComplex(data: Seq[MComplex]) = {
-      val (data0, data1) = data.splitAt(data.length / 2)
-      val pairs = data0.zip(data1)
-      val out0 = pairs.map { case (d, d1) => d + d1 }
-      val out1 = pairs.map { case (d, d1) => d - d1 }
-      out0 ++ out1
-    }
-
-    def swap(data: Seq[Double]) = {
-      val (data0, data1) = data.splitAt(data.length / 2)
-      val pairs = data0.zip(data1)
-      pairs.map { case (d, d1) => new MComplex(d, -d1) }
-    }
-
-
+    require(isPow2(N))
     val stageMax = log2Up(N)
+
+    def fig1R(stack: Stack[MComplex], stage: Int): Seq[MComplex] = {
+      if (stage == stageMax) butterflyComplexR(Seq(stack.pop(), stack.pop()))
+      else {
+        val prev0 = fig1R(stack, stage + 1)
+        val prev1 = fig1R(stack, stage + 1)
+        val indices = (0 until prev1.length).map(_ * 1 << (stage - 1))
+        val multiplied = prev1.zip(indices).map { case (complex, i) => complex * WNnk(N, -i) }
+        val combined = prev0 ++ multiplied
+        butterflyComplexR(combined)
+      }
+    }
+
+    def fig2R(stack: Stack[MComplex], stage: Int): Seq[Double] = {
+      if (stage == stageMax) butterflyRealR(Seq(stack.pop(), stack.pop()).map(_.real))
+      else {
+        val prev0 = fig2R(stack, stage + 1)
+        val prev1 = if (stage + 2 <= stageMax) fig1R(stack, stage + 2) else Seq(stack.pop())
+        val indices = (0 until prev1.length).map(_ * 1 << (stage - 1))
+        val multiplied = prev1.zip(indices).map { case (complex, i) => complex * WNnk(N, -i) }
+        val swapped = swapR(multiplied)
+        butterflyRealR(prev0 ++ swapped)
+      }
+    }
+
+    val reverseIndices = (0 until N).map(bitReverse(N, _))
+    val droppedIndices = (0 until N).filter { i =>
+      val up = 1 << log2Up(i + 1)
+      val level = up / 4
+      level != 0 && (i / level) % 4 == 3
+    }.map(bitReverse(N, _))
+
+    val bitReverseInput = reverseIndices.map(input.apply(_))
+
+    mode match {
+      case 1 => {
+        val dataStack = Stack(bitReverseInput: _*)
+        fig1R(dataStack, 1)
+      }
+      case 2 => {
+        val remainedIndices = reverseIndices.filterNot(droppedIndices.contains(_))
+        val remainedInput = remainedIndices.map(input.apply(_))
+        val dataStack = Stack(remainedInput: _*)
+        fig2R(dataStack, 1).map(MComplex(_))
+      }
+    }
+  }
+
+  def r2RealValuedFFT(input: Seq[Double], mode: Int): Seq[MComplex] = {
+    val N = input.size
+    require(isPow2(N))
+    val stageMax = log2Up(N)
+
     // Fig1, CFFT
     def fig1(data: Seq[MComplex], stage: Int): Seq[MComplex] = {
       //      println(s"fig1 stage$stage")
@@ -158,8 +208,13 @@ object Algos extends App {
       }
     }
 
-    def bitReverse(data: Int) = BigInt(data.toBinaryString.padToLeft(log2Up(N), '0').reverse, 2).toInt
-    val reverseIndices = (0 until N).map(bitReverse)
+    val reverseIndices = (0 until N).map(bitReverse(N, _))
+    val droppedIndices = (0 until N).filter { i =>
+      val up = 1 << log2Up(i + 1)
+      val level = up / 4
+      level != 0 && (i / level) % 4 == 3
+    }.map(bitReverse(N, _))
+
     mode match {
       case 1 => {
         val bitReversRet = fig1(input.map(MComplex(_)), 1)
@@ -167,13 +222,8 @@ object Algos extends App {
       }
       case 2 => {
         val bitReversRet = fig2(input, 1)
-        val dropped = (0 until N).filter { i =>
-          val up = 1 << log2Up(i + 1)
-          val level = up / 4
-          level != 0 && (i / level) % 4 == 3
-        }.map(bitReverse)
         val orderedRet = reverseIndices.map(bitReversRet.apply(_))
-        (0 until (N / 2)).map(i => if (dropped.contains(i)) orderedRet(N - i).conj else orderedRet(i))
+        (0 until (N / 2)).map(i => if (droppedIndices.contains(i)) orderedRet(N - i).conj else orderedRet(i))
       }
     }
   }
