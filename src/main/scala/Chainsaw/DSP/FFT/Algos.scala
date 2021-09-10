@@ -112,8 +112,8 @@ object Algos extends App {
   def swap(data: Seq[Double]) = fold(data).map { case (d, d1) => new MComplex(d, -d1) }
 
   // reverse transformation
-  def butterflyRealR(data: Seq[Double]): Seq[Double] = fold(data).map { case (d, d1) => (d + d1) / 2 } ++ fold(data).map { case (d, d1) => (d - d1) / 2 }
-  def butterflyComplexR(data: Seq[MComplex]): Seq[MComplex] = fold(data).map { case (d, d1) => (d + d1) / 2 } ++ fold(data).map { case (d, d1) => (d - d1) / 2 }
+  def butterflyRealR(data: Seq[Double]): Seq[Double] = fold(data).map { case (d, d1) => (d + d1) } ++ fold(data).map { case (d, d1) => (d - d1) }
+  def butterflyComplexR(data: Seq[MComplex]): Seq[MComplex] = fold(data).map { case (d, d1) => (d + d1) } ++ fold(data).map { case (d, d1) => (d - d1) }
   def swapR(data: Seq[MComplex]): Seq[Double] = {
     val reals = data.map(_.real)
     val imags = data.map(complex => -complex.imag)

@@ -73,8 +73,8 @@ class FFTAlgosTest extends AnyFunSuite {
     val conjed = valid.tail.map(_.conj).reverse
     val symmetric = valid ++ (zero +: conjed)
 
-    val yours = Algos.hermitianSymmetricIFFT(symmetric, 2)
-    val golden = Refs.IFFT(symmetric.toArray).map(_.real)
+    val yours = Algos.hermitianSymmetricIFFT(symmetric, 2).map(_.real)
+    val golden = Refs.IFFT(symmetric.toArray).map(_.real).map(_ * size / 2)
 
     println(yours.mkString(" "))
     println(golden.mkString(" "))
