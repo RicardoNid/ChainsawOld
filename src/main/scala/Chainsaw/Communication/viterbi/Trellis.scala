@@ -1,4 +1,4 @@
-package Chainsaw.Communication.Viterbi
+package Chainsaw.Communication.viterbi
 
 import Chainsaw.matlabIO._
 

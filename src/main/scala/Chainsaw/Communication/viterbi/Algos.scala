@@ -1,4 +1,4 @@
-package Chainsaw.Communication.Viterbi
+package Chainsaw.Communication.viterbi
 
 import Chainsaw._
 import spinal.core._
@@ -85,21 +85,14 @@ object Algos {
         update
       }
       records.zip(updates).foreach { case (doubles, d) => doubles.push(d) }
-      //      println(records.map(_.head).mkString(" "))
     }
-
-    //    println(records.map(_.mkString("->")).mkString("\n"))
 
     // tracing back the records
     // starts from minimum
     val decoded = ArrayBuffer[Int]()
     val discrepancies = records.map(_.pop())
-    //    var currentState = discrepancies.indexOf(discrepancies.min)
-    //    decoded += currentState
-    // starts from 0
-    var currentState = 0
+    var currentState = discrepancies.indexOf(discrepancies.min)
     decoded += currentState
-
     // iteratively tracing back
     val observedQueueAnother = Queue(observed: _*)
     while (records.head.nonEmpty) {
@@ -115,30 +108,29 @@ object Algos {
     decoded.reverse
   }
 
-  def Hamming(expected: Int, observed: Int): Double = {
-    val length = log2Up(expected) max log2Up(observed)
-    expected.toBinaryString.padToLeft(length, '0').zip(observed.toBinaryString.padToLeft(length, '0')).filter { case (c, c1) => c != c1 }.length.toDouble
+  /** Parallel viterbi implemented by Minplus algebra
+   *
+   * @param P parallel factor
+   */
+  def viterbiParallel(observed: Array[Int], trellis: Trellis[Int], metric: (Int, Int) => Double,
+                      stateStart: Int = 0, P: Int) = {
+    val N = observed.length
+    require(N % P == 0)
+    val minplusMatrices = MinplusMatrix.trellis2Minplus(trellis, metric)
+
+    val segments: Seq[Array[Int]] = observed.grouped(N / P).toSeq
+    val segmentsMatrices: Seq[Array[MinplusMatrix]] = segments.map(_.map(minplusMatrices(_)))
+    val segmentMatricesProducts: Seq[MinplusMatrix] = segmentsMatrices.map(_.reduce(_ * _))
+
+    val increasingPrefix = (1 until P).map(segmentMatricesProducts.take(_).reduce(_ * _))
+    val decreasingPrefix = (1 until P).map(segmentMatricesProducts.takeRight(_).reduce(_ * _))
+
+    val entrances = increasingPrefix.zip(decreasingPrefix.reverse).map { case (head, tail) => MinplusMatrix.findMid(head, tail, 0, 0)}
+    val decodeds = segments.zip(0 +: entrances).map{ case (segment, entrance)  => viterbiTraceback(segment, trellis, metric, entrance).tail}
+
+    0 +: decodeds.flatten
   }
 
-  def main(args: Array[String]): Unit = {
-    val constLen = 3
-    val codeGen = Array(3, 5)
-    val trellis = Trellis.poly2trellis(constLen, codeGen)
-    val trellisM = Refs.poly2trellisM(constLen, codeGen)
+  def Hamming(expected: Int, observed: Int): Double = (expected ^ observed).toBinaryString.map(_.asDigit).sum
 
-    val inputData = ((0 until 100).map(_ => DSPRand.nextInt(trellis.numInputSymbols)) ++ Seq.fill(constLen - 1)(0)).toArray
-    val codedData = Refs.convenc(inputData, trellisM)
-    val testCase = codedData.grouped(2).map(_.reverse.zipWithIndex.map { case (i, i1) => i * (1 << i1) }.sum).toArray
-    val golden = Refs.vitdecHard(codedData, trellisM, 6 * constLen)
-    val yours = viterbi(testCase, trellis, Hamming).tail.map(_.toBinaryString.padToLeft(constLen - 1, '0').head.asDigit)
-    val yoursTraceBack = viterbiTraceback(testCase, trellis, Hamming).tail.map(_.toBinaryString.padToLeft(constLen - 1, '0').head.asDigit)
-
-    assert(yours.nonEmpty)
-    assert(golden.mkString("") == yours.mkString(""))
-    assert(golden.mkString("") == yoursTraceBack.mkString(""))
-
-    //    println(golden.mkString(""))
-    //    println(yours.mkString(""))
-    //    println(yoursTraceBack.mkString(""))
-  }
 }
