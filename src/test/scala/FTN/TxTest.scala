@@ -12,7 +12,7 @@ import scala.collection.mutable.ArrayBuffer
 class TxTest() extends AnyFlatSpec with Matchers {
 
   eng.eval(
-    "cd ./matlabWorkspace/FTN326; \n" +
+    s"cd $FTNMatlabWorkSpace; \n" +
       "load bitsAllFrame; \n" +
       "load codedBitsAllFrame; \n" +
       "load interleavedBitsAllFrame; " +

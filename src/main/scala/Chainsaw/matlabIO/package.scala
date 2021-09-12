@@ -1,11 +1,15 @@
 package Chainsaw
 
+// to resolve this, File -> project structure -> modules -> Chainsaw -> dependencies, add
+// <MatlabPath>/extern/engines/java/jar/engine.jar
+// <MatlabPath>/sys/os/glnxa64
+// <MatlabPath>/bin/glnxa64
+
 import com.mathworks.engine.MatlabEngine
 import com.mathworks.matlab.types
 
 import java.nio.file.Paths
 import scala.io.Source
-import Chainsaw._
 
 package object matlabIO {
 

@@ -1,8 +1,9 @@
 package Chainsaw.Communication.viterbi
 
-case class MinplusMatrix(value: Array[Array[Int]]) {
+case class MinplusMatrix(value: Array[Array[Double]]) {
 
-  val max = Int.MaxValue / 3
+  import MinplusMatrix._
+
   def rows = value.length
   def cols = value.head.length
   def apply(i: Int, j: Int) = this.value(i)(j)
@@ -23,15 +24,17 @@ case class MinplusMatrix(value: Array[Array[Int]]) {
 
 object MinplusMatrix {
 
+  val max = Double.MaxValue / 3
+
   def trellis2Minplus(trellis: Trellis[Int], metric: (Int, Int) => Double) = {
     import trellis._
     (0 until numOutputSymbols).map { observed =>
       val values = Array.tabulate(numStates, numStates) { (prev, next) =>
         val index = nextStates(prev).indexOf(next)
-        if (index == -1) Int.MaxValue / 3
+        if (index == -1) max
         else metric(outputs(prev)(index), observed)
       }
-      MinplusMatrix(values.map(_.map(_.toInt)))
+      MinplusMatrix(values)
     }
   }
 
@@ -41,14 +44,6 @@ object MinplusMatrix {
   }
 
   def main(args: Array[String]): Unit = {
-
-    val A11 = MinplusMatrix {
-      val max = Int.MaxValue / 3
-      Array(2, max, 0, max, 1, max, 1, max, max, 0, max, 2, max, 1, max, 1).grouped(4).toArray
-    }
-    println(A11)
-    println(A11 * A11)
-    println((A11 * A11).isDense)
 
     val trellis = Trellis.poly2trellis(3, Array(7, 6))
     val matrices = trellis2Minplus(trellis, Algos.Hamming)

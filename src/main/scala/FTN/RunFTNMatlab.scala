@@ -12,9 +12,8 @@ import matlabIO._
 
 object RunFTNMatlab extends App {
 
-  eng.eval("cd ./matlabWorkspace/FTN326")
+  eng.eval(s"cd $FTNMatlabWorkSpace")
   eng.eval("channel = 3:226;")
   eng.eval("run main(2, channel)")
-//  eng.eval("run main(0, channel)")
 
 }

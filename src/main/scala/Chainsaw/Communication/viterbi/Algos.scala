@@ -14,12 +14,13 @@ object Algos {
    * @param metric   metric that defines the difference between an expected output symbol and an observed output symbol
    * @tparam T type of output symbols, could be int(hard) or double(soft)
    */
-  def viterbi[T](observed: Array[T], trellis: Trellis[T], metric: (T, T) => Double) = {
+  def viterbi[T](observed: Array[T], trellis: Trellis[T], metric: (T, T) => Double): Array[Int] = {
 
     import trellis._
 
     case class Path(states: Seq[Int], discrepancy: Double) {
       def head = states.head
+
       override def toString() = states.mkString(" -> ") + s" $discrepancy"
     }
 
@@ -50,7 +51,7 @@ object Algos {
         paths = paths.map(path => Path(path.states.tail, path.discrepancy))
       }
     }
-    decoded ++ paths(0).states
+    (decoded ++ paths(0).states).toArray
   }
 
   /** General Viterbi Algo with traceback(write discrepancy)
@@ -105,7 +106,7 @@ object Algos {
       decoded += currentState
     }
 
-    decoded.reverse
+    (decoded.reverse).toArray
   }
 
   /** Parallel viterbi implemented by Minplus algebra
@@ -125,10 +126,56 @@ object Algos {
     val increasingPrefix = (1 until P).map(segmentMatricesProducts.take(_).reduce(_ * _))
     val decreasingPrefix = (1 until P).map(segmentMatricesProducts.takeRight(_).reduce(_ * _))
 
-    val entrances = increasingPrefix.zip(decreasingPrefix.reverse).map { case (head, tail) => MinplusMatrix.findMid(head, tail, 0, 0)}
-    val decodeds = segments.zip(0 +: entrances).map{ case (segment, entrance)  => viterbiTraceback(segment, trellis, metric, entrance).tail}
+    val entrances = increasingPrefix.zip(decreasingPrefix.reverse).map { case (head, tail) => MinplusMatrix.findMid(head, tail, 0, 0) }
+    val decodeds = segments.zip(stateStart +: entrances).map { case (segment, entrance) => viterbiTraceback(segment, trellis, metric, entrance).tail }
 
-    0 +: decodeds.flatten
+    (stateStart +: decodeds.flatten).toArray
+  }
+
+  /** General Viterbi Algo with traceback(write discrepancy)
+   *
+   */
+  def viterbiTracebackMinplus(observed: Array[Int], trellis: Trellis[Int], metric: (Int, Int) => Double,
+                                 stateStart: Int = 0) = {
+
+    import trellis._
+
+    val records = Seq.fill(numStates)(Stack[Double]())
+    val observedQueue = Queue(observed: _*)
+    val minplusMatrices = MinplusMatrix.trellis2Minplus(trellis, metric)
+
+    // initialization
+    val vector = records.indices.map(currentState =>if (currentState == stateStart) 0.0 else MinplusMatrix.max)
+    var currentDiscrepancies = MinplusMatrix(Array(vector.toArray))
+    records.zip(vector).foreach { case (doubles, d) => doubles.push(d) }
+
+    // writing records iteratively
+    while (observedQueue.nonEmpty) {
+      val currentObserved = observedQueue.dequeue()
+      val updatingMatrix = minplusMatrices(currentObserved)
+      currentDiscrepancies = currentDiscrepancies * updatingMatrix
+      records.zip(currentDiscrepancies.value.head).foreach { case (doubles, d) => doubles.push(d) }
+    }
+
+    // tracing back the records
+    // starts from minimum
+    val decoded = ArrayBuffer[Int]()
+    val discrepancies = records.map(_.pop())
+    var currentState = discrepancies.indexOf(discrepancies.min)
+    decoded += currentState
+    // iteratively tracing back
+    val observedQueueAnother = Queue(observed: _*)
+    while (records.head.nonEmpty) {
+      val currentObserved = observedQueueAnother.dequeue()
+      val prevData = lookBackMap(currentState)
+      val discrepancies = records.map(_.pop())
+      //      val prevState = prevData.minBy { case (state, output) => discrepancies(state) + metric(output, currentObserved) }._1
+      val prevState = prevData.minBy { case (state, output) => discrepancies(state) }._1 // TODO: explain why this logic(not the line above)
+      currentState = prevState
+      decoded += currentState
+    }
+
+    (decoded.reverse).toArray
   }
 
   def Hamming(expected: Int, observed: Int): Double = (expected ^ observed).toBinaryString.map(_.asDigit).sum

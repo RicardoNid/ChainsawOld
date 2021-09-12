@@ -4,8 +4,11 @@ import spinal.core._
 
 package object FTN {
 
+  val FTNMatlabWorkSpace = "/home/ltr/FTN326"
+
   // algo parameters
   case class FTNPARAMS(params: MStruct) {
+
     // params on modulation(FFT/IFFT)
     val FFTSize = params.get("FFTSize").asInstanceOf[Double].toInt
     val CPLength = params.get("CPLength").asInstanceOf[Double].toInt
@@ -24,7 +27,7 @@ package object FTN {
     val BitsPerSymbol = params.get("BitsPerSymbol").asInstanceOf[Double].toInt
     val SymbolsPerChannel = params.get("SymbolsPerChannel").asInstanceOf[Double].toInt
 
-    eng.eval("cd /home/ltr/IdeaProjects/Chainsaw/matlabWorkspace/FTN326; \n" +
+    eng.eval(s"cd $FTNMatlabWorkSpace; \n" +
       "load bitAlloc bitAlloc; \n" +
       "load powAlloc powAlloc ; \n"
     )
@@ -37,7 +40,7 @@ package object FTN {
   }
 
   lazy val params: FTNPARAMS = {
-    eng.eval("cd /home/ltr/IdeaProjects/Chainsaw/matlabWorkspace/FTN326; \n" +
+    eng.eval(s"cd $FTNMatlabWorkSpace; \n" +
       "channel = 3:226; \n" +
       "InitPARAMS(2, channel); \n" +
       "load PARAMS PARAMS; \n" +
