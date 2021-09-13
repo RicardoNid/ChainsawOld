@@ -14,7 +14,7 @@ case class ViterbiForwarding(trellis: Trellis[Int]) extends Component {
   import trellis._
 
   val codedBitNum = log2Up(numOutputSymbols)
-  val discrepancyWidth = 6
+  val discrepancyWidth = 4
   val discrepancyType = HardType(UInt(discrepancyWidth bits)) // TODO: parameterize the size
   val discrepancyBig = U(1 << (discrepancyWidth - 1), discrepancyWidth bits)
 
