@@ -1,2 +1,5 @@
-val temp = Seq(1,2,3)
-temp.indexOf(4)
+val temp = (1 to 4).toSeq
+
+val ins = temp.inits.map(_.mkString("")).mkString("\n")
+
+println(ins)

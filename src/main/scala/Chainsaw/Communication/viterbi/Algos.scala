@@ -3,6 +3,7 @@ package Chainsaw.Communication.viterbi
 import Chainsaw._
 import spinal.core._
 
+import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, Map, Queue, Stack}
 
 object Algos {
@@ -135,41 +136,51 @@ object Algos {
   /** General Viterbi Algo with traceback(write discrepancy)
    *
    */
-  def viterbiTracebackMinplus(observed: Array[Int], trellis: Trellis[Int], metric: (Int, Int) => Double,
-                                 stateStart: Int = 0) = {
+  def viterbiTracebackMinplus(observed: Array[Int], trellis: Trellis[Int], metric: (Int, Int) => Double, stateStart: Int = 0) = {
+
+    import trellis._
+    val records = viterbiForwarding(observed, trellis, metric, stateStart)
+    viterbiBackwarding(records, trellis)
+
+  }
+
+  def viterbiForwarding(observed: Array[Int], trellis: Trellis[Int], metric: (Int, Int) => Double, stateStart: Int = 0): Stack[Seq[Double]] = {
 
     import trellis._
 
-    val records = Seq.fill(numStates)(Stack[Double]())
+    val records = Stack[Seq[Double]]()
     val observedQueue = Queue(observed: _*)
     val minplusMatrices = MinplusMatrix.trellis2Minplus(trellis, metric)
 
     // initialization
-    val vector = records.indices.map(currentState =>if (currentState == stateStart) 0.0 else MinplusMatrix.max)
+    val vector: Seq[Double] = (0 until numStates).map(currentState =>if (currentState == stateStart) 0.0 else MinplusMatrix.max)
     var currentDiscrepancies = MinplusMatrix(Array(vector.toArray))
-    records.zip(vector).foreach { case (doubles, d) => doubles.push(d) }
+    records.push(vector)
 
     // writing records iteratively
     while (observedQueue.nonEmpty) {
       val currentObserved = observedQueue.dequeue()
       val updatingMatrix = minplusMatrices(currentObserved)
       currentDiscrepancies = currentDiscrepancies * updatingMatrix
-      records.zip(currentDiscrepancies.value.head).foreach { case (doubles, d) => doubles.push(d) }
+      records.push(currentDiscrepancies.value.head)
     }
 
-    // tracing back the records
+    records
+  }
+
+  def viterbiBackwarding(records:Stack[Seq[Double]], trellis: Trellis[Int]): Array[Int] = {
+
+    import trellis._
+
     // starts from minimum
     val decoded = ArrayBuffer[Int]()
-    val discrepancies = records.map(_.pop())
+    val discrepancies = records.pop()
     var currentState = discrepancies.indexOf(discrepancies.min)
     decoded += currentState
     // iteratively tracing back
-    val observedQueueAnother = Queue(observed: _*)
-    while (records.head.nonEmpty) {
-      val currentObserved = observedQueueAnother.dequeue()
+    while (records.nonEmpty) {
       val prevData = lookBackMap(currentState)
-      val discrepancies = records.map(_.pop())
-      //      val prevState = prevData.minBy { case (state, output) => discrepancies(state) + metric(output, currentObserved) }._1
+      val discrepancies = records.pop()
       val prevState = prevData.minBy { case (state, output) => discrepancies(state) }._1 // TODO: explain why this logic(not the line above)
       currentState = prevState
       decoded += currentState

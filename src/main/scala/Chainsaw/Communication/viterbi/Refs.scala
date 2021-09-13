@@ -9,7 +9,7 @@ object Refs {
   }
 
   def vitdecHard(coded: Array[Int], trellis: MStruct, tblen: Int) =
-    eng.feval[Array[Double]]("vitdec", coded.map(_.toDouble), trellis, Array(tblen.toDouble), "term", "hard").map(_.toInt)
+    eng.feval[Array[Double]]("vitdec", coded.map(_.toDouble), trellis, Array(tblen.toDouble), "trunc", "hard").map(_.toInt)
 
   def convenc(data: Array[Int], trellis: MStruct) = eng.feval[Array[Int]]("convenc", data, trellis)
 }
