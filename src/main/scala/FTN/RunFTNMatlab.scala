@@ -10,10 +10,12 @@ import Chainsaw._
 
 import matlabIO._
 
-object RunFTNMatlab extends App {
+object RunFTNMatlab  {
 
-  eng.eval(s"cd $FTNMatlabWorkSpace")
-  eng.eval("channel = 3:226;")
-  eng.eval("run main(2, channel)")
+  def main(args: Array[String]): Unit = {
+    eng.eval(s"cd $FTNMatlabWorkSpace")
+    eng.eval("channel = 3:226;")
+    eng.eval("run main(2, channel)")
+  }
 
 }

@@ -189,6 +189,7 @@ class TxTest() extends AnyFlatSpec with Matchers {
       else scala.math.round(value * 0.5) * 2
       ret.toInt
     }
+
     val yourQuantized = yourModulated.map(_.map(round64))
     val goldenQuantized = goldenModulated.map(_.map(round64))
     val yourQuantizedStrings = yourQuantized.map(_.map(_.toString.padTo(4, ' ')).mkString(" "))
