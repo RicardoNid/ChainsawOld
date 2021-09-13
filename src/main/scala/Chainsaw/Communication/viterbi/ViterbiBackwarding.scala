@@ -1,12 +1,8 @@
 package Chainsaw.Communication.viterbi
 
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
 import Chainsaw._
-import Chainsaw.matlabIO._
+import spinal.core._
+import spinal.lib._
 
 case class ViterbiBackwarding(trellis: Trellis[Int]) extends Component {
 
@@ -48,11 +44,11 @@ case class ViterbiBackwarding(trellis: Trellis[Int]) extends Component {
     Mux(disa.asUInt < disb.asUInt, statea, stateb)
   }
   val cands: Vec[Bits] = Vec(candidateDiscrepancies.zip(candidateState).map { case (dis, state) => (dis @@ state).asBits })
-  val prevStateMin = cands.reduceBalancedTree(CS)
+  val prevStateMin: Bits = cands.reduceBalancedTree(CS)
 
   // control logic
   when(dataIn.valid.rise() || dataIn.last)(currentState := stateStart) // continuous updating
-    .otherwise(currentState := stateType().getZero)
+    .otherwise(currentState := prevStateMin.asUInt)
 
   dataOut.fragment := currentState(stateWidth - 1 downto stateWidth - decodedBitNum).asBits // the MSBs form the input symbol
   dataOut.valid := RegNext(dataIn.valid, init = False)
@@ -63,6 +59,6 @@ object ViterbiBackwarding {
   def main(args: Array[String]): Unit = {
     val trellis = Trellis.poly2trellis(7, Array(177, 131))
     //    GenRTL(ViterbiBackwarding(trellis))
-    VivadoSynth((ViterbiBackwarding(trellis)))
+    VivadoSynth(ViterbiBackwarding(trellis))
   }
 }
