@@ -67,4 +67,8 @@ class AsyncFIFOAnalysis[T <: Data](dataType: HardType[T], val depth: Int, val pu
 
   pushToPopGray := pushCC.pushPtrGray // the CDC assignment happens outside of the specific domain
   popToPushGray := popCC.popPtrGray
+
+  val CC = Mem(UInt(4 bits),10)
+
+
 }

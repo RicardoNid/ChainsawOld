@@ -197,5 +197,7 @@ class TxTest() extends AnyFlatSpec with Matchers {
     println(errors.map { case (r0, r1, i) => s"i = $i, yours = $r0, golden = $r1, epsilon = ${(r0 - r1).abs}" }.mkString("\n"))
     println(errors.length)
 
+
+
   }
 }

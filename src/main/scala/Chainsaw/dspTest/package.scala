@@ -75,6 +75,27 @@ package object dspTest {
     }
   }
 
+  /** A simple test procedure for Flow - poke stimulus to dataIn Flow and monitor dataOut Flow
+   *
+   */
+  def flowPeekPokeRound[Do, Di, Ti <: Data, To <: Data](dut: Component, testCases: Seq[Di], dataIn: DataCarrier[Ti], dataOut: DataCarrier[To], latency:Int) = {
+    // init
+    dataIn.halt()
+    dut.clockDomain.waitSampling()
+    // set monitor
+    val dutResult = ArrayBuffer[Do]()
+    dataOut.setMonitor(dutResult)
+    // poke stimulus
+    testCases.indices.foreach{i=>
+      dataIn.poke(testCases(i), lastWhen = i == testCases.length - 1)
+      dut.clockDomain.waitSampling()
+    }
+    // wait for result
+    dataIn.halt()
+    dut.clockDomain.waitSampling(latency + 1)
+    dutResult
+  }
+
 
   implicit class DataCarrierUtil[T <: Data](dc: DataCarrier[T]) {
 

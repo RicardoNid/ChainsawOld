@@ -15,30 +15,25 @@ class ViterbiForwardingTest extends AnyFlatSpec {
 
   val inputData = (0 until 100).map(_ => DSPRand.nextInt(trellis.numInputSymbols)).toArray
   val codedData = Refs.convenc(inputData, trellisM)
-  val testCase = codedData.grouped(log2Up(trellis.numOutputSymbols)).map(_.reverse.zipWithIndex.map { case (i, i1) => i * (1 << i1) }.sum).toArray
+  val testCases = codedData.grouped(log2Up(trellis.numOutputSymbols)).map(_.reverse.zipWithIndex.map { case (i, i1) => i * (1 << i1) }.sum).toArray
   val golden = Refs.vitdecHard(codedData, trellisM, 6 * constLen)
 
   def runSim() = {
+    var dutResults = Seq[BigInt]()
     SimConfig.withWave.compile(ViterbiForwarding(trellis)).doSim { dut =>
-      import dut.{clockDomain, dataIn, disNextLatency}
+      import dut.{clockDomain, dataIn, dataOut, disNextLatency}
       clockDomain.forkStimulus(2)
-      dataIn.halt()
-      clockDomain.waitSampling()
-
-      testCase.indices.foreach { i =>
-        dataIn.poke(BigInt(codedData(i)), lastWhen = i == testCase.length - 1)
-        clockDomain.waitSampling()
-      }
-
-      dataIn.halt()
-      clockDomain.waitSampling(disNextLatency + 10)
+      dutResults = flowPeekPokeRound(dut, testCases.map(BigInt(_)), dataIn, dataOut, dut.disNextLatency).asInstanceOf[Seq[BigInt]]
     }
+    val dutString = dutResults.grouped(trellis.numStates).toSeq.map(_.map(i => if (i >= 8) '-' else i.toString()).mkString(" ")).mkString("\n")
+    dutString
   }
 
   "ViterbiForwarding" should "produce next discrepancies" in {
-    runSim()
-    val stack = Algos.viterbiForwarding(testCase, trellis, Algos.Hamming, 0)
-    println(stack.reverse.map(_.map(_.toInt).map(i => if (i >= 127) '-' else i.toString).mkString(" ")).mkString("\n"))
+    val dutString = runSim()
+    val stack = Algos.viterbiForwarding(testCases, trellis, Algos.Hamming, 0)
+    val goldenString = stack.reverse.map(_.map(_.toInt).map(i => if (i >= 127) '-' else i.toString).mkString(" ")).mkString("\n")
+    assert(dutString.takeRight(trellis.numStates * 10) == goldenString.takeRight(trellis.numStates * 10))
   }
 
 }

@@ -370,7 +370,7 @@ package object Chainsaw extends RealFactory {
   * for these methods, the results are exported to a default dir in this project, the sub dir can be specific by name field*/
   def GenRTL[T <: Component](gen: => T, print: Boolean = false, name: String = "temp") = {
     val targetDirectory = s"./elaboWorkspace/$name"
-    if (!Files.exists(Paths.get("./elaboWorkspace"))) doCmd("mkdir elaboWorkSpace")
+    if (!Files.exists(Paths.get("./elaboWorkspace"))) doCmd("mkdir elaboWorkspace")
     new File(targetDirectory).mkdir()
     val report = SpinalConfig(netlistFileName = s"$name.sv", targetDirectory = targetDirectory).generateSystemVerilog(gen)
     println(report.rtlSourcesPaths
