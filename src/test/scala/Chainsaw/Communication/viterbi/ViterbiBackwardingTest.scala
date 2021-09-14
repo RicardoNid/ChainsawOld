@@ -6,26 +6,23 @@ import spinal.lib._
 import spinal.lib.fsm._
 import Chainsaw._
 import Chainsaw.matlabIO._
+import Chainsaw.dspTest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 class ViterbiBackwardingTest extends AnyFlatSpec {
 
-  val constLen = 7
-  val codeGen = Array(177, 131)
-  val trellis = Trellis.poly2trellis(constLen, codeGen)
-  val trellisM = Refs.poly2trellisM(constLen, codeGen)
-
-  val inputData = (0 until 100).map(_ => DSPRand.nextInt(trellis.numInputSymbols)).toArray
-  val codedData = Refs.convenc(inputData, trellisM)
-  val decimal = codedData.grouped(log2Up(trellis.numOutputSymbols)).map(_.reverse.zipWithIndex.map { case (i, i1) => i * (1 << i1) }.sum).toArray
-
-  val testCase: mutable.Stack[Seq[Double]] = Algos.viterbiForwarding(decimal, trellis, Algos.Hamming)
-  println(s"no bigger than 15: ${testCase.forall(_.forall(_ <= 15))}")
-  val testCaseCopy = Algos.viterbiForwarding(decimal, trellis, Algos.Hamming)
+  val (trellis, forwardingTestcases, golden) = Refs.getTestData
+  val testCase: mutable.Stack[Seq[Double]] = Algos.viterbiForwarding(forwardingTestcases, trellis, Algos.Hamming)
+  val testCaseCopy = Algos.viterbiForwarding(forwardingTestcases, trellis, Algos.Hamming)
 
   def runSim() = {
+
+    val dutResults = ArrayBuffer[BigInt]()
+    val stateRecords = ArrayBuffer[BigInt]()
+
     SimConfig.withWave.compile(ViterbiBackwarding(trellis)).doSim { dut =>
       import dut.{dataIn, dataOut, clockDomain}
       clockDomain.forkStimulus(2)
@@ -33,8 +30,10 @@ class ViterbiBackwardingTest extends AnyFlatSpec {
       dataIn.last #= false
       clockDomain.waitSampling()
 
-
       def limit(value: Seq[Double]) = value.map(d => if (d > 15) 15 else d.toInt)
+
+      //      setMonitor(True, dut.currentState, stateRecords) // TODO: fix this
+      dataOut.setMonitor(dutResults)
 
       testCase.indices.foreach { i =>
         dataIn.valid #= true
@@ -51,14 +50,18 @@ class ViterbiBackwardingTest extends AnyFlatSpec {
       dataIn.last #= false
       clockDomain.waitSampling(10)
     }
+    println(stateRecords.mkString(""))
+    dutResults
   }
 
   "ViterbiBackwarding" should "produce input symbols" in {
-    runSim()
+    val dutResults = runSim()
     val states = Algos.viterbiBackwarding(testCaseCopy, trellis).reverse // to map with trace back order
     println(states.mkString(" "))
-    val bits = states.init.map(_.toBinaryString.padToLeft(constLen - 1, '0').head.asDigit)
+    val bits = states.init.map(_.toBinaryString.padToLeft(log2Up(trellis.numStates), '0').head.asDigit)
     println(bits.mkString(""))
+
+    println(dutResults.mkString(""))
   }
 
 }
