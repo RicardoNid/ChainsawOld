@@ -7,9 +7,10 @@ import spinal.sim._
 import xilinx.{IMPL, VivadoFlow, VivadoTask}
 
 import java.io.File
-import java.nio.file.Paths
+import java.nio.file.{Files, Path, Paths}
 import scala.collection.mutable.ArrayBuffer
 import scala.math._
+import scala.sys.process.Process
 import scala.util.Random
 
 package object Chainsaw extends RealFactory {
@@ -18,6 +19,7 @@ package object Chainsaw extends RealFactory {
   * following methods are designed for Real type*/
   var ChainsawNumericDebug = false
   var ChainsawExpLowerBound = -65536
+
   def printlnWhenNumericDebug(content: Any): Unit = if (ChainsawNumericDebug) printlnYellow(content)
 
   implicit class numericOp(value: Double) {
@@ -235,8 +237,11 @@ package object Chainsaw extends RealFactory {
   }
 
   def printlnRed(content: Any) = printlnColored(content)(Console.RED)
+
   def printlnYellow(content: Any) = printlnColored(content)(Console.YELLOW)
+
   def printlnBlue(content: Any) = printlnColored(content)(Console.BLUE)
+
   def printlnGreen(content: Any) = printlnColored(content)(Console.GREEN)
 
   /** Methods for BigInt, especially for using it as a bit sequence in simulation and design initialization
@@ -244,6 +249,7 @@ package object Chainsaw extends RealFactory {
   implicit class BigIntUtil(bi: BigInt) {
 
     // following methods are designed to convert a long bit sequence to multiple segments, making debugging easier
+
     /** convert a long BitInt to multiple words, each as a new binary String, padded to the left when needed
      *
      * order:
@@ -257,7 +263,9 @@ package object Chainsaw extends RealFactory {
       val wordCount = ceil(bi.toString(radix).length.toDouble / wordSize).toInt
       bi.toString(radix).padToLeft(wordCount * wordSize, '0').grouped(wordSize).toSeq
     }
+
     def toWordStringsHex: Int => Seq[String] = toWordStrings(_, 16)
+
     def toWords(wordSize: Int): Seq[BigInt] = bi.toWordStrings(wordSize).map(BigInt(_, 2))
 
     /** Regard BigInt(from sim) as a binary string and interpret it as 2's complement number
@@ -269,7 +277,9 @@ package object Chainsaw extends RealFactory {
    */
   implicit class SeqUtil[T](seq: Seq[T]) {
     def padToLeft(len: Int, elem: T) = seq.reverse.padTo(len, elem).reverse
+
     def equals(that: Seq[T]) = seq.zip(that).forall { case (t, t1) => t == t1 }
+
     def approximatelyEquals(that: Seq[T], approEquals: (T, T) => Boolean) = seq.zip(that).forall { case (t, t1) => approEquals(t, t1) }
   }
   //  implicit def Seq2Vec[T <: Data](seq: Seq[T]): Vec[T] = Vec(seq)
@@ -283,8 +293,11 @@ package object Chainsaw extends RealFactory {
    */
   implicit class BinaryStringUtil(s: String) {
     def padToLeft(len: Int, elem: Char) = s.reverse.padTo(len, elem).reverse
+
     def toBigInt = BigInt(s, 2)
+
     def toUnsigned: BigInt = s.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (BigInt(1) << i) }.sum
+
     def toSigned: BigInt = s.tail.reverse.zipWithIndex.map { case (c, i) => c.asDigit * (BigInt(1) << i) }.sum - s.head.asDigit * (BigInt(1) << s.length - 1)
   }
 
@@ -319,7 +332,9 @@ package object Chainsaw extends RealFactory {
       ret.raw := (if (add) rawLeft +^ rawRight else rawLeft -^ rawRight)
       ret
     }
+
     def +^(that: SFix) = doAddSub(that, true)
+
     def -^(that: SFix) = doAddSub(that, false)
   }
 
@@ -336,8 +351,11 @@ package object Chainsaw extends RealFactory {
 
     // seems that Xilinx synth can implement this efficiently
     def rotateLeft(that: Int): Vec[T] = vecShiftWrapper(bits.rotateRight, that)
+
     def rotateLeft(that: UInt): Vec[T] = vecShiftWrapper(bits.rotateRight, that)
+
     def rotateRight(that: Int): Vec[T] = vecShiftWrapper(bits.rotateLeft, that)
+
     def rotateRight(that: UInt): Vec[T] = vecShiftWrapper(bits.rotateLeft, that)
   }
 
@@ -352,6 +370,7 @@ package object Chainsaw extends RealFactory {
   * for these methods, the results are exported to a default dir in this project, the sub dir can be specific by name field*/
   def GenRTL[T <: Component](gen: => T, print: Boolean = false, name: String = "temp") = {
     val targetDirectory = s"./elaboWorkspace/$name"
+    if (!Files.exists(Paths.get("./elaboWorkspace"))) doCmd("mkdir elaboWorkSpace")
     new File(targetDirectory).mkdir()
     val report = SpinalConfig(netlistFileName = s"$name.sv", targetDirectory = targetDirectory).generateSystemVerilog(gen)
     println(report.rtlSourcesPaths
@@ -362,6 +381,7 @@ package object Chainsaw extends RealFactory {
   }
 
   val synthWorkspace = "/home/ltr/IdeaProjects/Chainsaw/synthWorkspace"
+
   def VivadoSynth[T <: Component](gen: => T, name: String = "temp"): Unit = {
     val report = VivadoFlow(design = gen, name, s"synthWorkspace/$name").doit()
     report.printArea()
@@ -399,5 +419,10 @@ package object Chainsaw extends RealFactory {
 
   def nextMultiple(value: Int, base: Int) = {
     (ceil(value.toDouble / base) * base).toInt
+  }
+
+  private def doCmd(cmd: String): Unit = {
+    println(cmd)
+    Process(cmd) !
   }
 }

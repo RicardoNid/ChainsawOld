@@ -4,7 +4,6 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should._
-import spinal.core._
 import spinal.core.sim._
 
 import scala.collection.mutable.ArrayBuffer
@@ -22,18 +21,18 @@ class TxTest() extends AnyFlatSpec with Matchers {
 
   println(s"FFTSize = ${params.FFTSize}")
 
+  // get testCase from .mat file
   val bits = eng.getVariable[Array[Double]]("bitsAllFrame").map(_.toInt)
-  val codedBits = eng.getVariable[Array[Double]]("codedBitsAllFrame").map(_.toInt)
-  val interleavedBits = eng.getVariable[Array[Double]]("interleavedBitsAllFrame").map(_.toInt)
-  val mappedSymbols = eng.getVariable[Array[MComplex]]("mappedSymbolsAllFrame")
-  //  val modulatedSymbols = eng.getVariable[Array[Double]]("modulatedSymbolsAllFrame").map(new MComplex(_, 0) * params.FFTSize)
-  val modulatedSymbols = eng.getVariable[Array[Double]]("modulatedSymbolsAllFrame").map(_ * params.FFTSize).map(new MComplex(_, 0))
-  //  println(s"mapped symbols")
-  //  println(mappedSymbols.mkString(" "))
-
   val testCases = bits.grouped(pFNonIter).toSeq.map(_.mkString(""))
   val forDut = testCases.map(BigInt(_, 2))
 
+  // get goldens from .mat file
+  val codedBits = eng.getVariable[Array[Double]]("codedBitsAllFrame").map(_.toInt)
+  val interleavedBits = eng.getVariable[Array[Double]]("interleavedBitsAllFrame").map(_.toInt)
+  val mappedSymbols = eng.getVariable[Array[MComplex]]("mappedSymbolsAllFrame")
+  val modulatedSymbols = eng.getVariable[Array[Double]]("modulatedSymbolsAllFrame").map(_ * params.FFTSize).map(new MComplex(_, 0))
+
+  // buffers to store dut reulsts
   val convResults, interleavedResults, inputsForMap = ArrayBuffer[BigInt]()
   val mappedResults, modulatedResults = ArrayBuffer[MComplex]()
 
@@ -41,54 +40,34 @@ class TxTest() extends AnyFlatSpec with Matchers {
     SimConfig.withWave.compile {
       new Tx {
         // exposing signals for debugging
-        convencFTN.dataOut.simPublic()
-        interleaverFTN.dataOut.simPublic()
-        qammodFTN.dataOut.simPublic()
-        qammodFTN.core.dataIn.simPublic()
-        qammodFTN.remapped.simPublic()
-        qammodFTN.hermitianExpanded.simPublic()
-        IfftFTN.dataOut.simPublic()
+        Seq(convencFTN.dataOut,
+          interleaverFTN.dataOut,
+          qammodFTN.dataOut, qammodFTN.core.dataIn, qammodFTN.remapped, qammodFTN.hermitianExpanded,
+          IfftFTN.dataOut).foreach(_.simPublic())
       }
     }
       .doSim { dut =>
-        import dut.{clockDomain, convencFTN, dataIn}
-
+        import dspTest._
+        import dut.{clockDomain, dataIn}
         clockDomain.forkStimulus(2)
-        dataIn.last #= false
-        dataIn.valid #= false
+        dataIn.halt()
         clockDomain.waitSampling()
 
-        // set monitors for modules
-        def setMonitor[T <: BitVector](trigger: Bool, target: T, Container: ArrayBuffer[BigInt]) = fork {
-          while (true) {
-            if (trigger.toBoolean) Container += target.toBigInt
-            clockDomain.waitSampling()
-          }
-        }
-
-        def setComplexMonitor(trigger: Bool, target: Vec[ComplexNumber], Container: ArrayBuffer[MComplex]) = fork {
-          while (true) {
-            if (trigger.toBoolean) Container ++= target.map(_.toComplex)
-            clockDomain.waitSampling()
-          }
-        }
-
-        setMonitor(dut.convencFTN.dataOut.valid, convencFTN.dataOut.fragment, convResults)
-        setMonitor(dut.interleaverFTN.dataOut.valid, dut.interleaverFTN.dataOut.fragment, interleavedResults)
+        // set monitors
+        dut.convencFTN.dataOut.setMonitor(convResults)
+        dut.interleaverFTN.dataOut.setMonitor(interleavedResults)
         setMonitor(dut.qammodFTN.core.dataIn.valid, dut.qammodFTN.remapped, inputsForMap)
-        setComplexMonitor(dut.qammodFTN.dataOut.valid, dut.qammodFTN.dataOut.fragment, mappedResults)
-        setComplexMonitor(dut.IfftFTN.dataOut.valid, dut.IfftFTN.dataOut.fragment, modulatedResults)
+        dut.qammodFTN.dataOut.setMonitor(mappedResults)
+        dut.IfftFTN.dataOut.setMonitor(modulatedResults)
 
-        // sim
+        // poke stimulus
         forDut.foreach { testCase =>
-          dataIn.valid #= true
-          dataIn.fragment #= testCase
-          dataIn.last #= (testCase == forDut.last)
+          dataIn.poke(testCase, testCase == forDut.last)
           clockDomain.waitSampling()
         }
 
-        dataIn.last #= false
-        dataIn.valid #= false
+        // wait for results
+        dataIn.halt()
         printlnYellow(s"the total latency of Tx is ${dut.latency}")
         clockDomain.waitSampling(dut.latency + 1)
         clockDomain.waitSampling(10)

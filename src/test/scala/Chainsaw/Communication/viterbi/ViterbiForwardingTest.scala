@@ -1,15 +1,10 @@
 package Chainsaw.Communication.viterbi
 
+import Chainsaw._
+import Chainsaw.dspTest._
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should._
-
 import spinal.core._
 import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
-import Chainsaw._
-import Chainsaw.matlabIO._
 
 class ViterbiForwardingTest extends AnyFlatSpec {
 
@@ -25,27 +20,17 @@ class ViterbiForwardingTest extends AnyFlatSpec {
 
   def runSim() = {
     SimConfig.withWave.compile(ViterbiForwarding(trellis)).doSim { dut =>
-      import trellis._
-      import dut.{dataIn, dataOut, clockDomain, disNextLatency}
+      import dut.{clockDomain, dataIn, disNextLatency}
       clockDomain.forkStimulus(2)
-      dataIn.valid #= false
-      dataIn.last #= false
+      dataIn.halt()
       clockDomain.waitSampling()
 
-      testCase.init.foreach { coded =>
-        dataIn.valid #= true
-        dataIn.last #= false
-        dataIn.fragment #= coded
+      testCase.indices.foreach { i =>
+        dataIn.poke(BigInt(codedData(i)), lastWhen = i == testCase.length - 1)
         clockDomain.waitSampling()
       }
 
-      dataIn.valid #= true
-      dataIn.last #= true
-      dataIn.fragment #= testCase.last
-      clockDomain.waitSampling()
-
-      dataIn.valid #= false
-      dataIn.last #= false
+      dataIn.halt()
       clockDomain.waitSampling(disNextLatency + 10)
     }
   }
