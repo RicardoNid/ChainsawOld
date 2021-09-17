@@ -9,6 +9,8 @@ import scala.collection.mutable
 import scala.io.Source
 import scala.sys.process._
 
+/**
+ */
 class VivadoFlow[T <: Component](
                                   design: => T,
                                   topModuleName: String,
@@ -16,7 +18,8 @@ class VivadoFlow[T <: Component](
                                   vivadoConfig: VivadoConfig,
                                   vivadoTask: VivadoTask,
                                   force: Boolean = false,
-                                  xdcPath:String,
+                                  xdcPath: String = "",
+                                  designPath:String = "",
                                   constraint: VivadoConstraint = VivadoConstraint() // no constraint by default
                                 ) {
 
@@ -51,15 +54,19 @@ class VivadoFlow[T <: Component](
   def getScript(vivadoConfig: VivadoConfig, rtlSources: mutable.LinkedHashSet[String]) = {
     var script = ""
 
-    rtlSources.map(_.replace(workspacePath + "/", "")).foreach { path =>
+    if(designPath.isEmpty) rtlSources.map(_.replace(workspacePath + "/", "")).foreach { path =>
+      println(designPath)
       if (path.endsWith(".sv")) script += s"read_verilog -sv $path \n"
       else if (path.endsWith(".v")) script += s"read_verilog $path \n"
       else if (path.endsWith(".vhdl") || path.endsWith(".vhd")) script += s"read_vhdl $path \n"
       else if (path.endsWith(".bin")) Unit
       else throw new IllegalArgumentException(s"invalid RTL source path $path")
     }
+    else {
+      script += s"read_verilog -v $designPath \n"
+    }
 
-    script += (if(xdcPath.nonEmpty) s"read_xdc $xdcPath\n" else s"read_xdc doit.xdc\n")
+    script += (if (xdcPath.nonEmpty) s"read_xdc $xdcPath\n" else s"read_xdc doit.xdc\n")
 
     var taskName = ""
     taskType match {
@@ -101,23 +108,14 @@ class VivadoFlow[T <: Component](
       FileUtils.deleteDirectory(workspacePathFile)
     }
     workspacePathFile.mkdir()
-    // generate systemverilog and do post processing
-    //    val spinalReport = SpinalConfig(targetDirectory = workspacePath).generateVhdl(design.setDefinitionName(topModuleName))
+    // generate systemverilog
     val spinalReport = SpinalConfig(targetDirectory = workspacePath).generateSystemVerilog(design.setDefinitionName(topModuleName))
-
-    // FIXME: posprocess
-    //    val verilogContent = Source.fromFile(Paths.get(workspacePath, s"${topModuleName}.sv").toFile).getLines.mkString("\n")
-    //    val newVerilogContent = verilogPostProcess(verilogContent)
-    //    writeFile(s"${topModuleName}.sv", newVerilogContent)
-    //    val source = new java.io.FileWriter(Paths.get(workspacePath, s"${topModuleName}.sv").toFile)
-    //    source.write(newVerilogContent)
-    //    source.flush();
-    //    source.close();
 
     writeFile("doit.tcl", getScript(vivadoConfig, spinalReport.rtlSourcesPaths))
     writeFile("doit.xdc", getXdc)
 
-    doCmd(s"${vivadoPath}/vivado -nojournal -log doit.log -mode batch -source doit.tcl", workspacePath)
+    doCmd(s"$vivadoPath/vivado -nojournal -log doit.log -mode batch -source doit.tcl", workspacePath)
+
 
     new VivadoReport(workspacePath, xilinxDeviceFamily, frequencyTarget)
   }
@@ -132,6 +130,12 @@ object VivadoFlow {
                              vivadoConfig: VivadoConfig = defaultVivadoConfig,
                              vivadoTask: VivadoTask = VivadoTask(),
                              force: Boolean = true,
-                             xdcPath:String = ""
-                           ) = new VivadoFlow(design, topModuleName, workspacePath, vivadoConfig, vivadoTask, force, xdcPath)
+                             xdcPath: String = "",
+                             designPath: String = ""
+                           ) = new VivadoFlow(design, topModuleName, workspacePath, vivadoConfig, vivadoTask, force, xdcPath, designPath)
+
+  def main(args: Array[String]): Unit = {
+    import Chainsaw._
+    VivadoSynth("/home/ltr/IdeaProjects/Chainsaw/src/main/scala/Chainsaw/temp.sv")
+  }
 }

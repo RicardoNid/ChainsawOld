@@ -21,8 +21,6 @@ class ViterbiBackwardingTest extends AnyFlatSpec {
   def runSim() = {
 
     val dutResults = ArrayBuffer[BigInt]()
-    val stateRecords = ArrayBuffer[BigInt]()
-
     SimConfig.withWave.compile(ViterbiBackwarding(trellis)).doSim { dut =>
       import dut.{dataIn, dataOut, clockDomain}
       clockDomain.forkStimulus(2)
@@ -35,13 +33,14 @@ class ViterbiBackwardingTest extends AnyFlatSpec {
       //      setMonitor(True, dut.currentState, stateRecords) // TODO: fix this
       dataOut.setMonitor(dutResults)
 
+      val end = testCase.length - 1
+
       testCase.indices.foreach { i =>
         dataIn.valid #= true
-        dataIn.last #= (i == testCase.length - 1)
+        dataIn.last #= (i == end)
         dut.stateStart #= (if (i == 0) testCase.head.zipWithIndex.minBy(_._1)._2 else 0)
 
         val record = testCase.pop()
-        printlnGreen(record.mkString(" "))
         dataIn.fragment.zip(limit(record)).foreach { case (port, data) => port #= data }
         clockDomain.waitSampling()
       }
@@ -50,18 +49,14 @@ class ViterbiBackwardingTest extends AnyFlatSpec {
       dataIn.last #= false
       clockDomain.waitSampling(10)
     }
-    println(stateRecords.mkString(""))
     dutResults
   }
 
   "ViterbiBackwarding" should "produce input symbols" in {
     val dutResults = runSim()
     val states = Algos.viterbiBackwarding(testCaseCopy, trellis).reverse // to map with trace back order
-    println(states.mkString(" "))
-    val bits = states.init.map(_.toBinaryString.padToLeft(log2Up(trellis.numStates), '0').head.asDigit)
-    println(bits.mkString(""))
-
-    println(dutResults.mkString(""))
+    val bits = states.map(_.toBinaryString.padToLeft(log2Up(trellis.numStates), '0').head.asDigit)
+    assert(bits.mkString("") == dutResults.mkString(""))
   }
 
 }

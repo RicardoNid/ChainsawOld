@@ -1,5 +1,6 @@
 package FTN
 
+import Chainsaw.Communication.qam.Refs
 import org.scalatest.funsuite.AnyFunSuite
 import spinal.core._
 import spinal.core.sim._
@@ -61,7 +62,7 @@ class QammodFTNTest extends AnyFunSuite {
       dataIn.last #= false
       clockDomain.waitSampling(period + 2)
 
-      val golden = Communication.Refs.qammod(testCase, bitPerSymbol, gray = true).map(_ / sqrt(10))
+      val golden = Refs.qammod(testCase, bitPerSymbol, gray = true).map(_ / sqrt(10))
         .grouped(bitAlloc.size / period).toSeq
       (golden ++ golden).zip(dutResult).forall { case (gold, dut) => gold.zip(dut).forall { case (g, d) => g.sameAs(d, 0.1) } }
 

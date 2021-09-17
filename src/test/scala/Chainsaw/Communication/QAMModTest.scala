@@ -1,5 +1,6 @@
 package Chainsaw.Communication
 
+import Chainsaw.Communication.qam.{QAMMod, Refs}
 import Chainsaw._
 import matlabIO._
 import org.scalatest.funsuite.AnyFunSuite

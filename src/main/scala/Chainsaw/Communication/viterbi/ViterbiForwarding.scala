@@ -1,12 +1,8 @@
 package Chainsaw.Communication.viterbi
 
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
 import Chainsaw._
-import Chainsaw.matlabIO._
+import spinal.core._
+import spinal.lib._
 
 // ACS part of Viterbi
 case class ViterbiForwarding(trellis: Trellis[Int]) extends Component {
@@ -43,19 +39,12 @@ case class ViterbiForwarding(trellis: Trellis[Int]) extends Component {
   val matrix: Array[Array[Double]] = updatingMatrices.head.value // numState * numState matrix
   val sparse2dense: Map[(Int, Int), Int] = Array.tabulate(numStates, numStates)((r, c) => (r, c, matrix(r)(c))).flatten.filter(_._3 < MinplusMatrix.max)
     .zipWithIndex.map { case ((r, c, value), i) => (r, c) -> i }.toMap
-  //  println(sparse2dense.mkString(" "))
-
-  //  printlnGreen(nextStates.map(_.mkString(" ")) .mkString("\n"))
 
   val ret = Array.tabulate(1, numStates) { (i, k) =>
     // pick up signals
     val coords = Array.tabulate(numStates)(j => ((i, j), (j, k)))
     val validCoords = coords.filter(coord => sparse2dense.isDefinedAt(coord._2))
     val pairs = validCoords.map(coord => (vector(coord._1._1)(coord._1._2), updatingValue(sparse2dense(coord._2))))
-    //    println("cands")
-    //    println(validCoords.map(_._1).mkString(" "))
-    //    println(validCoords.map(_._2).mkString(" "))
-    //    println(validCoords.map(_._2).map(sparse2dense(_)).mkString(" "))
     // addition
     val afterA = pairs.map { case (dis, inc) => dis + inc }
     // compare & select
@@ -81,6 +70,8 @@ case class ViterbiForwarding(trellis: Trellis[Int]) extends Component {
   dataOut.valid := RegNext(delayedValid, init = False)
   dataOut.last := RegNext(delayedLast, init = False)
   dataOut.fragment := Mux(dataOut.last, RegNext(discrepanciesNext), discrepancies)
+
+  def latency = 2
 }
 
 object ViterbiForwarding {

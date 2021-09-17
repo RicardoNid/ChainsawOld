@@ -58,7 +58,7 @@ case class ViterbiBackwarding(trellis: Trellis[Int]) extends Component {
 object ViterbiBackwarding {
   def main(args: Array[String]): Unit = {
     val trellis = Trellis.poly2trellis(7, Array(177, 131))
-    //    GenRTL(ViterbiBackwarding(trellis))
     VivadoSynth(ViterbiBackwarding(trellis))
+    //    VivadoImpl(ViterbiBackwarding(trellis))
   }
 }

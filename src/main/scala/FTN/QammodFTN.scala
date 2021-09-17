@@ -1,5 +1,6 @@
 package FTN
 
+import Chainsaw.Communication.qam.QAMMod
 import Chainsaw._
 import matlabIO._
 import spinal.core._
@@ -25,7 +26,7 @@ case class QammodFTN(iter: Boolean) extends Component {
   val counterOut = Counter(period)
 
   // instantiate the core and other components
-  val core = Communication.QAMMod(bitAlloc = bitAlloc, powAlloc = powAlloc, symbolType = qamSymbolType)
+  val core = QAMMod(bitAlloc = bitAlloc, powAlloc = powAlloc, symbolType = qamSymbolType)
   printlnGreen(s"qammod instantiated as: period = $period")
   // regs for P2S and S2P, along with their counters
   val serial2parallel = Vec(Reg(inType), period)

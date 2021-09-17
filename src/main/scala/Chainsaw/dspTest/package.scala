@@ -87,7 +87,7 @@ package object dspTest {
     dataOut.setMonitor(dutResult)
     // poke stimulus
     testCases.indices.foreach{i=>
-      dataIn.poke(testCases(i), lastWhen = i == testCases.length - 1)
+      dataIn.poke(testCases(i), lastWhen = i == (testCases.length - 1))
       dut.clockDomain.waitSampling()
     }
     // wait for result

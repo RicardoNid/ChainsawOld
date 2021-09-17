@@ -15,6 +15,8 @@ object Refs {
 
   def convenc(data: Array[Int], trellis: MStruct) = eng.feval[Array[Int]]("convenc", data, trellis)
 
+  /** Test data for 802.11n((2,1,7) coding with generator (177, 131))
+   */
   def getTestData = {
     val constLen = 7
     val codeGen = Array(177, 131)
