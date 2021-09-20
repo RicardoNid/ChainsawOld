@@ -33,7 +33,32 @@ case class QAMDeModCore(symbolType: HardType[ComplexNumber], bitsAllocated: Int)
     rets
   }
 
+  val realLt = (value: Int) => ~isPositive(abs(dataIn.payload.real) - thresholds(value))
+  val imagLt = (value: Int) => ~isPositive(abs(dataIn.payload.imag) - thresholds(value))
+  val realLtImag = abs(dataIn.payload.real) < abs(dataIn.payload.imag)
+
   val ret = bitsAllocated match {
+    case 5 =>
+      val bit0 = isPositive(dataIn.payload.real)
+      val bit3 = ~isPositive(dataIn.payload.imag)
+
+      val bit1 = realLt(4) && imagLt(4)
+      val bit2 = (!realLt(2) && imagLt(4)) || (!realLt(4) && !imagLt(4) && !realLtImag)
+      val bit4 = imagLt(2) || (realLt(2) && !imagLt(4))
+      Seq(bit0, bit1, bit2, bit3, bit4).reverse.asBits()
+
+    case 7 =>
+      val bit0 = isPositive(dataIn.payload.real) // diff = 64
+      val bit4 = ~isPositive(dataIn.payload.imag) // diff = 4
+
+      val bit1 = realLt(8) && imagLt(8) // diff = 32
+      val bit2 = (!realLt(4) && imagLt(8)) || (!realLt(8) && !imagLt(8) && !realLtImag) // diff = 16 // TODO: diag
+      val bit3 = (!realLt(2) && realLt(6)) || (!realLt(10) && !realLtImag) // diff = 8 // TODO: the "tiny triangle"
+      val bit5 = imagLt(4) || (realLt(4) && !imagLt(8)) // diff = 2
+      val bit6 = (!imagLt(2) && imagLt(6)) || (!imagLt(10) && realLtImag) // diff = 1
+
+      Seq(bit0, bit1, bit2, bit3, bit4, bit5, bit6).reverse.asBits()
+
     case _ =>
       val realDets = dets(dataIn.payload.real, (bitsAllocated + 1) / 2)
       val imagDets = dets(dataIn.payload.imag, bitsAllocated / 2)
@@ -42,4 +67,12 @@ case class QAMDeModCore(symbolType: HardType[ComplexNumber], bitsAllocated: Int)
 
   dataOut.payload := RegNext(ret)
   dataOut.valid := RegNext(dataIn.valid, init = False)
+}
+
+object QAMDeModCore {
+  def main(args: Array[String]): Unit = {
+    val reports = (1 to 8).map(i => VivadoSynth(QAMDeModCore(HardType(ComplexNumber(1, -14)), i)))
+    println(reports.map(_.LUT).mkString(""))
+    println(reports.map(_.FF).mkString(" "))
+  }
 }
