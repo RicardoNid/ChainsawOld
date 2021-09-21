@@ -4,6 +4,7 @@ version := "0.1"
 scalaVersion := "2.11.12"
 //val spinalVersion = "1.4.3"
 val spinalVersion = "1.5.0"
+val jgraphtVersion = "1.5.0"
 
 // 编译器选项
 scalacOptions ++= Seq(
@@ -21,10 +22,12 @@ libraryDependencies ++= Seq(
 
 //  .map(_.exclude("org.slf4j", "slf4j-simple"))
 
+
+
 libraryDependencies ++= Seq(
-  "org.jgrapht" % "jgrapht-core" % "1.4.0",
-  "org.jgrapht" % "jgrapht-ext" % "1.4.0",
-  "org.jgrapht" % "jgrapht-io" % "1.4.0",
+  "org.jgrapht" % "jgrapht-core" % jgraphtVersion,
+  "org.jgrapht" % "jgrapht-ext" % jgraphtVersion,
+  "org.jgrapht" % "jgrapht-io" % jgraphtVersion,
 )
 
 libraryDependencies += "org.scalanlp" %% "breeze" % "1.0"

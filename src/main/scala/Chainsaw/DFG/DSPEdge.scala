@@ -9,6 +9,27 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
-trait DSPEdge {
-  def delay(dataIn: Bits, delay:Int): Bits
+import org.jgrapht._
+import org.jgrapht.graph._
+import org.jgrapht.graph.builder._
+import org.jgrapht.nio._
+import org.jgrapht.nio.dot._
+import org.jgrapht.traverse._
+import org.jgrapht.generate._
+
+import scala.collection.JavaConversions._
+
+abstract class DSPEdge extends DefaultWeightedEdge{
+  def impl(dataIn: Bits, delay:Int): Bits
+}
+
+class FPGADelay() extends DSPEdge {
+  override def impl(dataIn: Bits, delay: Int): Bits = {
+    if(dataIn.getBitsWidth >= 128 && delay >= 2) Delay(dataIn, delay) // TODO: replace this with a "FIFO function"
+    else Delay(dataIn, delay)
+  }
+}
+
+object FPGADelay {
+  def apply(): FPGADelay = new FPGADelay()
 }
