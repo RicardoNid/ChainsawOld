@@ -8,6 +8,7 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 import org.jgrapht._
+import org.jgrapht.alg.shortestpath.FloydWarshallShortestPaths
 import org.jgrapht.graph._
 import org.jgrapht.graph.builder._
 import org.jgrapht.nio._
@@ -82,17 +83,52 @@ class DFG extends DirectedWeightedPseudograph[DSPNode, DSPEdge](classOf[DSPEdge]
     algo.findCycles().nonEmpty
   }
 
+  // methods on shortest paths
   val bellman = new alg.shortestpath.BellmanFordShortestPath(this)
+  val floyd = new FloydWarshallShortestPaths(this)
 
-  def longestPathBetweenNodes(source: DSPNode, sink: DSPNode): GraphPath[DSPNode, DSPEdge] = {
-    edgeSet().foreach(edge => setEdgeWeight(edge, -edge.weight))
+  def shortestDelay(source: DSPNode, sink: DSPNode): GraphPath[DSPNode, DSPEdge] = {
     bellman.getPath(source, sink)
   }
 
-  def longestDistanceBetweenNodes(source: DSPNode, sink: DSPNode) = longestPathBetweenNodes(source, sink).getWeight
+  // TODO: find out why Floyd won't work
+  def shortestDelays() = {
+    val pathsLUT = floyd.getShortestPathsCount()
+    pathsLUT
+  }
 
-  def longestPathBetweenEdges: Unit = {
+  /** Replace an incoming edge while keep the
+   *
+   * @param oldEdge   the edge to be replaced
+   * @param newSource source of the new edge
+   * @param delay     weight(delay) of the new edge
+   */
+  def replaceIncomingEdge(oldEdge: DSPEdge, newSource: DSPNode, delay: Int) = {
+    val edgeBuffer = ArrayBuffer[(DSPNode, Int)]()
+    val target = oldEdge.target
 
+    def lastIncomingEdge = target.incomingEdges.last
+    // remove
+    while (lastIncomingEdge != oldEdge) {
+      edgeBuffer += Tuple2(lastIncomingEdge.source, lastIncomingEdge.weight.toInt)
+      removeEdge(lastIncomingEdge)
+    }
+    // replace
+    removeEdge(oldEdge)
+    addEdge(newSource, target, delay)
+    // re-add in order
+    while (edgeBuffer.nonEmpty) {
+      val info = edgeBuffer.last
+      addEdge(info._1, target, info._2)
+      edgeBuffer.remove(edgeBuffer.size - 1)
+    }
+  }
+
+  def mergeDelay() = {
+    vertexSet().filter(_.outgoingEdges.toSeq.map(_.weight.toInt).filter(_ > 0).size > 1).foreach{v => // for those vertices which drives multiple targets with delays > 0
+      println(v)
+      println(v.outgoingEdges)
+    }
   }
 
   val implForward = (dataIn: Seq[Bits]) => {
@@ -222,17 +258,22 @@ object TestDFG {
 object DFGExample {
   def main(args: Array[String]): Unit = {
     val dfg = new DFG()
-    val n1, n2, n3 = PrueNode(0, 1)
-    val n4, n5, n6 = PrueNode(0, 2)
+    val Seq(n1, n2, n3) = (1 to 3).map(i => PrueNode(0, 1, "n" + i.toString))
+    val Seq(n4, n5, n6) = (4 to 6).map(i => PrueNode(0, 2, "n" + i.toString))
 
     dfg.addVertex(n1)
-    Seq(n1, n1, n1).zip(Seq(n4, n5, n6)).zip(Seq(2, 3, 4)).foreach { case ((src, des), delay) => dfg.addVertexFromSource(src,des,delay) }
-    Seq(n4, n5, n6).zip(Seq(n2, n3, n3)).zip(Seq(0,0,0)).foreach { case ((src, des), delay) => dfg.addVertexFromSource(src,des,delay) }
-    Seq(n2, n3).zip(Seq(n1, n2)).zip(Seq(0,0,0)).foreach { case ((src, des), delay) => dfg.addVertexFromSource(src,des,delay) }
+    Seq(n1, n1, n1).zip(Seq(n4, n5, n6)).zip(Seq(2, 3, 4)).foreach { case ((src, des), delay) => dfg.addVertexFromSource(src, des, delay) }
+    Seq(n4, n5, n6).zip(Seq(n2, n3, n3)).zip(Seq(0, 0, 0)).foreach { case ((src, des), delay) => dfg.addVertexFromSource(src, des, delay) }
+    Seq(n2, n3).zip(Seq(n1, n2)).zip(Seq(0, 0, 0)).foreach { case ((src, des), delay) => dfg.addVertexFromSource(src, des, delay) }
 
-    println(dfg.vertexSet().mkString(" "))
+    println(dfg)
 
+    val tmp = TmpNode()
+    dfg.addVertex(tmp)
+    dfg.replaceIncomingEdge(dfg.getEdge(n5, n3), tmp, 2)
+    println(dfg)
 
+    dfg.mergeDelay()
 
   }
 }

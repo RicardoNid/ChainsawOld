@@ -45,18 +45,20 @@ object OutputNode {
   def apply(): OutputNode = new OutputNode()
 }
 
-class PrueNode(delayv: Int, executionTimev: Double) extends DSPNode {
+class PrueNode(delayv: Int, executionTimev: Double, name: String) extends DSPNode {
   override def impl(dataIn: Seq[Bits]): Bits = dataIn.head // output node has only 1 source, dataIn.size == 1
 
   override def delay: Int = delayv
 
   override def executionTime: Double = executionTimev
+
+  override def toString: String = name
 }
 
 object PrueNode {
-  def apply(delayv: Int, executionTimev: Double): PrueNode = new PrueNode(delayv, executionTimev)
+  def apply(delayv: Int, executionTimev: Double, name: String = "tmp"): PrueNode = new PrueNode(delayv, executionTimev, name)
 }
 
-object TmpNode{
-  def apply(): PrueNode = new PrueNode(0,0)
+object TmpNode {
+  def apply(): PrueNode = new PrueNode(0, 0, "tmp")
 }
