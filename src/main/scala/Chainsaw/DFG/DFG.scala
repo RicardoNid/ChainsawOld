@@ -16,6 +16,8 @@ import org.jgrapht.nio.dot._
 import org.jgrapht.traverse._
 import org.jgrapht.generate._
 
+import scala.math.min
+
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -124,10 +126,18 @@ class DFG extends DirectedWeightedPseudograph[DSPNode, DSPEdge](classOf[DSPEdge]
     }
   }
 
-  def mergeDelay() = {
-    vertexSet().filter(_.outgoingEdges.toSeq.map(_.weight.toInt).filter(_ > 0).size > 1).foreach{v => // for those vertices which drives multiple targets with delays > 0
-      println(v)
-      println(v.outgoingEdges)
+  def mergeDelays() = {
+    vertexSet().filter(_.outgoingEdges.toSeq.map(_.weight.toInt).filter(_ > 0).size > 1).foreach { v => // for those vertices which drives multiple targets with delays > 0
+      val candidates = v.outgoingEdges.filter(_.weight.toInt > 0).toSeq.sortBy(_.weight.toInt) // list delays > 0 in ascending order
+      val relativeDelays = candidates.head.weight +: candidates.init.map(_.weight).zip(candidates.tail.map(_.weight)).map { case (prev, next) => next - prev }
+      var anchor = v
+      candidates.zip(relativeDelays).foreach { case (edge, delay) =>
+        val tmp = TmpNode()
+        addVertex(tmp)
+        addEdge(anchor, tmp, delay.toInt)
+        anchor = tmp
+        replaceIncomingEdge(edge, tmp, 0)
+      }
     }
   }
 
@@ -170,11 +180,13 @@ class DFG extends DirectedWeightedPseudograph[DSPNode, DSPEdge](classOf[DSPEdge]
       data(node) := bits
       implemented += (node -> false)
     }
+    printlnGreen("init input over")
 
     // look forward until all nodes are implemented
     def tobeViewed = implemented.filter(!_._2).keys // nodes that have targets not implemented
 
     while (implemented.size < vertexSet().size()) {
+      println(s"total ${vertexSet().size()}, implemented ${implemented.size}")
       tobeViewed.foreach { source => // view targets of current nodes
         source.targets.filterNot(implemented.containsKey(_)).foreach { target => // view targets that have not been implemented
           val dataIn = target.sources.map { source =>
@@ -267,14 +279,17 @@ object DFGExample {
     Seq(n2, n3).zip(Seq(n1, n2)).zip(Seq(0, 0, 0)).foreach { case ((src, des), delay) => dfg.addVertexFromSource(src, des, delay) }
 
     println(dfg)
-
-    val tmp = TmpNode()
-    dfg.addVertex(tmp)
-    dfg.replaceIncomingEdge(dfg.getEdge(n5, n3), tmp, 2)
+    dfg.mergeDelays()
     println(dfg)
 
-    dfg.mergeDelay()
-
+    //
+    dfg.addOutput(n1)
+    println(dfg)
+//    GenRTL(new Component {
+//      val dataIn = in UInt (4 bits)
+//      val dataOut = out UInt (4 bits)
+//      dataOut := dfg.implRecursive(Seq(dataIn.asBits)).head.asUInt
+//    })
   }
 }
 
