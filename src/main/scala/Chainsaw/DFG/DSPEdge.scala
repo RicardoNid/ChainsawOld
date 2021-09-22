@@ -19,7 +19,7 @@ import org.jgrapht.generate._
 
 import scala.collection.JavaConversions._
 
-abstract class DSPEdge extends DefaultWeightedEdge{
+abstract class DSPEdge {
   def impl(dataIn: Bits, delay:Int): Bits
 }
 
@@ -28,7 +28,10 @@ class FPGADelay() extends DSPEdge {
     if(dataIn.getBitsWidth >= 128 && delay >= 2) Delay(dataIn, delay) // TODO: replace this with a "FIFO function"
     else Delay(dataIn, delay)
   }
+
+  override def toString: String = super.toString.takeRight(2)
 }
+
 
 object FPGADelay {
   def apply(): FPGADelay = new FPGADelay()

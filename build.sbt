@@ -4,7 +4,7 @@ version := "0.1"
 scalaVersion := "2.11.12"
 //val spinalVersion = "1.4.3"
 val spinalVersion = "1.5.0"
-val jgraphtVersion = "1.5.0"
+val jgraphtVersion = "1.5.1"
 
 // 编译器选项
 scalacOptions ++= Seq(
@@ -34,7 +34,7 @@ libraryDependencies += "org.scalanlp" %% "breeze" % "1.0"
 
 //libraryDependencies += "org.scalatest" % "scalatest_2.10" % "1.9.1" % "test"
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.9"
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.9" % "test"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.9"
 
 libraryDependencies += "cc.redberry" %% "rings.scaladsl" % "2.5.7"
 
