@@ -8,7 +8,6 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 import org.jgrapht._
-import org.jgrapht.alg.shortestpath.FloydWarshallShortestPaths
 import org.jgrapht.graph._
 import org.jgrapht.graph.builder._
 import org.jgrapht.nio._
@@ -48,6 +47,16 @@ class DFG extends DefaultDirectedWeightedGraph[DSPNode, DSPEdge](classOf[DSPEdge
 
   }
 
+  def weights = edgeSet().toSeq.map(_.weight)
+
+  def executionTimes = vertexSet().toSeq.map(_.executionTime)
+
+  def foreachVertex(body: DSPNode => Unit) = vertexSet().foreach(body)
+
+  def foreachEdge(body: DSPEdge => Unit) = edgeSet().foreach(body)
+
+  def maxExecutionTime = vertexSet().map(_.executionTime).max
+
   def addEdge(sourceVertex: DSPNode, targetVertex: DSPNode, delay: Int): Boolean = {
     val edge = FPGADelay() // temporarily, using FPGADelay as default
     val success = addEdge(sourceVertex, targetVertex, edge)
@@ -71,18 +80,20 @@ class DFG extends DefaultDirectedWeightedGraph[DSPNode, DSPEdge](classOf[DSPEdge
     inputNode
   }
 
-  def addOutput(source: DSPNode, delay: Int): OutputNode = { // it works like "marking a signal as output"
+  def setInput(target: DSPNode) = {
+    val inputNode = InputNode()
+    addVertex(inputNode)
+    addEdge(inputNode, target, 0)
+  }
+
+  def setOutput(source: DSPNode): OutputNode = {
     val outputNode = OutputNode()
-    addVertexFromSource(source, outputNode, delay)
+    addVertexFromSource(source, outputNode, 0)
     outputNode
   }
 
-  def addOutput(source: DSPNode): OutputNode = addOutput(source, 0)
-
-  // methods on shortest paths
+  // algorithm objects
   def bellman = new alg.shortestpath.BellmanFordShortestPath(this)
-
-  def floyd = new FloydWarshallShortestPaths(this)
 
   def cycleDet = new alg.cycle.CycleDetector(this)
 
@@ -97,13 +108,12 @@ class DFG extends DefaultDirectedWeightedGraph[DSPNode, DSPEdge](classOf[DSPEdge
   def latency = {
     val graph = this.clone().asInstanceOf[DFG]
     graph.edgeSet().foreach(edge => graph.setEdgeWeight(edge, edge.weight + edge.source.delay))
-    val algo = new alg.shortestpath.BellmanFordShortestPath(graph)
-    algo.getPath(inputNodes.head, outputNodes.head).getWeight.toInt
+    graph.shortestPath(inputNodes.head, outputNodes.head).getWeight.toInt
   }
 
   def criticalPathLength = {
     val cpg = criticalPathGraph
-    cpg.edgeSet().map(cpg.getEdgeWeight(_)).max
+    (cpg.edgeSet().map(cpg.getEdgeWeight(_)).max) max (vertexSet().map(_.executionTime).max)
   }
 
   def graphForCriticalPath = {
@@ -119,11 +129,11 @@ class DFG extends DefaultDirectedWeightedGraph[DSPNode, DSPEdge](classOf[DSPEdge
 
   def longestExecutionTime(sourceEdge: DSPEdge, targetEdge: DSPEdge) = {
     val path = longestZeroDelayPath(sourceEdge, targetEdge)
-    if (path == null) -1 else -path.getWeight
+    if (path == null) -1 else -path.getWeight + sourceEdge.target.executionTime
   }
 
   def criticalPathGraph = {
-    val vertices = edgeSet().filter(_.weight > 0).toSeq // use edge with non-zero delay as vertices
+    val vertices = edgeSet().toSeq.filter(_.weight > 0) // use edge with non-zero delay as vertices
     val cpg = new DefaultDirectedWeightedGraph[DSPEdge, DefaultWeightedEdge](classOf[DefaultWeightedEdge])
     vertices.foreach(edge => cpg.addVertex(edge))
     Array.tabulate(vertices.size, vertices.size) { (i, j) =>
@@ -189,7 +199,7 @@ class DFG extends DefaultDirectedWeightedGraph[DSPNode, DSPEdge](classOf[DSPEdge
 
   def mergeDelays() = {
     vertexSet().filter(_.outgoingEdges.toSeq.map(_.weight.toInt).filter(_ > 0).size > 1).foreach { v => // for those vertices which drives multiple targets with delays > 0
-      val candidates = v.outgoingEdges.filter(_.weight.toInt > 0).toSeq.sortBy(_.weight.toInt) // list delays > 0 in ascending order
+      val candidates = v.outgoingEdges.toSeq.filter(_.weight.toInt > 0).sortBy(_.weight.toInt) // list delays > 0 in ascending order
       val relativeDelays = candidates.head.weight +: candidates.init.map(_.weight).zip(candidates.tail.map(_.weight)).map { case (prev, next) => next - prev }
       var anchor = v
       candidates.zip(relativeDelays).foreach { case (edge, delay) =>
@@ -199,6 +209,21 @@ class DFG extends DefaultDirectedWeightedGraph[DSPNode, DSPEdge](classOf[DSPEdge
         replaceIncomingEdge(edge, tmp, 0)
         anchor = tmp
       }
+    }
+  }
+
+  def basicRetimingGraph: ConstraintGraph = {
+    val cg = ConstraintGraph()
+    val nodeMap: Map[DSPNode, ConstraintNode] = vertexSet().toSeq.map(_ -> ConstraintNode()).toMap
+    foreachEdge(edge => cg.add(nodeMap(edge.source) - nodeMap(edge.target) <= edge.weight))
+    cg
+  }
+
+  def applyRetiming(retiming: Seq[Int]) = {
+    val r: Map[DSPNode, Int] = vertexSet().toSeq.zip(retiming).map { case (node, i) => node -> i }.toMap
+    foreachEdge { edge =>
+      val weightAfterRetiming = edge.weight + r(edge.target) - r(edge.source)
+      setEdgeWeight(edge, weightAfterRetiming)
     }
   }
 
@@ -265,93 +290,6 @@ class DFG extends DefaultDirectedWeightedGraph[DSPNode, DSPEdge](classOf[DSPEdge
   }
 }
 
-class Inc() extends DSPNode {
-
-  override def impl(dataIn: Seq[Bits]): Bits = (dataIn.head.asUInt + U(1)).asBits
-
-  override def delay: Int = 0
-
-  override def executionTime: Double = 0.2
-
+object DFG {
+  def apply(): DFG = new DFG()
 }
-
-object TestDFG {
-
-  def main(args: Array[String]): Unit = {
-
-    // example1
-    val g = new DFG()
-
-    val dataIn = g.addInput()
-
-    val inc1 = new Inc()
-    val inc0 = ((dataIn: Seq[Bits]) => (dataIn(0).asUInt + U(1)).asBits)
-      .asDSPNode(0, 0.2, name = "inc")
-    g.addVertexFromSource(dataIn, inc0, 0)
-    g.addVertexFromSource(inc0, inc1, 2)
-    g.addOutput(inc1)
-
-    GenRTL(new Component {
-      val dataIn = in UInt (4 bits)
-      val dataOut = out UInt (4 bits)
-      dataOut := g.implRecursive(Seq(dataIn.asBits)).head.asUInt
-    })
-
-    // example2 Fig2.1 a
-    val h = new DFG()
-    val add = ((dataIn: Seq[Bits]) => (dataIn(0).asSInt + dataIn(1).asSInt).asBits)
-      .asDSPNode(0, 0.2, 4, "add")
-    val cmult = ((dataIn: Seq[Bits]) => (dataIn(0).asSInt * 3).resize(4).asBits)
-      .asDSPNode(0, 0.8, 4, "cmult")
-
-    val x = h.addInput()
-
-    h.addVertexFromSource(x, add, 0)
-    h.addVertexFromSource(add, cmult, 0)
-
-    h.addEdge(cmult, add, 1)
-    h.addOutput(add)
-
-    GenRTL(new Component {
-      val dataIn = in UInt (4 bits)
-      val dataOut = out UInt (4 bits)
-      dataOut := h.implRecursive(Seq(dataIn.asBits)).head.asUInt
-    })
-
-  }
-}
-
-/** Example from fig2.2
- *
- */
-object DFGExample {
-  def main(args: Array[String]): Unit = {
-    val dfg = new DFG()
-    val Seq(n1, n2, n3) = (1 to 3).map(i => AbstractNode(0, 1, "n" + i.toString))
-    val Seq(n4, n5, n6) = (4 to 6).map(i => AbstractNode(0, 2, "n" + i.toString))
-
-    dfg.addVertex(n1)
-    Seq(n1, n1, n1).zip(Seq(n4, n5, n6)).zip(Seq(2, 3, 4)).foreach { case ((src, des), delay) => dfg.addVertexFromSource(src, des, delay) }
-    Seq(n4, n5, n6).zip(Seq(n2, n3, n3)).zip(Seq(0, 0, 0)).foreach { case ((src, des), delay) => dfg.addVertexFromSource(src, des, delay) }
-    Seq(n2, n3).zip(Seq(n1, n2)).zip(Seq(0, 0, 0)).foreach { case ((src, des), delay) => dfg.addVertexFromSource(src, des, delay) }
-
-    println(dfg)
-    dfg.mergeDelays()
-    println(dfg)
-
-    //    val x = dfg.addInput()
-    //    dfg.addEdge(x, n1, 0)
-    //    dfg.addOutput(n6)
-
-    println(s"dfg is ${if (dfg.isRecursive) "recursive" else "not recursive"}, it has: " +
-      s"\n\t${dfg.delaysCount} delays in total \n\tlatency = ${dfg.latency} " +
-      s"\n\tcritical path length = ${dfg.criticalPathLength} \n\titeration bound = ${dfg.iterationBound}")
-
-    //    GenRTL(new Component {
-    //      val dataIn = in UInt (4 bits)
-    //      val dataOut = out UInt (4 bits)
-    //      dataOut := dfg.implRecursive(Seq(dataIn.asBits)).head.asUInt
-    //    })
-  }
-}
-
