@@ -4,9 +4,11 @@ import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
+
 import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
+
 import org.jgrapht._
 import org.jgrapht.graph._
 import org.jgrapht.graph.builder._
@@ -197,6 +199,7 @@ class DFG extends DefaultDirectedWeightedGraph[DSPNode, DSPEdge](classOf[DSPEdge
     }
   }
 
+  // TODO: find a better solution
   def mergeDelays() = {
     vertexSet().filter(_.outgoingEdges.toSeq.map(_.weight.toInt).filter(_ > 0).size > 1).foreach { v => // for those vertices which drives multiple targets with delays > 0
       val candidates = v.outgoingEdges.toSeq.filter(_.weight.toInt > 0).sortBy(_.weight.toInt) // list delays > 0 in ascending order
@@ -212,7 +215,7 @@ class DFG extends DefaultDirectedWeightedGraph[DSPNode, DSPEdge](classOf[DSPEdge
     }
   }
 
-  def basicRetimingGraph: ConstraintGraph = {
+  def feasibilityConstraintGraph: ConstraintGraph = {
     val cg = ConstraintGraph()
     val nodeMap: Map[DSPNode, ConstraintNode] = vertexSet().toSeq.map(_ -> ConstraintNode()).toMap
     foreachEdge(edge => cg.add(nodeMap(edge.source) - nodeMap(edge.target) <= edge.weight))

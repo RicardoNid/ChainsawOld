@@ -63,7 +63,7 @@ class ConstraintGraph extends SimpleDirectedWeightedGraph[ConstraintNode, Defaul
     }
   }
 
-  def solutions = {
+  def getSolution = {
     val algo = new BellmanFordShortestPath(this)
     val paths = algo.getPaths(referenceNode)
     // TODO: more hint on the situation where no solution exists
@@ -88,6 +88,6 @@ object testCG {
     cg.add(r4 - r1 <= 4)
     cg.add(r4 - r3 <= -1)
     cg.add(r3 - r2 <= 2)
-    println(cg.solutions.mkString(" "))
+    println(cg.getSolution.mkString(" "))
   }
 }
