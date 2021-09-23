@@ -70,4 +70,27 @@ class MinimumClockPeriodRetimingTest extends AnyFlatSpec {
     println(s"after : \ncritical path = ${problem2.criticalPathLength} \ndelay units in total = ${problem2.delaysCount}")
   }
 
+  it should "solve the problem 2 correctly" in {
+
+    val problem2 = new DFG()
+    val Seq(a, b, c, d) = Seq(20, 10, 10, 5).zipWithIndex.map { case (exeTime, i) => AbstractNode(0, exeTime, s"n$i") }
+    problem2.addVertex(a)
+    problem2.addVertexFromSource(a, b, 0)
+    problem2.addVertexFromSource(b, c, 1)
+    problem2.addVertexFromSource(c, d, 0)
+    problem2.addVertexFromSource(c, a, 1)
+    problem2.addVertexFromSource(d, b, 0)
+    problem2.mergeDelays()
+
+    println(problem2.feasibilityConstraintGraph.getSolution.mkString(" "))
+
+    val cris = problem2.criticalPathGraph
+    println(cris.edgeSet().toSeq.map(cris.getEdgeWeight(_)).mkString(" "))
+
+    println(s"before: \ncritical path = ${problem2.criticalPathLength} \ndelay units in total = ${problem2.delaysCount}")
+    val solution2 = new MinimumClockPeriodRetiming(problem2).getSolution._2
+    problem2.applyRetiming(solution2.map(_.toInt))
+    println(s"after : \ncritical path = ${problem2.criticalPathLength} \ndelay units in total = ${problem2.delaysCount}")
+  }
+
 }
