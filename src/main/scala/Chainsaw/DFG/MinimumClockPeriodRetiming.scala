@@ -54,7 +54,7 @@ class MinimumClockPeriodRetiming(dfg: DFG) {
 
     def solveC(c: Double) = {
       val cg = dfg.feasibilityConstraintGraph // basic constraint
-      val r = cg.vertexSet().toSeq.tail // drop the reference node
+      val r = dfg.vertexSet().toSeq // drop the reference node
       Array.tabulate(n, n)((u, v) => if (u != v && matrixD(u)(v) > c) cg.add(r(u) - r(v) <= matrixW(u)(v) - 1))
       val solutions = Try(cg.getSolution)
       solutions match {
@@ -81,4 +81,6 @@ class MinimumClockPeriodRetiming(dfg: DFG) {
     val minimunCriticalPathLength = binarySearch(candidates).head
     (minimunCriticalPathLength, solveC(minimunCriticalPathLength))
   }
+
+  def getRetimed = dfg.applyRetiming(getSolution._2.map(_.toInt))
 }

@@ -12,6 +12,8 @@ import scala.collection.mutable.ArrayBuffer
 
 abstract class DSPNode {
 
+  def name: String = ""
+
   def impl(dataIn: Seq[Bits]): Bits
 
   def implWidth: Int = -1
@@ -20,26 +22,7 @@ abstract class DSPNode {
 
   def executionTime: Double
 
-}
-
-class VoidNode extends DSPNode {
-  override def impl(dataIn: Seq[Bits]): Bits = dataIn.head // output node has only 1 source, dataIn.size == 1
-
-  override def delay: Int = 0
-
-  override def executionTime: Double = 0
-}
-
-class InputNode extends VoidNode
-
-class OutputNode extends VoidNode
-
-object InputNode {
-  def apply(): InputNode = new InputNode()
-}
-
-object OutputNode {
-  def apply(): OutputNode = new OutputNode()
+  def -(that: DSPNode) = Constraint(this, that, 0)
 }
 
 class AbstractNode(delayv: Int, executionTimev: Double, name: String) extends DSPNode {
@@ -54,6 +37,24 @@ class AbstractNode(delayv: Int, executionTimev: Double, name: String) extends DS
 
 object AbstractNode {
   def apply(delayv: Int, executionTimev: Double, name: String = "tmp"): AbstractNode = new AbstractNode(delayv, executionTimev, name)
+}
+
+class VoidNode(namev: String = "tmp") extends AbstractNode(0,0,namev)
+
+object VoidNode {
+  def apply(namev: String): VoidNode = new VoidNode(namev)
+}
+
+class InputNode extends VoidNode
+
+class OutputNode extends VoidNode
+
+object InputNode {
+  def apply(): InputNode = new InputNode()
+}
+
+object OutputNode {
+  def apply(): OutputNode = new OutputNode()
 }
 
 object TmpNode {

@@ -34,18 +34,18 @@ class DFG extends DefaultDirectedWeightedGraph[DSPNode, DSPEdge](classOf[DSPEdge
 
     def source = getEdgeSource(edge)
 
-    def weight = getEdgeWeight(edge)
+    def weight = getEdgeWeight(edge).toInt
   }
 
   implicit class NodeProperties(node: DSPNode) {
 
-    def outgoingEdges = outgoingEdgesOf(node)
+    def outgoingEdges = outgoingEdgesOf(node).toSeq
 
-    def incomingEdges = incomingEdgesOf(node)
+    def incomingEdges = incomingEdgesOf(node).toSeq
 
     def sources = incomingEdges.map(_.source)
 
-    def targets = outgoingEdges.map(_.target)
+    def targets = outgoingEdges.toSeq.map(_.target)
 
   }
 
@@ -59,12 +59,20 @@ class DFG extends DefaultDirectedWeightedGraph[DSPNode, DSPEdge](classOf[DSPEdge
 
   def maxExecutionTime = vertexSet().map(_.executionTime).max
 
-  def addEdge(sourceVertex: DSPNode, targetVertex: DSPNode, delay: Int): Boolean = {
-    val edge = FPGADelay() // temporarily, using FPGADelay as default
+  def addEdge(sourceVertex: DSPNode, targetVertex: DSPNode, delay: Int, order: Int): Boolean = {
+    val edge = FPGADelay(order) // temporarily, using FPGADelay as default
     val success = addEdge(sourceVertex, targetVertex, edge)
     setEdgeWeight(edge, delay)
     success
   }
+
+  def addEdge(sourceVertex: DSPNode, targetVertex: DSPNode, delay: Int): Boolean = {
+    val defaultOrder = targetVertex.sources.distinct.size
+    addEdge(sourceVertex, targetVertex, delay, defaultOrder: Int)
+  }
+
+  def addVertices(sources: Seq[DSPNode]): Unit = sources.foreach(addVertex(_))
+  //    def addVertices(sources: DSPNode*): Unit = addVertices(sources)
 
   def addVertexFromSource(source: DSPNode, target: DSPNode, delay: Int): Unit = {
     addVertex(target)
@@ -145,7 +153,7 @@ class DFG extends DefaultDirectedWeightedGraph[DSPNode, DSPEdge](classOf[DSPEdge
     // expand nodes with delay > 1
     cpg.vertexSet().filter(_.weight > 1).foreach { node =>
       // keep the original node as the beginning of the chain
-      val others = Seq.fill(node.weight.toInt - 1)(FPGADelay())
+      val others = Seq.fill(node.weight.toInt - 1)(FPGADelay(0))
       others.foreach(cpg.addVertex(_))
 
       // reconnect the outgoing edges to the last node of the chain
@@ -217,8 +225,8 @@ class DFG extends DefaultDirectedWeightedGraph[DSPNode, DSPEdge](classOf[DSPEdge
 
   def feasibilityConstraintGraph: ConstraintGraph = {
     val cg = ConstraintGraph()
-    val nodeMap: Map[DSPNode, ConstraintNode] = vertexSet().toSeq.map(_ -> ConstraintNode()).toMap
-    foreachEdge(edge => cg.add(nodeMap(edge.source) - nodeMap(edge.target) <= edge.weight))
+    foreachVertex(cg.addVertex(_))
+    foreachEdge(edge => cg.add(edge.source - edge.target <= edge.weight))
     cg
   }
 
@@ -229,6 +237,12 @@ class DFG extends DefaultDirectedWeightedGraph[DSPNode, DSPEdge](classOf[DSPEdge
       setEdgeWeight(edge, weightAfterRetiming)
     }
   }
+
+  def impl = (dataIn: Seq[Bits]) => {
+    if (isRecursive) implRecursive(dataIn)
+    else implForward(dataIn)
+  }
+
 
   val implForward = (dataIn: Seq[Bits]) => {
     case class NodeInfo(data: Bits, var done: Boolean)
@@ -278,10 +292,10 @@ class DFG extends DefaultDirectedWeightedGraph[DSPNode, DSPEdge](classOf[DSPEdge
       println(s"total ${vertexSet().size()}, implemented ${implemented.size}")
       tobeViewed.foreach { source => // view targets of current nodes
         source.targets.filterNot(implemented.containsKey(_)).foreach { target => // view targets that have not been implemented
-          val dataIn = target.sources.map { source =>
+          val dataIn: Seq[Bits] = target.sources.map { source =>
             val edge = getEdge(source, target)
             edge.impl(data(source), edge.weight.toInt)
-          }.toSeq
+          }
           data(target) := target.impl(dataIn)
           implemented += (target -> target.isInstanceOf[OutputNode]) // add the target to implemented, output node need not to be viewed
         }
@@ -290,6 +304,32 @@ class DFG extends DefaultDirectedWeightedGraph[DSPNode, DSPEdge](classOf[DSPEdge
     }
     val dataOut = outputNodes.map(data(_))
     dataOut
+  }
+
+  val implNew = (dataIns: Seq[Bits]) => {
+    val signalMap: Map[DSPNode, Bits] = vertexSet().map(node => // a map to connet nodes with their anchors
+      if (node.implWidth == -1) node -> Bits()
+      else node -> Bits(node.implWidth bits)).toMap
+
+    // create the global counter
+    val globalLcm = edgeSet().map(_.schedules).flatten.map(_.period).reduce(lcm(_, _))
+    val globalCounter = CounterFreeRun(globalLcm)
+
+    inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap(node) := bits }
+
+    vertexSet().diff(inputNodes).foreach { target =>
+      if (!target.isInstanceOf[InputNode]) {
+        val dataIns: Seq[Seq[DSPEdge]] = target.incomingEdges.groupBy(_.order).toSeq.sortBy(_._1).map(_._2)
+        val dataInsOnPorts = dataIns.map { dataInsOnePort =>
+          val dataCandidates: Seq[Bits] = dataInsOnePort.map(edge => edge.impl(signalMap(edge.source), edge.weight))
+          val mux = DFGMUX(dataInsOnePort.map(_.schedules))
+          mux.impl(dataCandidates, globalCounter.value, globalLcm)
+        }
+        signalMap(target) := target.impl(dataInsOnPorts)
+      }
+    }
+
+    outputNodes.map(signalMap(_))
   }
 }
 

@@ -28,7 +28,7 @@ package object DFG {
         override def executionTime: Double = executionTimev
       }
     }
-
   }
+
 
 }

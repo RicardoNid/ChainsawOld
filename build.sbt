@@ -22,8 +22,6 @@ libraryDependencies ++= Seq(
 
 //  .map(_.exclude("org.slf4j", "slf4j-simple"))
 
-
-
 libraryDependencies ++= Seq(
   "org.jgrapht" % "jgrapht-core" % jgraphtVersion,
   "org.jgrapht" % "jgrapht-ext" % jgraphtVersion,

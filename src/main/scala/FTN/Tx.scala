@@ -41,8 +41,15 @@ case class Tx() extends Component {
 
 object Tx {
   def main(args: Array[String]): Unit = {
-    GenRTL(Tx())
-    //    VivadoSynth(Tx())
+    //    GenRTL(Tx())
+    val pF = pFNonIter
+//    VivadoSynth(ConvencFTN(convencConfig, pF), name = "Convenc400MHz")
+    VivadoSynth(InterleaverFTN(params.InterleaveRow, params.InterleaveCol, pF * convencConfig.m), name = "Inter400MHz")
+    VivadoSynth(QammodFTN(iter = false), name = "Qam400MHz")
+//    VivadoSynth(FftFTN(iter = false, inverse = true), name = "IFFT400MHz")
+//    VivadoSynth(DSP.FFT.R2HSIFFT(512, ifftFixedType, coeffType), name = "R2HSIFFT400MHz")
+
+    VivadoSynth(Tx(), name = "TX400M")
   }
 }
 

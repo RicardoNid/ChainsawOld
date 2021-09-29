@@ -19,39 +19,29 @@ import org.jgrapht.generate._
 import scala.util.{Failure, Success, Try}
 import scala.collection.JavaConversions._
 
-case class Constraint(target: ConstraintNode, source: ConstraintNode, value: Double) {
+
+
+case class Constraint(target: DSPNode, source: DSPNode, value: Double) {
   def <=(value: Double) = Constraint(target, source, value = value)
 }
 
-class ConstraintNode {
-  def -(that: ConstraintNode) = Constraint(this, that, 0)
-
-  override def toString: String = super.toString.takeRight(2)
-}
-
-object ConstraintNode {
-  def apply(): ConstraintNode = new ConstraintNode()
-}
-
-class ConstraintGraph extends SimpleDirectedWeightedGraph[ConstraintNode, DefaultWeightedEdge](classOf[DefaultWeightedEdge]) {
+class ConstraintGraph extends SimpleDirectedWeightedGraph[DSPNode, DefaultWeightedEdge](classOf[DefaultWeightedEdge]) {
 
   // init
-  val referenceNode = ConstraintNode()
-  addVertex(referenceNode)
-
+  val referenceNode = new VoidNode
+  super.addVertex(referenceNode)
   def add(constraint: Constraint): Unit = addConstraint(constraint.target, constraint.source, constraint.value)
 
-  def addConstraint(targetVertex: ConstraintNode, sourceVertex: ConstraintNode, value: Double): Unit = {
-    if (!vertexSet().contains(targetVertex)) {
-      addVertex(targetVertex)
-      val e = addEdge(referenceNode, targetVertex)
-      setEdgeWeight(e, 0)
-    }
-    if (!vertexSet().contains(sourceVertex)) {
-      addVertex(sourceVertex)
-      val e = addEdge(referenceNode, sourceVertex)
-      setEdgeWeight(e, 0)
-    }
+  override def addVertex(constraintNode: DSPNode):Boolean = {
+    val succeed = super.addVertex(constraintNode)
+    val e = addEdge(referenceNode, constraintNode)
+    setEdgeWeight(e, 0)
+    succeed
+  }
+
+  def addConstraint(targetVertex: DSPNode, sourceVertex: DSPNode, value: Double): Unit = {
+    if (!vertexSet().contains(targetVertex)) addVertex(targetVertex)
+    if (!vertexSet().contains(sourceVertex)) addVertex(sourceVertex)
     if (containsEdge(sourceVertex, targetVertex)) {
       val edge = getEdge(sourceVertex, targetVertex)
       val weightUpdated = value min getEdgeWeight(edge)
@@ -81,7 +71,7 @@ object ConstraintGraph {
 
 object testCG {
   def main(args: Array[String]): Unit = {
-    val r1, r2, r3, r4 = ConstraintNode()
+    val r1, r2, r3, r4 = new VoidNode()
     val cg = ConstraintGraph()
     cg.add(r1 - r2 <= 0)
     cg.add(r3 - r1 <= 5)

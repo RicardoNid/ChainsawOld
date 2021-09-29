@@ -433,4 +433,12 @@ package object Chainsaw extends RealFactory {
     println(cmd)
     Process(cmd) !
   }
+
+  def gcd(a: Int, b: Int):Int = {
+    require(a >= b)
+    if (b == 0) a
+    else gcd(b, a % b)
+  }
+
+  def lcm(a: Int, b: Int) = a * b / gcd(a, b)
 }

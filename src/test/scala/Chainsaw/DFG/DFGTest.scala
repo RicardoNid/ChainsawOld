@@ -12,7 +12,7 @@ import spinal.core
 
 class DFGTest extends AnyFlatSpec {
 
-  behavior of "DFGTest"
+  behavior of "DFG implementation Test"
 
   it should "run example 1 successfully" in {
     class Inc() extends DSPNode {
@@ -22,7 +22,6 @@ class DFGTest extends AnyFlatSpec {
       override def delay: Int = 0
 
       override def executionTime: Double = 0.2
-
     }
 
     // example1
@@ -40,7 +39,7 @@ class DFGTest extends AnyFlatSpec {
     GenRTL(new Component {
       val dataIn = in UInt (4 bits)
       val dataOut = out UInt (4 bits)
-      dataOut := g.implRecursive(Seq(dataIn.asBits)).head.asUInt
+      dataOut := g.implNew(Seq(dataIn.asBits)).head.asUInt
     })
 
     // example2 Fig2.1 a
@@ -63,7 +62,6 @@ class DFGTest extends AnyFlatSpec {
       val dataOut = out UInt (4 bits)
       dataOut := h.implRecursive(Seq(dataIn.asBits)).head.asUInt
     })
-
   }
 
   it should "run fig 2.2 successfully" in {
@@ -90,29 +88,4 @@ class DFGTest extends AnyFlatSpec {
       s"\n\t${dfg.delaysCount} delays in total \n\tlatency = ${dfg.latency} " +
       s"\n\tcritical path length = ${dfg.criticalPathLength} \n\titeration bound = ${dfg.iterationBound}")
   }
-
-  it should "shortestDelayPath" in {
-
-  }
-
-  it should "shortestDelayPaths" in {
-
-  }
-
-  it should "mergeDelays" in {
-
-  }
-
-  it should "latency" in {
-
-  }
-
-  it should "delaysCount" in {
-
-  }
-
-  it should "longestZeroDelayPath" in {
-
-  }
-
 }
