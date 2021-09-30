@@ -16,6 +16,10 @@ case class Tx() extends Component {
   val pF = pFNonIter
   val dataIn = slave Flow Fragment(Bits(pF bits))
 
+
+
+  case class ConvLayerParam(w:Int, i:Int, h:Int)
+
   val convencFTN = ConvencFTN(convencConfig, pF)
   val interleaverFTN = InterleaverFTN(params.InterleaveRow, params.InterleaveCol, pF * convencConfig.m)
   val qammodFTN = QammodFTN(iter = false)

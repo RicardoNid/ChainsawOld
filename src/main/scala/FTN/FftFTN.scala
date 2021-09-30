@@ -17,6 +17,8 @@ case class FftFTN(iter: Boolean, inverse: Boolean) extends Component {
     if (remained < 4 && remained > 1) factors :+ remained else if (remained == 1) factors else getFactors(pF, factors :+ 4)
   }
 
+
+
   if (iter) {
     val core = DSP.FFT.CooleyTukeyFFTStream(pF, getFactors(pF), inverse, ifftFixedType, coeffFixedType)
 
