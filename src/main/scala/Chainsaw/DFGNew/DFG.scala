@@ -17,6 +17,7 @@ import org.jgrapht.nio.dot._
 import org.jgrapht.traverse._
 import org.jgrapht.generate._
 
+import java.util
 import scala.math.min
 import scala.collection.JavaConversions._
 import scala.collection.mutable
@@ -31,9 +32,14 @@ import scala.collection.mutable.ArrayBuffer
  */
 class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DefaultDirectedWeightedGraph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
 
-  def inputNodes = vertexSet().filter(_.isInstanceOf[InputNode[T]])
 
-  def outputNodes = vertexSet().filter(_.isInstanceOf[OutputNode[T]])
+  def vertexSeq = vertexSet().toSeq
+
+  def edgeSeq = edgeSet().toSeq
+
+  def inputNodes = vertexSeq.filter(_.isInstanceOf[InputNode[T]])
+
+  def outputNodes = vertexSeq.filter(_.isInstanceOf[OutputNode[T]])
 
   implicit class EdgeProperties(edge: DSPEdge[T]) {
     def target = getEdgeTarget(edge)
@@ -55,9 +61,15 @@ class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DefaultDire
 
   }
 
-  def foreachVertex(body: DSPNode[T] => Unit) = vertexSet().foreach(body)
+  def foreachVertex(body: DSPNode[T] => Unit) = vertexSeq.foreach(body)
 
-  def foreachEdge(body: DSPEdge[T] => Unit) = edgeSet().foreach(body)
+  def foreachInnerVertex(body: DSPNode[T] => Unit) = vertexSeq.filterNot(_.isIO).foreach(body)
+
+  def foreachEdge(body: DSPEdge[T] => Unit) = edgeSeq.foreach(body)
+
+  def foreachInnerEdge(body: DSPEdge[T] => Unit) = edgeSeq.filterNot(edge => edge.source.isIO || edge.target.isIO).foreach(body)
+
+  def executionTimes = vertexSeq.map(_.exeTime)
 
   // constructing graph
   override def addEdge(sourceVertex: DSPNode[T], targetVertex: DSPNode[T]): DSPEdge[T] = super.addEdge(sourceVertex, targetVertex)
@@ -65,9 +77,7 @@ class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DefaultDire
   def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Int): Unit = {
     val order = target.incomingEdges.size
     val edge = DefaultDelay[T](s"${source.name} -> ${target.name}", Seq(Schedule(1, 1)), order)
-    println(this)
-    addEdge(source, target, edge)
-    setEdgeWeight(edge, delay)
+    if (addEdge(source, target, edge)) setEdgeWeight(edge, delay)
   }
 
   def addExp(exp: DSPExpression[T]): Unit = {
@@ -101,19 +111,21 @@ class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DefaultDire
   // properties
   def isRecursive: Boolean = new CycleDetector(this).detectCycles()
 
+  def delayAmount = vertexSeq.map(node => (node.outgoingEdges.map(_.weight) :+ 0).max).sum
+
   //
   val impl = (dataIns: Seq[T]) => {
-    val signalMap: Map[DSPNode[T], T] = vertexSet().toSeq.map(node => // a map to connet nodes with their anchors
+    val signalMap: Map[DSPNode[T], T] = vertexSeq.map(node => // a map to connet nodes with their anchors
       if (node.implWidth == -1) node -> holderProvider(-1 bits)
       else node -> holderProvider(node.implWidth)).toMap
 
     // create the global counter
-    val globalLcm = edgeSet().map(_.schedules).flatten.map(_.period).reduce(lcm(_, _))
+    val globalLcm = edgeSeq.map(_.schedules).flatten.map(_.period).reduce(lcm(_, _))
     val globalCounter = CounterFreeRun(globalLcm)
 
     inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap(node) := bits }
 
-    vertexSet().diff(inputNodes).foreach { target =>
+    vertexSeq.diff(inputNodes).foreach { target =>
       if (!target.isInstanceOf[InputNode[T]]) {
         val dataIns: Seq[Seq[DSPEdge[T]]] = target.incomingEdges.groupBy(_.order).toSeq.sortBy(_._1).map(_._2)
         val dataInsOnPorts = dataIns.map { dataInsOnePort =>
@@ -131,15 +143,22 @@ class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DefaultDire
   // feasibilityConstraintGraph
   def fcg = {
     val cg = ConstraintGraph[T]
-    foreachVertex(cg.addVertex(_))
-    println(cg)
-    foreachEdge(edge => cg.addConstraint(edge.source - edge.target <= edge.weight))
+    foreachInnerVertex(cg.addVertex(_))
+    foreachInnerEdge(edge => cg.addConstraint(edge.source - edge.target <= edge.weight))
     cg
   }
 
+  def retimed(solutions: Seq[Int]) = {
+    val r: Map[DSPNode[T], Int] = vertexSeq.zip(solutions).map { case (node, i) => node -> i }.toMap
+    foreachInnerEdge(edge => setEdgeWeight(edge, edge.weight + r(edge.target) - r(edge.source)))
+    inputNodes.map(_.outgoingEdges).flatten.foreach(setEdgeWeight(_, 0))
+    outputNodes.map(_.incomingEdges).flatten.foreach(setEdgeWeight(_, 0))
+    this
+  }
+
   override def toString: String =
-    s"nodes:\n${vertexSet().mkString(" ")}\n" +
-      s"edges:\n${edgeSet().map(edge => s"${edge.source}->${edge.target}, delay = ${getEdgeWeight(edge)}").mkString("\n")}\n" +
+    s"nodes:\n${vertexSeq.mkString(" ")}\n" +
+      s"edges:\n${edgeSeq.map(edge => s"${edge.source}->${edge.target}, delay = ${getEdgeWeight(edge)}").mkString("\n")}\n" +
       s"cycles:\n${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}"
 }
 

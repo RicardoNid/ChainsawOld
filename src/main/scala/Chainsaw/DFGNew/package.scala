@@ -27,6 +27,8 @@ package object DFGNew {
     def >>(delay: Int) = DSPPath(ArrayBuffer(node), ArrayBuffer(delay)) // TODO: more elegant implementation
 
     def -(that:DSPNode[T]) = DSPConstraint(node, that, 0)
+
+    def isIO = node.isInstanceOf[InputNode[T]] || node.isInstanceOf[OutputNode[T]]
   }
 
   implicit class nodesUtils[T <: Data](nodes: Seq[DSPNode[T]]) {

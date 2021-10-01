@@ -8,7 +8,4 @@ import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
 
-val temp = Seq(1,2,3)
-
-
-s"${temp.mkString(" ")} + 2"
+(1 ns).toDouble

@@ -43,12 +43,12 @@ class ConstraintGraph[T <: Data](implicit holderProvider: BitCount => T) extends
   def getSolution = {
     val algo = new BellmanFordShortestPath(this)
     val paths = algo.getPaths(referenceNode)
-    vertexSet().toSeq.filterNot(_ == referenceNode).map(paths.getWeight(_))
+    vertexSeq.filterNot(_ == referenceNode).map(paths.getWeight(_))
   }
 
   override def toString: String =
-    s"nodes:\n${vertexSet().mkString(" ")}\n" +
-      s"edges:\n${edgeSet().map(edge => s"${edge.source}->${edge.target}, delay = ${getEdgeWeight(edge)}").mkString("\n")}\n" +
+    s"nodes:\n${vertexSeq.mkString(" ")}\n" +
+      s"edges:\n${edgeSeq.map(edge => s"${edge.target} - ${edge.source} <= ${edge.weight}").mkString("\n")}\n" +
       s"cycles:\n${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}"
 }
 

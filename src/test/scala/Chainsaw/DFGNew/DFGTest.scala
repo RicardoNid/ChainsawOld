@@ -23,51 +23,46 @@ import scala.collection.JavaConversions._
 
 class DFGTest extends AnyFlatSpec {
 
-  val dfg = DFG[SInt]
-
   import Operators._
 
-  val pts = (0 until 4).map(i => SIntPT.asDSPNode(s"pt$i", 1 cycle, 1 ns))
-  val Seq(pt0, pt1, pt2, pt3) = pts
-  dfg.addPath(pt0 >> 1 >> pt1 >> 1 >> pt2 >> 1 >> pt3)
-  dfg.setInput(pt0)
-  dfg.setOutput(pt3)
+  "dfg" should "be implemented correctly" in {
+    val dfg = DFG[SInt]
 
-  println(dfg.vertexSet().mkString(" "))
-  println(dfg.edgeSet().mkString(" "))
+    val pts = (0 until 4).map(i => SIntPT.asDSPNode(s"pt$i", 1 cycles, 1 ns))
+    val Seq(pt0, pt1, pt2, pt3) = pts
+    dfg.addPath(pt0 >> 1 >> pt1 >> 1 >> pt2 >> 1 >> pt3)
+    dfg.setInput(pt0)
+    dfg.setOutput(pt3)
 
-  GenRTL(new Component {
-    val dataIn = in SInt (4 bits)
-    val dataOut = out SInt (4 bits)
+    println(dfg.vertexSet().mkString(" "))
+    println(dfg.edgeSet().mkString(" "))
 
-    dataOut := dfg.impl(Seq(dataIn)).head
-  })
+    GenRTL(new Component {
+      val dataIn = in SInt (4 bits)
+      val dataOut = out SInt (4 bits)
 
-  // fig 6.3
-  "dfg" should "fold correctly" in {
-    val fig6_3 = DFG[SInt]
-    // add vertices
-    val adds = (0 until 4).map(i => SIntAdder.asDSPNode(s"add$i", 2 cycle, 2 ns))
-    val Seq(adds0, adds1, adds2, adds3) = adds
-    val mults = (0 until 4).map(i => SIntMult.asDSPNode(s"mult$i", 2 cycle, 2 ns))
-    val Seq(mults0, mults1, mults2, mults3) = mults
-
-    (adds ++ mults).foreach(fig6_3.addVertex(_))
-    // drive vertices
-    val input = fig6_3.setInput(adds0, "dataIn")
-    val exps = Seq(
-      adds2 >=> 0 >=> adds0,
-      Seq(adds0, adds3) >=> Seq(1, 0) >=> adds1,
-      Seq(mults0, mults2) >=> Seq(0, 1) >=> adds2,
-      Seq(mults1, mults3) >=> Seq(1, 1) >=> adds3,
-      adds0 >=> 1 >=> mults0,
-      adds0 >=> 1 >=> mults1,
-      adds0 >=> 1 >=> mults2,
-      adds0 >=> 2 >=> mults3)
-    exps.foreach(fig6_3.addExp(_))
-    fig6_3.setOutput(adds1)
-
-    println(fig6_3)
+      dataOut := dfg.impl(Seq(dataIn)).head
+    })
   }
 
+  // fig 6.3
+  it should "fold correctly" in {
+    val dfg = fig6_3.dfgBeforeRetiming
+    val golden = fig6_3.dfg
+    val foldingSet = fig6_3.foldingSet
+    val algo = new Folding[SInt](dfg, foldingSet)
+    printlnGreen("retiming solutions")
+    println(algo.solveRetiming().mkString(" "))
+    val retimedDfg = algo.retimed
+
+    printlnGreen("fig 6.3 before retiming")
+    println(dfg)
+    println(s"${dfg.delayAmount} delays in total")
+    printlnGreen("fig 6.3(retimed for folding)")
+    println(retimedDfg)
+    println(s"${retimedDfg.delayAmount} delays in total")
+    printlnGreen("golden")
+    println(golden)
+    println(s"${golden.delayAmount} delays in total")
+  }
 }
