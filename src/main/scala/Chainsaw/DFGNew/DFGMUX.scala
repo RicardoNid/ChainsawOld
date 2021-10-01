@@ -26,12 +26,16 @@ case class Schedule(time: Int, period: Int) {
 
 case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
                             (implicit holderProvider: BitCount => T) {
+
+
+  printlnGreen(allOccupations.mkString(" "), periodLcm)
+
   def periodLcm = schedules.flatten.map(_.period).sorted.reverse.reduce(lcm(_, _))
 
   def occupationOf(schedule: Schedule) = (0 until periodLcm / schedule.period).map(_ * schedule.period + schedule.time)
 
   // check validity while init
-  val allOccupations = schedules.flatten.map(occupationOf(_)).flatten
+  def allOccupations = schedules.flatten.map(occupationOf(_)).flatten
 
   def hasNoCollisions = allOccupations.size == allOccupations.distinct.size
 
@@ -39,7 +43,8 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
 
   def impl(dataIns: Seq[T], count: UInt, globalLcm: Int) = {
     require(hasNoCollisions, s"schedule collision:\n${schedules.mkString(" ")}") // no collision TODO: print collision location
-    if (dataIns.size == 1) dataIns.head
+    require(dataIns.size == schedules.size)
+    if (dataIns.size == 1 && schedules.head.head == Schedule(1, 1)) dataIns.head
     else {
       val multiple = globalLcm / periodLcm
       val ret = holderProvider(-1 bits)
@@ -47,9 +52,10 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
         schedules.zip(dataIns).foreach { case (schedulesOneSource, bits) =>
           val occupationsOneSource = schedulesOneSource.map(occupationOf(_)).flatten
           val actualOccupations: Seq[Int] = (0 until multiple).map(i => occupationsOneSource.map(_ + i * periodLcm)).flatten
-          is(actualOccupations.head, actualOccupations.tail: _*)(ret := bits)
+          if (actualOccupations.size > 1) is(actualOccupations.head, actualOccupations.tail: _*)(ret := bits)
+          else is(actualOccupations.head)(ret := bits)
         }
-        if (!isFull) default(ret := dataIns.head)
+        if (!isFull) default(ret := dataIns.head.getZero)
       }
       ret
     }

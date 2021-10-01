@@ -37,12 +37,12 @@ class DFGTest extends AnyFlatSpec {
     println(dfg.vertexSet().mkString(" "))
     println(dfg.edgeSet().mkString(" "))
 
-    GenRTL(new Component {
-      val dataIn = in SInt (4 bits)
-      val dataOut = out SInt (4 bits)
-
-      dataOut := dfg.impl(Seq(dataIn)).head
-    })
+    //    GenRTL(new Component {
+    //      val dataIn = in SInt (4 bits)
+    //      val dataOut = out SInt (4 bits)
+    //
+    //      dataOut := dfg.impl(Seq(dataIn)).head
+    //    })
   }
 
   // fig 6.3
@@ -65,17 +65,36 @@ class DFGTest extends AnyFlatSpec {
     println(s"${retimedDfg.delayAmount} delays in total")
     assert(new Folding[SInt](retimedDfg, foldingSet, deviceGens).isFeasible)
 
-
     val foldedDFG = algo.folded
     printlnGreen("folded")
     println(foldedDFG)
 
-    GenRTL(new Component {
-      val dataIn = in SInt (4 bits)
-      val dataOut = out SInt (4 bits)
 
-      dataOut := foldedDFG.impl(Seq(dataIn)).head
-    })
+    val testCases = (0 until 20).map(_ => DSPRand.nextInt(8))
+
+    def testDFG(dfg:DFG[SInt], factor:Int) = {
+
+      SimConfig.withWave.compile(new Component {
+        val dataIn = in SInt (4 bits)
+        val dataOut = out SInt (4 bits)
+        val counter = CounterFreeRun(dfg.globalLcm)
+        dataOut := dfg.impl(Seq(dataIn), counter.value).head
+
+      }).doSim { dut =>
+        import dut.{clockDomain, dataIn, dataOut}
+        dataIn #= 0
+        clockDomain.forkStimulus(2)
+        clockDomain.waitSampling(10)
+
+        testCases.foreach { testCase =>
+          dataIn #= testCase
+          clockDomain.waitSampling(factor)
+        }
+      }
+    }
+
+    testDFG(dfg, 1)
+    testDFG(foldedDFG, 4)
 
     //        val golden = fig6_3.dfg
     //        printlnGreen("golden")

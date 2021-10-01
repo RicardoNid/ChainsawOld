@@ -23,7 +23,7 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-import scala.util.{Try,Success,Failure}
+import scala.util.{Try, Success, Failure}
 
 
 /** Graph properties:
@@ -80,8 +80,6 @@ class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DirectedWei
   def executionTimes = vertexSeq.map(_.exeTime)
 
   // constructing graph
-
-
   override def setEdgeWeight(e: DSPEdge[T], weight: Double): Unit = {
     if (!this.isInstanceOf[ConstraintGraph[T]]) require(weight >= 0, s"negative delay on ${e.symbol} is not allowed")
     super.setEdgeWeight(e, weight)
@@ -126,30 +124,34 @@ class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DirectedWei
 
   def delayAmount = vertexSeq.map(node => (node.outgoingEdges.map(_.weight) :+ 0).max).sum
 
+  def globalLcm = edgeSeq.map(_.schedules).flatten.map(_.period).reduce(lcm(_, _))
+
   //
-  val impl = (dataIns: Seq[T]) => {
+  val impl = (dataIns: Seq[T], count: UInt) => {
     val signalMap: Map[DSPNode[T], T] = vertexSeq.map(node => // a map to connet nodes with their anchors
       if (node.implWidth == -1) node -> holderProvider(-1 bits)
       else node -> holderProvider(node.implWidth)).toMap
 
     // create the global counter
-    val globalLcm = edgeSeq.map(_.schedules).flatten.map(_.period).reduce(lcm(_, _))
-    val globalCounter = CounterFreeRun(globalLcm)
+    //    val globalCounter = CounterFreeRun(globalLcm)
+    //    globalCounter.value.simPublic()
 
     inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap(node) := bits }
 
-    vertexSeq.diff(inputNodes).foreach { target =>
-      if (!target.isInstanceOf[InputNode[T]]) {
-        val dataIns: Seq[Seq[DSPEdge[T]]] = target.incomingEdges.groupBy(_.order).toSeq.sortBy(_._1).map(_._2)
-        val dataInsOnPorts = dataIns.map { dataInsOnePort =>
-          val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.impl(signalMap(edge.source), edge.weight))
-          val mux = DFGMUX[T](dataInsOnePort.map(_.schedules))
-          mux.impl(dataCandidates, globalCounter.value, globalLcm)
-        }
-        signalMap(target) := target.impl(dataInsOnPorts).resized
-      }
-    }
+    printlnRed(vertexSeq.diff(inputNodes).mkString(" "))
 
+    vertexSeq.diff(inputNodes).foreach { target =>
+      val dataIns: Seq[Seq[DSPEdge[T]]] = target.incomingEdges.groupBy(_.order).toSeq.sortBy(_._1).map(_._2)
+      val dataInsOnPorts = dataIns.map { dataInsOnePort =>
+        val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.impl(signalMap(edge.source), edge.weight))
+        println(s"mux to target $target:\n" +
+          s"${dataInsOnePort.map(_.schedules.mkString(" ")).mkString("\n")}")
+        val mux = DFGMUX[T](dataInsOnePort.map(_.schedules))
+        //          mux.impl(dataCandidates, globalCounter.value, globalLcm)
+        mux.impl(dataCandidates, count, globalLcm)
+      }
+      signalMap(target) := target.impl(dataInsOnPorts).resized
+    }
     outputNodes.map(signalMap(_))
   }
 

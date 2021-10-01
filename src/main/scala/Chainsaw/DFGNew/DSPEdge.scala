@@ -10,7 +10,7 @@ abstract class DSPEdge[T <: Data] {
 }
 
 class DefaultDelay[T <: Data](name: String, schedulesp: Seq[Schedule], orderp: Int) extends DSPEdge[T] {
-  override val impl = (dataIns: T, delay: Int) => Delay(dataIns, delay)
+  override val impl = (dataIns: T, delay: Int) => Delay(dataIns, delay, init = dataIns.getZero)
   override val schedules: Seq[Schedule] = schedulesp
   override val order: Int = orderp
 
