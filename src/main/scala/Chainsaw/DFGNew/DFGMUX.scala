@@ -56,6 +56,7 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
           else is(actualOccupations.head)(ret := bits)
         }
         if (!isFull) default(ret := dataIns.head.getZero)
+        //        if (!isFull) default(ret := dataIns.head)
       }
       ret
     }

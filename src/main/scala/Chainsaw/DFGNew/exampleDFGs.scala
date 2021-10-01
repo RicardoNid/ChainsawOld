@@ -12,17 +12,36 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
+object simpleFolding {
+
+  val incs = (0 until 4).map(i => SIntInc.asDSPNode(10 bits,s"add$i", 1 cycles, 1 ns))
+  val Seq(inc0, inc1,inc2,inc3) = incs
+  val incGen = () => SIntInc.asDSPNode(10 bits,s"inc", 1 cycles, 1 ns)
+  val foldingSets = Seq(Seq(inc0, inc1), Seq(inc2, inc3))
+  val deviceGens = Seq(incGen, incGen)
+
+  def dfg = {
+    printlnGreen("using simple graph for folding")
+    val dfg = DFG[SInt]
+    incs.foreach(dfg.addVertex(_))
+    dfg.setInput(inc0)
+    dfg.addExp(inc0 >=> 1 >=> inc1)
+    dfg.addExp(inc1 >=> 1 >=> inc2)
+    dfg.addExp(inc2 >=> 1 >=> inc3)
+    dfg.setOutput(inc3)
+    dfg
+  }
+}
+
 object fig6_3 {
 
-
-
-  val adds = (0 until 4).map(i => SIntAdder.asDSPNode(4 bits,s"add$i", 1 cycles, 1 ns))
+  val adds = (0 until 4).map(i => SIntAdder.asDSPNode(10 bits,s"add$i", 1 cycles, 1 ns))
   val Seq(adds0, adds1, adds2, adds3) = adds
-  val mults = (0 until 4).map(i => SIntMult.asDSPNode(4 bits,s"mult$i", 2 cycles, 2 ns))
+  val mults = (0 until 4).map(i => SIntMult.asDSPNode(10 bits,s"mult$i", 2 cycles, 2 ns))
   val Seq(mults0, mults1, mults2, mults3) = mults
 
-  val adderGen = () => SIntAdder.asDSPNode(4 bits,s"add", 1 cycles, 1 ns)
-  val multGen = () => SIntMult.asDSPNode(4 bits,s"mult", 2 cycles, 2 ns)
+  val adderGen = () => SIntAdder.asDSPNode(10 bits,s"add", 1 cycles, 1 ns)
+  val multGen = () => SIntMult.asDSPNode(10 bits,s"mult", 2 cycles, 2 ns)
   val deviceGens = Seq(adderGen, multGen)
   val foldingSets = Seq(
     Seq(adds3, adds1, adds2, adds0),
