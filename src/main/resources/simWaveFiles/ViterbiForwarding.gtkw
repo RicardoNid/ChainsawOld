@@ -1,0 +1,43 @@
+[*]
+[*] GTKWave Analyzer v3.3.86 (w)1999-2017 BSI
+[*] Mon Sep 13 06:19:26 2021
+[*]
+[dumpfile] "/home/ltr/IdeaProjects/Chainsaw/simWorkspace/ViterbiForwarding/test.vcd"
+[dumpfile_mtime] "Mon Sep 13 06:16:58 2021"
+[dumpfile_size] 326168
+[savefile] "/home/ltr/IdeaProjects/Chainsaw/src/main/resources/simWaveFiles/ViterbiForwarding.gtkw"
+[timestart] 0
+[size] 1080 1857
+[pos] -1 -1
+*-4.184973 38 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[sst_width] 294
+[signals_width] 286
+[sst_expanded] 1
+[sst_vpaned_height] 594
+@28
+TOP.ViterbiForwarding.dataIn_valid
+@200
+-
+-
+@24
+TOP.ViterbiForwarding.dataOut_valid
+TOP.ViterbiForwarding.dataOut_payload_last
+TOP.ViterbiForwarding.dataOut_payload_fragment_0[5:0]
+TOP.ViterbiForwarding.dataOut_payload_fragment_1[5:0]
+TOP.ViterbiForwarding.dataOut_payload_fragment_2[5:0]
+TOP.ViterbiForwarding.dataOut_payload_fragment_3[5:0]
+TOP.ViterbiForwarding.dataOut_payload_fragment_4[5:0]
+TOP.ViterbiForwarding.dataOut_payload_fragment_5[5:0]
+TOP.ViterbiForwarding.dataOut_payload_fragment_6[5:0]
+TOP.ViterbiForwarding.dataOut_payload_fragment_7[5:0]
+TOP.ViterbiForwarding.dataOut_payload_fragment_8[5:0]
+TOP.ViterbiForwarding.dataOut_payload_fragment_9[5:0]
+TOP.ViterbiForwarding.dataOut_payload_fragment_10[5:0]
+TOP.ViterbiForwarding.dataOut_payload_fragment_11[5:0]
+TOP.ViterbiForwarding.dataOut_payload_fragment_12[5:0]
+TOP.ViterbiForwarding.dataOut_payload_fragment_13[5:0]
+TOP.ViterbiForwarding.dataOut_payload_fragment_14[5:0]
+TOP.ViterbiForwarding.dataOut_payload_fragment_15[5:0]
+[pattern_trace] 1
+[pattern_trace] 0

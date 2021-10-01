@@ -1,0 +1,637 @@
+/*
+
+Xilinx Vivado v2021.1 (64-bit) [Major: 2021, Minor: 1]
+SW Build: 3247384 on Thu Jun 10 19:36:07 MDT 2021
+IP Build: 3246043 on Fri Jun 11 00:30:35 MDT 2021
+
+Process ID (PID): 32120
+License: Customer
+Mode: GUI Mode
+
+Current time: 	Fri Sep 24 21:56:48 CST 2021
+Time zone: 	China Standard Time (Asia/Shanghai)
+
+OS: Ubuntu
+OS Version: 5.4.0-81-generic
+OS Architecture: amd64
+Available processors (cores): 48
+
+Display: 172.18.219.77:0.0
+Screen size: 2560x1440
+Screen resolution (DPI): 100
+Available screens: 3
+Default font: family=Dialog,name=Dialog,style=plain,size=12
+Scale size: 12
+
+Java version: 	11.0.2 64-bit
+Java home: 	/tools/Xilinx/Vivado/2021.1/tps/lnx64/jre11.0.2
+Java executable: 	/tools/Xilinx/Vivado/2021.1/tps/lnx64/jre11.0.2/bin/java
+Java initial memory (-Xms): 	256 MB
+Java maximum memory (-Xmx):	 3 GB
+
+
+User name: 	ltr
+User home directory: /home/ltr
+User working directory: /home/ltr/IdeaProjects/Chainsaw
+User country: 	US
+User language: 	en
+User locale: 	en_US
+
+RDI_BASEROOT: /tools/Xilinx/Vivado
+HDI_APPROOT: /tools/Xilinx/Vivado/2021.1
+RDI_DATADIR: /tools/Xilinx/Vivado/2021.1/data
+RDI_BINDIR: /tools/Xilinx/Vivado/2021.1/bin
+
+Vivado preferences file: /home/ltr/.Xilinx/Vivado/2021.1/vivado.xml
+Vivado preferences directory: /home/ltr/.Xilinx/Vivado/2021.1/
+Vivado layouts directory: /home/ltr/.Xilinx/Vivado/2021.1/data/layouts
+PlanAhead jar file: 	/tools/Xilinx/Vivado/2021.1/lib/classes/planAhead.jar
+Vivado log file: 	/home/ltr/IdeaProjects/Chainsaw/vivado.log
+Vivado journal file: 	/home/ltr/IdeaProjects/Chainsaw/vivado.jou
+Engine tmp dir: 	./.Xil/Vivado-32120-FPGA-311
+
+Xilinx Environment Variables
+----------------------------
+XILINX: /tools/Xilinx/Vivado/2021.1/ids_lite/ISE
+XILINX_DSP: /tools/Xilinx/Vivado/2021.1/ids_lite/ISE
+XILINX_HLS: /tools/Xilinx/Vitis_HLS/2021.1
+XILINX_PLANAHEAD: /tools/Xilinx/Vivado/2021.1
+XILINX_SDK: /tools/Xilinx/Vitis/2021.1
+XILINX_VITIS: /tools/Xilinx/Vitis/2021.1
+XILINX_VIVADO: /tools/Xilinx/Vivado/2021.1
+XILINX_VIVADO_HLS: /tools/Xilinx/Vivado/2021.1
+XILINX_XRT: /opt/xilinx/xrt
+
+
+GUI allocated memory:	308 MB
+GUI max memory:		3,072 MB
+Engine allocated memory: 2,004 MB
+
+Copyright 1986-2021 Xilinx, Inc. All Rights Reserved.
+
+*/
+
+// TclEventType: START_GUI
+// TclEventType: PROJECT_OPEN_DIALOG
+// Tcl Message: start_gui 
+// TclEventType: PROJECT_OPEN_DIALOG
+// [GUI Memory]: 93 MB (+95564kb) [00:00:03]
+// [Engine Memory]: 1,945 MB (+1887562kb) [00:00:03]
+// bz (cs):  Open Checkpoint : addNotify
+// Tcl Message: open_checkpoint /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp_synth.dcp 
+// Tcl Message: Command: open_checkpoint /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp/temp_synth.dcp  Starting open_checkpoint Task  Time (s): cpu = 00:00:00.02 ; elapsed = 00:00:00.02 . Memory (MB): peak = 7665.379 ; gain = 0.000 ; free physical = 14151 ; free virtual = 22424 
+// TclEventType: DEBUG_PROBE_SET_CHANGE
+// TclEventType: FLOW_ADDED
+// TclEventType: FILE_SET_NEW
+// TclEventType: RUN_ADD
+// TclEventType: RUN_CURRENT
+// TclEventType: PROJECT_DASHBOARD_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_NEW
+// Tcl Message: INFO: [IP_Flow 19-234] Refreshing IP repositories INFO: [IP_Flow 19-1704] No user IP repositories specified INFO: [IP_Flow 19-2313] Loaded Vivado IP repository '/tools/Xilinx/Vivado/2021.1/data/ip'. 
+// HMemoryUtils.trashcanNow. Engine heap size: 1,961 MB. GUI used memory: 59 MB. Current time: 9/24/21, 9:56:49 PM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 2,856 MB. GUI used memory: 59 MB. Current time: 9/24/21, 9:57:09 PM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 2,973 MB. GUI used memory: 60 MB. Current time: 9/24/21, 9:57:14 PM CST
+// TclEventType: SDC_CONSTRAINT_ADD
+// TclEventType: POWER_CNS_STALE
+// TclEventType: FLOORPLAN_MODIFY
+// TclEventType: DESIGN_NEW
+// [Engine Memory]: 4,088 MB (+2145079kb) [00:00:45]
+// [GUI Memory]: 112 MB (+14045kb) [00:00:45]
+// HMemoryUtils.trashcanNow. Engine heap size: 4,088 MB. GUI used memory: 61 MB. Current time: 9/24/21, 9:57:26 PM CST
+// [GUI Memory]: 117 MB (+65kb) [00:00:45]
+// Xgd.load filename: /tools/Xilinx/Vivado/2021.1/data/parts/xilinx/virtexuplus/devint/virtexuplus/xcvu9p/xcvu9p.xgd; ZipEntry: xcvu9p_detail.xgd elapsed time: 1.3s
+// DeviceModel: Load Xgds SwingWorker Join Forever elapsed time: 1.5s
+// TclEventType: DESIGN_NEW
+// [GUI Memory]: 192 MB (+71675kb) [00:00:48]
+// [Engine Memory]: 4,342 MB (+52023kb) [00:00:48]
+// [GUI Memory]: 219 MB (+18938kb) [00:00:48]
+// Device: addNotify
+// DeviceView Instantiated
+// TclEventType: CURR_DESIGN_SET
+// WARNING: HEventQueue.dispatchEvent() is taking  1557 ms.
+// Tcl Message: INFO: [Device 21-403] Loading part xcvu9p-flga2104-2-i 
+// Tcl Message: Netlist sorting complete. Time (s): cpu = 00:00:00.97 ; elapsed = 00:00:00.90 . Memory (MB): peak = 8231.328 ; gain = 0.000 ; free physical = 12379 ; free virtual = 20662 
+// Tcl Message: INFO: [Netlist 29-17] Analyzing 11226 Unisim elements for replacement INFO: [Netlist 29-28] Unisim Transformation completed in 8 CPU seconds INFO: [Project 1-479] Netlist was created with Vivado 2021.1 INFO: [Project 1-570] Preparing netlist for logic optimization INFO: [Timing 38-478] Restoring timing data from binary archive. INFO: [Timing 38-479] Binary timing data restore complete. INFO: [Project 1-856] Restoring constraints from binary archive. INFO: [Project 1-853] Binary constraint restore complete. 
+// Tcl Message: Netlist sorting complete. Time (s): cpu = 00:00:00.02 ; elapsed = 00:00:00.01 . Memory (MB): peak = 9845.578 ; gain = 0.000 ; free physical = 11379 ; free virtual = 19662 
+// Tcl Message: INFO: [Project 1-111] Unisim Transformation Summary:   A total of 2219 instances were transformed.   DSP48E2 => DSP48E2 (DSP_ALU, DSP_A_B_DATA, DSP_C_DATA, DSP_MULTIPLIER, DSP_M_DATA, DSP_OUTPUT, DSP_PREADD, DSP_PREADD_DATA): 1059 instances   IBUF => IBUF (IBUFCTRL, INBUF): 132 instances   RAM32M16 => RAM32M16 (RAMD32(x14), RAMS32(x2)): 876 instances   RAM32X1D => RAM32X1D (RAMD32(x2)): 24 instances   RAM64M8 => RAM64M8 (RAMD64E(x8)): 128 instances  
+// TclEventType: PROJ_DESIGN_MODE_SET
+// TclEventType: PROJECT_DASHBOARD_GADGET_DELETE
+// TclEventType: PROJ_DESIGN_MODE_SET
+// Device view-level: 0.0
+// [GUI Memory]: 230 MB (+244kb) [00:00:49]
+// TclEventType: PROJ_DESIGN_MODE_SET
+// TclEventType: DESIGN_MODE_CHANGE
+// Tcl Message: INFO: [Project 1-604] Checkpoint was created with Vivado v2021.1 (64-bit) build 3247384 
+// Tcl Message: open_checkpoint: Time (s): cpu = 00:01:12 ; elapsed = 00:00:46 . Memory (MB): peak = 10126.902 ; gain = 2461.523 ; free physical = 10856 ; free virtual = 19141 
+// Project name: project_temp_synth; location: /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/temp; part: xcvu9p-flga2104-2-i
+dismissDialog("Open Checkpoint"); // bz
+// Tcl Command: 'rdi::info_commands {device::*}'
+// Tcl Command: 'rdi::info_commands {debug::*}'
+// Tcl Command: 'rdi::info_commands {*}'
+// TclEventType: HFED_INIT_ROUTE_STORAGE_COMPLETED
+// RouteApi::loadEngineXgdAndInitRouteStorage elapsed time: 4.9s
+// Device view-level: 0.0
+// [Engine Memory]: 5,190 MB (+662256kb) [00:00:52]
+// HMemoryUtils.trashcanNow. Engine heap size: 6,059 MB. GUI used memory: 175 MB. Current time: 9/24/21, 9:57:44 PM CST
+// RouteApi::initDelayMediator elapsed time: 17.5s
+// RouteApi: Init Delay Mediator Swing Worker Finished
+// Device view-level: 0.5
+// [Engine Memory]: 6,059 MB (+639076kb) [00:02:31]
+// Elapsed time: 103 seconds
+selectMenu(PAResourceItoN.MainMenuMgr_REPORTS, "Reports"); // af
+selectMenu(PAResourceItoN.MainMenuMgr_IO, "IO"); // ak
+selectMenu(PAResourceItoN.MainMenuMgr_TIMING, "Timing"); // ak
+selectMenuItem(PAResourceCommand.PACommandNames_REPORT_TIMING_SUMMARY, "Report Timing Summary..."); // an
+dismissMenu(PAResourceItoN.MainMenuMgr_REPORTS, "Reports"); // af
+// Run Command: PAResourceCommand.PACommandNames_REPORT_TIMING_SUMMARY
+// aI (cs): Report Timing Summary: addNotify
+selectButton(RDIResource.BaseDialog_OK, "OK"); // a
+dismissDialog("Report Timing Summary"); // aI
+// Tcl Message: report_timing_summary -delay_type min_max -report_unconstrained -check_timing_verbose -max_paths 10 -input_pins -routable_nets -name timing_1 
+// Tcl Message: INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -2, Temperature grade: I, Delay Type: min_max. INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 8 CPUs 
+// bz (cs):  Report Timing Summary : addNotify
+// TclEventType: TIMING_RESULTS_STALE
+// TclEventType: TIMING_SUMMARY_UPDATED
+// [GUI Memory]: 242 MB (+63kb) [00:02:52]
+// HMemoryUtils.trashcanNow. Engine heap size: 6,157 MB. GUI used memory: 201 MB. Current time: 9/24/21, 9:59:34 PM CST
+// Tcl Message: report_timing_summary: Time (s): cpu = 00:01:09 ; elapsed = 00:00:15 . Memory (MB): peak = 11806.621 ; gain = 57.012 ; free physical = 8489 ; free virtual = 16776 
+// Elapsed time: 15 seconds
+dismissDialog("Report Timing Summary"); // bz
+// Device view-level: 0.0
+// HMemoryUtils.trashcanNow. Engine heap size: 6,159 MB. GUI used memory: 195 MB. Current time: 9/24/21, 9:59:47 PM CST
+// Device view-level: 0.1
+// Device view-level: 0.2
+// [GUI Memory]: 257 MB (+3389kb) [00:06:08]
+// Elapsed time: 194 seconds
+selectTab((HResource) null, (HResource) null, "Tcl Console", 0); // aK
+selectTab((HResource) null, (HResource) null, "Messages", 1); // aK
+selectTab((HResource) null, (HResource) null, "Timing", 2); // aK
+// Elapsed time: 524 seconds
+selectMenu(PAResourceItoN.MainMenuMgr_FILE, "File"); // af
+selectMenu(PAResourceItoN.MainMenuMgr_PROJECT, "Project"); // ak
+selectMenuItem(PAResourceCommand.PACommandNames_OPEN_PROJECT, "Open..."); // an
+dismissMenu(PAResourceItoN.MainMenuMgr_FILE, "File"); // af
+// Run Command: PAResourceCommand.PACommandNames_OPEN_PROJECT
+// Elapsed time: 12 seconds
+dismissFileChooser();
+// 'j' command handler elapsed time: 12 seconds
+selectMenu(PAResourceItoN.MainMenuMgr_FILE, "File"); // af
+selectMenu(PAResourceItoN.MainMenuMgr_PROJECT, "Project"); // ak
+selectMenu(PAResourceItoN.MainMenuMgr_CHECKPOINT, "Checkpoint"); // ak
+selectMenu(PAResourceItoN.MainMenuMgr_CHECKPOINT, "Checkpoint"); // ak
+selectMenuItem(PAResourceCommand.PACommandNames_OPEN_CHECKPOINT, "Open..."); // an
+dismissMenu(PAResourceItoN.MainMenuMgr_FILE, "File"); // af
+// Run Command: PAResourceCommand.PACommandNames_OPEN_CHECKPOINT
+setFileChooser("/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/TX400M/TX400M_synth.dcp");
+// bz (cs):  Open Checkpoint : addNotify
+selectButton("OptionPane.button", "No"); // JButton
+// Tcl Message: open_checkpoint /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/TX400M/TX400M_synth.dcp 
+// Tcl Message: Command: open_checkpoint /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/TX400M/TX400M_synth.dcp  Starting open_checkpoint Task  Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 11808.758 ; gain = 0.000 ; free physical = 13721 ; free virtual = 15955 
+// TclEventType: FILE_SET_NEW
+// TclEventType: RUN_ADD
+// TclEventType: RUN_CURRENT
+// TclEventType: PROJECT_DASHBOARD_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_NEW
+// WARNING: HEventQueue.dispatchEvent() is taking  1534 ms.
+// Tcl Message: INFO: [IP_Flow 19-234] Refreshing IP repositories INFO: [IP_Flow 19-1704] No user IP repositories specified INFO: [IP_Flow 19-2313] Loaded Vivado IP repository '/tools/Xilinx/Vivado/2021.1/data/ip'. 
+// HMemoryUtils.trashcanNow. Engine heap size: 6,406 MB. GUI used memory: 216 MB. Current time: 9/24/21, 10:12:04 PM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 6,890 MB. GUI used memory: 214 MB. Current time: 9/24/21, 10:12:24 PM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 7,780 MB. GUI used memory: 214 MB. Current time: 9/24/21, 10:12:28 PM CST
+// TclEventType: SDC_CONSTRAINT_ADD
+// TclEventType: POWER_CNS_STALE
+// TclEventType: FLOORPLAN_MODIFY
+// TclEventType: DESIGN_NEW
+// [Engine Memory]: 7,851 MB (+1561121kb) [00:15:54]
+// HMemoryUtils.trashcanNow. Engine heap size: 7,853 MB. GUI used memory: 217 MB. Current time: 9/24/21, 10:12:35 PM CST
+// [GUI Memory]: 270 MB (+22kb) [00:15:54]
+// TclEventType: DESIGN_NEW
+// Device: addNotify
+// DeviceView Instantiated
+// Tcl Message: Netlist sorting complete. Time (s): cpu = 00:00:00.96 ; elapsed = 00:00:00.96 . Memory (MB): peak = 12037.102 ; gain = 0.000 ; free physical = 12953 ; free virtual = 15217 
+// Tcl Message: INFO: [Netlist 29-17] Analyzing 11226 Unisim elements for replacement INFO: [Netlist 29-28] Unisim Transformation completed in 8 CPU seconds INFO: [Project 1-479] Netlist was created with Vivado 2021.1 INFO: [Project 1-570] Preparing netlist for logic optimization INFO: [Timing 38-478] Restoring timing data from binary archive. INFO: [Timing 38-479] Binary timing data restore complete. INFO: [Project 1-856] Restoring constraints from binary archive. INFO: [Project 1-853] Binary constraint restore complete. 
+// TclEventType: CURR_DESIGN_SET
+// Tcl Message: Netlist sorting complete. Time (s): cpu = 00:00:00.02 ; elapsed = 00:00:00.01 . Memory (MB): peak = 13472.766 ; gain = 0.000 ; free physical = 11624 ; free virtual = 13958 
+// Tcl Message: INFO: [Project 1-111] Unisim Transformation Summary:   A total of 2219 instances were transformed.   DSP48E2 => DSP48E2 (DSP_ALU, DSP_A_B_DATA, DSP_C_DATA, DSP_MULTIPLIER, DSP_M_DATA, DSP_OUTPUT, DSP_PREADD, DSP_PREADD_DATA): 1059 instances   IBUF => IBUF (IBUFCTRL, INBUF): 132 instances   RAM32M16 => RAM32M16 (RAMD32(x14), RAMS32(x2)): 876 instances   RAM32X1D => RAM32X1D (RAMD32(x2)): 24 instances   RAM64M8 => RAM64M8 (RAMD64E(x8)): 128 instances  
+// TclEventType: PROJ_DESIGN_MODE_SET
+// TclEventType: PROJECT_DASHBOARD_GADGET_DELETE
+// TclEventType: PROJ_DESIGN_MODE_SET
+// Device view-level: 0.0
+// [GUI Memory]: 284 MB (+388kb) [00:15:57]
+// TclEventType: PROJ_DESIGN_MODE_SET
+// TclEventType: DESIGN_MODE_CHANGE
+// RouteApi: Init Delay Mediator Swing Worker Finished
+// Tcl Message: INFO: [Project 1-604] Checkpoint was created with Vivado v2021.1 (64-bit) build 3247384 
+// Tcl Message: open_checkpoint: Time (s): cpu = 00:00:54 ; elapsed = 00:00:41 . Memory (MB): peak = 13721.398 ; gain = 1912.641 ; free physical = 11183 ; free virtual = 13528 
+// Project name: project_TX400M_synth; location: /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/TX400M; part: xcvu9p-flga2104-2-i
+// 'd' command handler elapsed time: 46 seconds
+// Elapsed time: 40 seconds
+dismissDialog("Open Checkpoint"); // bz
+// TclEventType: HFED_INIT_ROUTE_STORAGE_COMPLETED
+// RouteApi::loadEngineXgdAndInitRouteStorage elapsed time: 4.9s
+// [Engine Memory]: 8,801 MB (+584685kb) [00:15:59]
+// HMemoryUtils.trashcanNow. Engine heap size: 8,801 MB. GUI used memory: 248 MB. Current time: 9/24/21, 10:12:40 PM CST
+// Device view-level: 0.0
+// [GUI Memory]: 306 MB (+7968kb) [00:16:37]
+// Elapsed time: 122 seconds
+selectMenu(PAResourceItoN.MainMenuMgr_TOOLS, "Tools"); // af
+dismissMenu(PAResourceItoN.MainMenuMgr_TOOLS, "Tools"); // af
+selectMenu(PAResourceItoN.MainMenuMgr_REPORTS, "Reports"); // af
+selectMenu(PAResourceItoN.MainMenuMgr_IO, "IO"); // ak
+selectMenu(PAResourceItoN.MainMenuMgr_TIMING, "Timing"); // ak
+selectMenu(PAResourceItoN.MainMenuMgr_TIMING, "Timing"); // ak
+selectMenuItem(PAResourceCommand.PACommandNames_REPORT_TIMING_SUMMARY, "Report Timing Summary..."); // an
+dismissMenu(PAResourceItoN.MainMenuMgr_REPORTS, "Reports"); // af
+// Run Command: PAResourceCommand.PACommandNames_REPORT_TIMING_SUMMARY
+// aI (cs): Report Timing Summary: addNotify
+selectButton(RDIResource.BaseDialog_OK, "OK"); // a
+dismissDialog("Report Timing Summary"); // aI
+// bz (cs):  Report Timing Summary : addNotify
+// Tcl Message: report_timing_summary -delay_type min_max -report_unconstrained -check_timing_verbose -max_paths 10 -input_pins -routable_nets -name timing_1 
+// Tcl Message: INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -2, Temperature grade: I, Delay Type: min_max. INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 8 CPUs 
+// HMemoryUtils.trashcanNow. Engine heap size: 8,949 MB. GUI used memory: 239 MB. Current time: 9/24/21, 10:14:49 PM CST
+// TclEventType: TIMING_RESULTS_STALE
+// TclEventType: TIMING_SUMMARY_UPDATED
+// Tcl Message: report_timing_summary: Time (s): cpu = 00:01:09 ; elapsed = 00:00:15 . Memory (MB): peak = 14776.578 ; gain = 0.000 ; free physical = 16591 ; free virtual = 19009 
+// Elapsed time: 15 seconds
+dismissDialog("Report Timing Summary"); // bz
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 236 MB. Current time: 9/24/21, 10:44:49 PM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 233 MB. Current time: 9/24/21, 11:14:49 PM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 232 MB. Current time: 9/24/21, 11:44:49 PM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 232 MB. Current time: 9/25/21, 12:14:49 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 233 MB. Current time: 9/25/21, 12:44:49 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 232 MB. Current time: 9/25/21, 1:14:49 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 232 MB. Current time: 9/25/21, 1:44:49 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 232 MB. Current time: 9/25/21, 2:14:49 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 232 MB. Current time: 9/25/21, 2:44:49 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 232 MB. Current time: 9/25/21, 3:14:49 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 232 MB. Current time: 9/25/21, 3:44:49 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 232 MB. Current time: 9/25/21, 4:14:49 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 232 MB. Current time: 9/25/21, 4:44:49 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 233 MB. Current time: 9/25/21, 5:14:49 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 232 MB. Current time: 9/25/21, 5:44:49 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 232 MB. Current time: 9/25/21, 6:14:49 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 232 MB. Current time: 9/25/21, 6:44:49 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 232 MB. Current time: 9/25/21, 7:14:49 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 9,033 MB. GUI used memory: 232 MB. Current time: 9/25/21, 7:44:49 AM CST
+// Elapsed time: 34996 seconds
+selectMenu(PAResourceItoN.MainMenuMgr_FILE, "File"); // af
+selectMenu(PAResourceItoN.MainMenuMgr_PROJECT, "Project"); // ak
+selectMenu(PAResourceItoN.MainMenuMgr_CHECKPOINT, "Checkpoint"); // ak
+selectMenuItem(PAResourceCommand.PACommandNames_OPEN_CHECKPOINT, "Open..."); // an
+dismissMenu(PAResourceItoN.MainMenuMgr_FILE, "File"); // af
+// Run Command: PAResourceCommand.PACommandNames_OPEN_CHECKPOINT
+setFileChooser("/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/Convenc400MHz/Convenc400MHz_synth.dcp");
+// TclEventType: PROJECT_CLOSE
+// HMemoryUtils.trashcanNow. Engine heap size: 9,017 MB. GUI used memory: 212 MB. Current time: 9/25/21, 7:58:28 AM CST
+// TclEventType: TIMING_RESULTS_UNLOAD
+// Engine heap size: 9,017 MB. GUI used memory: 233 MB. Current time: 9/25/21, 7:58:28 AM CST
+// TclEventType: DESIGN_CLOSE
+// bz (cs):  Open Checkpoint : addNotify
+// WARNING: HEventQueue.dispatchEvent() is taking  2686 ms.
+selectButton("OptionPane.button", "Yes"); // JButton
+// Tcl Message: current_project project_temp_synth 
+// Tcl Message: close_project 
+// TclEventType: FILE_SET_NEW
+// TclEventType: RUN_ADD
+// TclEventType: RUN_CURRENT
+// TclEventType: PROJECT_DASHBOARD_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_NEW
+// WARNING: HEventQueue.dispatchEvent() is taking  1460 ms.
+// Tcl Message: open_checkpoint /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/Convenc400MHz/Convenc400MHz_synth.dcp 
+// Tcl Message: Command: open_checkpoint /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/Convenc400MHz/Convenc400MHz_synth.dcp  Starting open_checkpoint Task  Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 14776.578 ; gain = 0.000 ; free physical = 23252 ; free virtual = 27546 
+// Tcl Message: INFO: [IP_Flow 19-234] Refreshing IP repositories INFO: [IP_Flow 19-1704] No user IP repositories specified INFO: [IP_Flow 19-2313] Loaded Vivado IP repository '/tools/Xilinx/Vivado/2021.1/data/ip'. 
+selectButton(RDIResource.ProgressDialog_BACKGROUND, "Background"); // a
+// 'd' command handler elapsed time: 12 seconds
+// TclEventType: SDC_CONSTRAINT_ADD
+// TclEventType: POWER_CNS_STALE
+// TclEventType: FLOORPLAN_MODIFY
+// TclEventType: DESIGN_NEW
+// HMemoryUtils.trashcanNow. Engine heap size: 9,031 MB. GUI used memory: 212 MB. Current time: 9/25/21, 7:58:36 AM CST
+selectMenu(PAResourceItoN.MainMenuMgr_FILE, "File"); // af
+// TclEventType: HFED_INIT_ROUTE_STORAGE_COMPLETED
+// RouteApi::loadEngineXgdAndInitRouteStorage elapsed time: 1.9s
+// TclEventType: DESIGN_NEW
+// Device: addNotify
+// DeviceView Instantiated
+// TclEventType: CURR_DESIGN_SET
+// TclEventType: PROJ_DESIGN_MODE_SET
+selectMenu(PAResourceItoN.MainMenuMgr_PROJECT, "Project"); // ak
+// TclEventType: PROJECT_DASHBOARD_GADGET_DELETE
+// TclEventType: PROJ_DESIGN_MODE_SET
+// Device view-level: 0.0
+// RouteApi: Init Delay Mediator Swing Worker Finished
+// Tcl Message: Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.01 . Memory (MB): peak = 14776.578 ; gain = 0.000 ; free physical = 23244 ; free virtual = 27538 
+// Tcl Message: INFO: [Netlist 29-17] Analyzing 132 Unisim elements for replacement INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds INFO: [Project 1-479] Netlist was created with Vivado 2021.1 INFO: [Project 1-570] Preparing netlist for logic optimization INFO: [Timing 38-478] Restoring timing data from binary archive. INFO: [Timing 38-479] Binary timing data restore complete. INFO: [Project 1-856] Restoring constraints from binary archive. INFO: [Project 1-853] Binary constraint restore complete. 
+// Tcl Message: Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 14776.578 ; gain = 0.000 ; free physical = 23092 ; free virtual = 27388 
+// Tcl Message: INFO: [Project 1-111] Unisim Transformation Summary:   A total of 132 instances were transformed.   IBUF => IBUF (IBUFCTRL, INBUF): 132 instances  INFO: [Project 1-604] Checkpoint was created with Vivado v2021.1 (64-bit) build 3247384 
+// TclEventType: PROJ_DESIGN_MODE_SET
+// TclEventType: DESIGN_MODE_CHANGE
+// Tcl Message: open_checkpoint: Time (s): cpu = 00:00:13 ; elapsed = 00:00:09 . Memory (MB): peak = 14776.578 ; gain = 0.000 ; free physical = 22896 ; free virtual = 27192 
+// Project name: project_Convenc400MHz_synth; location: /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/Convenc400MHz; part: xcvu9p-flga2104-2-i
+dismissDialog("Open Checkpoint"); // bz
+selectMenu(PAResourceItoN.MainMenuMgr_CHECKPOINT, "Checkpoint"); // ak
+selectMenuItem(PAResourceCommand.PACommandNames_OPEN_CHECKPOINT, "Open..."); // an
+dismissMenu(PAResourceItoN.MainMenuMgr_FILE, "File"); // af
+// Run Command: PAResourceCommand.PACommandNames_OPEN_CHECKPOINT
+// Elapsed time: 11 seconds
+setFileChooser("/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/Inter400MHz/Inter400MHz_synth.dcp");
+// bz (cs):  Open Checkpoint : addNotify
+selectButton("OptionPane.button", "No"); // JButton
+// TclEventType: FILE_SET_NEW
+// TclEventType: RUN_ADD
+// TclEventType: RUN_CURRENT
+// TclEventType: PROJECT_DASHBOARD_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_NEW
+// WARNING: HEventQueue.dispatchEvent() is taking  1582 ms.
+// Tcl Message: open_checkpoint /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/Inter400MHz/Inter400MHz_synth.dcp 
+// Tcl Message: Command: open_checkpoint /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/Inter400MHz/Inter400MHz_synth.dcp  Starting open_checkpoint Task  Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 14776.578 ; gain = 0.000 ; free physical = 22907 ; free virtual = 27205 
+// Tcl Message: INFO: [IP_Flow 19-234] Refreshing IP repositories INFO: [IP_Flow 19-1704] No user IP repositories specified INFO: [IP_Flow 19-2313] Loaded Vivado IP repository '/tools/Xilinx/Vivado/2021.1/data/ip'. 
+selectButton(RDIResource.ProgressDialog_BACKGROUND, "Background"); // a
+// 'd' command handler elapsed time: 15 seconds
+selectCodeEditor(RDIResource.TclConsoleView_TCL_CONSOLE_CODE_EDITOR, 550, 43); // dS
+// TclEventType: SDC_CONSTRAINT_ADD
+// HMemoryUtils.trashcanNow. Engine heap size: 9,106 MB. GUI used memory: 235 MB. Current time: 9/25/21, 7:58:59 AM CST
+// TclEventType: POWER_CNS_STALE
+// TclEventType: FLOORPLAN_MODIFY
+// TclEventType: DESIGN_NEW
+// HMemoryUtils.trashcanNow. Engine heap size: 9,106 MB. GUI used memory: 235 MB. Current time: 9/25/21, 7:59:01 AM CST
+// TclEventType: DESIGN_NEW
+// [Engine Memory]: 9,285 MB (+46281kb) [10:02:23]
+// Device: addNotify
+// DeviceView Instantiated
+// TclEventType: CURR_DESIGN_SET
+// TclEventType: PROJ_DESIGN_MODE_SET
+// TclEventType: HFED_INIT_ROUTE_STORAGE_COMPLETED
+// RouteApi::loadEngineXgdAndInitRouteStorage elapsed time: 2.3s
+// TclEventType: PROJ_DESIGN_MODE_SET
+// TclEventType: PROJECT_DASHBOARD_GADGET_DELETE
+// TclEventType: PROJ_DESIGN_MODE_SET
+// Device view-level: 0.0
+// Tcl Message: Netlist sorting complete. Time (s): cpu = 00:00:00.08 ; elapsed = 00:00:00.04 . Memory (MB): peak = 14776.578 ; gain = 0.000 ; free physical = 22862 ; free virtual = 27161 
+// Tcl Message: INFO: [Netlist 29-17] Analyzing 228 Unisim elements for replacement INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds INFO: [Project 1-479] Netlist was created with Vivado 2021.1 INFO: [Project 1-570] Preparing netlist for logic optimization INFO: [Timing 38-478] Restoring timing data from binary archive. INFO: [Timing 38-479] Binary timing data restore complete. INFO: [Project 1-856] Restoring constraints from binary archive. INFO: [Project 1-853] Binary constraint restore complete. 
+// Tcl Message: Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 14776.578 ; gain = 0.000 ; free physical = 22689 ; free virtual = 26988 
+// Tcl Message: INFO: [Project 1-111] Unisim Transformation Summary:   A total of 228 instances were transformed.   IBUF => IBUF (IBUFCTRL, INBUF): 228 instances  INFO: [Project 1-604] Checkpoint was created with Vivado v2021.1 (64-bit) build 3247384 
+// RouteApi: Init Delay Mediator Swing Worker Finished
+// TclEventType: PROJ_DESIGN_MODE_SET
+// TclEventType: DESIGN_MODE_CHANGE
+// Tcl Message: open_checkpoint: Time (s): cpu = 00:00:15 ; elapsed = 00:00:10 . Memory (MB): peak = 15055.133 ; gain = 278.555 ; free physical = 21823 ; free virtual = 26122 
+selectMenu(PAResourceItoN.MainMenuMgr_REPORTS, "Reports"); // af
+// Project name: project_Convenc400MHz_synth; location: /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/Convenc400MHz; part: xcvu9p-flga2104-2-i
+dismissDialog("Open Checkpoint"); // bz
+selectMenu(PAResourceItoN.MainMenuMgr_IO, "IO"); // ak
+selectMenu(PAResourceItoN.MainMenuMgr_TIMING, "Timing"); // ak
+selectMenuItem(PAResourceCommand.PACommandNames_REPORT_TIMING_SUMMARY, "Report Timing Summary..."); // an
+dismissMenu(PAResourceItoN.MainMenuMgr_REPORTS, "Reports"); // af
+// Run Command: PAResourceCommand.PACommandNames_REPORT_TIMING_SUMMARY
+// aI (cs): Report Timing Summary: addNotify
+selectButton(RDIResource.BaseDialog_OK, "OK"); // a
+dismissDialog("Report Timing Summary"); // aI
+// bz (cs):  Update Timer Settings : addNotify
+// Tcl Message: current_project project_Convenc400MHz_synth 
+dismissDialog("Update Timer Settings"); // bz
+// TclEventType: TIMING_RESULTS_STALE
+// TclEventType: TIMING_SUMMARY_UPDATED
+// Tcl Message: report_timing_summary -delay_type min_max -report_unconstrained -check_timing_verbose -max_paths 10 -input_pins -routable_nets -name timing_1 
+// Tcl Message: INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -2, Temperature grade: I, Delay Type: min_max. INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 8 CPUs 
+// bz (cs):  Report Timing Summary : addNotify
+dismissDialog("Report Timing Summary"); // bz
+selectMenu(PAResourceItoN.MainMenuMgr_FILE, "File"); // af
+selectMenu(PAResourceItoN.MainMenuMgr_PROJECT, "Project"); // ak
+selectMenu(PAResourceItoN.MainMenuMgr_PROJECT, "Project"); // ak
+selectMenuItem(PAResourceCommand.PACommandNames_OPEN_PROJECT, "Open..."); // an
+dismissMenu(PAResourceItoN.MainMenuMgr_FILE, "File"); // af
+// Run Command: PAResourceCommand.PACommandNames_OPEN_PROJECT
+dismissFileChooser();
+selectMenu(PAResourceItoN.MainMenuMgr_FILE, "File"); // af
+selectMenu(PAResourceItoN.MainMenuMgr_PROJECT, "Project"); // ak
+selectMenu(PAResourceItoN.MainMenuMgr_CHECKPOINT, "Checkpoint"); // ak
+selectMenu(PAResourceItoN.MainMenuMgr_OPEN_RECENT_CHECKPOINT, "Open Recent"); // ak
+selectMenuItem(PAResourceCommand.PACommandNames_OPEN_CHECKPOINT, "Open..."); // an
+dismissMenu(PAResourceItoN.MainMenuMgr_FILE, "File"); // af
+// Run Command: PAResourceCommand.PACommandNames_OPEN_CHECKPOINT
+// Elapsed time: 25 seconds
+setFileChooser("/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/IFFT400MHz/IFFT400MHz_synth.dcp");
+// bz (cs):  Open Checkpoint : addNotify
+selectButton("OptionPane.button", "No"); // JButton
+// Tcl Message: open_checkpoint /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/IFFT400MHz/IFFT400MHz_synth.dcp 
+// Tcl Message: Command: open_checkpoint /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/IFFT400MHz/IFFT400MHz_synth.dcp  Starting open_checkpoint Task  Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 15055.133 ; gain = 0.000 ; free physical = 21803 ; free virtual = 26102 
+// TclEventType: FILE_SET_NEW
+// TclEventType: RUN_ADD
+// TclEventType: RUN_CURRENT
+// TclEventType: PROJECT_DASHBOARD_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_NEW
+// WARNING: HEventQueue.dispatchEvent() is taking  1408 ms.
+// Tcl Message: INFO: [IP_Flow 19-234] Refreshing IP repositories INFO: [IP_Flow 19-1704] No user IP repositories specified INFO: [IP_Flow 19-2313] Loaded Vivado IP repository '/tools/Xilinx/Vivado/2021.1/data/ip'. 
+// Device view-level: 0.0
+selectButton(RDIResource.ProgressDialog_BACKGROUND, "Background"); // a
+// 'd' command handler elapsed time: 33 seconds
+selectMenu(PAResourceItoN.MainMenuMgr_REPORTS, "Reports"); // af
+selectMenu(PAResourceItoN.MainMenuMgr_TIMING, "Timing"); // ak
+dismissMenu(PAResourceItoN.MainMenuMgr_REPORTS, "Reports"); // af
+selectMenu(PAResourceItoN.MainMenuMgr_EDIT, "Edit"); // af
+dismissMenu(PAResourceItoN.MainMenuMgr_EDIT, "Edit"); // af
+// HMemoryUtils.trashcanNow. Engine heap size: 9,469 MB. GUI used memory: 263 MB. Current time: 9/25/21, 8:00:14 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 10,355 MB. GUI used memory: 263 MB. Current time: 9/25/21, 8:00:24 AM CST
+// TclEventType: SDC_CONSTRAINT_ADD
+// TclEventType: POWER_CNS_STALE
+// TclEventType: FLOORPLAN_MODIFY
+// TclEventType: DESIGN_NEW
+// [Engine Memory]: 10,355 MB (+635158kb) [10:03:47]
+// HMemoryUtils.trashcanNow. Engine heap size: 10,355 MB. GUI used memory: 263 MB. Current time: 9/25/21, 8:00:28 AM CST
+// TclEventType: DESIGN_NEW
+// Device: addNotify
+// DeviceView Instantiated
+// TclEventType: CURR_DESIGN_SET
+// Tcl Message: Netlist sorting complete. Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.87 . Memory (MB): peak = 15055.133 ; gain = 0.000 ; free physical = 21474 ; free virtual = 25873 
+// Tcl Message: INFO: [Netlist 29-17] Analyzing 15068 Unisim elements for replacement INFO: [Netlist 29-28] Unisim Transformation completed in 8 CPU seconds INFO: [Project 1-479] Netlist was created with Vivado 2021.1 INFO: [Project 1-570] Preparing netlist for logic optimization INFO: [Timing 38-478] Restoring timing data from binary archive. INFO: [Timing 38-479] Binary timing data restore complete. INFO: [Project 1-856] Restoring constraints from binary archive. INFO: [Project 1-853] Binary constraint restore complete. 
+// Tcl Message: Netlist sorting complete. Time (s): cpu = 00:00:00.02 ; elapsed = 00:00:00.02 . Memory (MB): peak = 15885.359 ; gain = 0.000 ; free physical = 20265 ; free virtual = 24664 
+// Tcl Message: INFO: [Project 1-111] Unisim Transformation Summary:   A total of 6059 instances were transformed.   DSP48E2 => DSP48E2 (DSP_ALU, DSP_A_B_DATA, DSP_C_DATA, DSP_MULTIPLIER, DSP_M_DATA, DSP_OUTPUT, DSP_PREADD, DSP_PREADD_DATA): 1059 instances   IBUF => IBUF (IBUFCTRL, INBUF): 4100 instances   RAM32M16 => RAM32M16 (RAMD32(x14), RAMS32(x2)): 876 instances   RAM32X1D => RAM32X1D (RAMD32(x2)): 24 instances  
+// TclEventType: PROJ_DESIGN_MODE_SET
+// TclEventType: PROJECT_DASHBOARD_GADGET_DELETE
+// TclEventType: PROJ_DESIGN_MODE_SET
+// Device view-level: 0.0
+// [GUI Memory]: 326 MB (+4847kb) [10:03:50]
+// TclEventType: PROJ_DESIGN_MODE_SET
+// TclEventType: DESIGN_MODE_CHANGE
+// Tcl Message: INFO: [Project 1-604] Checkpoint was created with Vivado v2021.1 (64-bit) build 3247384 
+// RouteApi: Init Delay Mediator Swing Worker Finished
+// Tcl Message: open_checkpoint: Time (s): cpu = 00:00:49 ; elapsed = 00:00:37 . Memory (MB): peak = 16125.500 ; gain = 1070.367 ; free physical = 19870 ; free virtual = 24269 
+// Project name: project_Inter400MHz_synth; location: /home/ltr/IdeaProjects/Chainsaw/synthWorkspace/Inter400MHz; part: xcvu9p-flga2104-2-i
+// Elapsed time: 21 seconds
+dismissDialog("Open Checkpoint"); // bz
+// TclEventType: HFED_INIT_ROUTE_STORAGE_COMPLETED
+// RouteApi::loadEngineXgdAndInitRouteStorage elapsed time: 4.8s
+// [Engine Memory]: 11,280 MB (+426900kb) [10:03:52]
+// HMemoryUtils.trashcanNow. Engine heap size: 11,280 MB. GUI used memory: 328 MB. Current time: 9/25/21, 8:00:33 AM CST
+// Device view-level: 0.0
+// Elapsed time: 10 seconds
+selectButton(RDIResourceCommand.RDICommands_DELETE, "global_delete"); // E
+selectMenu(PAResourceItoN.MainMenuMgr_REPORTS, "Reports"); // af
+selectMenu(PAResourceItoN.MainMenuMgr_IO, "IO"); // ak
+selectMenu(PAResourceItoN.MainMenuMgr_TIMING, "Timing"); // ak
+selectMenuItem(PAResourceCommand.PACommandNames_REPORT_TIMING_SUMMARY, "Report Timing Summary..."); // an
+dismissMenu(PAResourceItoN.MainMenuMgr_REPORTS, "Reports"); // af
+// Run Command: PAResourceCommand.PACommandNames_REPORT_TIMING_SUMMARY
+// aI (cs): Report Timing Summary: addNotify
+selectButton(RDIResource.BaseDialog_OK, "OK"); // a
+// [GUI Memory]: 346 MB (+3743kb) [10:04:06]
+dismissDialog("Report Timing Summary"); // aI
+// bz (cs):  Report Timing Summary : addNotify
+// Tcl Message: report_timing_summary -delay_type min_max -report_unconstrained -check_timing_verbose -max_paths 10 -input_pins -routable_nets -name timing_1 
+// Tcl Message: INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -2, Temperature grade: I, Delay Type: min_max. INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 8 CPUs 
+// HMemoryUtils.trashcanNow. Engine heap size: 11,417 MB. GUI used memory: 280 MB. Current time: 9/25/21, 8:00:49 AM CST
+selectButton(RDIResource.ProgressDialog_BACKGROUND, "Background"); // a
+selectMenu(PAResourceItoN.MainMenuMgr_REPORTS, "Reports"); // af
+dismissMenu(PAResourceItoN.MainMenuMgr_REPORTS, "Reports"); // af
+// TclEventType: TIMING_RESULTS_STALE
+// TclEventType: TIMING_SUMMARY_UPDATED
+// Tcl Message: report_timing_summary: Time (s): cpu = 00:01:10 ; elapsed = 00:00:15 . Memory (MB): peak = 17166.367 ; gain = 0.000 ; free physical = 18987 ; free virtual = 23386 
+// Elapsed time: 12 seconds
+dismissDialog("Report Timing Summary"); // bz
+// HMemoryUtils.trashcanNow. Engine heap size: 11,509 MB. GUI used memory: 340 MB. Current time: 9/25/21, 8:01:05 AM CST
+// Device view-level: 0.3
+// Device view-level: 0.3
+// HMemoryUtils.trashcanNow. Engine heap size: 11,509 MB. GUI used memory: 357 MB. Current time: 9/25/21, 8:01:25 AM CST
+// Device view-level: 0.0
+// Elapsed time: 32 seconds
+selectMenu(PAResourceItoN.MainMenuMgr_REPORTS, "Reports"); // af
+selectMenu(PAResourceItoN.MainMenuMgr_IO, "IO"); // ak
+selectMenu(PAResourceItoN.MainMenuMgr_TIMING, "Timing"); // ak
+selectMenuItem(PAResourceCommand.PACommandNames_REPORT_TIMING_SUMMARY, "Report Timing Summary..."); // an
+dismissMenu(PAResourceItoN.MainMenuMgr_REPORTS, "Reports"); // af
+// Run Command: PAResourceCommand.PACommandNames_REPORT_TIMING_SUMMARY
+// aI (cs): Report Timing Summary: addNotify
+selectButton(RDIResource.BaseDialog_OK, "OK"); // a
+dismissDialog("Report Timing Summary"); // aI
+// Tcl Message: current_project project_Inter400MHz_synth 
+// bz (cs):  Update Timer Settings : addNotify
+dismissDialog("Update Timer Settings"); // bz
+// bz (cs):  Report Timing Summary : addNotify
+// TclEventType: TIMING_RESULTS_STALE
+// Tcl Message: report_timing_summary -delay_type min_max -report_unconstrained -check_timing_verbose -max_paths 10 -input_pins -routable_nets -name timing_1 
+// Tcl Message: INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -2, Temperature grade: I, Delay Type: min_max. INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 8 CPUs 
+// TclEventType: TIMING_SUMMARY_UPDATED
+dismissDialog("Report Timing Summary"); // bz
+// Elapsed time: 19 seconds
+selectMenu(PAResourceItoN.MainMenuMgr_FILE, "File"); // af
+selectMenu(PAResourceItoN.MainMenuMgr_PROJECT, "Project"); // ak
+selectMenu(PAResourceItoN.MainMenuMgr_CHECKPOINT, "Checkpoint"); // ak
+selectMenu(PAResourceItoN.MainMenuMgr_OPEN_RECENT_CHECKPOINT, "Open Recent"); // ak
+selectMenuItem(PAResourceCommand.PACommandNames_OPEN_CHECKPOINT, "Open..."); // an
+dismissMenu(PAResourceItoN.MainMenuMgr_FILE, "File"); // af
+// Run Command: PAResourceCommand.PACommandNames_OPEN_CHECKPOINT
+// Elapsed time: 55 seconds
+dismissFileChooser();
+// 'd' command handler elapsed time: 55 seconds
+closeMainWindow("Inter400MHz_synth.dcp - [/home/ltr/IdeaProjects/Chainsaw/synthWorkspace/Inter400MHz/Inter400MHz_synth.dcp] - Vivado 2021.1"); // cs
+// Run Command: PAResourceCommand.PACommandNames_CLOSE_CHECKPOINT
+// A (cs): Close Checkpoint: addNotify
+selectButton(RDIResource.BaseDialog_OK, "OK"); // a
+// bz (cs):  Close Checkpoint : addNotify
+dismissDialog("Close Checkpoint"); // A
+// TclEventType: DESIGN_CLOSE
+// HMemoryUtils.trashcanNow. Engine heap size: 11,538 MB. GUI used memory: 282 MB. Current time: 9/25/21, 8:03:04 AM CST
+// TclEventType: TIMING_RESULTS_UNLOAD
+// Engine heap size: 11,538 MB. GUI used memory: 283 MB. Current time: 9/25/21, 8:03:04 AM CST
+// TclEventType: CURR_DESIGN_SET
+// TclEventType: DESIGN_CLOSE
+// Tcl Message: close_design 
+// TclEventType: DESIGN_CLOSE
+// TclEventType: PROJECT_CLOSE
+// HMemoryUtils.trashcanNow. Engine heap size: 11,469 MB. GUI used memory: 278 MB. Current time: 9/25/21, 8:03:06 AM CST
+// 'a' command handler elapsed time: 3 seconds
+dismissDialog("Close Checkpoint"); // bz
+// HMemoryUtils.trashcanNow. Engine heap size: 11,461 MB. GUI used memory: 273 MB. Current time: 9/25/21, 8:33:10 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 11,461 MB. GUI used memory: 271 MB. Current time: 9/25/21, 9:03:10 AM CST
+// Device view-level: 0.2
+// Device view-level: 0.1
+// Device view-level: 0.1
+// WARNING: HEventQueue.dispatchEvent() is taking  1612 ms.
+// Device view-level: 0.1
+// [GUI Memory]: 381 MB (+19078kb) [11:09:12]
+// WARNING: HEventQueue.dispatchEvent() is taking  1016 ms.
+// Device view-level: 0.0
+// HMemoryUtils.trashcanNow. Engine heap size: 11,462 MB. GUI used memory: 219 MB. Current time: 9/25/21, 9:05:55 AM CST
+// Device view-level: 0.0
+// Device view-level: 0.0
+// WARNING: HEventQueue.dispatchEvent() is taking  1111 ms.
+// HMemoryUtils.trashcanNow. Engine heap size: 11,563 MB. GUI used memory: 220 MB. Current time: 9/25/21, 9:06:00 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 11,563 MB. GUI used memory: 219 MB. Current time: 9/25/21, 9:36:05 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 11,563 MB. GUI used memory: 219 MB. Current time: 9/25/21, 10:06:05 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 11,563 MB. GUI used memory: 238 MB. Current time: 9/25/21, 10:13:51 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 11,563 MB. GUI used memory: 229 MB. Current time: 9/25/21, 10:43:55 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 11,563 MB. GUI used memory: 229 MB. Current time: 9/25/21, 11:13:55 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 11,563 MB. GUI used memory: 229 MB. Current time: 9/25/21, 11:43:55 AM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 11,563 MB. GUI used memory: 229 MB. Current time: 9/25/21, 12:13:55 PM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 11,563 MB. GUI used memory: 229 MB. Current time: 9/25/21, 12:43:55 PM CST
+// HMemoryUtils.trashcanNow. Engine heap size: 11,563 MB. GUI used memory: 229 MB. Current time: 9/25/21, 1:13:55 PM CST
+// Device view-level: 0.0
+// HMemoryUtils.trashcanNow. Engine heap size: 11,563 MB. GUI used memory: 259 MB. Current time: 9/25/21, 1:31:09 PM CST
+// Device view-level: 0.1
+// Device view-level: 0.0
+// WARNING: HEventQueue.dispatchEvent() is taking  2038 ms.
+// HMemoryUtils.trashcanNow. Engine heap size: 11,563 MB. GUI used memory: 295 MB. Current time: 9/25/21, 1:31:14 PM CST
+// WARNING: HEventQueue.dispatchEvent() is taking  1702 ms.
+// Device view-level: 0.0
+// Device view-level: 0.0
+// Device view-level: 0.0
