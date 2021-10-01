@@ -19,7 +19,7 @@ object Operators {
     def asDSPNode(name: String, delay: CyclesCount, exeTime: TimeNumber) = GeneralNode(op, -1 bits, name, delay, exeTime)
   }
 
-  val SIntAdder = (dataIns: Seq[SInt]) => dataIns(0) + dataIns(1)
+  val SIntAdder = (dataIns: Seq[SInt]) => Delay(dataIns(0) + dataIns(1), 1)
   val SIntPT = (dataIns: Seq[SInt]) => dataIns.head
-  val SIntMult = (dataIns: Seq[SInt]) => dataIns(0) * dataIns(1)
+  val SIntMult = (dataIns: Seq[SInt]) => Delay((dataIns(0) * 4), 2)
 }

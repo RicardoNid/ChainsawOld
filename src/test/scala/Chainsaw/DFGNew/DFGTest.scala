@@ -48,9 +48,11 @@ class DFGTest extends AnyFlatSpec {
   // fig 6.3
   it should "fold correctly" in {
     val dfg = fig6_3.dfgBeforeRetiming
-    val golden = fig6_3.dfg
-    val foldingSet = fig6_3.foldingSet
-    val algo = new Folding[SInt](dfg, foldingSet)
+    val foldingSet = fig6_3.foldingSets
+    val deviceGens = fig6_3.deviceGens
+
+    val algo = new Folding[SInt](dfg, foldingSet, deviceGens)
+
     printlnGreen("retiming solutions")
     println(algo.solveRetiming().mkString(" "))
     val retimedDfg = algo.retimed
@@ -61,8 +63,24 @@ class DFGTest extends AnyFlatSpec {
     printlnGreen("fig 6.3(retimed for folding)")
     println(retimedDfg)
     println(s"${retimedDfg.delayAmount} delays in total")
-    printlnGreen("golden")
-    println(golden)
-    println(s"${golden.delayAmount} delays in total")
+    assert(new Folding[SInt](retimedDfg, foldingSet, deviceGens).isFeasible)
+
+
+    val foldedDFG = algo.folded
+    printlnGreen("folded")
+    println(foldedDFG)
+
+    GenRTL(new Component {
+      val dataIn = in SInt (4 bits)
+      val dataOut = out SInt (4 bits)
+
+      dataOut := foldedDFG.impl(Seq(dataIn)).head
+    })
+
+    //        val golden = fig6_3.dfg
+    //        printlnGreen("golden")
+    //        println(golden)
+    //        println(s"${golden.delayAmount} delays in total")
+
   }
 }

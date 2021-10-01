@@ -20,7 +20,9 @@ import scala.collection.mutable.ArrayBuffer
 
 import cc.redberry.rings.scaladsl._
 
-case class Schedule(time: Int, period: Int)
+case class Schedule(time: Int, period: Int) {
+  override def toString: String = s"$time / $period"
+}
 
 case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
                             (implicit holderProvider: BitCount => T) {
@@ -30,10 +32,13 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
 
   // check validity while init
   val allOccupations = schedules.flatten.map(occupationOf(_)).flatten
-  require(allOccupations.size == allOccupations.distinct.size, "schedule collision") // no collision TODO: print collision location
-  require(allOccupations.size == periodLcm) // lifetime is filled
+
+  def hasNoCollisions = allOccupations.size == allOccupations.distinct.size
+
+  def isFull = allOccupations.size == periodLcm
 
   def impl(dataIns: Seq[T], count: UInt, globalLcm: Int) = {
+    require(hasNoCollisions, s"schedule collision:\n${schedules.mkString(" ")}") // no collision TODO: print collision location
     if (dataIns.size == 1) dataIns.head
     else {
       val multiple = globalLcm / periodLcm
@@ -42,10 +47,9 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
         schedules.zip(dataIns).foreach { case (schedulesOneSource, bits) =>
           val occupationsOneSource = schedulesOneSource.map(occupationOf(_)).flatten
           val actualOccupations: Seq[Int] = (0 until multiple).map(i => occupationsOneSource.map(_ + i * periodLcm)).flatten
-          println(actualOccupations.mkString(" "))
           is(actualOccupations.head, actualOccupations.tail: _*)(ret := bits)
         }
-        default(ret := dataIns.head) // TODO: reconsider the "default" behavior
+        if (!isFull) default(ret := dataIns.head)
       }
       ret
     }
