@@ -42,6 +42,7 @@ object fig6_3 {
 
   val adderGen = () => SIntAdder.asDSPNode(10 bits,s"add", 1 cycles, 1 ns)
   val multGen = () => SIntMult.asDSPNode(10 bits,s"mult", 2 cycles, 2 ns)
+
   val deviceGens = Seq(adderGen, multGen)
   val foldingSets = Seq(
     Seq(adds3, adds1, adds2, adds0),

@@ -60,11 +60,15 @@ class DFGTest extends AnyFlatSpec {
       import dut.{clockDomain, dataIn, dataOut}
       dataIn #= 0
       clockDomain.forkStimulus(2)
-      clockDomain.waitSampling(10 * factor)
+      clockDomain.waitSampling(10 * factor - 1)
 
+      printlnBlue(s"factor = $factor")
       testCases.foreach { testCase =>
         dataIn #= testCase
-        clockDomain.waitSampling(factor)
+        clockDomain.waitSampling()
+        dataIn #= 0
+        printlnBlue(s"wait ${factor - 1}")
+        clockDomain.waitSampling(factor - 1)
       }
 
       clockDomain.waitSampling(5 * factor)

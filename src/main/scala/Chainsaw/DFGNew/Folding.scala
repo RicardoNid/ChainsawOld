@@ -22,7 +22,9 @@ class Folding[T <: Data](dfg: DFG[T], foldingSets: Seq[Seq[DSPNode[T]]], deviceG
   // node -> folding order of the node
   val foldingOrders: Map[DSPNode[T], Int] = foldingSets.map { set => set.zipWithIndex.map { case (node, i) => node -> i } }.flatten.toMap
   // node -> the device it belongs(folded to)
+  printlnBlue(deviceGens.mkString(" "))
   val devices: Seq[DSPNode[T]] = deviceGens.map(gen => gen())
+  printlnBlue(devices.mkString(" "))
   val deviceOf: Map[DSPNode[T], DSPNode[T]] = foldingSets.zip(devices).map { case (nodes, device) => nodes.map(_ -> device) }.flatten.toMap
 
   def solveRetiming() = {

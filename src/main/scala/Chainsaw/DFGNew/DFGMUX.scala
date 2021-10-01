@@ -52,10 +52,12 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
         schedules.zip(dataIns).foreach { case (schedulesOneSource, bits) =>
           val occupationsOneSource = schedulesOneSource.map(occupationOf(_)).flatten
           val actualOccupations: Seq[Int] = (0 until multiple).map(i => occupationsOneSource.map(_ + i * periodLcm)).flatten
-          if (actualOccupations.size > 1) is(actualOccupations.head, actualOccupations.tail: _*)(ret := bits)
-          else is(actualOccupations.head)(ret := bits)
+          actualOccupations.foreach(is(_)(ret := bits))
         }
-        if (!isFull) default(ret := dataIns.head.getZero)
+        if (!isFull) {
+          printlnRed("not full")
+          default(ret := dataIns.head.getZero)
+        }
         //        if (!isFull) default(ret := dataIns.head)
       }
       ret

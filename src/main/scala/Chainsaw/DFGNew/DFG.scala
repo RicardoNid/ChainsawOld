@@ -142,8 +142,9 @@ class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DirectedWei
 
     vertexSeq.diff(inputNodes).foreach { target =>
       val dataIns: Seq[Seq[DSPEdge[T]]] = target.incomingEdges.groupBy(_.order).toSeq.sortBy(_._1).map(_._2)
-      val dataInsOnPorts = dataIns.map { dataInsOnePort =>
+      val dataInsOnPorts = dataIns.zipWithIndex.map { case(dataInsOnePort, i) =>
         val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.impl(signalMap(edge.source), edge.weight))
+//        dataCandidates.zipWithIndex.foreach{ case (node, j) => node.setName(s"${target}_port{$i}_cand{$j}")}
         println(s"mux to target $target:\n" +
           s"${dataInsOnePort.map(_.schedules.mkString(" ")).mkString("\n")}")
         val mux = DFGMUX[T](dataInsOnePort.map(_.schedules))
@@ -151,6 +152,7 @@ class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DirectedWei
         mux.impl(dataCandidates, count, globalLcm)
       }
       signalMap(target) := target.impl(dataInsOnPorts).resized
+      signalMap(target).setName(target.name)
     }
     outputNodes.map(signalMap(_))
   }
