@@ -1,4 +1,4 @@
-package Chainsaw.DFGNew
+package Chainsaw.DFG
 
 import spinal.core._
 import spinal.core.sim._
@@ -18,15 +18,15 @@ import org.jgrapht.generate._
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
 
-case class DSPExpression[T <: Data](sources: Seq[DSPNode[T]], delays: Seq[Int], var target: DSPNode[T]){
+case class DSPAssignment[T <: Data](sources: Seq[DSPNode[T]], delays: Seq[Int], var target: DSPNode[T]){
   def >=>(that: DSPNode[T]) = {
     target = that
     this
   }
 }
 
-object DSPExpression {
-  def apply[T <: Data](sources: DSPNode[T], delay: Int, target: DSPNode[T]): DSPExpression[T] = new DSPExpression(Seq(sources), Seq(delay), target)
+object DSPAssignment {
+  def apply[T <: Data](sources: DSPNode[T], delay: Int, target: DSPNode[T]): DSPAssignment[T] = new DSPAssignment(Seq(sources), Seq(delay), target)
 }
 
 case class DSPPath[T <: Data](nodes: ArrayBuffer[DSPNode[T]], delays: ArrayBuffer[Int]){

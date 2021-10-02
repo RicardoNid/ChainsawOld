@@ -1,4 +1,4 @@
-package Chainsaw.DFGNew
+package Chainsaw.DFG
 
 import Chainsaw._
 

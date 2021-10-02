@@ -4,31 +4,29 @@ import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
-
 import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
+import scala.collection.mutable.ArrayBuffer
+
 package object DFG {
 
-  implicit class implUtil(implv: Seq[Bits] => Bits) {
+  implicit val sintProvider = (width: BitCount) => if(width.value >= 1) SInt(width) else SInt()
+  implicit val uintProvider = (width: BitCount) => if(width.value >= 1) UInt(width) else UInt()
+  implicit val bitsProvider = (width: BitCount) => if(width.value >= 1) Bits(width) else Bits()
 
-    def asDSPNode(delayv: Int, executionTimev: Double, width: Int = -1, name: String = "") = {
-      new DSPNode {
-        override def impl(dataIn: Seq[Bits]): Bits = {
-          val ret = implv(dataIn)
-          ret.setName(name)
-          ret
-        }
+  implicit class nodeUtils[T <: Data](node: DSPNode[T]) {
+    def >=>(delay: Int) = DSPAssignment(node, delay, node)
 
-        override def implWidth: Int = width
+    def >>(delay: Int) = DSPPath(ArrayBuffer(node), ArrayBuffer(delay)) // TODO: more elegant implementation
 
-        override def delay: Int = delayv
+    def -(that:DSPNode[T]) = DSPConstraint(node, that, 0)
 
-        override def executionTime: Double = executionTimev
-      }
-    }
+    def isIO = node.isInstanceOf[InputNode[T]] || node.isInstanceOf[OutputNode[T]]
   }
 
-
+  implicit class nodesUtils[T <: Data](nodes: Seq[DSPNode[T]]) {
+    def >=>(delays: Seq[Int]) = DSPAssignment(nodes, delays, nodes.head)
+  }
 }

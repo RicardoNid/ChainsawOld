@@ -1,91 +1,107 @@
 package Chainsaw.DFG
 
 import org.scalatest.flatspec.AnyFlatSpec
+
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
+
 import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
-import spinal.core
+
+import org.jgrapht._
+import org.jgrapht.graph._
+import org.jgrapht.graph.builder._
+import org.jgrapht.nio._
+import org.jgrapht.nio.dot._
+import org.jgrapht.traverse._
+import org.jgrapht.generate._
+
+import scala.collection.JavaConversions._
 
 class DFGTest extends AnyFlatSpec {
 
-  behavior of "DFG implementation Test"
+  import Operators._
 
-  it should "run example 1 successfully" in {
-    class Inc() extends DSPNode {
+  "dfg" should "be implemented correctly" in {
+    val dfg = DFG[SInt]
 
-      override def impl(dataIn: Seq[Bits]): Bits = (dataIn.head.asUInt + U(1)).asBits
+    val pts = (0 until 4).map(i => SIntPT.asDSPNode(s"pt$i", 1 cycles, 1 ns))
+    val Seq(pt0, pt1, pt2, pt3) = pts
+    dfg.addPath(pt0 >> 1 >> pt1 >> 1 >> pt2 >> 1 >> pt3)
+    dfg.setInput(pt0)
+    dfg.setOutput(pt3)
 
-      override def delay: Int = 0
+    println(dfg.vertexSet().mkString(" "))
+    println(dfg.edgeSet().mkString(" "))
 
-      override def executionTime: Double = 0.2
-    }
-
-    // example1
-    val g = new DFG()
-
-    val dataIn = g.addInput()
-
-    val inc1 = new Inc()
-    val inc0 = ((dataIn: Seq[Bits]) => (dataIn(0).asUInt + U(1)).asBits)
-      .asDSPNode(0, 0.2, name = "inc")
-    g.addVertexFromSource(dataIn, inc0, 0)
-    g.addVertexFromSource(inc0, inc1, 2)
-    g.setOutput(inc1)
-
-    GenRTL(new Component {
-      val dataIn = in UInt (4 bits)
-      val dataOut = out UInt (4 bits)
-      dataOut := g.implNew(Seq(dataIn.asBits)).head.asUInt
-    })
-
-    // example2 Fig2.1 a
-    val h = new DFG()
-    val add = ((dataIn: Seq[Bits]) => (dataIn(0).asSInt + dataIn(1).asSInt).asBits)
-      .asDSPNode(0, 0.2, 4, "add")
-    val cmult = ((dataIn: Seq[Bits]) => (dataIn(0).asSInt * 3).resize(4).asBits)
-      .asDSPNode(0, 0.8, 4, "cmult")
-
-    val x = h.addInput()
-
-    h.addVertexFromSource(x, add, 0)
-    h.addVertexFromSource(add, cmult, 0)
-
-    h.addEdge(cmult, add, 1)
-    h.setOutput(add)
-
-    GenRTL(new Component {
-      val dataIn = in UInt (4 bits)
-      val dataOut = out UInt (4 bits)
-      dataOut := h.implRecursive(Seq(dataIn.asBits)).head.asUInt
-    })
+    //    GenRTL(new Component {
+    //      val dataIn = in SInt (4 bits)
+    //      val dataOut = out SInt (4 bits)
+    //
+    //      dataOut := dfg.impl(Seq(dataIn)).head
+    //    })
   }
 
-  it should "run fig 2.2 successfully" in {
-    val dfg = new DFG()
-    val Seq(n1, n2, n3) = (1 to 3).map(i => AbstractNode(0, 1, "n" + i.toString))
-    val Seq(n4, n5, n6) = (4 to 6).map(i => AbstractNode(0, 2, "n" + i.toString))
+  val testCases = (0 until 10).map(_ => DSPRand.nextInt(4))
+  //  val testCases = (0 until 20).map(_ => 1)
 
-    dfg.addVertex(n1)
-    Seq(n1, n1, n1).zip(Seq(n4, n5, n6)).zip(Seq(2, 3, 4)).foreach { case ((src, des), delay) => dfg.addVertexFromSource(src, des, delay) }
-    Seq(n4, n5, n6).zip(Seq(n2, n3, n3)).zip(Seq(0, 0, 0)).foreach { case ((src, des), delay) => dfg.addVertexFromSource(src, des, delay) }
-    Seq(n2, n3).zip(Seq(n1, n2)).zip(Seq(0, 0, 0)).foreach { case ((src, des), delay) => dfg.addVertexFromSource(src, des, delay) }
+  def testDFG(dfg: DFG[SInt], factor: Int) = {
 
-    println(dfg)
-    dfg.mergeDelays()
-    println(dfg)
+    SimConfig.withWave.compile(new Component {
+      val dataIn = in SInt (10 bits)
+      val dataOut = out SInt (10 bits)
+      dataOut := dfg.impl(Seq(dataIn)).head
 
-    val x = dfg.addInput()
-    dfg.addEdge(x, n1, 0)
-    dfg.setOutput(n6)
+    }).doSim { dut =>
+      import dut.{clockDomain, dataIn, dataOut}
+      dataIn #= 0
+      clockDomain.forkStimulus(2)
+      clockDomain.waitSampling(10 * factor - 1)
 
-    assert(dfg.delaysCount == 4 && dfg.latency == 4 && dfg.criticalPathLength == 5.0 && dfg.iterationBound == 2.0)
+      printlnBlue(s"factor = $factor")
+      testCases.foreach { testCase =>
+        dataIn #= testCase
+        clockDomain.waitSampling()
+        dataIn #= 0
+        printlnBlue(s"wait ${factor - 1}")
+        clockDomain.waitSampling(factor - 1)
+      }
 
-    println(s"dfg is ${if (dfg.isRecursive) "recursive" else "not recursive"}, it has: " +
-      s"\n\t${dfg.delaysCount} delays in total \n\tlatency = ${dfg.latency} " +
-      s"\n\tcritical path length = ${dfg.criticalPathLength} \n\titeration bound = ${dfg.iterationBound}")
+      clockDomain.waitSampling(20 * factor)
+    }
+  }
+
+  // fig 6.3
+  it should "fold correctly" in {
+    val dfg = chap6.dfg6_3
+    val foldingSet = chap6.foldingSets
+    val deviceGens = chap6.deviceGens
+
+    val algo = new Folding[SInt](dfg, foldingSet, deviceGens)
+    assert(new Folding[SInt](algo.retimed, foldingSet, deviceGens).isFeasible)
+    testDFG(dfg, 1)
+    testDFG(algo.folded, 4)
+    println(algo.folded)
+  }
+
+
+  it should "fold correctly on simple graph" in {
+    val dfg = simpleFolding.dfg
+    val foldingSet = simpleFolding.foldingSets
+    val deviceGens = simpleFolding.deviceGens
+
+    val algo = new Folding[SInt](dfg, foldingSet, deviceGens)
+    println(algo.folded)
+
+    testDFG(dfg, 1)
+    testDFG(algo.folded, 2)
+  }
+
+  "constraint graph" should "work on fig4.3" in {
+    val cg = chap4.fig4_3
+    assert(cg.getSolution.zip(Seq(0,0,0,-1)).forall{ case (d, i) => d == i})
   }
 }

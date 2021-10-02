@@ -1,43 +1,26 @@
 package Chainsaw.DFG
 
 import spinal.core._
-import spinal.core.sim._
 import spinal.lib._
-import spinal.lib.fsm._
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
-import org.jgrapht._
-import org.jgrapht.graph._
-import org.jgrapht.graph.builder._
-import org.jgrapht.nio._
-import org.jgrapht.nio.dot._
-import org.jgrapht.traverse._
-import org.jgrapht.generate._
 
-import scala.collection.JavaConversions._
-import scala.collection.mutable.ArrayBuffer
-
-abstract class DSPEdge {
-  def impl(dataIn: Bits, delay: Int): Bits
-
-  val schedules = ArrayBuffer(Schedule(1, 1))
-
+abstract class DSPEdge[T <: Data] {
+  val impl: (T, Int) => T // the delay is from weight, which is of type double
+  val schedules: Seq[Schedule]
   val order: Int
 }
 
-class FPGADelay(orderv: Int) extends DSPEdge {
-  override def impl(dataIn: Bits, delay: Int): Bits = {
-    if (dataIn.getBitsWidth >= 128 && delay >= 2) Delay(dataIn, delay) // TODO: replace this with a "FIFO function"
-    else Delay(dataIn, delay)
-  }
+class DefaultDelay[T <: Data](name: String, schedulesp: Seq[Schedule], orderp: Int) extends DSPEdge[T] {
+  override val impl = (dataIns: T, delay: Int) => Delay(dataIns, delay, init = dataIns.getZero) // TODO: add a FIFO(free run) implementation
+  override val schedules: Seq[Schedule] = schedulesp
+  override val order: Int = orderp
 
-  override val order: Int = orderv
+  override def toString: String = s"$name: ${schedules.mkString(" ")}"
+}
 
-  override def toString: String = super.toString.takeRight(2)
+object DefaultDelay {
+  def apply[T <: Data](name: String, schedulesp: Seq[Schedule], orderp: Int): DefaultDelay[T] = new DefaultDelay(name, schedulesp, orderp)
+  def apply[T <: Data](schedulesp: Seq[Schedule], orderp: Int): DefaultDelay[T] = new DefaultDelay("", schedulesp, orderp)
 }
 
 
-object FPGADelay {
-  def apply(orderv: Int): FPGADelay = new FPGADelay(orderv)
-}
+

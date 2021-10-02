@@ -1,4 +1,4 @@
-package Chainsaw.DFG
+package Chainsaw.DFGAborted
 
 import scala.util.{Failure, Success, Try}
 import org.jgrapht._

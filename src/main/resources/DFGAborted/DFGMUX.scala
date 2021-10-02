@@ -1,4 +1,4 @@
-package Chainsaw.DFGNew
+package Chainsaw.DFGAborted
 
 import spinal.core._
 import spinal.core.sim._
@@ -20,45 +20,32 @@ import scala.collection.mutable.ArrayBuffer
 
 import cc.redberry.rings.scaladsl._
 
-case class Schedule(time: Int, period: Int) {
-  override def toString: String = s"$time / $period"
-}
+case class Schedule(time: Int, period: Int)
 
-case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
-                            (implicit holderProvider: BitCount => T) {
-
-
-  printlnGreen(allOccupations.mkString(" "), periodLcm)
+case class DFGMUX(schedules: Seq[Seq[Schedule]]) {
 
   def periodLcm = schedules.flatten.map(_.period).sorted.reverse.reduce(lcm(_, _))
 
   def occupationOf(schedule: Schedule) = (0 until periodLcm / schedule.period).map(_ * schedule.period + schedule.time)
 
   // check validity while init
-  def allOccupations = schedules.flatten.map(occupationOf(_)).flatten
+  val allOccupations = schedules.flatten.map(occupationOf(_)).flatten
+  require(allOccupations.size == allOccupations.distinct.size, "schedule collision") // no collision TODO: print collision location
+  require(allOccupations.size == periodLcm) // lifetime is filled
 
-  def hasNoCollisions = allOccupations.size == allOccupations.distinct.size
-
-  def isFull = allOccupations.size == periodLcm
-
-  def impl(dataIns: Seq[T], count: UInt, globalLcm: Int) = {
-    require(hasNoCollisions, s"schedule collision:\n${schedules.mkString(" ")}") // no collision TODO: print collision location
-    require(dataIns.size == schedules.size)
-    if (dataIns.size == 1 && schedules.head.head == Schedule(1, 1)) dataIns.head
+  def impl(dataIns: Seq[Bits], count: UInt, globalLcm: Int) = {
+    if (dataIns.size == 1) dataIns.head
     else {
       val multiple = globalLcm / periodLcm
-      val ret = holderProvider(-1 bits)
+      val ret = Bits()
       switch(count) {
         schedules.zip(dataIns).foreach { case (schedulesOneSource, bits) =>
           val occupationsOneSource = schedulesOneSource.map(occupationOf(_)).flatten
           val actualOccupations: Seq[Int] = (0 until multiple).map(i => occupationsOneSource.map(_ + i * periodLcm)).flatten
-          actualOccupations.foreach(is(_)(ret := bits))
+          println(actualOccupations.mkString(" "))
+          is(actualOccupations.head, actualOccupations.tail: _*)(ret := bits)
         }
-        if (!isFull) {
-          printlnRed("not full")
-          default(ret := dataIns.head.getZero)
-          //          if (!isFull) default(ret := dataIns.head)
-        }
+        default(ret := dataIns.head) // TODO: reconsider the "default" behavior
       }
       ret
     }
@@ -72,7 +59,7 @@ object DFGMUX {
       val count = in UInt (log2Up(24) bits)
       val dataOut = out Bits (4 bits)
 
-      val mux = DFGMUX[Bits](Seq(
+      val mux = DFGMUX(Seq(
         Seq(Schedule(1, 4), Schedule(2, 4)),
         Seq(Schedule(0, 8), Schedule(4, 8)),
         Seq(Schedule(3, 12), Schedule(7, 12), Schedule(11, 12))
@@ -86,7 +73,7 @@ object DFGMUX {
       val count = in UInt (log2Up(24) bits)
       val dataOut = out Bits (4 bits)
 
-      val mux = DFGMUX[Bits](Seq(Seq(Schedule(1, 1))))
+      val mux = DFGMUX(Seq(Seq(Schedule(1, 1))))
       dataOut := mux.impl(Seq(dataIn), count, 24)
     })
   }

@@ -1,4 +1,4 @@
-package Chainsaw.DFG
+package Chainsaw.DFGAborted
 
 import org.jgrapht._
 import org.jgrapht.graph._

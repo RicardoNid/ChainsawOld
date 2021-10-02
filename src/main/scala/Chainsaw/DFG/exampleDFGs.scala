@@ -1,6 +1,6 @@
-package Chainsaw.DFGNew
+package Chainsaw.DFG
 
-import Chainsaw.DFGNew.Operators._
+import Chainsaw.DFG.Operators._
 import spinal.core._
 
 import spinal.core._
@@ -14,9 +14,9 @@ import Chainsaw.dspTest._
 
 object simpleFolding {
 
-  val incs = (0 until 4).map(i => SIntInc.asDSPNode(10 bits,s"add$i", 1 cycles, 1 ns))
-  val Seq(inc0, inc1,inc2,inc3) = incs
-  val incGen = () => SIntInc.asDSPNode(10 bits,s"inc", 1 cycles, 1 ns)
+  val incs = (0 until 4).map(i => SIntInc.asDSPNode(10 bits, s"add$i", 1 cycles, 1 ns))
+  val Seq(inc0, inc1, inc2, inc3) = incs
+  val incGen = () => SIntInc.asDSPNode(10 bits, s"inc", 1 cycles, 1 ns)
   val foldingSets = Seq(Seq(inc0, inc1), Seq(inc2, inc3))
   val deviceGens = Seq(incGen, incGen)
 
@@ -33,15 +33,15 @@ object simpleFolding {
   }
 }
 
-object fig6_3 {
+object chap6 {
 
-  val adds = (0 until 4).map(i => SIntAdder.asDSPNode(10 bits,s"add$i", 1 cycles, 1 ns))
+  val adds = (0 until 4).map(i => SIntAdder.asDSPNode(10 bits, s"add$i", 1 cycles, 1 ns))
   val Seq(adds0, adds1, adds2, adds3) = adds
-  val mults = (0 until 4).map(i => SIntMult.asDSPNode(10 bits,s"mult$i", 2 cycles, 2 ns))
+  val mults = (0 until 4).map(i => SIntCMult.asDSPNode(10 bits, s"mult$i", 2 cycles, 2 ns))
   val Seq(mults0, mults1, mults2, mults3) = mults
 
-  val addGen = () => SIntAdderPipe.asDSPNode(10 bits,s"add", 1 cycles, 1 ns)
-  val multGen = () => SIntMultPipe.asDSPNode(10 bits,s"mult", 2 cycles, 2 ns)
+  val addGen = () => SIntAdderPipe.asDSPNode(10 bits, s"add", 1 cycles, 1 ns)
+  val multGen = () => SIntCMultPipe.asDSPNode(10 bits, s"mult", 2 cycles, 2 ns)
 
   val deviceGens = Seq(addGen, multGen)
   val foldingSets = Seq(
@@ -49,7 +49,7 @@ object fig6_3 {
     Seq(mults0, mults3, mults1, mults2)
   )
 
-  def dfg = {
+  def dfg6_3 = {
     printlnGreen("using fig 6.3")
     val dfg = DFG[SInt]
     // add vertices
@@ -70,8 +70,8 @@ object fig6_3 {
     dfg
   }
 
-  // fig 6.3 before retiming(fig6.5)
-  def dfgBeforeRetiming = {
+  // fig6.5(fig 6.3 before retiming)
+  def fig6_5 = {
     printlnGreen("using fig 6.3 before retiming")
     val dfg = DFG[SInt]
     (adds ++ mults).foreach(dfg.addVertex(_))
@@ -89,4 +89,19 @@ object fig6_3 {
     dfg.setOutput(adds1)
     dfg
   }
+}
+
+object chap4 {
+
+  def fig4_3 = {
+    val Seq(r1, r2, r3, r4) = (0 until 4).map(i => VoidNode[SInt](s"const$i"))
+    val cg = ConstraintGraph[SInt]
+    cg.addConstraint(r1 - r2 <= 0)
+    cg.addConstraint(r3 - r1 <= 5)
+    cg.addConstraint(r4 - r1 <= 4)
+    cg.addConstraint(r4 - r3 <= -1)
+    cg.addConstraint(r3 - r2 <= 2)
+    cg
+  }
+
 }
