@@ -10,9 +10,10 @@ import Chainsaw.dspTest._
 
 import scala.collection.mutable.ArrayBuffer
 
+case class DSPHardware[T <: Data](impl: Seq[T] => Seq[T], inDegree: Int, outWidths: Seq[BitCount])
+
 abstract class DSPNode[T <: Data] {
-  val impl: Seq[T] => T
-  val implWidth: BitCount
+  val hardware: DSPHardware[T]
   val name: String
   val delay: Int
   val exeTime: Double
@@ -22,18 +23,17 @@ abstract class DSPNode[T <: Data] {
 
 /** Providing basic constructors
  */
-class GeneralNode[T <: Data](implp: Seq[T] => T, widthp: BitCount, namep: String, delayp: CyclesCount, exeTimep: TimeNumber) extends DSPNode[T] {
-  val impl: Seq[T] => T = implp
-  override val implWidth: BitCount = widthp
+class GeneralNode[T <: Data](implp: DSPHardware[T], namep: String, delayp: CyclesCount, exeTimep: TimeNumber) extends DSPNode[T] {
+  override val hardware: DSPHardware[T] = implp
   override val name: String = namep // TODO: implement reflection
   override val delay: Int = delayp.toInt
   override val exeTime: Double = exeTimep.toDouble
 }
 
 object GeneralNode {
-  def apply[T <: Data](implp: Seq[T] => T, widthp: BitCount, namep: String, delayp: CyclesCount, exeTimep: TimeNumber): GeneralNode[T] = new GeneralNode(implp, widthp, namep, delayp, exeTimep)
+  def apply[T <: Data](hardware: DSPHardware[T], namep: String, delayp: CyclesCount, exeTimep: TimeNumber): GeneralNode[T] = new GeneralNode(hardware, namep, delayp, exeTimep)
 
-  def apply[T <: Data](namep: String, delayp: CyclesCount, exeTimep: TimeNumber): GeneralNode[T] = new GeneralNode((dataIns: Seq[T]) => dataIns.head, -1 bits, namep, delayp, exeTimep)
+  def apply[T <: Data](namep: String, delayp: CyclesCount, exeTimep: TimeNumber): GeneralNode[T] = new GeneralNode(Operators.Line[T], namep, delayp, exeTimep)
 }
 
 object VoidNode {
@@ -41,8 +41,7 @@ object VoidNode {
 }
 
 class InputNode[T <: Data](namev: String) extends DSPNode[T] {
-  override val impl: Seq[T] => T = (dataIns: Seq[T]) => dataIns.head
-  override val implWidth: BitCount = -1 bits
+  override val hardware = Operators.Line[T]
   override val name: String = namev
   override val delay: Int = 0
   override val exeTime: Double = 0
@@ -53,8 +52,7 @@ object InputNode {
 }
 
 class OutputNode[T <: Data](namev: String) extends DSPNode[T] {
-  override val impl: Seq[T] => T = (dataIns: Seq[T]) => dataIns.head
-  override val implWidth: BitCount = -1 bits
+  override val hardware = Operators.Line[T]
   override val name: String = namev
   override val delay: Int = 0
   override val exeTime: Double = 0

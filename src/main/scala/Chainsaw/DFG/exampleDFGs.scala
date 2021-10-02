@@ -14,9 +14,9 @@ import Chainsaw.dspTest._
 
 object simpleFolding {
 
-  val incs = (0 until 4).map(i => SIntInc.asDSPNode(10 bits, s"add$i", 1 cycles, 1 ns))
+  val incs = (0 until 4).map(i => SIntInc.asDSPNode(s"add$i", 1 cycles, 1 ns))
   val Seq(inc0, inc1, inc2, inc3) = incs
-  val incGen = () => SIntInc.asDSPNode(10 bits, s"inc", 1 cycles, 1 ns)
+  val incGen = () => SIntInc.asDSPNode(s"inc", 1 cycles, 1 ns)
   val foldingSets = Seq(Seq(inc0, inc1), Seq(inc2, inc3))
   val deviceGens = Seq(incGen, incGen)
 
@@ -35,13 +35,13 @@ object simpleFolding {
 
 object chap6 {
 
-  val adds = (0 until 4).map(i => SIntAdder.asDSPNode(10 bits, s"add$i", 1 cycles, 1 ns))
+  val adds = (0 until 4).map(i => SIntAdder.asDSPNode(s"add$i", 1 cycles, 1 ns))
   val Seq(adds0, adds1, adds2, adds3) = adds
-  val mults = (0 until 4).map(i => SIntCMult.asDSPNode(10 bits, s"mult$i", 2 cycles, 2 ns))
+  val mults = (0 until 4).map(i => SIntCMult.asDSPNode(s"mult$i", 2 cycles, 2 ns))
   val Seq(mults0, mults1, mults2, mults3) = mults
 
-  val addGen = () => SIntAdderPipe.asDSPNode(10 bits, s"add", 1 cycles, 1 ns)
-  val multGen = () => SIntCMultPipe.asDSPNode(10 bits, s"mult", 2 cycles, 2 ns)
+  val addGen = () => SIntAdderPipe.asDSPNode(s"add", 1 cycles, 1 ns)
+  val multGen = () => SIntCMultPipe.asDSPNode(s"mult", 2 cycles, 2 ns)
 
   val deviceGens = Seq(addGen, multGen)
   val foldingSets = Seq(

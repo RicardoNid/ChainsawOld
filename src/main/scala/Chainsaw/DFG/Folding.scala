@@ -77,9 +77,9 @@ class Folding[T <: Data](dfg: DFG[T], foldingSets: Seq[Seq[DSPNode[T]]], deviceG
       val v = if (V.isIO) foldingOrders(retimedDFG.sourcesOf(V).head) else foldingOrders(V)
       val foldedDelay = if (U.isIO || V.isIO) 0 else foldingFactor * retimedDFG.getEdgeWeight(edge).toInt - U.delay + v - u
       assert(foldedDelay >= 0, s"folding constraints not met, delay of $U -> $V is ${retimedDFG.getEdgeWeight(edge)}, folded to  $foldedDelay")
-      val order = edge.order
-
-      val foldedEdge = DefaultDelay[T](Seq(Schedule(if(V.isIO) (v + U.delay) % foldingFactor else v, foldingFactor)), order)
+      val inOrder = edge.inOrder
+      val outOrder = edge.outOrder
+      val foldedEdge = DefaultDelay[T](Seq(Schedule(if(V.isIO) (v + U.delay) % foldingFactor else v, foldingFactor)), inOrder, outOrder)
       foldedDFG.addEdge(source, target, foldedEdge)
       foldedDFG.setEdgeWeight(foldedEdge, foldedDelay)
 

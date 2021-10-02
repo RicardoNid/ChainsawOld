@@ -103,5 +103,6 @@ class DFGTest extends AnyFlatSpec {
   "constraint graph" should "work on fig4.3" in {
     val cg = chap4.fig4_3
     assert(cg.getSolution.zip(Seq(0,0,0,-1)).forall{ case (d, i) => d == i})
+
   }
 }

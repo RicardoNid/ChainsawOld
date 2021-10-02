@@ -12,18 +12,26 @@ import Chainsaw.dspTest._
 
 object Operators {
 
-  implicit class op2node[T <: Data](op: Seq[T] => T) {
-    def asDSPNode(width: BitCount, name: String, delay: CyclesCount, exeTime: TimeNumber) = GeneralNode(op, width, name, delay, exeTime)
-    def asDSPNode(name: String, delay: CyclesCount, exeTime: TimeNumber) = GeneralNode(op, -1 bits, name, delay, exeTime)
+  implicit class hardware2Node[T <: Data](hardware: DSPHardware[T]) {
+    def asDSPNode(name: String, delay: CyclesCount, exeTime: TimeNumber) = GeneralNode(hardware, name, delay, exeTime)
   }
 
+  def Line[T <: Data] = DSPHardware(
+    impl = (dataIns: Seq[T]) => dataIns,
+    inDegree = 1,
+    outWidths = Seq(-1 bits)
+  )
+
   // for simulation(using delay)
-  val SIntInc = (dataIns: Seq[SInt]) => Delay(dataIns(0) + 1, 1, init = dataIns.head.getZero)
-  val SIntAdder = (dataIns: Seq[SInt]) => dataIns(0) + dataIns(1)
-  val SIntAdderPipe = (dataIns: Seq[SInt]) => Delay(dataIns(0) + dataIns(1), 1, init = dataIns.head.getZero)
-  val SIntPT = (dataIns: Seq[SInt]) => dataIns.head
-  val SIntCMult = (dataIns: Seq[SInt]) => dataIns(0) // TODO: this should be a cMult
-  val SIntCMultPipe = (dataIns: Seq[SInt]) => Delay(dataIns(0), 2, init = dataIns.head.getZero) // TODO: this should be a cMult
+
+  val outputWidths = Seq(10 bits)
+
+  val SIntInc = DSPHardware((dataIns: Seq[SInt]) => Seq(Delay(dataIns(0) + 1, 1, init = dataIns.head.getZero)), 2, outputWidths)
+  val SIntAdder = DSPHardware((dataIns: Seq[SInt]) => Seq(dataIns(0) + dataIns(1)), 2, outputWidths)
+  val SIntAdderPipe = DSPHardware((dataIns: Seq[SInt]) => Seq(Delay(dataIns(0) + dataIns(1), 1, init = dataIns.head.getZero)), 2, outputWidths)
+  val SIntPT = DSPHardware((dataIns: Seq[SInt]) => Seq(dataIns.head), 1, outputWidths)
+  val SIntCMult = DSPHardware((dataIns: Seq[SInt]) => Seq(dataIns(0)), 1, outputWidths) // TODO: this should be a cMult
+  val SIntCMultPipe = DSPHardware((dataIns: Seq[SInt]) => Seq(Delay(dataIns(0), 2, init = dataIns.head.getZero)), 1, outputWidths) // TODO: this should be a cMult
 
   // for implementation
 

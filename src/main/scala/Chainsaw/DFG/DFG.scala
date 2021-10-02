@@ -85,8 +85,9 @@ class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DirectedWei
   }
 
   def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Int): Unit = {
-    val order = target.incomingEdges.size
-    val edge = DefaultDelay[T](Seq(Schedule(1, 1)), order)
+    val inOrder = target.incomingEdges.size // default strategy
+    val outOrder = 0 // default strategy
+    val edge = DefaultDelay[T](Seq(Schedule(1, 1)), inOrder, outOrder)
     if (addEdge(source, target, edge)) setEdgeWeight(edge, delay)
   }
 
@@ -126,30 +127,32 @@ class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DirectedWei
   def globalLcm = edgeSeq.map(_.schedules).flatten.map(_.period).reduce(lcm(_, _))
 
   //
-  val impl = (dataIns: Seq[T]) => {
-    val signalMap: Map[DSPNode[T], T] = vertexSeq.map(node => // a map to connet nodes with their anchors
-      if (node.implWidth == -1) node -> holderProvider(-1 bits)
-      else node -> holderProvider(node.implWidth)).toMap
+  val impl: Seq[T] => Seq[T] = (dataIns: Seq[T]) => {
+    val signalMap: Map[DSPNode[T], Seq[T]] = vertexSeq.map(node => // a map to connect nodes with their outputs(placeholder)
+      node -> node.hardware.outWidths.map(i => if (i.value == -1) holderProvider(-1 bits) else holderProvider(i))).toMap
 
     // create the global counter
     val globalCounter = CounterFreeRun(globalLcm)
     globalCounter.value.setName("globalCounter")
 
-    inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap(node) := bits }
+    inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap(node).head := bits }
     vertexSeq.diff(inputNodes).foreach { target =>
-      val dataIns: Seq[Seq[DSPEdge[T]]] = target.incomingEdges.groupBy(_.order).toSeq.sortBy(_._1).map(_._2)
+      val dataIns: Seq[Seq[DSPEdge[T]]] = target.incomingEdges.groupBy(_.inOrder).toSeq.sortBy(_._1).map(_._2)
       val dataInsOnPorts = dataIns.zipWithIndex.map { case (dataInsOnePort, i) =>
-        val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.impl(signalMap(edge.source), edge.weight))
+        val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.impl(signalMap(edge.source), edge.weight).apply(edge.outOrder))
         // showing mux infos
         //        println(s"mux to target $target:\n" +
         //          s"${dataInsOnePort.map(_.schedules.mkString(" ")).mkString("\n")}")
         val mux = DFGMUX[T](dataInsOnePort.map(_.schedules))
         mux.impl(dataCandidates, globalCounter.value, globalLcm)
       }
-      signalMap(target) := target.impl(dataInsOnPorts).resized
-      signalMap(target).setName(target.name)
+      val placeholders = signalMap(target)
+      val rets = target.hardware.impl(dataInsOnPorts)
+      placeholders.zip(rets).foreach { case (placeholder, ret) => placeholder := ret.resized }
+      if (placeholders.size == 1) placeholders.head.setName(target.name) // name these signals
+      else placeholders.zipWithIndex.foreach{ case (placeholder, i) => placeholder.setName(s"${target}_$i")}
     }
-    outputNodes.map(signalMap(_))
+    outputNodes.map(signalMap(_)).flatten
   }
 
   // feasibilityConstraintGraph
