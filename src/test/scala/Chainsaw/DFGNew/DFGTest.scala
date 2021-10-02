@@ -45,7 +45,7 @@ class DFGTest extends AnyFlatSpec {
     //    })
   }
 
-  val testCases = (0 until 20).map(_ => DSPRand.nextInt(8))
+  val testCases = (0 until 1).map(_ => DSPRand.nextInt(4))
   //  val testCases = (0 until 20).map(_ => 1)
 
   def testDFG(dfg: DFG[SInt], factor: Int) = {
@@ -71,7 +71,7 @@ class DFGTest extends AnyFlatSpec {
         clockDomain.waitSampling(factor - 1)
       }
 
-      clockDomain.waitSampling(5 * factor)
+      clockDomain.waitSampling(20 * factor)
     }
   }
 
@@ -86,11 +86,6 @@ class DFGTest extends AnyFlatSpec {
     testDFG(dfg, 1)
     testDFG(algo.folded, 4)
     println(algo.folded)
-
-    //        val golden = fig6_3.dfg
-    //        printlnGreen("golden")
-    //        println(golden)
-    //        println(s"${golden.delayAmount} delays in total")
   }
 
 

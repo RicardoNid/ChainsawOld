@@ -19,7 +19,9 @@ object Operators {
   }
 
   val SIntInc = (dataIns: Seq[SInt]) => Delay(dataIns(0) + 1, 1, init = dataIns.head.getZero)
-  val SIntAdder = (dataIns: Seq[SInt]) => Delay(dataIns(0) + dataIns(1), 1, init = dataIns.head.getZero)
+  val SIntAdder = (dataIns: Seq[SInt]) => dataIns(0) + dataIns(1)
+  val SIntAdderPipe = (dataIns: Seq[SInt]) => Delay(dataIns(0) + dataIns(1), 1, init = dataIns.head.getZero)
   val SIntPT = (dataIns: Seq[SInt]) => dataIns.head
-  val SIntMult = (dataIns: Seq[SInt]) => Delay(dataIns(0), 2, init = dataIns.head.getZero) // TODO: this should be a cMult
+  val SIntMult = (dataIns: Seq[SInt]) => dataIns(0) // TODO: this should be a cMult
+  val SIntMultPipe = (dataIns: Seq[SInt]) => Delay(dataIns(0), 2, init = dataIns.head.getZero) // TODO: this should be a cMult
 }
