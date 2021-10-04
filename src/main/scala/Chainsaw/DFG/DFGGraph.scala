@@ -108,7 +108,7 @@ class DFGGraph[T <: Data](implicit holderProvider: BitCount => T) extends Direct
   def setInput(target: DSPNode[T], inOrder: Int) = {
     val inputName = s"input${inputNodes.size}"
     val inputNode = InputNode[T](inputName)
-    val edge = DefaultDelay[T](1, inOrder)
+    val edge = DefaultDelay[T](0, inOrder)
     addVertex(inputNode)
     addEdge(inputNode, target, edge)
     setEdgeWeight(edge, 0)
@@ -125,7 +125,7 @@ class DFGGraph[T <: Data](implicit holderProvider: BitCount => T) extends Direct
   def setOutput(source: DSPNode[T], outOrder: Int) = {
     val outputName = s"output${outputNodes.size}"
     val outputNode = OutputNode[T](outputName)
-    val edge = DefaultDelay[T](outOrder, 1)
+    val edge = DefaultDelay[T](outOrder, 0)
     addVertex(outputNode)
     addEdge(source, outputNode, edge)
     setEdgeWeight(edge, 0)
@@ -146,7 +146,12 @@ class DFGGraph[T <: Data](implicit holderProvider: BitCount => T) extends Direct
 
   def globalLcm = edgeSeq.map(_.schedules).flatten.map(_.period).reduce(lcm(_, _))
 
-  //
+  // implement a node from its sourcing nodes
+  def implNode(sources: Seq[DSPNode[T]]) = {
+
+  }
+
+  // implement a recursive graph
   val impl: Seq[T] => Seq[T] = (dataIns: Seq[T]) => {
     val signalMap: Map[DSPNode[T], Seq[T]] = vertexSeq.map(node => // a map to connect nodes with their outputs(placeholder)
       node -> node.hardware.outWidths.map(i => if (i.value == -1) holderProvider(-1 bits) else holderProvider(i))).toMap
@@ -156,9 +161,10 @@ class DFGGraph[T <: Data](implicit holderProvider: BitCount => T) extends Direct
     globalCounter.value.setName("globalCounter")
 
     inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap(node).head := bits }
+
     vertexSeq.diff(inputNodes).foreach { target =>
       val dataIns: Seq[Seq[DSPEdge[T]]] = target.incomingEdges.groupBy(_.inOrder).toSeq.sortBy(_._1).map(_._2)
-      val dataInsOnPorts = dataIns.zipWithIndex.map { case (dataInsOnePort, i) =>
+      val dataInsOnPorts = dataIns.zipWithIndex.map { case (dataInsOnePort, i) => // combine dataIns at the same port by a mux
         val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.hardware(signalMap(edge.source), edge.weight).apply(edge.outOrder))
         // showing mux infos
         //        println(s"mux to target $target:\n" +
@@ -166,11 +172,46 @@ class DFGGraph[T <: Data](implicit holderProvider: BitCount => T) extends Direct
         val mux = DFGMUX[T](dataInsOnePort.map(_.schedules))
         mux.impl(dataCandidates, globalCounter.value, globalLcm)
       }
+      // implement target using dataIns from different ports
       val placeholders = signalMap(target)
       val rets = target.hardware.impl(dataInsOnPorts)
       placeholders.zip(rets).foreach { case (placeholder, ret) => placeholder := ret.resized }
       if (placeholders.size == 1) placeholders.head.setName(target.name) // name these signals
       else placeholders.zipWithIndex.foreach { case (placeholder, i) => placeholder.setName(s"${target}_$i") }
+    }
+    outputNodes.map(signalMap(_)).flatten
+  }
+
+  // implement a forwarding graph
+  val implForwarding: Seq[T] => Seq[T] = (dataIns: Seq[T]) => {
+    val signalMap = mutable.Map[DSPNode[T], Seq[T]]()
+    // create the global counter
+    val globalCounter = CounterFreeRun(globalLcm)
+    globalCounter.value.setName("globalCounter")
+
+    inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap += node -> Seq(bits) }
+
+    def implementedNodes = signalMap.keys.toSeq
+    def notImplementedNodes= vertexSeq.diff(implementedNodes)
+    def nextStageNodes = notImplementedNodes.filter(_.sources.forall(implementedNodes.contains(_)))
+
+    while (nextStageNodes.nonEmpty){
+      nextStageNodes.foreach{target =>
+        val dataIns: Seq[Seq[DSPEdge[T]]] = target.incomingEdges.groupBy(_.inOrder).toSeq.sortBy(_._1).map(_._2)
+        val dataInsOnPorts = dataIns.zipWithIndex.map { case (dataInsOnePort, i) =>
+          val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.hardware(signalMap(edge.source), edge.weight).apply(edge.outOrder))
+          // showing mux infos
+          //        println(s"mux to target $target:\n" +
+          //          s"${dataInsOnePort.map(_.schedules.mkString(" ")).mkString("\n")}")
+          val mux = DFGMUX[T](dataInsOnePort.map(_.schedules))
+          mux.impl(dataCandidates, globalCounter.value, globalLcm)
+        }
+
+        val rets = target.hardware.impl(dataInsOnPorts)
+        signalMap += target -> rets
+        if(target.hardware.outWidths.size == 1) rets.head.setName(target.name)
+        else rets.zipWithIndex.foreach { case (ret, i) => ret.setName(s"${target}_$i") }
+      }
     }
     outputNodes.map(signalMap(_)).flatten
   }
