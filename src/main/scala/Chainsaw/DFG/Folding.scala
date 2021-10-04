@@ -15,7 +15,7 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
-class Folding[T <: Data](dfg: DFG[T], foldingSets: Seq[Seq[DSPNode[T]]], deviceGens: Seq[() => DSPNode[T]]) {
+class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T]]], deviceGens: Seq[() => DSPNode[T]]) {
 
   val foldingFactor = foldingSets.head.length
   require(foldingSets.forall(_.size == foldingFactor))
@@ -60,11 +60,11 @@ class Folding[T <: Data](dfg: DFG[T], foldingSets: Seq[Seq[DSPNode[T]]], deviceG
     true
   }
 
-  def retimed = dfg.clone().asInstanceOf[DFG[T]].retimed(solveRetiming())
+  def retimed = dfg.clone().asInstanceOf[DFGGraph[T]].retimed(solveRetiming())
 
   def folded(implicit holderProvider: BitCount => T) = {
     val retimedDFG = retimed
-    val foldedDFG = DFG[T]
+    val foldedDFG = DFGGraph[T]
     (retimedDFG.inputNodes ++ retimedDFG.outputNodes).foreach(foldedDFG.addVertex(_))
     devices.foreach(foldedDFG.addVertex(_))
     printlnGreen(s"folded nodes: ${foldedDFG.vertexSeq.mkString(" ")}")
@@ -79,7 +79,7 @@ class Folding[T <: Data](dfg: DFG[T], foldingSets: Seq[Seq[DSPNode[T]]], deviceG
       assert(foldedDelay >= 0, s"folding constraints not met, delay of $U -> $V is ${retimedDFG.getEdgeWeight(edge)}, folded to  $foldedDelay")
       val inOrder = edge.inOrder
       val outOrder = edge.outOrder
-      val foldedEdge = DefaultDelay[T](Seq(Schedule(if(V.isIO) (v + U.delay) % foldingFactor else v, foldingFactor)), inOrder, outOrder)
+      val foldedEdge = DefaultDelay[T](Seq(Schedule(if (V.isIO) (v + U.delay) % foldingFactor else v, foldingFactor)), outOrder, inOrder)
       foldedDFG.addEdge(source, target, foldedEdge)
       foldedDFG.setEdgeWeight(foldedEdge, foldedDelay)
 

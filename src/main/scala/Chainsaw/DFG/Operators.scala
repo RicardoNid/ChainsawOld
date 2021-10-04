@@ -23,7 +23,6 @@ object Operators {
   )
 
   // for simulation(using delay)
-
   val outputWidths = Seq(10 bits)
 
   val SIntInc = DSPHardware((dataIns: Seq[SInt]) => Seq(Delay(dataIns(0) + 1, 1, init = dataIns.head.getZero)), 2, outputWidths)

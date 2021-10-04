@@ -15,6 +15,7 @@ package object DFG {
   implicit val sintProvider = (width: BitCount) => if(width.value >= 1) SInt(width) else SInt()
   implicit val uintProvider = (width: BitCount) => if(width.value >= 1) UInt(width) else UInt()
   implicit val bitsProvider = (width: BitCount) => if(width.value >= 1) Bits(width) else Bits()
+  implicit val complexProvider = (width: BitCount) => ComplexNumber(1, width.value - 2)
 
   implicit class nodeUtils[T <: Data](node: DSPNode[T]) {
     def >=>(delay: Int) = DSPAssignment(node, delay, node)

@@ -21,12 +21,12 @@ import org.jgrapht.generate._
 
 import scala.collection.JavaConversions._
 
-class DFGTest extends AnyFlatSpec {
+class DFGGraphTest extends AnyFlatSpec {
 
   import Operators._
 
   "dfg" should "be implemented correctly" in {
-    val dfg = DFG[SInt]
+    val dfg = DFGGraph[SInt]
 
     val pts = (0 until 4).map(i => SIntPT.asDSPNode(s"pt$i", 1 cycles, 1 ns))
     val Seq(pt0, pt1, pt2, pt3) = pts
@@ -48,7 +48,7 @@ class DFGTest extends AnyFlatSpec {
   val testCases = (0 until 10).map(_ => DSPRand.nextInt(4))
   //  val testCases = (0 until 20).map(_ => 1)
 
-  def testDFG(dfg: DFG[SInt], factor: Int) = {
+  def testDFG(dfg: DFGGraph[SInt], factor: Int) = {
 
     SimConfig.withWave.compile(new Component {
       val dataIn = in SInt (10 bits)

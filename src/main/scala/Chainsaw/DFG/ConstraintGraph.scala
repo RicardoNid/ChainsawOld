@@ -20,7 +20,7 @@ import scala.util.{Failure, Success, Try}
 import scala.collection.JavaConversions._
 
 
-class ConstraintGraph[T <: Data](implicit holderProvider: BitCount => T) extends DFG[T] {
+class ConstraintGraph[T <: Data](implicit holderProvider: BitCount => T) extends DFGGraph[T] {
 
   // init
   val referenceNode = VoidNode[T]()

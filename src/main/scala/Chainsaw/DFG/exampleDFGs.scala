@@ -14,15 +14,15 @@ import Chainsaw.dspTest._
 
 object simpleFolding {
 
-  val incs = (0 until 4).map(i => SIntInc.asDSPNode(s"add$i", 1 cycles, 1 ns))
+  val incs = (0 until 4).map(i => SIntInc.asDSPNode(s"increase$i", 0 cycles, 1 ns))
   val Seq(inc0, inc1, inc2, inc3) = incs
-  val incGen = () => SIntInc.asDSPNode(s"inc", 1 cycles, 1 ns)
+  val incGen = () => SIntInc.asDSPNode(s"", 1 cycles, 1 ns)
   val foldingSets = Seq(Seq(inc0, inc1), Seq(inc2, inc3))
   val deviceGens = Seq(incGen, incGen)
 
   def dfg = {
     printlnGreen("using simple graph for folding")
-    val dfg = DFG[SInt]
+    val dfg = DFGGraph[SInt]
     incs.foreach(dfg.addVertex(_))
     dfg.setInput(inc0)
     dfg.addExp(inc0 >=> 1 >=> inc1)
@@ -51,7 +51,7 @@ object chap6 {
 
   def dfg6_3 = {
     printlnGreen("using fig 6.3")
-    val dfg = DFG[SInt]
+    val dfg = DFGGraph[SInt]
     // add vertices
     (adds ++ mults).foreach(dfg.addVertex(_))
     // drive vertices
@@ -73,7 +73,7 @@ object chap6 {
   // fig6.5(fig 6.3 before retiming)
   def fig6_5 = {
     printlnGreen("using fig 6.3 before retiming")
-    val dfg = DFG[SInt]
+    val dfg = DFGGraph[SInt]
     (adds ++ mults).foreach(dfg.addVertex(_))
     val input = dfg.setInput(adds0)
     val exps = Seq(

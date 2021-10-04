@@ -32,7 +32,7 @@ import scala.util.{Try, Success, Failure}
  * self-loop: no
  * parallel edge: no
  */
-class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
+class DFGGraph[T <: Data](implicit holderProvider: BitCount => T) extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
 
   def vertexSeq = vertexSet().toSeq
 
@@ -49,7 +49,7 @@ class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DirectedWei
 
     def weight = getEdgeWeight(edge).toInt
 
-    def symbol = s"$source -> $target"
+    def symbol = s"$source(${edge.outOrder}) -> $target(${edge.inOrder})"
   }
 
   implicit class NodeProperties(node: DSPNode[T]) {
@@ -87,7 +87,7 @@ class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DirectedWei
   def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Int): Unit = {
     val inOrder = target.incomingEdges.size // default strategy
     val outOrder = 0 // default strategy
-    val edge = DefaultDelay[T](Seq(Schedule(1, 1)), inOrder, outOrder)
+    val edge = DefaultDelay[T](outOrder, inOrder)
     if (addEdge(source, target, edge)) setEdgeWeight(edge, delay)
   }
 
@@ -105,11 +105,31 @@ class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DirectedWei
     nodes.init.zip(nodes.tail).zip(delays).foreach { case ((src, des), delay) => addEdge(src, des, delay) }
   }
 
+  def setInput(target: DSPNode[T], inOrder: Int) = {
+    val inputName = s"input${inputNodes.size}"
+    val inputNode = InputNode[T](inputName)
+    val edge = DefaultDelay[T](1, inOrder)
+    addVertex(inputNode)
+    addEdge(inputNode, target, edge)
+    setEdgeWeight(edge, 0)
+    inputNode
+  }
+
   def setInput(target: DSPNode[T], name: String = "") = {
     val inputName = if (name.nonEmpty) name else s"input${inputNodes.size}"
     val inputNode = InputNode[T](inputName)
     addExp(inputNode >=> 0 >=> target)
     inputNode
+  }
+
+  def setOutput(source: DSPNode[T], outOrder: Int) = {
+    val outputName = s"output${outputNodes.size}"
+    val outputNode = OutputNode[T](outputName)
+    val edge = DefaultDelay[T](outOrder, 1)
+    addVertex(outputNode)
+    addEdge(source, outputNode, edge)
+    setEdgeWeight(edge, 0)
+    outputNode
   }
 
   def setOutput(source: DSPNode[T], name: String = "") = {
@@ -139,7 +159,7 @@ class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DirectedWei
     vertexSeq.diff(inputNodes).foreach { target =>
       val dataIns: Seq[Seq[DSPEdge[T]]] = target.incomingEdges.groupBy(_.inOrder).toSeq.sortBy(_._1).map(_._2)
       val dataInsOnPorts = dataIns.zipWithIndex.map { case (dataInsOnePort, i) =>
-        val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.impl(signalMap(edge.source), edge.weight).apply(edge.outOrder))
+        val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.hardware(signalMap(edge.source), edge.weight).apply(edge.outOrder))
         // showing mux infos
         //        println(s"mux to target $target:\n" +
         //          s"${dataInsOnePort.map(_.schedules.mkString(" ")).mkString("\n")}")
@@ -150,7 +170,7 @@ class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DirectedWei
       val rets = target.hardware.impl(dataInsOnPorts)
       placeholders.zip(rets).foreach { case (placeholder, ret) => placeholder := ret.resized }
       if (placeholders.size == 1) placeholders.head.setName(target.name) // name these signals
-      else placeholders.zipWithIndex.foreach{ case (placeholder, i) => placeholder.setName(s"${target}_$i")}
+      else placeholders.zipWithIndex.foreach { case (placeholder, i) => placeholder.setName(s"${target}_$i") }
     }
     outputNodes.map(signalMap(_)).flatten
   }
@@ -172,17 +192,17 @@ class DFG[T <: Data](implicit holderProvider: BitCount => T) extends DirectedWei
   override def toString: String =
     s"nodes:\n${vertexSeq.mkString(" ")}\n" +
       s"edges:\n${edgeSeq.map(edge => s"${edge.symbol} $edge, ${edge.weight} cycle").mkString("\n")}\n" +
-      s"cycles:\n${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}"
+      s"loops:\n${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}"
 
   /** Besides nodes and edges, we clone the weights
    */
   override def clone(): AnyRef = {
-    val graph = super.clone().asInstanceOf[DFG[T]]
+    val graph = super.clone().asInstanceOf[DFGGraph[T]]
     graph.foreachEdge(edge => graph.setEdgeWeight(edge, edge.weight))
     graph
   }
 }
 
-object DFG {
-  def apply[T <: Data](implicit holderProvider: BitCount => T): DFG[T] = new DFG()
+object DFGGraph {
+  def apply[T <: Data](implicit holderProvider: BitCount => T): DFGGraph[T] = new DFGGraph()
 }
