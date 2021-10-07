@@ -1,5 +1,0 @@
-package FTN
-
-class Rx {
-
-}

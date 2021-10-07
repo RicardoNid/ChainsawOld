@@ -1,4 +1,4 @@
-
+organization := "seit311"
 name := "Chainsaw"
 version := "0.1"
 scalaVersion := "2.11.12"
