@@ -25,8 +25,10 @@ object Operators {
   // for simulation(using delay)
   val outputWidths = Seq(10 bits)
 
-  val SIntInc = DSPHardware((dataIns: Seq[SInt]) => Seq(Delay(dataIns(0) + 1, 1, init = dataIns.head.getZero)), 2, outputWidths)
+  val SintKeep = DSPHardware((dataIns: Seq[SInt]) => Seq(dataIns(0)), 1, outputWidths)
+  val SIntInc = DSPHardware((dataIns: Seq[SInt]) => Seq(dataIns(0) + 1), 1, outputWidths)
   val SIntAdder = DSPHardware((dataIns: Seq[SInt]) => Seq(dataIns(0) + dataIns(1)), 2, outputWidths)
+
   val SIntAdderPipe = DSPHardware((dataIns: Seq[SInt]) => Seq(Delay(dataIns(0) + dataIns(1), 1, init = dataIns.head.getZero)), 2, outputWidths)
   val SIntPT = DSPHardware((dataIns: Seq[SInt]) => Seq(dataIns.head), 1, outputWidths)
   val SIntCMult = DSPHardware((dataIns: Seq[SInt]) => Seq(dataIns(0)), 1, outputWidths) // TODO: this should be a cMult

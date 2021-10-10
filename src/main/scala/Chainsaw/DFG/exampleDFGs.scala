@@ -12,7 +12,7 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
-object ShowGraphs{
+object ShowGraphs {
   def main(args: Array[String]): Unit = {
     println(chap2.fig2_2)
   }
@@ -39,10 +39,9 @@ object simpleFolding {
   }
 }
 
-object chap2{
-
+object chap2 {
   def fig2_2 = {
-    val Seq(n1, n2, n3, n4, n5, n6) = Seq(1,1,1,2,2,2).zipWithIndex.map{ case (exe, i) => GeneralNode[SInt](s"node${i + 1}", 0 cycles, exe sec)}
+    val Seq(n1, n2, n3, n4, n5, n6) = Seq(1, 1, 1, 2, 2, 2).zipWithIndex.map { case (exe, i) => GeneralNode[SInt](s"node${i + 1}", 0 cycles, exe sec) }
     printlnGreen("using fig 2.2")
     val dfg = DFGGraph[SInt]
     dfg.addPath(n1 >> 2 >> n4 >> 0 >> n2 >> 0 >> n1)
@@ -50,11 +49,23 @@ object chap2{
     dfg.addPath(n1 >> 4 >> n6 >> 0 >> n3)
     dfg
   }
+}
 
+object chap5 {
+  def fig5_2 = {
+    val Seq(a, b, d) = Seq("a", "b", "d").map(name => SintKeep.asDSPNode(name, 0 cycles, 1 ns))
+    val c = SIntAdder.asDSPNode("c", 0 cycles, 1 ns)
+    printlnGreen("using fig 5.2")
+    val dfg = DFGGraph[SInt]
+    dfg.addPath(a >> 0 >> c >> 9 >> d >> 0 >> c)
+    dfg.addPath(c >> 0 >> b)
+    dfg.setInput(a)
+    dfg.setOutput(b)
+    dfg
+  }
 }
 
 object chap6 {
-
   val adds = (0 until 4).map(i => SIntAdder.asDSPNode(s"add$i", 1 cycles, 1 ns))
   val Seq(adds0, adds1, adds2, adds3) = adds
   val mults = (0 until 4).map(i => SIntCMult.asDSPNode(s"mult$i", 2 cycles, 2 ns))
@@ -112,7 +123,6 @@ object chap6 {
 }
 
 object chap4 {
-
   def fig4_3 = {
     val Seq(r1, r2, r3, r4) = (0 until 4).map(i => VoidNode[SInt](s"const$i"))
     val cg = ConstraintGraph[SInt]
@@ -123,7 +133,6 @@ object chap4 {
     cg.addConstraint(r3 - r2 <= 2)
     cg
   }
-
 }
 
 object fft {

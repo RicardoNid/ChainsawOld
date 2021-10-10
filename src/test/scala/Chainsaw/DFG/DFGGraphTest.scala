@@ -1,16 +1,13 @@
 package Chainsaw.DFG
 
 import org.scalatest.flatspec.AnyFlatSpec
-
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
-
 import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
-
 import org.jgrapht._
 import org.jgrapht.graph._
 import org.jgrapht.graph.builder._
@@ -20,6 +17,7 @@ import org.jgrapht.traverse._
 import org.jgrapht.generate._
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable.ArrayBuffer
 
 class DFGGraphTest extends AnyFlatSpec {
 
@@ -38,6 +36,7 @@ class DFGGraphTest extends AnyFlatSpec {
     println(dfg.edgeSet().mkString(" "))
   }
 
+
   val testCases = (0 until 10).map(_ => DSPRand.nextInt(4))
   //  val testCases = (0 until 20).map(_ => 1)
 
@@ -46,18 +45,24 @@ class DFGGraphTest extends AnyFlatSpec {
     SimConfig.withWave.compile(new Component {
       val dataIn = in SInt (10 bits)
       val dataOut = out SInt (10 bits)
+      val validIn = in Bool()
+      val validOut = out Bool()
       dataOut := dfg.impl(Seq(dataIn)).head
+      validOut := Delay(validIn, dfg.latency * factor, init = False)
 
     }).doSim { dut =>
       import dut.{clockDomain, dataIn, dataOut}
       dataIn #= 0
+      dut.validIn #= false
       clockDomain.forkStimulus(2)
       clockDomain.waitSampling(10 * factor - 1)
 
       testCases.foreach { testCase =>
         dataIn #= testCase
+        dut.validIn #= true
         clockDomain.waitSampling()
         dataIn #= 0
+        dut.validIn #= false
         clockDomain.waitSampling(factor - 1)
       }
 
@@ -73,9 +78,11 @@ class DFGGraphTest extends AnyFlatSpec {
 
     val algo = new Folding[SInt](dfg, foldingSet, deviceGens)
     assert(new Folding[SInt](algo.retimed, foldingSet, deviceGens).isFeasible)
+    val foldedDFG = algo.folded
     testDFG(dfg, 1)
-    testDFG(algo.folded, 4)
+    testDFG(foldedDFG, 4)
     println(algo.folded)
+    DFGTestUtil.verifyFunction(dfg, foldedDFG, SInt(10 bits), -4, 0)
   }
 
   it should "fold correctly on simple graph" in {
@@ -101,5 +108,14 @@ class DFGGraphTest extends AnyFlatSpec {
     assert(algo.delaysCount == 4)
     assert(algo.criticalPathLength == 5.0)
     assert(algo.iterationBound == 2.0)
+  }
+
+  "unfolding algo" should "work on fig5.2" in {
+    val dfg = chap5.fig5_2
+    val algo = new Unfolding(dfg, 2)
+    val unfoldedDFG = algo.unfolded
+
+    println(unfoldedDFG)
+    DFGTestUtil.verifyFunction(dfg, unfoldedDFG, SInt(10 bits), 2, 0)
   }
 }

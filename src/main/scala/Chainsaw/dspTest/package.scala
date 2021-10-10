@@ -19,6 +19,13 @@ package object dspTest {
     }
   }
 
+  def setMonitorOnVec[T <: BaseType](trigger: Bool, target: Vec[T], Container: ArrayBuffer[BigInt]) = fork {
+    while (true) {
+      if (trigger.toBoolean) Container ++= target.map(_.toBigInt)
+      sleep(2)
+    }
+  }
+
   /** poke data of whatever type(int, double, complex), not type-safe(won't by found by linter)
    */
   def pokeWhatever[D](port: Data, data: D): Unit = {
@@ -78,7 +85,7 @@ package object dspTest {
   /** A simple test procedure for Flow - poke stimulus to dataIn Flow and monitor dataOut Flow
    *
    */
-  def flowPeekPokeRound[Do, Di, Ti <: Data, To <: Data](dut: Component, testCases: Seq[Di], dataIn: DataCarrier[Ti], dataOut: DataCarrier[To], latency:Int) = {
+  def flowPeekPokeRound[Do, Di, Ti <: Data, To <: Data](dut: Component, testCases: Seq[Di], dataIn: DataCarrier[Ti], dataOut: DataCarrier[To], latency: Int) = {
     // init
     dataIn.halt()
     dut.clockDomain.waitSampling()
@@ -86,7 +93,7 @@ package object dspTest {
     val dutResult = ArrayBuffer[Do]()
     dataOut.setMonitor(dutResult)
     // poke stimulus
-    testCases.indices.foreach{i=>
+    testCases.indices.foreach { i =>
       dataIn.poke(testCases(i), lastWhen = i == (testCases.length - 1))
       dut.clockDomain.waitSampling()
     }
@@ -127,6 +134,21 @@ package object dspTest {
 
       // deal with payload
       pokeWhatever(dc.payload, data)
+    }
+
+    def pokeRandom(lastWhen: Boolean = false) = {
+      {
+
+        // deal with control signals
+        dc.valid #= true
+        dc.payload match {
+          case fragment: Fragment[_] => fragment.last #= lastWhen
+          case _ => // do nothing
+        }
+
+        // deal with payload
+        dc.payload.randomize()
+      }
     }
 
     def forkWhenValid(body: => Unit) = fork {

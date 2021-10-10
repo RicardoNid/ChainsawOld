@@ -18,6 +18,8 @@ abstract class DSPNode[T <: Data] {
   val delay: Int
   val exeTime: Double
 
+  def copy(newName: String): DSPNode[T]
+
   override def toString: String = name
 }
 
@@ -28,6 +30,9 @@ class GeneralNode[T <: Data](implp: DSPHardware[T], namep: String, delayp: Cycle
   override val name: String = namep // TODO: implement reflection
   override val delay: Int = delayp.toInt
   override val exeTime: Double = exeTimep.toDouble
+
+  // FIXME: that's weird
+  override def copy(newName: String): DSPNode[T] = new GeneralNode(hardware, newName, delay cycles, exeTime sec)
 }
 
 object GeneralNode {
@@ -45,6 +50,7 @@ class InputNode[T <: Data](namev: String) extends DSPNode[T] {
   override val name: String = namev
   override val delay: Int = 0
   override val exeTime: Double = 0
+  override def copy(newName: String): DSPNode[T] = new InputNode[T](newName)
 }
 
 object InputNode {
@@ -56,6 +62,7 @@ class OutputNode[T <: Data](namev: String) extends DSPNode[T] {
   override val name: String = namev
   override val delay: Int = 0
   override val exeTime: Double = 0
+  override def copy(newName: String): DSPNode[T] = new OutputNode[T](newName)
 }
 
 object OutputNode {

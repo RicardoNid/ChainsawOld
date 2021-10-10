@@ -29,8 +29,8 @@ import scala.util.{Try, Success, Failure}
 /** Graph properties:
  * directed: yes
  * weighted: yes
- * self-loop: no
- * parallel edge: no
+ * self-loop: yes
+ * parallel edge: yes
  */
 class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
 
@@ -77,6 +77,11 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
   def targetsOf(node: DSPNode[T]) = outgoingEdgesOf(node).map(_.target)
 
   def executionTimes = vertexSeq.map(_.exeTime)
+
+  /** Confirm that the graph has no mux(parallel edges)
+   */
+  // classification
+  def hasNoMux = vertexSeq.forall(vertex => vertex.targets.distinct.size == vertex.targets.size)
 
   // constructing graph
   override def setEdgeWeight(e: DSPEdge[T], weight: Double): Unit = {
@@ -141,10 +146,18 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
 
   // properties
   def isRecursive: Boolean = new CycleDetector(this).detectCycles()
+  def isForwarding: Boolean = !isRecursive
 
   def delayAmount = vertexSeq.map(node => (node.outgoingEdges.map(_.weight) :+ 0.0).max).sum
 
+  /** The least common multiple of all muxes in this DFG
+   */
   def globalLcm = edgeSeq.map(_.schedules).flatten.map(_.period).reduce(lcm(_, _))
+
+  def latency = {
+    val algo = new alg.shortestpath.BellmanFordShortestPath(this)
+    Seq.tabulate(inputNodes.size, outputNodes.size)((i,j) => algo.getPathWeight(inputNodes(i), outputNodes(j))).flatten.min.toInt
+  }
 
   // implement a node from its sourcing nodes
   def implNode(sources: Seq[DSPNode[T]]) = {
@@ -152,7 +165,7 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
   }
 
   // implement a recursive graph
-  val impl: Seq[T] => Seq[T] = (dataIns: Seq[T]) => {
+  val implRecursive: Seq[T] => Seq[T] = (dataIns: Seq[T]) => {
     val signalMap: Map[DSPNode[T], Seq[T]] = vertexSeq.map(node => // a map to connect nodes with their outputs(placeholder)
       node -> node.hardware.outWidths.map(i => if (i.value == -1) holderProvider(-1 bits) else holderProvider(i))).toMap
 
@@ -183,6 +196,7 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
   }
 
   // implement a forwarding graph
+  // TODO: verify this
   val implForwarding: Seq[T] => Seq[T] = (dataIns: Seq[T]) => {
     val signalMap = mutable.Map[DSPNode[T], Seq[T]]()
     // create the global counter
@@ -217,6 +231,8 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
     }
     outputNodes.map(signalMap(_)).flatten
   }
+
+  val impl = if(isRecursive) implRecursive else implRecursive
 
   // feasibilityConstraintGraph
   def fcg = {
