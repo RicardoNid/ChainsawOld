@@ -79,8 +79,5 @@ object Bitonic extends App {
     val result = dataOut.payload.map(_.toInt)
     println(result.mkString(" "))
     assert(result.zip(testCase.sorted).forall{ case (i, i1) => i == i1})
-
   }
-
-
 }

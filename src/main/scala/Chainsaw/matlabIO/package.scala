@@ -123,6 +123,8 @@ package object matlabIO {
       complex.imag / that
     )
 
+    def formatted(fmtstr:String) = complex.real.formatted(fmtstr) + " + " + complex.imag.formatted(fmtstr) + "i"
+
     def sameAs(that: MComplex, epsilon: Double = 1.0) = {
       (complex.real - that.real).abs < epsilon &&
         (complex.imag - that.imag).abs < epsilon

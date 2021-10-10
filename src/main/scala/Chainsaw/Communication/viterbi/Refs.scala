@@ -29,10 +29,4 @@ object Refs {
     val Golden = Refs.vitdecHard(codedData, trellisM, 6 * constLen)
     (trellis, testCases, Golden)
   }
-
-
-
-
-
-
 }

@@ -11,15 +11,17 @@ import scala.collection.mutable.ArrayBuffer
  * @param symbolType    to define the QFormat of symbols in
  * @param bitsAllocated to define the modulation mode, 1 -> QAM2, 2 -> QAM4, ...
  */
-case class QAMDeModCore(symbolType: HardType[ComplexNumber], bitsAllocated: Int) extends Component {
+case class QAMDeModCore(symbolType: HardType[ComplexNumber], bitsAllocated: Int, factor:Double = 1.0) extends Component {
 
   val dataIn = slave Flow symbolType
   val dataOut = master Flow Bits(bitsAllocated bits)
+  dataIn.valid.allowPruning()
+  dataOut.valid.allowPruning()
 
   val maxExp = dataIn.payload.real.maxExp // in fact, this should be 1
   val minExp = dataIn.payload.real.minExp
 
-  val thresholds = (i: Int) => SF(i / Refs.getQAMRms(bitsAllocated), maxExp exp, minExp exp)
+  val thresholds = (i: Int) => SF(i / Refs.getQAMRms(bitsAllocated) * factor, maxExp exp, minExp exp) // TODO: get threshold from a RAM
   val abs = (value: SFix) => Mux(value.raw.msb, -value, value)
   val isPositive = (value: SFix) => ~value.raw.msb
 

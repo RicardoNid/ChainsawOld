@@ -23,6 +23,12 @@ object Refs {
     ret.map(_.toInt)
   }
 
+  def qamdemod(input: MComplex, bitPerSymbol: Int, gray: Boolean) = {
+    val ret = if (!gray) eng.feval[Double]("qamdemod", input, Array(1 << bitPerSymbol), "bin")
+    else eng.feval[Double]("qamdemod", input, Array(1 << bitPerSymbol), "gray")
+    ret.toInt
+  }
+
   def getQAMValues(bits: Int, gray: Boolean = true) = {
     require(bits >= 1)
     val M = 1 << bits

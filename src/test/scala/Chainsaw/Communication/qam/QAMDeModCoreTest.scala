@@ -12,7 +12,7 @@ import scala.math.ceil
 
 class QAMDeModCoreTest extends AnyFlatSpec {
 
-  def runSim(bitsAllocated: Int) = {
+  def runSim(bitsAllocated: Int, factor: Double = 1.0) = {
 
     printlnGreen(s"testing QAM${1 << bitsAllocated}")
 
@@ -21,10 +21,10 @@ class QAMDeModCoreTest extends AnyFlatSpec {
     val testUpperbound = Refs.getQAMValues(bitsAllocated).map(_.modulus).max
     val testCasesBeforeNorm = (0 until 1000).map(_ => DSPRand.nextComplex(-testUpperbound, testUpperbound))
       .filterNot(complex => isInt(complex.real) || isInt((complex.imag)))
-    val testCases = testCasesBeforeNorm.map(_ / Refs.getQAMRms(bitsAllocated))
+    val testCases = testCasesBeforeNorm.map(_ / Refs.getQAMRms(bitsAllocated) * factor)
     var dutResults = ArrayBuffer[BigInt]()
 
-    SimConfig.withWave.compile(QAMDeModCore(HardType(ComplexNumber(1, -14)), bitsAllocated)).doSim { dut =>
+    SimConfig.withWave.compile(QAMDeModCore(HardType(ComplexNumber(1, -14)), bitsAllocated, factor)).doSim { dut =>
       import dut.{clockDomain, dataIn, dataOut}
       clockDomain.forkStimulus(2)
       dutResults = flowPeekPokeRound(dut, testCases, dataIn, dataOut, 1)
@@ -36,9 +36,9 @@ class QAMDeModCoreTest extends AnyFlatSpec {
     println(s"golden ${golden.map(_.toString.padToLeft(3, ' ')).mkString(" ")}")
     val diff = golden.zip(dutResults).map { case (g, y) => (g - y).abs }
     if (!diff.forall(_ == 0)) {
-      println(s"diff   ${diff.map(_.toString.padToLeft(3, ' ')).mkString(" ")}")
-      println(s"diff types ${diff.map(_.toString.padToLeft(3, ' ')).distinct.mkString(" ")}")
-      println(s"diff count ${diff.filter(_ != 0).size}")
+      printlnRed(s"diff   ${diff.map(_.toString.padToLeft(3, ' ')).mkString(" ")}")
+      printlnRed(s"diff types ${diff.map(_.toString.padToLeft(3, ' ')).distinct.mkString(" ")}")
+      printlnRed(s"diff count ${diff.filter(_ != 0).size}")
     }
 
     assert(diff.filter(_ != 0).size < 5)
@@ -46,7 +46,8 @@ class QAMDeModCoreTest extends AnyFlatSpec {
   }
 
   "qamdemod core" should "have correct output" in {
-    Seq(1, 2, 3, 4, 5, 6, 7, 8).foreach(runSim)
+    val factors = (0 until 8).map(_ => DSPRand.nextDouble())
+    Seq(1, 2, 3, 4, 5, 6, 7, 8).zip(factors).foreach{ case (bitAllocated, factor) => runSim(bitAllocated, factor)}
   }
 
 }
