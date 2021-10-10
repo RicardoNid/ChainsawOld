@@ -32,7 +32,7 @@ import scala.util.{Try, Success, Failure}
  * self-loop: no
  * parallel edge: no
  */
-class DFGGraph[T <: Data](implicit holderProvider: BitCount => T) extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
+class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
 
   def vertexSeq = vertexSet().toSeq
 
@@ -47,9 +47,9 @@ class DFGGraph[T <: Data](implicit holderProvider: BitCount => T) extends Direct
 
     def source = getEdgeSource(edge)
 
-    def weight = getEdgeWeight(edge).toInt
+    def weight = getEdgeWeight(edge)
 
-    def symbol = s"$source(${edge.outOrder}) -> $target(${edge.inOrder})"
+    def symbol = s"$source(${edge.outOrder}) -> ${edge.weight} -> $target(${edge.inOrder})"
   }
 
   implicit class NodeProperties(node: DSPNode[T]) {
@@ -80,11 +80,11 @@ class DFGGraph[T <: Data](implicit holderProvider: BitCount => T) extends Direct
 
   // constructing graph
   override def setEdgeWeight(e: DSPEdge[T], weight: Double): Unit = {
-    if (!this.isInstanceOf[ConstraintGraph[T]]) require(weight >= 0, s"negative delay on ${e.symbol} is not allowed")
+    //    if (!this.isInstanceOf[ConstraintGraph[T]]) require(weight >= 0, s"negative delay on ${e.symbol} is not allowed")
     super.setEdgeWeight(e, weight)
   }
 
-  def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Int): Unit = {
+  def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double): Unit = {
     val inOrder = target.incomingEdges.size // default strategy
     val outOrder = 0 // default strategy
     val edge = DefaultDelay[T](outOrder, inOrder)
@@ -142,7 +142,7 @@ class DFGGraph[T <: Data](implicit holderProvider: BitCount => T) extends Direct
   // properties
   def isRecursive: Boolean = new CycleDetector(this).detectCycles()
 
-  def delayAmount = vertexSeq.map(node => (node.outgoingEdges.map(_.weight) :+ 0).max).sum
+  def delayAmount = vertexSeq.map(node => (node.outgoingEdges.map(_.weight) :+ 0.0).max).sum
 
   def globalLcm = edgeSeq.map(_.schedules).flatten.map(_.period).reduce(lcm(_, _))
 
@@ -165,7 +165,7 @@ class DFGGraph[T <: Data](implicit holderProvider: BitCount => T) extends Direct
     vertexSeq.diff(inputNodes).foreach { target =>
       val dataIns: Seq[Seq[DSPEdge[T]]] = target.incomingEdges.groupBy(_.inOrder).toSeq.sortBy(_._1).map(_._2)
       val dataInsOnPorts = dataIns.zipWithIndex.map { case (dataInsOnePort, i) => // combine dataIns at the same port by a mux
-        val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.hardware(signalMap(edge.source), edge.weight).apply(edge.outOrder))
+        val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.hardware(signalMap(edge.source), edge.weight.toInt).apply(edge.outOrder))
         // showing mux infos
         //        println(s"mux to target $target:\n" +
         //          s"${dataInsOnePort.map(_.schedules.mkString(" ")).mkString("\n")}")
@@ -192,14 +192,16 @@ class DFGGraph[T <: Data](implicit holderProvider: BitCount => T) extends Direct
     inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap += node -> Seq(bits) }
 
     def implementedNodes = signalMap.keys.toSeq
-    def notImplementedNodes= vertexSeq.diff(implementedNodes)
+
+    def notImplementedNodes = vertexSeq.diff(implementedNodes)
+
     def nextStageNodes = notImplementedNodes.filter(_.sources.forall(implementedNodes.contains(_)))
 
-    while (nextStageNodes.nonEmpty){
-      nextStageNodes.foreach{target =>
+    while (nextStageNodes.nonEmpty) {
+      nextStageNodes.foreach { target =>
         val dataIns: Seq[Seq[DSPEdge[T]]] = target.incomingEdges.groupBy(_.inOrder).toSeq.sortBy(_._1).map(_._2)
         val dataInsOnPorts = dataIns.zipWithIndex.map { case (dataInsOnePort, i) =>
-          val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.hardware(signalMap(edge.source), edge.weight).apply(edge.outOrder))
+          val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.hardware(signalMap(edge.source), edge.weight.toInt).apply(edge.outOrder))
           // showing mux infos
           //        println(s"mux to target $target:\n" +
           //          s"${dataInsOnePort.map(_.schedules.mkString(" ")).mkString("\n")}")
@@ -209,7 +211,7 @@ class DFGGraph[T <: Data](implicit holderProvider: BitCount => T) extends Direct
 
         val rets = target.hardware.impl(dataInsOnPorts)
         signalMap += target -> rets
-        if(target.hardware.outWidths.size == 1) rets.head.setName(target.name)
+        if (target.hardware.outWidths.size == 1) rets.head.setName(target.name)
         else rets.zipWithIndex.foreach { case (ret, i) => ret.setName(s"${target}_$i") }
       }
     }
@@ -220,7 +222,7 @@ class DFGGraph[T <: Data](implicit holderProvider: BitCount => T) extends Direct
   def fcg = {
     val cg = ConstraintGraph[T]
     foreachInnerVertex(cg.addVertex(_))
-    foreachInnerEdge(edge => cg.addConstraint(edge.source - edge.target <= edge.weight))
+    foreachInnerEdge(edge => cg.addConstraint(edge.source - edge.target <= edge.weight.toInt))
     cg
   }
 
@@ -233,7 +235,7 @@ class DFGGraph[T <: Data](implicit holderProvider: BitCount => T) extends Direct
   override def toString: String =
     s"-----graph-----\n" +
       s"nodes:\n${vertexSeq.mkString(" ")}\n" +
-      s"edges:\n${edgeSeq.map(edge => s"${edge.symbol} $edge, ${edge.weight} cycle").mkString("\n")}\n" +
+      s"edges:\n${edgeSeq.map(edge => s"${edge.symbol} $edge").mkString("\n")}\n" +
       s"loops:\n${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}\n" +
       s"------end------\n"
 

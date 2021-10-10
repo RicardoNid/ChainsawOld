@@ -67,7 +67,7 @@ class DFGGraphTest extends AnyFlatSpec {
 
   // fig 6.3
   it should "fold correctly" in {
-    val dfg = chap6.dfg6_3
+    val dfg = chap6.fig6_3
     val foldingSet = chap6.foldingSets
     val deviceGens = chap6.deviceGens
 
@@ -92,6 +92,14 @@ class DFGGraphTest extends AnyFlatSpec {
 
   "constraint graph" should "work on fig4.3" in {
     val cg = chap4.fig4_3
-    assert(cg.getSolution.zip(Seq(0,0,0,-1)).forall{ case (d, i) => d == i})
+    assert(cg.getSolution.zip(Seq(0, 0, 0, -1)).forall { case (d, i) => d == i })
+  }
+
+  "critical-path-related algos" should "work on fig2.2" in { // TODO: add a test for graph with MIMO devices
+    val dfg = chap2.fig2_2
+    val algo = new CriticalPathAlgo(dfg)
+    assert(algo.delaysCount == 4)
+    assert(algo.criticalPathLength == 5.0)
+    assert(algo.iterationBound == 2.0)
   }
 }

@@ -12,6 +12,12 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
+object ShowGraphs{
+  def main(args: Array[String]): Unit = {
+    println(chap2.fig2_2)
+  }
+}
+
 object simpleFolding {
 
   val incs = (0 until 4).map(i => SIntInc.asDSPNode(s"increase$i", 0 cycles, 1 ns))
@@ -33,6 +39,20 @@ object simpleFolding {
   }
 }
 
+object chap2{
+
+  def fig2_2 = {
+    val Seq(n1, n2, n3, n4, n5, n6) = Seq(1,1,1,2,2,2).zipWithIndex.map{ case (exe, i) => GeneralNode[SInt](s"node${i + 1}", 0 cycles, exe sec)}
+    printlnGreen("using fig 2.2")
+    val dfg = DFGGraph[SInt]
+    dfg.addPath(n1 >> 2 >> n4 >> 0 >> n2 >> 0 >> n1)
+    dfg.addPath(n1 >> 3 >> n5 >> 0 >> n3 >> 0 >> n2)
+    dfg.addPath(n1 >> 4 >> n6 >> 0 >> n3)
+    dfg
+  }
+
+}
+
 object chap6 {
 
   val adds = (0 until 4).map(i => SIntAdder.asDSPNode(s"add$i", 1 cycles, 1 ns))
@@ -49,7 +69,7 @@ object chap6 {
     Seq(mults0, mults3, mults1, mults2)
   )
 
-  def dfg6_3 = {
+  def fig6_3 = {
     printlnGreen("using fig 6.3")
     val dfg = DFGGraph[SInt]
     // add vertices
