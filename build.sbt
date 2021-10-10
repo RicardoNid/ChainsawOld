@@ -4,7 +4,7 @@ version := "0.1"
 scalaVersion := "2.11.12"
 //val spinalVersion = "1.4.3"
 val spinalVersion = "1.5.0"
-val jgraphtVersion = "1.5.1"
+val jgraphtVersion = "1.4.0"
 
 // 编译器选项
 scalacOptions ++= Seq(

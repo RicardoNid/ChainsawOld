@@ -22,9 +22,7 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T]]], de
   // node -> folding order of the node
   val foldingOrders: Map[DSPNode[T], Int] = foldingSets.map { set => set.zipWithIndex.map { case (node, i) => node -> i } }.flatten.toMap
   // node -> the device it belongs(folded to)
-  printlnBlue(deviceGens.mkString(" "))
   val devices: Seq[DSPNode[T]] = deviceGens.map(gen => gen())
-  printlnBlue(devices.mkString(" "))
   val deviceOf: Map[DSPNode[T], DSPNode[T]] = foldingSets.zip(devices).map { case (nodes, device) => nodes.map(_ -> device) }.flatten.toMap
 
   def solveRetiming() = {
@@ -82,8 +80,8 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T]]], de
       val foldedEdge = DefaultDelay[T](Seq(Schedule(if (V.isIO) (v + U.delay) % foldingFactor else v, foldingFactor)), outOrder, inOrder)
       foldedDFG.addEdge(source, target, foldedEdge)
       foldedDFG.setEdgeWeight(foldedEdge, foldedDelay)
-
-      printlnGreen(s"${retimedDFG.getEdgeSource(edge)} -> ${retimedDFG.getEdgeTarget(edge)} folded to $source -> $target at ${foldedEdge.schedules.mkString(" ")}, delay = $foldedDelay cycles")
+      // print details of folding
+      //      printlnGreen(s"${retimedDFG.getEdgeSource(edge)} -> ${retimedDFG.getEdgeTarget(edge)} folded to $source -> $target at ${foldedEdge.schedules.mkString(" ")}, delay = $foldedDelay cycles")
     }
     foldedDFG
   }

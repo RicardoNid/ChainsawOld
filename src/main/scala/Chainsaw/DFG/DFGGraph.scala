@@ -231,9 +231,11 @@ class DFGGraph[T <: Data](implicit holderProvider: BitCount => T) extends Direct
   }
 
   override def toString: String =
-    s"nodes:\n${vertexSeq.mkString(" ")}\n" +
+    s"-----graph-----\n" +
+      s"nodes:\n${vertexSeq.mkString(" ")}\n" +
       s"edges:\n${edgeSeq.map(edge => s"${edge.symbol} $edge, ${edge.weight} cycle").mkString("\n")}\n" +
-      s"loops:\n${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}"
+      s"loops:\n${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}\n" +
+      s"------end------\n"
 
   /** Besides nodes and edges, we clone the weights
    */

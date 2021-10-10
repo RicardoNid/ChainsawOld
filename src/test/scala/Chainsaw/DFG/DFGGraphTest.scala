@@ -36,13 +36,6 @@ class DFGGraphTest extends AnyFlatSpec {
 
     println(dfg.vertexSet().mkString(" "))
     println(dfg.edgeSet().mkString(" "))
-
-    //    GenRTL(new Component {
-    //      val dataIn = in SInt (4 bits)
-    //      val dataOut = out SInt (4 bits)
-    //
-    //      dataOut := dfg.impl(Seq(dataIn)).head
-    //    })
   }
 
   val testCases = (0 until 10).map(_ => DSPRand.nextInt(4))
@@ -61,12 +54,10 @@ class DFGGraphTest extends AnyFlatSpec {
       clockDomain.forkStimulus(2)
       clockDomain.waitSampling(10 * factor - 1)
 
-      printlnBlue(s"factor = $factor")
       testCases.foreach { testCase =>
         dataIn #= testCase
         clockDomain.waitSampling()
         dataIn #= 0
-        printlnBlue(s"wait ${factor - 1}")
         clockDomain.waitSampling(factor - 1)
       }
 
@@ -87,7 +78,6 @@ class DFGGraphTest extends AnyFlatSpec {
     println(algo.folded)
   }
 
-
   it should "fold correctly on simple graph" in {
     val dfg = simpleFolding.dfg
     val foldingSet = simpleFolding.foldingSets
@@ -103,6 +93,5 @@ class DFGGraphTest extends AnyFlatSpec {
   "constraint graph" should "work on fig4.3" in {
     val cg = chap4.fig4_3
     assert(cg.getSolution.zip(Seq(0,0,0,-1)).forall{ case (d, i) => d == i})
-
   }
 }

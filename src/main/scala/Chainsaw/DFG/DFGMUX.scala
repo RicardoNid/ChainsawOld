@@ -27,9 +27,6 @@ case class Schedule(time: Int, period: Int) {
 case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
                             (implicit holderProvider: BitCount => T) {
 
-
-  printlnGreen(allOccupations.mkString(" "), periodLcm)
-
   def periodLcm = schedules.flatten.map(_.period).sorted.reverse.reduce(lcm(_, _))
 
   def occupationOf(schedule: Schedule) = (0 until periodLcm / schedule.period).map(_ * schedule.period + schedule.time)
@@ -42,6 +39,7 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
   def isFull = allOccupations.size == periodLcm
 
   def impl(dataIns: Seq[T], count: UInt, globalLcm: Int) = {
+    //    printlnGreen(s"implementing mux $this")
     require(hasNoCollisions, s"schedule collision:\n${schedules.mkString(" ")}") // no collision TODO: print collision location
     require(dataIns.size == schedules.size)
     if (dataIns.size == 1 && schedules.head.head == Schedule(1, 1)) dataIns.head
@@ -54,15 +52,13 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
           val actualOccupations: Seq[Int] = (0 until multiple).map(i => occupationsOneSource.map(_ + i * periodLcm)).flatten
           actualOccupations.foreach(is(_)(ret := bits))
         }
-        if (!isFull) {
-          printlnRed("not full")
-          default(ret := dataIns.head.getZero)
-          //          if (!isFull) default(ret := dataIns.head)
-        }
+        if (!isFull) default(ret := dataIns.head.getZero)
       }
       ret
     }
   }
+
+  override def toString: String = s"${schedules.map(_.map(occupationOf).map(_.mkString(" ")).mkString(" ")).mkString(" | ")} @ $periodLcm"
 }
 
 object DFGMUX {
