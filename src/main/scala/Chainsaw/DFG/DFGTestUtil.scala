@@ -5,6 +5,15 @@ import Chainsaw.dspTest._
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
+import org.jgrapht._
+import org.jgrapht.graph._
+import org.jgrapht.graph.builder._
+import org.jgrapht.nio._
+import org.jgrapht.nio.dot._
+import org.jgrapht.traverse._
+import org.jgrapht.generate._
+
+import scala.collection.JavaConversions._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -18,7 +27,7 @@ object DFGTestUtil {
    * @param delay   extra delay on latency, latency' = latency / speedUp + delayed
    * @tparam T
    */
-  def verifyFunction[T <: BitVector](original: DFGGraph[T], transformed: DFGGraph[T], elementType: HardType[T], speedUp: Int, delay: Int, testLength:Int = 50) = {
+  def verifyFunction[T <: BitVector](original: DFGGraph[T], transformed: DFGGraph[T], elementType: HardType[T], speedUp: Int, delay: Int, testLength: Int = 50) = {
 
     if (speedUp > 1) { // throughput > 1, bigger port number
       require(transformed.inputNodes.size == original.inputNodes.size * speedUp)
@@ -56,7 +65,15 @@ object DFGTestUtil {
       clockDomain.waitSampling(original.latency)
     }
 
-    val transformedLatency = if (speedUp < 0) original.latency * (-speedUp) + delay else original.latency // TODO: make it correct
+    val inputSchedule = transformed.outgoingEdgesOf(transformed.inputNodes.head).head.schedules.head
+    val outputSchedule = transformed.incomingEdgesOf(transformed.outputNodes.head).head.schedules.head
+
+    // TODO: make it correct
+    val transformedLatency = if (speedUp < 0) {
+      (original.latency * -speedUp) + (outputSchedule.time * transformed.globalLcm / outputSchedule.period) - (inputSchedule.time * transformed.globalLcm / inputSchedule.period)
+    } else {
+      original.latency
+    } + delay
 
     // using the same data on the transformed dfg
     SimConfig
@@ -72,11 +89,13 @@ object DFGTestUtil {
       dataIn.payload.foreach(_ #= 0)
       clockDomain.forkStimulus(2)
       clockDomain.waitSampling()
+      clockDomain.waitSampling((inputSchedule.time - 1) * transformed.globalLcm / inputSchedule.period)
+      clockDomain.waitSampling(transformed.globalLcm)
       dataIn.setMonitor(transFormedTestCases)
       dataOut.setMonitor(transFormedResults)
 
       if (speedUp < 0) {
-        testCases.grouped(original.inputNodes.size).toSeq.foreach { testCase =>
+        testCases.tail.grouped(original.inputNodes.size).toSeq.foreach { testCase =>
           dataIn.poke(testCase)
           clockDomain.waitSampling()
           dataIn.halt()
@@ -92,10 +111,12 @@ object DFGTestUtil {
       clockDomain.waitSampling(transformedLatency)
     }
 
+    println(s"input to the original ${testCases.mkString(" ")}")
+    println(s"input to the transformed ${transFormedTestCases.mkString(" ")}")
     printlnGreen(results.mkString(" "))
     printlnGreen(transFormedResults.mkString(" "))
     printlnGreen(results.diff(transFormedResults))
-    assert(results.zip(transFormedResults).forall{ case (ori, trans) => ori == trans})
+    assert(results.zip(transFormedResults).forall { case (ori, trans) => ori == trans })
 
   }
 }

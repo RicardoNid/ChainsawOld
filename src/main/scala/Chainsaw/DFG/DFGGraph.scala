@@ -155,7 +155,7 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
    */
   def globalLcm = edgeSeq.map(_.schedules).flatten.map(_.period).reduce(lcm(_, _))
 
-  def latency = {
+  def latency = { // FIXME: find a clear definition for both SISO, MIMO, and DFG with MUX
     val algo = new alg.shortestpath.BellmanFordShortestPath(this)
     Seq.tabulate(inputNodes.size, outputNodes.size)((i, j) => algo.getPathWeight(inputNodes(i), outputNodes(j))).flatten.min.toInt
   }

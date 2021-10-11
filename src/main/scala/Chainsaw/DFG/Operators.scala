@@ -38,6 +38,15 @@ object Operators {
     1,
     Seq(width))
 
+  def sIntCMultFolded(constants: Seq[Int], width: BitCount, delay: CyclesCount) = DSPHardware(
+    (dataIns: Seq[SInt],globalCount:GlobalCount) => {
+      val ROM = Mem(constants.map(S(_, width)))
+      val coeff = ROM.readAsync(globalCount.value)
+      Seq(Delay((dataIns(0) * coeff).resize(dataIns(0).getBitsWidth), delay.toInt, init = dataIns.head.getZero))
+    },
+    1,
+    Seq(width))
+
   def sIntAdder(width: BitCount, delay: CyclesCount) = DSPHardware(
     (dataIns: Seq[SInt],globalCount:GlobalCount) => Seq(Delay(dataIns(0) + dataIns(1), delay.toInt, init = dataIns.head.getZero)),
     2,
