@@ -173,6 +173,7 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
     // create the global counter
     val globalCounter = CounterFreeRun(globalLcm)
     globalCounter.value.setName("globalCounter")
+    implicit val globalCount = GlobalCount(globalCounter.value)
 
     inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap(node).head := bits }
 
@@ -184,11 +185,11 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
         //        println(s"mux to target $target:\n" +
         //          s"${dataInsOnePort.map(_.schedules.mkString(" ")).mkString("\n")}")
         val mux = DFGMUX[T](dataInsOnePort.map(_.schedules))
-        mux.impl(dataCandidates, globalCounter.value, globalLcm)
+        mux.impl(dataCandidates, globalLcm)
       }
       // implement target using dataIns from different ports
       val placeholders = signalMap(target)
-      val rets = target.hardware.impl(dataInsOnPorts)
+      val rets = target.hardware.impl(dataInsOnPorts, globalCount)
       placeholders.zip(rets).foreach { case (placeholder, ret) => placeholder := ret.resized }
       if (placeholders.size == 1) placeholders.head.setName(target.name) // name these signals
       else placeholders.zipWithIndex.foreach { case (placeholder, i) => placeholder.setName(s"${target}_$i") }
@@ -203,6 +204,7 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
     // create the global counter
     val globalCounter = CounterFreeRun(globalLcm)
     globalCounter.value.setName("globalCounter")
+    implicit val globalCount = GlobalCount(globalCounter.value)
 
     inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap += node -> Seq(bits) }
 
@@ -221,10 +223,10 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
           //        println(s"mux to target $target:\n" +
           //          s"${dataInsOnePort.map(_.schedules.mkString(" ")).mkString("\n")}")
           val mux = DFGMUX[T](dataInsOnePort.map(_.schedules))
-          mux.impl(dataCandidates, globalCounter.value, globalLcm)
+          mux.impl(dataCandidates,  globalLcm)
         }
 
-        val rets = target.hardware.impl(dataInsOnPorts)
+        val rets = target.hardware.impl(dataInsOnPorts, globalCount)
         signalMap += target -> rets
         if (target.hardware.outWidths.size == 1) rets.head.setName(target.name)
         else rets.zipWithIndex.foreach { case (ret, i) => ret.setName(s"${target}_$i") }

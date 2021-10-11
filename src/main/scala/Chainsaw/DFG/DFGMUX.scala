@@ -24,6 +24,8 @@ case class Schedule(time: Int, period: Int) {
   override def toString: String = s"$time / $period"
 }
 
+case class GlobalCount(value: UInt)
+
 case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
                             (implicit holderProvider: BitCount => T) {
 
@@ -38,7 +40,7 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
 
   def isFull = allOccupations.size == periodLcm
 
-  def impl(dataIns: Seq[T], count: UInt, globalLcm: Int) = {
+  def impl(dataIns: Seq[T], globalLcm: Int)(implicit globalCount: GlobalCount) = {
     //    printlnGreen(s"implementing mux $this")
     require(hasNoCollisions, s"schedule collision:\n${schedules.mkString(" ")}") // no collision TODO: print collision location
     require(dataIns.size == schedules.size)
@@ -46,7 +48,7 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
     else {
       val multiple = globalLcm / periodLcm
       val ret = holderProvider(-1 bits)
-      switch(count) {
+      switch(globalCount.value) {
         schedules.zip(dataIns).foreach { case (schedulesOneSource, bits) =>
           val occupationsOneSource = schedulesOneSource.map(occupationOf(_)).flatten
           val actualOccupations: Seq[Int] = (0 until multiple).map(i => occupationsOneSource.map(_ + i * periodLcm)).flatten
@@ -66,6 +68,7 @@ object DFGMUX {
     GenRTL(new Component {
       val dataIn = in Vec(Bits(4 bits), 3)
       val count = in UInt (log2Up(24) bits)
+      implicit val globalCount = GlobalCount(count)
       val dataOut = out Bits (4 bits)
 
       val mux = DFGMUX[Bits](Seq(
@@ -74,16 +77,17 @@ object DFGMUX {
         Seq(Schedule(3, 12), Schedule(7, 12), Schedule(11, 12))
       ))
 
-      dataOut := mux.impl(dataIn, count, 24)
+      dataOut := mux.impl(dataIn, 24)
     }, name = "complexMUX")
 
     GenRTL(new Component {
       val dataIn = in Bits (4 bits)
       val count = in UInt (log2Up(24) bits)
+      implicit val globalCount = GlobalCount(count)
       val dataOut = out Bits (4 bits)
 
       val mux = DFGMUX[Bits](Seq(Seq(Schedule(1, 1))))
-      dataOut := mux.impl(Seq(dataIn), count, 24)
+      dataOut := mux.impl(Seq(dataIn), 24)
     })
   }
 }

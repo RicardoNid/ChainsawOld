@@ -13,7 +13,7 @@ import Chainsaw.DFG._
 // build fft as a graph
 class DFGFFT {
 
-  val butterfly = (dataIns: Seq[ComplexNumber]) => {
+  val butterfly = (dataIns: Seq[ComplexNumber], globalCount: GlobalCount) => {
     val add = dataIns(0) + dataIns(1)
     val sub = dataIns(0) - dataIns(1)
     Seq(add, sub)

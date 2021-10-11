@@ -10,7 +10,7 @@ import Chainsaw.dspTest._
 
 import scala.collection.mutable.ArrayBuffer
 
-case class DSPHardware[T <: Data](impl: Seq[T] => Seq[T], inDegree: Int, outWidths: Seq[BitCount])
+case class DSPHardware[T <: Data](impl: (Seq[T], GlobalCount) => Seq[T], inDegree: Int, outWidths: Seq[BitCount])
 
 abstract class DSPNode[T <: Data] {
   val hardware: DSPHardware[T]
