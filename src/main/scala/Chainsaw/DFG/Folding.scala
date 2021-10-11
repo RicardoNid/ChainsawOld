@@ -26,7 +26,8 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T]]], de
   val deviceOf: Map[DSPNode[T], DSPNode[T]] = foldingSets.zip(devices).map { case (nodes, device) => nodes.map(_ -> device) }.flatten.toMap
 
   def solveRetiming() = {
-    val cg = dfg.fcg // basic constraint
+    //    val cg = dfg.fcg // basic constraint
+    val cg = ConstraintGraph[T](dfg.holderProvider) // basic constraint
     dfg.foreachInnerEdge { edge => // for each edge, add the folding equation constraint as extra constraint
       val U = dfg.getEdgeSource(edge)
       val V = dfg.getEdgeTarget(edge)

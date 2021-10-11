@@ -146,6 +146,7 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
 
   // properties
   def isRecursive: Boolean = new CycleDetector(this).detectCycles()
+
   def isForwarding: Boolean = !isRecursive
 
   def delayAmount = vertexSeq.map(node => (node.outgoingEdges.map(_.weight) :+ 0.0).max).sum
@@ -156,7 +157,7 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
 
   def latency = {
     val algo = new alg.shortestpath.BellmanFordShortestPath(this)
-    Seq.tabulate(inputNodes.size, outputNodes.size)((i,j) => algo.getPathWeight(inputNodes(i), outputNodes(j))).flatten.min.toInt
+    Seq.tabulate(inputNodes.size, outputNodes.size)((i, j) => algo.getPathWeight(inputNodes(i), outputNodes(j))).flatten.min.toInt
   }
 
   // implement a node from its sourcing nodes
@@ -232,7 +233,7 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
     outputNodes.map(signalMap(_)).flatten
   }
 
-  val impl = if(isRecursive) implRecursive else implRecursive
+  val impl = if (isRecursive) implRecursive else implRecursive
 
   // feasibilityConstraintGraph
   def fcg = {

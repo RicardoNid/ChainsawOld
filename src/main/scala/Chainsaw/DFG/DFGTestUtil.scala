@@ -59,7 +59,8 @@ object DFGTestUtil {
     val transformedLatency = if (speedUp < 0) original.latency * (-speedUp) + delay else original.latency // TODO: make it correct
 
     // using the same data on the transformed dfg
-    SimConfig.withWave.compile(new Component {
+    SimConfig
+      .withWave.compile(new Component {
       val dataIn = slave Flow Vec(elementType, transformed.inputNodes.size)
       val dataOut = master Flow Vec(elementType, transformed.outputNodes.size)
       dataOut.payload := Vec(transformed.impl(dataIn.payload))

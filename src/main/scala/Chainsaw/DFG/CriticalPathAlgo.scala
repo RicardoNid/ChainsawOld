@@ -27,8 +27,10 @@ class CriticalPathAlgo[T <: Data](dfg: DFGGraph[T]) {
           starts.zip(ends).foreach { case (start, end) => graph.addPath(start >> 1 >> end) }
 
           edges.zip(delays).foreach { case (edge, delay) =>
-            graph.addPath(temps(delay - 1) >> 0 >> dfg.getEdgeTarget(edge))
-            graph.removeEdge(edge)
+            if (delay > 0) {
+              graph.addPath(temps(delay - 1) >> 0 >> dfg.getEdgeTarget(edge))
+              graph.removeEdge(edge)
+            }
           }
         }
       }
@@ -51,6 +53,7 @@ class CriticalPathAlgo[T <: Data](dfg: DFGGraph[T]) {
   val shortestPathAlgo = new alg.shortestpath.BellmanFordShortestPath(graph)
 
   // following functions are based on the graph
+
   /** Number of delay units in tht DFG
    */
   def delaysCount = delays.size
@@ -70,7 +73,7 @@ class CriticalPathAlgo[T <: Data](dfg: DFGGraph[T]) {
 
   def iterationBound = {
     val Gd = DFGGraph[T](dfg.holderProvider)
-    Seq.tabulate(starts.size, ends.size) ((i, j) => if (weightMatix(i)(j) >= 0) Gd.addPath(delays(i) >> -weightMatix(i)(j) >> delays(j)))
+    Seq.tabulate(starts.size, ends.size)((i, j) => if (weightMatix(i)(j) >= 0) Gd.addPath(delays(i) >> -weightMatix(i)(j) >> delays(j)))
     println(Gd)
     // step4: running MCM on Gd
     val mcmAlgo = new HowardMinimumMeanCycle(Gd)

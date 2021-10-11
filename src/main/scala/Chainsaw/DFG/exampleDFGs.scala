@@ -1,16 +1,8 @@
 package Chainsaw.DFG
 
 import Chainsaw.DFG.Operators._
-import spinal.core._
-
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
 import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
+import spinal.core._
 
 object ShowGraphs {
   def main(args: Array[String]): Unit = {
@@ -20,9 +12,9 @@ object ShowGraphs {
 
 object simpleFolding {
 
-  val incs = (0 until 4).map(i => SIntInc.asDSPNode(s"increase$i", 0 cycles, 1 ns))
+  val incs = (0 until 4).map(i => sIntInc(10 bits, 0 cycles).asDSPNode(s"increase$i", 0 cycles, 1 ns))
   val Seq(inc0, inc1, inc2, inc3) = incs
-  val incGen = () => SIntInc.asDSPNode(s"", 1 cycles, 1 ns)
+  val incGen = () => sIntInc(10 bits, 1 cycles).asDSPNode(s"", 1 cycles, 1 ns)
   val foldingSets = Seq(Seq(inc0, inc1), Seq(inc2, inc3))
   val deviceGens = Seq(incGen, incGen)
 
@@ -53,8 +45,8 @@ object chap2 {
 
 object chap5 {
   def fig5_2 = {
-    val Seq(a, b, d) = Seq("a", "b", "d").map(name => SintKeep.asDSPNode(name, 0 cycles, 1 ns))
-    val c = SIntAdder.asDSPNode("c", 0 cycles, 1 ns)
+    val Seq(a, b, d) = Seq("a", "b", "d").map(name => sintKeep(10 bits).asDSPNode(name, 0 cycles, 1 ns))
+    val c = sIntAdder(10 bits, 0 cycles).asDSPNode("c", 0 cycles, 1 ns)
     printlnGreen("using fig 5.2")
     val dfg = DFGGraph[SInt]
     dfg.addPath(a >> 0 >> c >> 9 >> d >> 0 >> c)
@@ -63,16 +55,30 @@ object chap5 {
     dfg.setOutput(b)
     dfg
   }
+
+  def fig5_10 = {
+    val x = sintKeep.asDSPNode("x", 0 cycles, 1 ns)
+    val Seq(a, b, c) = Seq("a", "b", "c").map(name => sIntCMult(2, 10 bits, 0 cycles).asDSPNode(name, 0 cycles, 1 ns))
+    val Seq(d, e) = Seq("d", "e").map(name => sIntAdder(10 bits, 0 cycles).asDSPNode(name, 0 cycles, 1 ns))
+    printlnGreen("using fig 5.10")
+    val dfg = DFGGraph[SInt]
+    dfg.addPath(x >> 0 >> c >> 2 >> d >> 4 >> e)
+    dfg.addPath(x >> 0 >> b >> 0 >> d)
+    dfg.addPath(x >> 0 >> a >> 0 >> e)
+    dfg.setInput(x)
+    dfg.setOutput(e)
+    dfg
+  }
 }
 
 object chap6 {
-  val adds = (0 until 4).map(i => SIntAdder.asDSPNode(s"add$i", 1 cycles, 1 ns))
+  val adds = (0 until 4).map(i => sIntAdder(10 bits, 0 cycles).asDSPNode(s"add$i", 1 cycles, 1 ns))
   val Seq(adds0, adds1, adds2, adds3) = adds
-  val mults = (0 until 4).map(i => SIntCMult.asDSPNode(s"mult$i", 2 cycles, 2 ns))
+  val mults = (0 until 4).map(i => sIntCMult(1, 10 bits, 0 cycles).asDSPNode(s"mult$i", 2 cycles, 2 ns))
   val Seq(mults0, mults1, mults2, mults3) = mults
 
-  val addGen = () => SIntAdderPipe.asDSPNode(s"add", 1 cycles, 1 ns)
-  val multGen = () => SIntCMultPipe.asDSPNode(s"mult", 2 cycles, 2 ns)
+  val addGen = () => sIntAdder(10 bits, 1 cycles).asDSPNode(s"add", 1 cycles, 1 ns)
+  val multGen = () => sIntCMult(1, 10 bits, 2 cycles).asDSPNode(s"mult", 2 cycles, 2 ns)
 
   val deviceGens = Seq(addGen, multGen)
   val foldingSets = Seq(

@@ -1,23 +1,12 @@
 package Chainsaw.DFG
 
+import Chainsaw._
 import org.scalatest.flatspec.AnyFlatSpec
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
-import spinal.lib.fsm._
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
-import org.jgrapht._
-import org.jgrapht.graph._
-import org.jgrapht.graph.builder._
-import org.jgrapht.nio._
-import org.jgrapht.nio.dot._
-import org.jgrapht.traverse._
-import org.jgrapht.generate._
 
 import scala.collection.JavaConversions._
-import scala.collection.mutable.ArrayBuffer
 
 class DFGGraphTest extends AnyFlatSpec {
 
@@ -26,7 +15,7 @@ class DFGGraphTest extends AnyFlatSpec {
   "dfg" should "be implemented correctly" in {
     val dfg = DFGGraph[SInt]
 
-    val pts = (0 until 4).map(i => SIntPT.asDSPNode(s"pt$i", 1 cycles, 1 ns))
+    val pts = (0 until 4).map(i => sintKeep.asDSPNode(s"pt$i", 1 cycles, 1 ns))
     val Seq(pt0, pt1, pt2, pt3) = pts
     dfg.addPath(pt0 >> 1 >> pt1 >> 1 >> pt2 >> 1 >> pt3)
     dfg.setInput(pt0)
@@ -36,6 +25,18 @@ class DFGGraphTest extends AnyFlatSpec {
     println(dfg.edgeSet().mkString(" "))
   }
 
+  // TODO : add these tests
+  it should "work on mixed-type operators" in {
+    val dfg = DFGGraph[SInt]
+  }
+
+  it should "work on unknown-width operators in forwarding DFG" in {
+
+  }
+
+  it should "work on partially-known-width operators in forwarding DFG" in {
+
+  }
 
   val testCases = (0 until 10).map(_ => DSPRand.nextInt(4))
   //  val testCases = (0 until 20).map(_ => 1)
@@ -51,7 +52,7 @@ class DFGGraphTest extends AnyFlatSpec {
       validOut := Delay(validIn, dfg.latency * factor, init = False)
 
     }).doSim { dut =>
-      import dut.{clockDomain, dataIn, dataOut}
+      import dut.{clockDomain, dataIn}
       dataIn #= 0
       dut.validIn #= false
       clockDomain.forkStimulus(2)
@@ -112,10 +113,21 @@ class DFGGraphTest extends AnyFlatSpec {
 
   "unfolding algo" should "work on fig5.2" in {
     val dfg = chap5.fig5_2
-    val algo = new Unfolding(dfg, 2)
+    val algo = new Unfolding(dfg, 10)
+    printlnGreen(new CriticalPathAlgo(dfg).iterationBound)
+    val unfoldedDFG = algo.unfolded
+    printlnGreen(new CriticalPathAlgo(unfoldedDFG).iterationBound)
+
+    println(unfoldedDFG)
+    DFGTestUtil.verifyFunction(dfg, unfoldedDFG, SInt(10 bits), 10, 0)
+  }
+
+  it should "work on fig5.10" in {
+    val dfg = chap5.fig5_10
+    val algo = new Unfolding(dfg, 3)
     val unfoldedDFG = algo.unfolded
 
     println(unfoldedDFG)
-    DFGTestUtil.verifyFunction(dfg, unfoldedDFG, SInt(10 bits), 2, 0)
+    DFGTestUtil.verifyFunction(dfg, unfoldedDFG, SInt(10 bits), 3, 0)
   }
 }

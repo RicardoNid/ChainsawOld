@@ -23,17 +23,25 @@ object Operators {
   )
 
   // for simulation(using delay)
-  val outputWidths = Seq(10 bits)
-
-  val SintKeep = DSPHardware((dataIns: Seq[SInt]) => Seq(dataIns(0)), 1, outputWidths)
-  val SIntInc = DSPHardware((dataIns: Seq[SInt]) => Seq(dataIns(0) + 1), 1, outputWidths)
-  val SIntAdder = DSPHardware((dataIns: Seq[SInt]) => Seq(dataIns(0) + dataIns(1)), 2, outputWidths)
-
-  val SIntAdderPipe = DSPHardware((dataIns: Seq[SInt]) => Seq(Delay(dataIns(0) + dataIns(1), 1, init = dataIns.head.getZero)), 2, outputWidths)
-  val SIntPT = DSPHardware((dataIns: Seq[SInt]) => Seq(dataIns.head), 1, outputWidths)
-  val SIntCMult = DSPHardware((dataIns: Seq[SInt]) => Seq(dataIns(0)), 1, outputWidths) // TODO: this should be a cMult
-  val SIntCMultPipe = DSPHardware((dataIns: Seq[SInt]) => Seq(Delay(dataIns(0), 2, init = dataIns.head.getZero)), 1, outputWidths) // TODO: this should be a cMult
+  def sintKeep = DSPHardware((dataIns: Seq[SInt]) => Seq(dataIns(0)), 1, Seq(-1 bits))
+  def sintKeep(width: BitCount) = DSPHardware((dataIns: Seq[SInt]) => Seq(dataIns(0)), 1, Seq(width))
 
   // for implementation
+  def sIntInc(width: BitCount, delay: CyclesCount) = DSPHardware(
+    (dataIns: Seq[SInt]) => Seq(Delay(dataIns(0) + 1, delay.toInt, init = dataIns.head.getZero)),
+    1,
+    Seq(width))
+
+  def sIntCMult(constant: Int, width: BitCount, delay: CyclesCount) = DSPHardware(
+      (dataIns: Seq[SInt]) => Seq(Delay((dataIns(0) * constant).resize(dataIns(0).getBitsWidth), delay.toInt, init = dataIns.head.getZero)),
+      1,
+      Seq(width))
+
+  def sIntAdder(width: BitCount, delay: CyclesCount) = DSPHardware(
+      (dataIns: Seq[SInt]) => Seq(Delay(dataIns(0) + dataIns(1), delay.toInt, init = dataIns.head.getZero)),
+      2,
+      Seq(width))
+
+  def bitsKeep = DSPHardware((dataIns: Seq[Bits]) => Seq(dataIns(0)), 1, Seq(-1 bits))
 
 }
