@@ -52,6 +52,7 @@ object DFGFFT {
   def main(args: Array[String]): Unit = {
 
     println(new DFGFFT().fft4)
+    assert(!(new DFGFFT().fft4.isBasic))
 
     GenRTL(new Component {
       val dataIns = in(Vec(ComplexNumber(1, -6), 4))

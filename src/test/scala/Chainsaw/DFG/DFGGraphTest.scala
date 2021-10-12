@@ -23,6 +23,7 @@ class DFGGraphTest extends AnyFlatSpec {
 
     println(dfg.vertexSeq.mkString(" "))
     println(dfg.edgeSeq.mkString(" "))
+    assert(dfg.isBasic)
   }
 
   // TODO : add these tests

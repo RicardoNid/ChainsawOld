@@ -1,29 +1,14 @@
 package Chainsaw.DFG
 
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
 import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
 import org.jgrapht._
-import org.jgrapht.alg._
 import org.jgrapht.alg.cycle.CycleDetector
 import org.jgrapht.graph._
-import org.jgrapht.graph.builder._
-import org.jgrapht.nio._
-import org.jgrapht.nio.dot._
-import org.jgrapht.traverse._
-import org.jgrapht.generate._
+import spinal.core._
 
 import java.util
-import scala.math.min
 import scala.collection.JavaConversions._
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-
-import scala.util.{Try, Success, Failure}
 
 
 /** Graph properties:
@@ -34,38 +19,55 @@ import scala.util.{Try, Success, Failure}
  */
 class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
 
-  implicit def currentDFG = this
+  implicit def currentDFG: DFGGraph[T] = this
 
   @deprecated override def vertexSet(): util.Set[DSPNode[T]] = super.vertexSet()
 
   @deprecated override def edgeSet(): util.Set[DSPEdge[T]] = super.edgeSet()
 
-  def vertexSeq = super.vertexSet().toSeq
+  def vertexSeq: Seq[DSPNode[T]] = super.vertexSet().toSeq
 
-  def edgeSeq = super.edgeSet().toSeq
+  def edgeSeq: Seq[DSPEdge[T]] = super.edgeSet().toSeq
 
-  def inputNodes = vertexSeq.filter(_.isInstanceOf[InputNode[T]])
+  def inputNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isInstanceOf[InputNode[T]])
 
-  def outputNodes = vertexSeq.filter(_.isInstanceOf[OutputNode[T]])
+  def outputNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isInstanceOf[OutputNode[T]])
 
-  def foreachVertex(body: DSPNode[T] => Unit) = vertexSeq.foreach(body)
+  def foreachVertex(body: DSPNode[T] => Unit): Unit = vertexSeq.foreach(body)
 
-  def foreachInnerVertex(body: DSPNode[T] => Unit) = vertexSeq.filterNot(_.isIO).foreach(body)
+  def foreachInnerVertex(body: DSPNode[T] => Unit): Unit = vertexSeq.filterNot(_.isIO).foreach(body)
 
-  def foreachEdge(body: DSPEdge[T] => Unit) = edgeSeq.foreach(body)
+  def foreachEdge(body: DSPEdge[T] => Unit): Unit = edgeSeq.foreach(body)
 
-  def foreachInnerEdge(body: DSPEdge[T] => Unit) = edgeSeq.filterNot(edge => edge.source.isIO || edge.target.isIO).foreach(body)
+  def foreachInnerEdge(body: DSPEdge[T] => Unit): Unit = edgeSeq.filterNot(edge => edge.source.isIO || edge.target.isIO).foreach(body)
 
-  def sourcesOf(node: DSPNode[T]) = incomingEdgesOf(node).map(_.source)
+  def sourcesOf(node: DSPNode[T]): mutable.Set[DSPNode[T]] = incomingEdgesOf(node).map(_.source)
 
-  def targetsOf(node: DSPNode[T]) = outgoingEdgesOf(node).map(_.target)
+  def targetsOf(node: DSPNode[T]): mutable.Set[DSPNode[T]] = outgoingEdgesOf(node).map(_.target)
 
-  def executionTimes = vertexSeq.map(_.exeTime)
+  def executionTimes: Seq[Double] = vertexSeq.map(_.exeTime)
 
   /** Confirm that the graph has no mux(parallel edges)
    */
   // classification
-  def hasNoMux = vertexSeq.forall(vertex => vertex.targets.distinct.size == vertex.targets.size)
+  def hasNoMux: Boolean = vertexSeq.forall(vertex => vertex.targets.distinct.size == vertex.targets.size)
+
+  def hasNoParallelEdge: Boolean = Seq.tabulate(vertexSeq.size, vertexSeq.size)((i, j) => // for all pairs of two distinct vertices
+    if (i != j) getAllEdges(vertexSeq(i), vertexSeq(j)).size() <= 1 else true) // there should be only 1 / no edge in between
+    .flatten.forall(_ == true)
+
+  def isMISO: Boolean = vertexSeq.forall(_.hardware.outWidths.size == 1)
+
+  def isBasic = {
+    val ret = hasNoMux && hasNoParallelEdge && isMISO
+    if(! ret) {
+      if(!hasNoMux) printlnGreen("this DFG has muxes")
+      if(!hasNoParallelEdge) printlnGreen("this DFG has parallel edges")
+      if(!isMISO) printlnGreen("this DFG is MIMO")
+    }
+    ret
+  }
+
 
   // constructing graph
   override def setEdgeWeight(e: DSPEdge[T], weight: Double): Unit = {
@@ -82,7 +84,7 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
 
   def addExp(exp: DSPAssignment[T]): Unit = {
     import exp._
-    sources.foreach(addVertex(_))
+    sources.foreach(addVertex)
     addVertex(target)
     sources.zip(delays).foreach { case (src, delay) => addEdge(src, target, delay) }
   }
@@ -90,11 +92,11 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
   def addPath(path: DSPPath[T]): Unit = {
     import path._
     require(nodes.size == delays.size + 1)
-    nodes.foreach(addVertex(_))
+    nodes.foreach(addVertex)
     nodes.init.zip(nodes.tail).zip(delays).foreach { case ((src, des), delay) => addEdge(src, des, delay) }
   }
 
-  def setInput(target: DSPNode[T], inOrder: Int) = {
+  def setInput(target: DSPNode[T], inOrder: Int): InputNode[T] = {
     val inputName = s"input${inputNodes.size}"
     val inputNode = InputNode[T](inputName)
     val edge = DefaultDelay[T](0, inOrder)
@@ -104,14 +106,14 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
     inputNode
   }
 
-  def setInput(target: DSPNode[T], name: String = "") = {
+  def setInput(target: DSPNode[T], name: String = ""): InputNode[T] = {
     val inputName = if (name.nonEmpty) name else s"input${inputNodes.size}"
     val inputNode = InputNode[T](inputName)
     addExp(inputNode >=> 0 >=> target)
     inputNode
   }
 
-  def setOutput(source: DSPNode[T], outOrder: Int) = {
+  def setOutput(source: DSPNode[T], outOrder: Int): OutputNode[T] = {
     val outputName = s"output${outputNodes.size}"
     val outputNode = OutputNode[T](outputName)
     val edge = DefaultDelay[T](outOrder, 0)
@@ -121,7 +123,7 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
     outputNode
   }
 
-  def setOutput(source: DSPNode[T], name: String = "") = {
+  def setOutput(source: DSPNode[T], name: String = ""): OutputNode[T] = {
     val outputName = if (name.nonEmpty) name else s"output${outputNodes.size}"
     val outputNode = OutputNode[T](outputName)
     addExp(source >=> 0 >=> outputNode)
@@ -133,28 +135,28 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
 
   def isForwarding: Boolean = !isRecursive
 
-  def delayAmount = vertexSeq.map(node => (node.outgoingEdges.map(_.weight) :+ 0.0).max).sum
+  def delayAmount: Double = vertexSeq.map(node => (node.outgoingEdges.map(_.weight) :+ 0.0).max).sum
 
-  /** The least common multiple of all muxes in this DFG
+  /** The least common multiple of all periods of muxes in this DFG
    */
-  def globalLcm = edgeSeq.map(_.schedules).flatten.map(_.period).reduce(lcm(_, _))
+  def globalLcm: Int = edgeSeq.flatMap(_.schedules).map(_.period).reduce(lcm)
 
-  def latency = { // FIXME: find a clear definition for both SISO, MIMO, and DFG with MUX
+  def latency: Int = { // FIXME: find a clear definition for both SISO, MIMO, and DFG with MUX
     val algo = new alg.shortestpath.BellmanFordShortestPath(this)
     Seq.tabulate(inputNodes.size, outputNodes.size)((i, j) => algo.getPathWeight(inputNodes(i), outputNodes(j))).flatten.min.toInt
   }
 
-  def impl = new DFGImpl(this).impl
+  def impl: Seq[T] => Seq[T] = new DFGImpl(this).impl
 
   // feasibilityConstraintGraph
-  def fcg = {
+  def fcg: ConstraintGraph[T] = {
     val cg = ConstraintGraph[T]
     foreachInnerVertex(cg.addVertex(_))
     foreachInnerEdge(edge => cg.addConstraint(edge.source - edge.target <= edge.weight.toInt))
     cg
   }
 
-  def retimed(solutions: Seq[Int]) = {
+  def retimed(solutions: Seq[Int]): DFGGraph[T] = {
     val r: Map[DSPNode[T], Int] = vertexSeq.zip(solutions).map { case (node, i) => node -> i }.toMap
     foreachInnerEdge(edge => setEdgeWeight(edge, edge.weight + r(edge.target) - r(edge.source)))
     this
