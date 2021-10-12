@@ -21,8 +21,8 @@ class DFGGraphTest extends AnyFlatSpec {
     dfg.setInput(pt0)
     dfg.setOutput(pt3)
 
-    println(dfg.vertexSet().mkString(" "))
-    println(dfg.edgeSet().mkString(" "))
+    println(dfg.vertexSeq.mkString(" "))
+    println(dfg.edgeSeq.mkString(" "))
   }
 
   // TODO : add these tests
