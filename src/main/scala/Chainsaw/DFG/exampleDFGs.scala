@@ -12,11 +12,10 @@ object ShowGraphs {
 
 object simpleFolding {
 
-  val incs = (0 until 4).map(i => sIntInc(10 bits, 0 cycles).asDSPNode(s"increase$i", 0 cycles, 1 ns))
+  val incs = (0 until 4).map(i => SIntCMult(s"cmult_$i", i, 10 bits, 0 cycles, 2 ns))
   val Seq(inc0, inc1, inc2, inc3) = incs
   val incGen = () => sIntInc(10 bits, 1 cycles).asDSPNode(s"", 1 cycles, 1 ns)
   val foldingSets = Seq(Seq(inc0, inc1), Seq(inc2, inc3))
-  val deviceGens = Seq(incGen, incGen)
 
   def dfg = {
     printlnGreen("using simple graph for folding")
@@ -72,17 +71,12 @@ object chap5 {
 }
 
 object chap6 {
-  val adds = (0 until 4).map(i => sIntAdder(10 bits, 0 cycles).asDSPNode(s"add$i", 1 cycles, 1 ns))
+
+  val adds = (0 until 4).map(i => SIntAdder(s"add$i", 10 bits, 0 cycles, 1 ns))
   val Seq(adds0, adds1, adds2, adds3) = adds
-  val mults = (0 until 4).map(i => sIntCMult(i, 10 bits, 0 cycles).asDSPNode(s"mult$i", 2 cycles, 2 ns))
-  //  val mults = (0 until 4).map(i => sIntCMult(1, 10 bits, 0 cycles).asDSPNode(s"mult$i", 2 cycles, 2 ns))
+  val mults = (0 until 4).map(i => SIntCMult(s"cmult_$i", i, 10 bits, 0 cycles, 2 ns))
   val Seq(mults0, mults1, mults2, mults3) = mults
 
-  val addGen = () => sIntAdder(10 bits, 1 cycles).asDSPNode(s"add", 1 cycles, 1 ns)
-  val multGen = () => sIntCMultFolded(Seq(0, 3, 1, 2), 10 bits, 2 cycles).asDSPNode(s"mult", 2 cycles, 2 ns)
-  //  val multGen = () => sIntCMult(1, 10 bits, 2 cycles).asDSPNode(s"mult", 2 cycles, 2 ns)
-
-  val deviceGens = Seq(addGen, multGen)
   val foldingSets = Seq(
     Seq(adds3, adds1, adds2, adds0),
     Seq(mults0, mults3, mults1, mults2)

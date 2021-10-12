@@ -9,6 +9,6 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
-trait Foldable {
-  def fold[T <: Data](sources: Seq[DSPHardware[T]]): DSPHardware[T]
+trait Foldable[T <: Data] {
+  def fold(sources: Seq[DSPNode[T]]): DSPNode[T]
 }

@@ -15,14 +15,14 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
-class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T]]], deviceGens: Seq[() => DSPNode[T]]) {
+class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T] with Foldable[T]]]) {
 
   val foldingFactor = foldingSets.head.length
   require(foldingSets.forall(_.size == foldingFactor))
   // node -> folding order of the node
   val foldingOrders: Map[DSPNode[T], Int] = foldingSets.map { set => set.zipWithIndex.map { case (node, i) => node -> i } }.flatten.toMap
   // node -> the device it belongs(folded to)
-  val devices: Seq[DSPNode[T]] = deviceGens.map(gen => gen())
+  val devices: Seq[DSPNode[T]] = foldingSets.map(nodes => nodes.head.fold(nodes))
   val deviceOf: Map[DSPNode[T], DSPNode[T]] = foldingSets.zip(devices).map { case (nodes, device) => nodes.map(_ -> device) }.flatten.toMap
 
   def solveRetiming() = {
@@ -35,8 +35,8 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T]]], de
       val u = foldingOrders(U)
       val v = foldingOrders(V)
       val w = dfg.getEdgeWeight(edge)
-      //      println(s"adding constraint $U - $V <= $w + floor(${(v - u - U.delay).toDouble} / $foldingFactor)")
-      cg.addConstraint(U - V <= (w + floor((v - u - U.delay).toDouble / foldingFactor)).toInt) // folding constraint, Nw_r(e) - P_u + v - u >= 0}
+      //      println(s"adding constraint $U - $V <= $w + floor(${(v - u - deviceOf(U).delay).toDouble} / $foldingFactor)")
+      cg.addConstraint(U - V <= (w + floor((v - u - deviceOf(U).delay).toDouble / foldingFactor)).toInt) // folding constraint, Nw_r(e) - P_u + v - u >= 0}
 
     }
     //    printlnGreen(s"cg for folding retiming")
@@ -54,7 +54,7 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T]]], de
     dfg.foreachInnerEdge { edge =>
       val U = dfg.getEdgeSource(edge)
       val V = dfg.getEdgeTarget(edge)
-      if (foldingFactor * dfg.getEdgeWeight(edge).toInt - U.delay + foldingOrders(V) - foldingOrders(U) < 0) return false
+      if (foldingFactor * dfg.getEdgeWeight(edge).toInt - deviceOf(U).delay + foldingOrders(V) - foldingOrders(U) < 0) return false
     }
     true
   }
@@ -74,11 +74,11 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T]]], de
       val target = if (V.isIO) V else deviceOf(V)
       val u = if (U.isIO) foldingOrders(retimedDFG.targetsOf(U).head) else foldingOrders(U)
       val v = if (V.isIO) foldingOrders(retimedDFG.sourcesOf(V).head) else foldingOrders(V)
-      val foldedDelay = if (U.isIO || V.isIO) 0 else foldingFactor * retimedDFG.getEdgeWeight(edge).toInt - U.delay + v - u
+      val foldedDelay = if (U.isIO || V.isIO) 0 else foldingFactor * retimedDFG.getEdgeWeight(edge).toInt - deviceOf(U).delay + v - u
       assert(foldedDelay >= 0, s"folding constraints not met, delay of $U -> $V is ${retimedDFG.getEdgeWeight(edge)}, folded to  $foldedDelay")
       val inOrder = edge.inOrder
       val outOrder = edge.outOrder
-      val foldedEdge = DefaultDelay[T](Seq(Schedule(if (V.isIO) (v + U.delay) % foldingFactor else v, foldingFactor)), outOrder, inOrder)
+      val foldedEdge = DefaultDelay[T](Seq(Schedule(if (V.isIO) (v + deviceOf(U).delay) % foldingFactor else v, foldingFactor)), outOrder, inOrder)
       foldedDFG.addEdge(source, target, foldedEdge)
       foldedDFG.setEdgeWeight(foldedEdge, foldedDelay)
       // print details of folding

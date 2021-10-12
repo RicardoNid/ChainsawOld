@@ -75,10 +75,9 @@ class DFGGraphTest extends AnyFlatSpec {
   it should "fold correctly" in {
     val dfg = chap6.fig6_3
     val foldingSet = chap6.foldingSets
-    val deviceGens = chap6.deviceGens
 
-    val algo = new Folding[SInt](dfg, foldingSet, deviceGens)
-    assert(new Folding[SInt](algo.retimed, foldingSet, deviceGens).isFeasible)
+    val algo = new Folding[SInt](dfg, foldingSet)
+    assert(new Folding[SInt](algo.retimed, foldingSet).isFeasible)
     val foldedDFG = algo.folded
     testDFG(dfg, 1)
     testDFG(foldedDFG, 4)
@@ -89,9 +88,8 @@ class DFGGraphTest extends AnyFlatSpec {
   it should "fold correctly on simple graph" in {
     val dfg = simpleFolding.dfg
     val foldingSet = simpleFolding.foldingSets
-    val deviceGens = simpleFolding.deviceGens
 
-    val algo = new Folding[SInt](dfg, foldingSet, deviceGens)
+    val algo = new Folding[SInt](dfg, foldingSet)
     println(algo.folded)
 
     testDFG(dfg, 1)
