@@ -71,7 +71,7 @@ object Operators {
   // for simulation(using delay)
   def sintKeep = DSPHardware((dataIns: Seq[SInt], _: GlobalCount) => Seq(dataIns(0)), 1, Seq(-1 bits))
 
-  def sintKeep(width: BitCount) = DSPHardware((dataIns: Seq[SInt], globalCount: GlobalCount) => Seq(dataIns(0)), 1, Seq(width))
+  def sintKeep(width: BitCount) = DSPHardware((dataIns: Seq[SInt], _: GlobalCount) => Seq(dataIns(0)), 1, Seq(width))
 
   def bitsKeep = DSPHardware((dataIns: Seq[Bits], _: GlobalCount) => Seq(dataIns(0)), 1, Seq(-1 bits))
 

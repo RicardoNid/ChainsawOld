@@ -42,27 +42,7 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
 
   def outputNodes = vertexSeq.filter(_.isInstanceOf[OutputNode[T]])
 
-  implicit class EdgeProperties(edge: DSPEdge[T]) {
-    def target = getEdgeTarget(edge)
-
-    def source = getEdgeSource(edge)
-
-    def weight = getEdgeWeight(edge)
-
-    def symbol = s"$source(${edge.outOrder}) -> ${edge.weight} -> $target(${edge.inOrder})"
-  }
-
-  implicit class NodeProperties(node: DSPNode[T]) {
-
-    def outgoingEdges = outgoingEdgesOf(node).toSeq
-
-    def incomingEdges = incomingEdgesOf(node).toSeq
-
-    def sources = incomingEdges.map(_.source)
-
-    def targets = outgoingEdges.map(_.target)
-
-  }
+  implicit def currentDFG = this
 
   def foreachVertex(body: DSPNode[T] => Unit) = vertexSeq.foreach(body)
 
@@ -160,11 +140,6 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
     Seq.tabulate(inputNodes.size, outputNodes.size)((i, j) => algo.getPathWeight(inputNodes(i), outputNodes(j))).flatten.min.toInt
   }
 
-  // implement a node from its sourcing nodes
-  def implNode(sources: Seq[DSPNode[T]]) = {
-
-  }
-
   // implement a recursive graph
   val implRecursive: Seq[T] => Seq[T] = (dataIns: Seq[T]) => {
     val signalMap: Map[DSPNode[T], Seq[T]] = vertexSeq.map(node => // a map to connect nodes with their outputs(placeholder)
@@ -235,7 +210,8 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
     outputNodes.map(signalMap(_)).flatten
   }
 
-  val impl = if (isRecursive) implRecursive else implRecursive
+//  val impl = if (isRecursive) implRecursive else implRecursive
+  def impl = new DFGImpl(this).implRecursive
 
   // feasibilityConstraintGraph
   def fcg = {

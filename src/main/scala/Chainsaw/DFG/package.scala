@@ -43,4 +43,26 @@ package object DFG {
     def >=>(delays: Seq[Double]) = DSPAssignment(nodes, delays, nodes.head)
   }
 
+  implicit class EdgeProperties[T <: Data](edge: DSPEdge[T])(implicit dfg: DFGGraph[T]) {
+    def target = dfg.getEdgeTarget(edge)
+
+    def source = dfg.getEdgeSource(edge)
+
+    def weight = dfg.getEdgeWeight(edge)
+
+    def symbol = s"$source(${edge.outOrder}) -> ${edge.weight} -> $target(${edge.inOrder})"
+  }
+
+  implicit class NodeProperties[T <: Data](node: DSPNode[T])(implicit dfg: DFGGraph[T]) {
+
+    def outgoingEdges = dfg.outgoingEdgesOf(node).toSeq
+
+    def incomingEdges = dfg.incomingEdgesOf(node).toSeq
+
+    def sources = incomingEdges.map(_.source)
+
+    def targets = outgoingEdges.map(_.target)
+
+  }
+
 }
