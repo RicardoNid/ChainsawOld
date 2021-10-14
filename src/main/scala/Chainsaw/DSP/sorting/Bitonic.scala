@@ -1,33 +1,47 @@
 package Chainsaw.DSP.sorting
 
 import Chainsaw._
+import Chainsaw.dspTest._
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 
 import scala.annotation.tailrec
+import scala.collection.mutable.ArrayBuffer
 
 /** Bitonic sorter
  *
- * learn more: https://en.wikipedia.org/wiki/Bitonic_sorter, this component implements the first pattern in wiki, try the next one!
+ * learn more: [[https://en.wikipedia.org/wiki/Bitonic_sorter]]
  */
-case class Bitonic[T <: Data](dataType: HardType[T], n: Int, comparator: Seq[T] => Seq[T]) extends Component {
+case class Bitonic[T <: Data](dataType: HardType[T], n: Int, comparator: Seq[T] => Seq[T], pattern1: Boolean = true) extends Component {
 
   require(isPow2(n), "or, you should pad it")
 
   val dataIn = slave Flow Vec(dataType, n)
   val dataOut = master Flow Vec(dataType, n)
 
-  private def block(dataIn: Seq[T], up: Boolean): Seq[T] = {
+  def cmp(dataIn: Seq[T], up: Boolean) = if (up && pattern1) comparator(dataIn) else comparator(dataIn).reverse
+
+  def subBlock(dataIn: Seq[T], up: Boolean, red: Boolean) = {
+    val n = dataIn.length
+    val (half0, half1) = dataIn.splitAt(n / 2)
+
+    val afterComp = if (red) half0.zip(half1).map { case (t, t1) => cmp(Seq(t, t1), up) }
+    else half0.zip(half1.reverse).map { case (t, t1) => cmp(Seq(t, t1), up) }
+
+    val ordered = Seq(0, 1).map(i => afterComp.map(_.apply(i)))
+
+    if (red) (ordered(0), ordered(1)) else (ordered(0), ordered(1).reverse)
+  }
+
+
+  private def block(dataIn: Seq[T], up: Boolean, first: Boolean): Seq[T] = {
     val n = dataIn.length
     n match {
-      case 2 => if (up) comparator(dataIn) else comparator(dataIn).reverse
-      case _ => {
-        val (half0, half1) = dataIn.splitAt(n / 2)
-        val afterComp = half0.zip(half1).map { case (t, t1) => block(Seq(t, t1), up) }
-        val ordered = Seq(0, 1).map(i => afterComp.map(_.apply(i)))
-        RegNext(Vec(block(ordered(0), up) ++ block(ordered(1), up)))
-      }
+      case 2 => cmp(dataIn, up)
+      case _ =>
+        val compared = if (first) subBlock(dataIn, up, pattern1) else subBlock(dataIn, up, true)
+        RegNext(Vec(block(compared._1, up, false) ++ block(compared._2, up, false)))
     }
   }
 
@@ -38,7 +52,7 @@ case class Bitonic[T <: Data](dataType: HardType[T], n: Int, comparator: Seq[T] 
     if (step == maxStep) dataIn
     else {
       val upAndDown = (0 until n / step).map(_ % 2 == 1)
-      val ordered = dataIn.grouped(step).toSeq.zip(upAndDown).map { case (data, up) => block(data, up) }.flatten
+      val ordered = dataIn.grouped(step).toSeq.zip(upAndDown).map { case (data, up) => block(data, up, true) }.flatten
       whole(RegNext(Vec(ordered)), step << 1)
     }
   }
@@ -51,33 +65,30 @@ case class Bitonic[T <: Data](dataType: HardType[T], n: Int, comparator: Seq[T] 
 
 object Bitonic extends App {
 
-  def uintcomp(data: Seq[UInt]) = {
-    val a = data.head
-    val b = data.last
+  def uintcomp(dataIn: Seq[UInt]) = {
+    require(dataIn.size == 2)
+    val a = dataIn.head
+    val b = dataIn.last
     Mux(a > b, Vec(a, b), Vec(b, a))
   }
 
-  val size = 256
+  val size = 16
 
-  SimConfig.withWave.compile(Bitonic(UInt(log2Up(size) bits), size, uintcomp)).doSim { dut =>
+  SimConfig.withWave.compile(Bitonic(UInt(log2Up(size) bits), size, uintcomp, false)).doSim { dut =>
     import dut.{dataIn, dataOut, clockDomain, latency}
 
+    val dutResult = ArrayBuffer[BigInt]()
+    dataIn.halt()
+    dataOut.setMonitor(dutResult)
     clockDomain.forkStimulus(2)
-    dataIn.valid #= false
     clockDomain.waitSampling()
 
-    val testCase = (0 until size).map(_ => DSPRand.nextInt(size))
-    println(testCase.mkString(" "))
+    val testCase = (0 until size).map(_ => DSPRand.nextInt(size)).map(BigInt(_))
+    dataIn.poke(testCase)
+    clockDomain.waitSampling(latency + 1)
 
-    dataIn.payload.zip(testCase).foreach{ case (port, stimulus) => port #= stimulus}
-    dataIn.valid #= true
-    clockDomain.waitSampling()
-
-    dataIn.valid #= false
-    clockDomain.waitSampling(latency)
-
-    val result = dataOut.payload.map(_.toInt)
-    println(result.mkString(" "))
-    assert(result.zip(testCase.sorted).forall{ case (i, i1) => i == i1})
+    println(s"before sorting: ${testCase.mkString(" ")}")
+    println(s"after sorting:  ${dutResult.mkString(" ")}")
+    assert(dutResult.zip(testCase.sorted).forall { case (i, i1) => i == i1 })
   }
 }

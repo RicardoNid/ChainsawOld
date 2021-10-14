@@ -1,11 +1,3 @@
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
+Seq(1,2,3,4).grouped(3).toSeq.mkString(" ")
 
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
-
-
-(1 ns).toDouble
+Seq(1).init

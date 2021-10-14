@@ -8,6 +8,9 @@ import spinal.lib._
 
 import scala.collection.JavaConversions._
 
+/** Regression test of DFG
+ *
+ */
 class DFGGraphTest extends AnyFlatSpec {
 
   import Operators._
@@ -38,38 +41,16 @@ class DFGGraphTest extends AnyFlatSpec {
 
   }
 
+  it should "work on MIMO DFG" in {
+    GenRTL(new Component {
+      val dataIns = in(Vec(ComplexNumber(1, -6), 4))
+      val dataOuts = out(Vec(ComplexNumber(1, -6), 4))
+      dataOuts := Vec(MIMO.fft4.impl(dataIns))
+    })
+  }
+
   val testCases = (0 until 10).map(_ => DSPRand.nextInt(4))
   //  val testCases = (0 until 20).map(_ => 1)
-
-  def testDFG(dfg: DFGGraph[SInt], factor: Int) = {
-
-    SimConfig.withWave.compile(new Component {
-      val dataIn = in SInt (10 bits)
-      val dataOut = out SInt (10 bits)
-      val validIn = in Bool()
-      val validOut = out Bool()
-      dataOut := dfg.impl(Seq(dataIn)).head
-      validOut := Delay(validIn, dfg.latency * factor, init = False)
-
-    }).doSim { dut =>
-      import dut.{clockDomain, dataIn}
-      dataIn #= 0
-      dut.validIn #= false
-      clockDomain.forkStimulus(2)
-      clockDomain.waitSampling(10 * factor - 1)
-
-      testCases.foreach { testCase =>
-        dataIn #= testCase
-        dut.validIn #= true
-        clockDomain.waitSampling()
-        dataIn #= 0
-        dut.validIn #= false
-        clockDomain.waitSampling(factor - 1)
-      }
-
-      clockDomain.waitSampling(20 * factor)
-    }
-  }
 
   // fig 6.3
   it should "fold correctly" in {
@@ -79,8 +60,6 @@ class DFGGraphTest extends AnyFlatSpec {
     val algo = new Folding[SInt](dfg, foldingSet)
     assert(new Folding[SInt](algo.retimed, foldingSet).isFeasible)
     val foldedDFG = algo.folded
-    testDFG(dfg, 1)
-    testDFG(foldedDFG, 4)
     println(algo.folded)
     DFGTestUtil.verifyFunction(dfg, foldedDFG, SInt(10 bits), -4, 0)
   }
@@ -91,9 +70,6 @@ class DFGGraphTest extends AnyFlatSpec {
 
     val algo = new Folding[SInt](dfg, foldingSet)
     println(algo.folded)
-
-    testDFG(dfg, 1)
-    testDFG(algo.folded, 2)
   }
 
   "constraint graph" should "work on fig4.3" in {

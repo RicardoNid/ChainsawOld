@@ -1,25 +1,8 @@
 package Chainsaw
 
-import Chainsaw.DFG.{DSPEdge, DSPNode}
 import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
-import org.jgrapht.GraphPath
-
-import org.jgrapht._
-import org.jgrapht.graph._
-import org.jgrapht.graph.builder._
-import org.jgrapht.nio._
-import org.jgrapht.nio.dot._
-import org.jgrapht.traverse._
-import org.jgrapht.generate._
 
 import scala.collection.JavaConversions._
-
 import scala.collection.mutable.ArrayBuffer
 
 package object DFG {
@@ -32,11 +15,15 @@ package object DFG {
   implicit class nodeUtils[T <: Data](node: DSPNode[T]) {
     def >=>(delay: Double) = DSPAssignment(node, delay, node)
 
-    def >>(delay: Double) = DSPPath(ArrayBuffer(node), ArrayBuffer(delay)) // TODO: more elegant implementation
+    def >>(delay: Double) = DSPPath(ArrayBuffer(node), ArrayBuffer(delay))
+
+    def >>(that: DSPNode[T]) = DSPPath(ArrayBuffer(node, that), ArrayBuffer(0))
 
     def -(that: DSPNode[T]) = DSPConstraint(node, that, 0)
 
     def isIO = node.isInstanceOf[InputNode[T]] || node.isInstanceOf[OutputNode[T]]
+
+    def apply(order:Int) = DSPNodeWithOrder(node, order)
   }
 
   implicit class nodesUtils[T <: Data](nodes: Seq[DSPNode[T]]) {

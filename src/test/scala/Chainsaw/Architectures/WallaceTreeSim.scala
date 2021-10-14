@@ -30,7 +30,7 @@ class WallaceTreeSim() extends WallaceTreeDUT with DSPSimTiming[Vec[Real], Real,
     s"testCase: $testCase, golden: $refResult, yours: $dutResult "
 }
 
-class testWallaceTree extends AnyFunSuite {
+class testWallaceTreeTree extends AnyFunSuite {
   test("testWallaceTree") {
     SimConfig.withWave.compile(new WallaceTreeSim).doSim { dut =>
       dut.sim()

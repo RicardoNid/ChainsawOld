@@ -35,9 +35,9 @@ object chap2 {
     val Seq(n1, n2, n3, n4, n5, n6) = Seq(1, 1, 1, 2, 2, 2).zipWithIndex.map { case (exe, i) => GeneralNode[SInt](s"node${i + 1}", 0 cycles, exe sec) }
     printlnGreen("using fig 2.2")
     val dfg = DFGGraph[SInt]
-    dfg.addPath(n1 >> 2 >> n4 >> 0 >> n2 >> 0 >> n1)
-    dfg.addPath(n1 >> 3 >> n5 >> 0 >> n3 >> 0 >> n2)
-    dfg.addPath(n1 >> 4 >> n6 >> 0 >> n3)
+    dfg.addPath(n1 >> 2 >> n4 >> n2 >> n1)
+    dfg.addPath(n1 >> 3 >> n5 >> n3 >> n2)
+    dfg.addPath(n1 >> 4 >> n6 >> n3)
     dfg
   }
 }
@@ -48,8 +48,8 @@ object chap5 {
     val c = sIntAdder(10 bits, 0 cycles).asDSPNode("c", 0 cycles, 1 ns)
     printlnGreen("using fig 5.2")
     val dfg = DFGGraph[SInt]
-    dfg.addPath(a >> 0 >> c >> 9 >> d >> 0 >> c)
-    dfg.addPath(c >> 0 >> b)
+    dfg.addPath(a >> c >> 9 >> d >> c)
+    dfg.addPath(c >> b)
     dfg.setInput(a)
     dfg.setOutput(b)
     dfg
@@ -61,9 +61,9 @@ object chap5 {
     val Seq(d, e) = Seq("d", "e").map(name => sIntAdder(10 bits, 0 cycles).asDSPNode(name, 0 cycles, 1 ns))
     printlnGreen("using fig 5.10")
     val dfg = DFGGraph[SInt]
-    dfg.addPath(x >> 0 >> c >> 2 >> d >> 4 >> e)
-    dfg.addPath(x >> 0 >> b >> 0 >> d)
-    dfg.addPath(x >> 0 >> a >> 0 >> e)
+    dfg.addPath(x >> c >> 2 >> d >> 4 >> e)
+    dfg.addPath(x >> b >> d)
+    dfg.addPath(x >> a >> e)
     dfg.setInput(x)
     dfg.setOutput(e)
     dfg
@@ -135,6 +135,41 @@ object chap4 {
     cg.addConstraint(r3 - r2 <= 2)
     cg
   }
+}
+
+object MIMO {
+
+  def fft4 = {
+
+    val butterfly = (dataIns: Seq[ComplexNumber], _: GlobalCount) => {
+      val add = dataIns(0) + dataIns(1)
+      val sub = dataIns(0) - dataIns(1)
+      Seq(add, sub)
+    }
+
+    val dfg = DFGGraph[ComplexNumber]
+
+    import Operators._
+
+    val butterflyHardware = DSPHardware(impl = butterfly, inDegree = 2, outWidths = Seq(-1 bits, -1 bits))
+    val alphabet = Seq("a", "b", "c", "d", "e")
+    val butterflies = Seq.tabulate(2, 2)((i, j) => butterflyHardware.asDSPNode(s"butterfly_${alphabet(i)}${j}", 1 cycles, 1 ns)).flatten
+    val Seq(b0, b1, c0, c1) = butterflies
+    butterflies.foreach(dfg.addVertex)
+
+    Seq(b0, b1).foreach(butterfly => Seq(0, 1).foreach(dfg.setInput(butterfly, _)))
+
+    // new MIMO API
+    dfg.addEdge(b0(0), c0(0), 0)
+    dfg.addEdge(b0(1), c1(0), 0)
+    dfg.addEdge(b1(0), c0(1), 0)
+    dfg.addEdge(b1(1), c1(1), 0)
+
+    Seq(c0, c1).foreach(butterfly => Seq(0, 1).foreach(dfg.setOutput(butterfly, _)))
+
+    dfg
+  }
+
 }
 
 object fft {

@@ -80,6 +80,14 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
     if (addEdge(source, target, edge)) setEdgeWeight(edge, delay)
   }
 
+  def addEdge(source: DSPNodeWithOrder[T], target: DSPNodeWithOrder[T], delay: Double): Unit = {
+    val inOrder = target.order // default strategy
+    val outOrder = source.order // default strategy
+    val edge = DefaultDelay[T](outOrder, inOrder)
+    if (addEdge(source.node, target.node, edge)) setEdgeWeight(edge, delay)
+  }
+
+
   def addExp(exp: DSPAssignment[T]): Unit = {
     import exp._
     sources.foreach(addVertex(_))
@@ -90,7 +98,7 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
   def addPath(path: DSPPath[T]): Unit = {
     import path._
     require(nodes.size == delays.size + 1)
-    nodes.foreach(addVertex(_))
+    nodes.foreach(addVertex)
     nodes.init.zip(nodes.tail).zip(delays).foreach { case ((src, des), delay) => addEdge(src, des, delay) }
   }
 
