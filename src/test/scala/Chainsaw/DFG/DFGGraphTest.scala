@@ -60,25 +60,19 @@ class DFGGraphTest extends AnyFlatSpec {
     val algo = new Folding[SInt](dfg, foldingSet)
     val foldedDFG = algo.folded
     println(algo.folded)
-    DFGTestUtil.verifyFunction(dfg, foldedDFG, SInt(10 bits), -4, 0)
+    DFGTestUtil.verifyFunctionalConsistency(dfg, foldedDFG, SInt(10 bits), -4, 0)
   }
 
   it should "fold correctly on simple graph" in {
     val dfg = simpleFolding.dfg
     val foldingSet = simpleFolding.foldingSets
-
-    val algo = new Folding[SInt](dfg, foldingSet)
-    println(algo.folded)
+    DFGTestUtil.verifyFolding(dfg, foldingSet)
   }
 
   it should "fold correctly on paper1992 fig8_2" in {
     val dfg = paper1992OnFolding.fig8_a
     val foldingSet = paper1992OnFolding.foldingSet8_a
-
-    val algo = new Folding[SInt](dfg, foldingSet)
-    val foldedDFG = algo.folded
-    println(algo.folded)
-    DFGTestUtil.verifyFunction(dfg, foldedDFG, SInt(10 bits), -2, 0)
+    DFGTestUtil.verifyFolding(dfg, foldingSet)
   }
 
   "constraint graph" should "work on fig4.3" in {
@@ -102,7 +96,7 @@ class DFGGraphTest extends AnyFlatSpec {
     printlnGreen(new CriticalPathAlgo(unfoldedDFG).iterationBound)
 
     println(unfoldedDFG)
-    DFGTestUtil.verifyFunction(dfg, unfoldedDFG, SInt(10 bits), 10, 0)
+    DFGTestUtil.verifyFunctionalConsistency(dfg, unfoldedDFG, SInt(10 bits), 10, 0)
   }
 
   it should "work on fig5.10" in {
@@ -111,6 +105,6 @@ class DFGGraphTest extends AnyFlatSpec {
     val unfoldedDFG = algo.unfolded
 
     println(unfoldedDFG)
-    DFGTestUtil.verifyFunction(dfg, unfoldedDFG, SInt(10 bits), 3, 0)
+    DFGTestUtil.verifyFunctionalConsistency(dfg, unfoldedDFG, SInt(10 bits), 3, 0)
   }
 }

@@ -5,29 +5,21 @@ import Chainsaw.dspTest._
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
-import org.jgrapht._
-import org.jgrapht.graph._
-import org.jgrapht.graph.builder._
-import org.jgrapht.nio._
-import org.jgrapht.nio.dot._
-import org.jgrapht.traverse._
-import org.jgrapht.generate._
 
 import scala.collection.JavaConversions._
-
 import scala.collection.mutable.ArrayBuffer
 
 object DFGTestUtil {
 
   /** Verify that the transformed DFG has the same function as the original one
    *
-   * @param original
-   * @param transformed
+   * @param original DFG before transformation
+   * @param transformed DFG after transformation
    * @param speedUp the throughput of transformed DFG, 3 for *3, -3 for 1/3
    * @param delay   extra delay on latency, latency' = latency / speedUp + delayed
    * @tparam T
    */
-  def verifyFunction[T <: BitVector](original: DFGGraph[T], transformed: DFGGraph[T], elementType: HardType[T], speedUp: Int, delay: Int, testLength: Int = 50) = {
+  def verifyFunctionalConsistency[T <: BitVector](original: DFGGraph[T], transformed: DFGGraph[T], elementType: HardType[T], speedUp: Int, delay: Int, testLength: Int = 50) = {
 
     if (speedUp > 1) { // throughput > 1, bigger port number
       require(transformed.inputNodes.size == original.inputNodes.size * speedUp)
@@ -108,7 +100,6 @@ object DFGTestUtil {
           clockDomain.waitSampling()
         }
       }
-
       clockDomain.waitSampling(transformedLatency)
     }
 
@@ -122,6 +113,12 @@ object DFGTestUtil {
     assert(transFormedResults.dropWhile(_ == 0).size > 10)
     // FIXME: this is a test after shifting, finally, you should implement a test with exact timing
     assert(results.dropWhile(_ == 0).zip(transFormedResults.dropWhile(_ == 0)).forall { case (ori, trans) => ori == trans })
-
   }
+
+  def verifyFolding(original: DFGGraph[SInt], foldingSets: Seq[Seq[DSPNode[SInt] with Foldable[SInt]]] ) = {
+    val foldedDFG = new Folding(original, foldingSets).folded
+    val N = foldingSets.head.size
+    verifyFunctionalConsistency(original, foldedDFG, HardType(SInt(10 bits)), -N, 0)
+  }
+
 }

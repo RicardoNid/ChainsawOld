@@ -26,6 +26,8 @@ class ConstraintGraph[T <: Data](implicit holderProvider: BitCount => T) extends
   val referenceNode = VoidNode[T]()
   super.addVertex(referenceNode)
 
+  def initFrom(dfg: DFGGraph[T]) = dfg.vertexSeq.filterNot(_.isIO).foreach(addVertex(_))
+
   override def addVertex(constraintNode: DSPNode[T]): Boolean = {
     val succeed = super.addVertex(constraintNode)
     addEdge(referenceNode, constraintNode, 0)
@@ -37,7 +39,9 @@ class ConstraintGraph[T <: Data](implicit holderProvider: BitCount => T) extends
     addVertex(target)
     addVertex(source)
     val e = getEdge(source, target)
-    if (e == null) {addEdge(source, target, value)} else setEdgeWeight(e, value min e.weight)
+    if (e == null) {
+      addEdge(source, target, value)
+    } else setEdgeWeight(e, value min e.weight)
   }
 
   def getSolution = {
@@ -54,6 +58,12 @@ class ConstraintGraph[T <: Data](implicit holderProvider: BitCount => T) extends
 
 object ConstraintGraph {
   def apply[T <: Data](implicit holderProvider: BitCount => T): ConstraintGraph[T] = new ConstraintGraph[T]()
+
+  def apply[T <: Data](dfg: DFGGraph[T]): ConstraintGraph[T] = {
+    val ret = ConstraintGraph(dfg.holderProvider)
+    ret.initFrom(dfg)
+    ret
+  }
 }
 
 

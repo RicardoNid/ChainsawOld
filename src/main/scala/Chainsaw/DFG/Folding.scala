@@ -27,8 +27,7 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T] with 
   val deviceOf: Map[DSPNode[T], DSPNode[T]] = foldingSets.zip(devices).map { case (nodes, device) => nodes.map(_ -> device) }.flatten.toMap
 
   def solveRetiming() = {
-    val cg = ConstraintGraph[T](dfg.holderProvider) // basic constraint
-    dfg.vertexSeq.filterNot(_.isIO).foreach(cg.addVertex(_))
+    val cg = ConstraintGraph(dfg)
 
     implicit val sourceDFG = dfg
     dfg.foreachInnerEdge { edge => // for each edge, add the folding equation constraint as extra constraint
@@ -37,7 +36,6 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T] with 
       val u = foldingOrders(Uu)
       val v = foldingOrders(Vv)
       val w = edge.weightWithSource
-
       cg.addConstraint(Uu - Vv <= (w + floor((v - u - deviceOf(Uu).delay).toDouble / N)).toInt)
     }
 
@@ -52,11 +50,10 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T] with 
 
   def retimed = dfg.clone().asInstanceOf[DFGGraph[T]].retimed(solveRetiming())
 
-  def folded(implicit holderProvider: BitCount => T) = {
+  def folded = {
     val retimedDFG = retimed
-
     // adding vertices
-    val foldedDFG = DFGGraph[T]
+    val foldedDFG = DFGGraph[T](dfg.holderProvider)
     (retimedDFG.inputNodes ++ retimedDFG.outputNodes).foreach(foldedDFG.addVertex(_))
     devices.foreach(foldedDFG.addVertex(_))
     // adding edges
@@ -72,9 +69,9 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T] with 
       val foldedDelay = if (Uu.isIO || Vv.isIO) 0 else N * edge.weightWithSource - U.delay + v - u
       assert(foldedDelay >= 0, s"folding constraints not met, delay of $Uu -> $Vv is ${edge.weight}, folded to  $foldedDelay")
 
-      val foldedSchedules =  edge.schedules.map{ schedule => // new delay
+      val foldedSchedules = edge.schedules.map { schedule => // new delay
         val newPeriod = schedule.period * N
-        val newTime = schedule.time * N + v + (if(Vv.isIO) U.delay else 0) % newPeriod
+        val newTime = schedule.time * N + v + (if (Vv.isIO) U.delay else 0) % newPeriod
         Schedule(newTime, newPeriod)
       }
       val foldedEdge = DefaultDelay[T](foldedSchedules, edge.outOrder, edge.inOrder) // new schedule
