@@ -14,6 +14,7 @@ object simpleFolding {
 
   val incs = (0 until 4).map(i => SIntCMult(s"cmult_$i", i, 10 bits, 0 cycles, 2 ns))
   val Seq(inc0, inc1, inc2, inc3) = incs
+  // add some comments
   val incGen = () => sIntInc(10 bits, 1 cycles).asDSPNode(s"", 1 cycles, 1 ns)
   val foldingSets = Seq(Seq(inc0, inc1), Seq(inc2, inc3))
 
