@@ -44,7 +44,7 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
     //    printlnGreen(s"implementing mux $this")
     require(hasNoCollisions, s"schedule collision:\n${schedules.mkString(" ")}") // no collision TODO: print collision location
     require(dataIns.size == schedules.size)
-    if (dataIns.size == 1 && schedules.head.head == Schedule(1, 1)) dataIns.head
+    if (dataIns.size == 1 && schedules.head.head == Schedule(0, 1)) dataIns.head
     else {
       val multiple = globalLcm / periodLcm
       val ret = holderProvider(-1 bits)

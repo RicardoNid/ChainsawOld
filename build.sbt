@@ -42,16 +42,30 @@ fork := true
 
 EclipseKeys.withSource := true
 
-// https://mvnrepository.com/artifact/ai.djl/api
-libraryDependencies += "ai.djl" % "api" % "0.11.0"
-// https://mvnrepository.com/artifact/ai.djl.mxnet/mxnet-engine
-libraryDependencies += "ai.djl.mxnet" % "mxnet-engine" % "0.11.0" % "runtime"
-// https://mvnrepository.com/artifact/ai.djl.mxnet/mxnet-native-auto
-libraryDependencies += "ai.djl.mxnet" % "mxnet-native-auto" % "1.8.0" % "runtime"
+//// https://mvnrepository.com/artifact/ai.djl/api
+//libraryDependencies += "ai.djl" % "api" % "0.11.0"
+//// https://mvnrepository.com/artifact/ai.djl.mxnet/mxnet-engine
+//libraryDependencies += "ai.djl.mxnet" % "mxnet-engine" % "0.11.0" % "runtime"
+//// https://mvnrepository.com/artifact/ai.djl.mxnet/mxnet-native-auto
+//libraryDependencies += "ai.djl.mxnet" % "mxnet-native-auto" % "1.8.0" % "runtime"
 // https://mvnrepository.com/artifact/ai.djl/model-zoo
-libraryDependencies += "ai.djl" % "model-zoo" % "0.11.0"
+libraryDependencies += "ai.djl" % "model-zoo" % "0.12.0"
 // https://mvnrepository.com/artifact/ai.djl/basicdataset
-libraryDependencies += "ai.djl" % "basicdataset" % "0.11.0"
+libraryDependencies += "ai.djl" % "basicdataset" % "0.12.0"
+
+
+// %mavenRepo snapshots https://oss.sonatype.org/content/repositories/snapshots/
+
+val djlVersion = "0.12.0"
+
+libraryDependencies += "ai.djl"%"api"% "0.12.0"
+libraryDependencies += "ai.djl.onnxruntime"%"onnxruntime-engine"% "0.12.0"
+libraryDependencies += "ai.djl.pytorch"%"pytorch-engine"% "0.12.0"
+libraryDependencies += "org.slf4j"%"slf4j-api"% "1.7.26"
+libraryDependencies += "org.slf4j"%"slf4j-simple"% "1.7.26"
+libraryDependencies += "com.microsoft.onnxruntime"%"onnxruntime"% "1.4.0"
+libraryDependencies += "ai.djl.pytorch"%"pytorch-native-auto"% "1.8.1"
+
 // for matlab co-sim
 javaOptions += "-Djava.library.path=/usr/local/MATLAB/R2018b/bin/glnxa64:/usr/local/MATLAB/R2018b/sys/os/glnxa64"
 scalacOptions += "-Djava.library.path=/usr/local/MATLAB/R2018b/bin/glnxa64:/usr/local/MATLAB/R2018b/sys/os/glnxa64"

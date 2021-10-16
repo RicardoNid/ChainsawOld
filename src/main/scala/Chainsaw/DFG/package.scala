@@ -37,6 +37,8 @@ package object DFG {
 
     def weight = dfg.getEdgeWeight(edge)
 
+    def weightWithSource = edge.weight + edge.source.delay
+
     def symbol = s"$source(${edge.outOrder}) -> ${edge.weight} -> $target(${edge.inOrder})"
   }
 

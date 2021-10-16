@@ -1,13 +1,9 @@
 package Chainsaw.DFG
 
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
 import Chainsaw._
 import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
-
+import spinal.core._
+import spinal.lib._
 
 object Operators {
 
@@ -75,7 +71,7 @@ object Operators {
   def bitsKeep = DSPHardware((dataIns: Seq[Bits], _: GlobalCount) => Seq(dataIns(0)), 1, Seq(-1 bits))
 
   def WNnk(N: Int, nk: Int): MComplex = {
-    import scala.math.{sin,cos, Pi}
+    import scala.math.{Pi, cos, sin}
     val phase = -2 * Pi * nk / N
     MComplex(cos(phase), sin(phase))
   }

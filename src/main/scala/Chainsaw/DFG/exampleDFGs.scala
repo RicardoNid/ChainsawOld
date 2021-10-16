@@ -73,33 +73,33 @@ object chap5 {
 object chap6 {
 
   val adds = (0 until 4).map(i => SIntAdder(s"add$i", 10 bits, 0 cycles, 1 ns))
-  val Seq(adds0, adds1, adds2, adds3) = adds
-  val mults = (0 until 4).map(i => SIntCMult(s"cmult_$i", i, 10 bits, 0 cycles, 2 ns))
-  val Seq(mults0, mults1, mults2, mults3) = mults
+  val Seq(add0, add1, add2, add3) = adds
+  val cmults = (0 until 4).map(i => SIntCMult(s"cmult_$i", 2, 10 bits, 1 cycles, 2 ns))
+  val Seq(cmult0, cmult1, cmult2, cmult3) = cmults
 
   val foldingSets = Seq(
-    Seq(adds3, adds1, adds2, adds0),
-    Seq(mults0, mults3, mults1, mults2)
+    Seq(add3, add1, add2, add0),
+    Seq(cmult0, cmult3, cmult1, cmult2)
   )
 
   def fig6_3 = {
     printlnGreen("using fig 6.3")
     val dfg = DFGGraph[SInt]
     // add vertices
-    (adds ++ mults).foreach(dfg.addVertex(_))
+    (adds ++ cmults).foreach(dfg.addVertex(_))
     // drive vertices
-    val input = dfg.setInput(adds0)
+    val input = dfg.setInput(add0)
     val exps = Seq(
-      adds2 >=> 0 >=> adds0,
-      Seq(adds0, adds3) >=> Seq(1, 0) >=> adds1,
-      Seq(mults0, mults2) >=> Seq(0, 1) >=> adds2,
-      Seq(mults1, mults3) >=> Seq(1, 1) >=> adds3,
-      adds0 >=> 1 >=> mults0,
-      adds0 >=> 1 >=> mults1,
-      adds0 >=> 1 >=> mults2,
-      adds0 >=> 2 >=> mults3)
+      add2 >=> 0 >=> add0,
+      Seq(add0, add3) >=> Seq(1, 0) >=> add1,
+      Seq(cmult0, cmult2) >=> Seq(0, 1) >=> add2,
+      Seq(cmult1, cmult3) >=> Seq(1, 1) >=> add3,
+      add0 >=> 1 >=> cmult0,
+      add0 >=> 1 >=> cmult1,
+      add0 >=> 1 >=> cmult2,
+      add0 >=> 2 >=> cmult3)
     exps.foreach(dfg.addExp(_))
-    dfg.setOutput(adds1)
+    dfg.setOutput(add1)
     dfg
   }
 
@@ -107,21 +107,44 @@ object chap6 {
   def fig6_5 = {
     printlnGreen("using fig 6.3 before retiming")
     val dfg = DFGGraph[SInt]
-    (adds ++ mults).foreach(dfg.addVertex(_))
-    val input = dfg.setInput(adds0)
+    (adds ++ cmults).foreach(dfg.addVertex(_))
+    val input = dfg.setInput(add0)
     val exps = Seq(
-      adds2 >=> 0 >=> adds0,
-      Seq(adds0, adds3) >=> Seq(0, 0) >=> adds1,
-      Seq(mults0, mults2) >=> Seq(0, 0) >=> adds2,
-      Seq(mults1, mults3) >=> Seq(0, 0) >=> adds3,
-      adds0 >=> 1 >=> mults0,
-      adds0 >=> 1 >=> mults1,
-      adds0 >=> 2 >=> mults2,
-      adds0 >=> 2 >=> mults3)
+      add2 >=> 0 >=> add0,
+      Seq(add0, add3) >=> Seq(0, 0) >=> add1,
+      Seq(cmult0, cmult2) >=> Seq(0, 0) >=> add2,
+      Seq(cmult1, cmult3) >=> Seq(0, 0) >=> add3,
+      add0 >=> 1 >=> cmult0,
+      add0 >=> 1 >=> cmult1,
+      add0 >=> 2 >=> cmult2,
+      add0 >=> 2 >=> cmult3)
     exps.foreach(dfg.addExp(_))
-    dfg.setOutput(adds1)
+    dfg.setOutput(add1)
     dfg
   }
+
+  // paper "Synthesis of Control Circuits in Folded Pipelined DSP Architectures"
+
+}
+
+object paper1992OnFolding {
+
+  val cmults = (0 until 5).map(i => SIntCMult(s"cmult_$i", i + 1, 10 bits, 1 cycles, 2 ns))
+  val Seq(cmult0, cmult1, cmult2, cmult3, cmult4) = cmults
+
+  def fig8_a = {
+    val dfg = DFGGraph[SInt]
+    cmults.foreach(dfg.addVertex(_)) // mult0-4 = A1, A2, A3, A4, B
+    dfg.addPath(cmult0 >> 1 >> cmult1 >> 1 >> cmult2 >> 2 >> cmult4) // A1 >> A2 >> A3 >> B
+    dfg.addPath(cmult0 >> cmult3 >> cmult4) // A1 >> A4 >> B
+    dfg.addPath(cmult0 >> cmult4)
+    dfg.setInput(cmult0)
+    dfg.setOutput(cmult4)
+    dfg
+  }
+
+  def foldingSet8_a = Seq(Seq(cmult0, cmult1), Seq(cmult3, cmult2), Seq(cmult4, null))
+  //  def foldingSet8_a = Seq(Seq(cmult0, cmult1), Seq(cmult2, cmult3), Seq(cmult4, null))
 }
 
 object chap4 {
@@ -169,9 +192,5 @@ object MIMO {
 
     dfg
   }
-
-}
-
-object fft {
 
 }

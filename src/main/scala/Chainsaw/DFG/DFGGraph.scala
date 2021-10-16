@@ -1,29 +1,13 @@
 package Chainsaw.DFG
 
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
 import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
 import org.jgrapht._
-import org.jgrapht.alg._
 import org.jgrapht.alg.cycle.CycleDetector
 import org.jgrapht.graph._
-import org.jgrapht.graph.builder._
-import org.jgrapht.nio._
-import org.jgrapht.nio.dot._
-import org.jgrapht.traverse._
-import org.jgrapht.generate._
+import spinal.core._
 
 import java.util
-import scala.math.min
 import scala.collection.JavaConversions._
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-
-import scala.util.{Try, Success, Failure}
 
 
 /** Graph properties:
@@ -163,7 +147,7 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
   }
 
   def retimed(solutions: Seq[Int]) = {
-    val r: Map[DSPNode[T], Int] = vertexSeq.zip(solutions).map { case (node, i) => node -> i }.toMap
+    val r: Map[DSPNode[T], Int] = vertexSeq.filterNot(_.isIO).zip(solutions).map { case (node, i) => node -> i }.toMap
     foreachInnerEdge(edge => setEdgeWeight(edge, edge.weight + r(edge.target) - r(edge.source)))
     this
   }

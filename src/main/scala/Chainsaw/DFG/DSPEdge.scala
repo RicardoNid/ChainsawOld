@@ -26,5 +26,5 @@ object DefaultDelay {
 
   def apply[T <: Data](schedulesp: Seq[Schedule], outOrder: Int, inOrder: Int): DefaultDelay[T] = new DefaultDelay("noNameEdge", schedulesp, outOrder, inOrder)
 
-  def apply[T <: Data](outOrder: Int, inOrder: Int): DefaultDelay[T] = new DefaultDelay("noNameEdge", Seq(Schedule(1, 1)), outOrder, inOrder)
+  def apply[T <: Data](outOrder: Int, inOrder: Int): DefaultDelay[T] = new DefaultDelay("noNameEdge", Seq(Schedule(0, 1)), outOrder, inOrder)
 }
