@@ -6,7 +6,7 @@ import spinal.core._
 
 object ShowGraphs {
   def main(args: Array[String]): Unit = {
-    println(chap2.fig2_2)
+    println(paper1992OnFolding.fig10_a)
   }
 }
 
@@ -153,6 +153,29 @@ object chap6 {
 
 object paper1992OnFolding {
 
+  /*  -----------------------------------fig6_a_example3------------------------------------*/
+
+  val cmuls = (0 until 4).map(i => SIntCMult(s"cmult_$i" , 2*i + 1 , 10 bits , 2 cycles , 2 ns))
+  val Seq(cmul0 , cmul1 , cmul2 , cmul3) = cmuls
+
+  def fig6_a = {
+    val dfg = DFGGraph[SInt]
+    cmuls.foreach(dfg.addVertex(_))
+    dfg.addPath(cmul0 >> 0 >> cmul1 >> 1 >> cmul2 >> 2 >> cmul3)
+    dfg.setInput(cmul0)
+    dfg.setOutput(cmul3)
+    dfg
+  }
+
+  def foldingSet6_a_example3 = Seq(Seq(cmul0 , cmul1) , Seq(cmul2 , cmul3))
+
+  /*  -----------------------------------fig6_a_example4------------------------------------*/
+
+  def foldingSet6_a_example4 = Seq(Seq(cmul0 , cmul2) , Seq(cmul1 , cmul3))
+
+  /*  -----------------------------------fig8_a_example6------------------------------------*/
+
+
   val cmults = (0 until 5).map(i => SIntCMult(s"cmult_$i", i + 1, 10 bits, 1 cycles, 2 ns))
   val Seq(cmult0, cmult1, cmult2, cmult3, cmult4) = cmults
 
@@ -167,8 +190,37 @@ object paper1992OnFolding {
     dfg
   }
 
-  def foldingSet8_a = Seq(Seq(cmult0, cmult1), Seq(cmult3, cmult2), Seq(cmult4, null))
+  def foldingSet8_a_example6 = Seq(Seq(cmult0, cmult1), Seq(cmult3, cmult2), Seq(cmult4, null))
   //  def foldingSet8_a = Seq(Seq(cmult0, cmult1), Seq(cmult2, cmult3), Seq(cmult4, null))
+
+  /*  -----------------------------------fig10_a_example8------------------------------------*/
+
+  def fig10_a = {
+    val dfg = DFGGraph[SInt]
+    cmuls.foreach(dfg.addVertex(_))
+    dfg.addPath(cmul0 >> 1 >> cmul1 >> 1 >> cmul2)
+    val x_1_edge = DefaultDelay[SInt](Seq(Schedule(0 , 2)) , 0 , 0)
+    val x_2_edge = DefaultDelay[SInt](Seq(Schedule(1 , 2)) , 0 , 0)
+    val x_1 = InputNode[SInt](s"input_x_1")
+    val x_2 = InputNode[SInt](s"input_x_2")
+    dfg.addVertex(x_1)
+    dfg.addEdge(x_1 , cmul0 , x_1_edge)
+    dfg.setEdgeWeight(x_1_edge , 0)
+    dfg.addVertex(x_2)
+    dfg.addEdge(x_2 , cmul0 , x_2_edge)
+    dfg.setEdgeWeight(x_2_edge , 0)
+    val cmul0Tocmul3_edge = DefaultDelay[SInt](Seq(Schedule(1 , 3)) , 0 , 0)
+    val cmul2Tocmul3_edge = DefaultDelay[SInt](Seq(Schedule(0 , 3) , Schedule(2 , 3)) , 0 , 0)
+    dfg.addVertex(cmul3)
+    dfg.addEdge(cmul0 , cmul3 , cmul0Tocmul3_edge)
+    dfg.setEdgeWeight(cmul0Tocmul3_edge , 2 )
+    dfg.addEdge(cmul2 , cmul3 , cmul2Tocmul3_edge)
+    dfg.setEdgeWeight(cmul2Tocmul3_edge , 1 )
+    dfg.setOutput(cmul3)
+    dfg
+  }
+
+  def foldingSet10_a_example8 = Seq(Seq(cmul0 , cmul1 ,cmul2 , cmul3))
 }
 
 object chap4 {
