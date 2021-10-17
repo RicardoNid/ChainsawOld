@@ -158,6 +158,7 @@ object paper1992OnFolding {
   val cmuls = (0 until 4).map(i => SIntCMult(s"cmult_$i" , 2*i + 1 , 10 bits , 2 cycles , 2 ns))
   val Seq(cmul0 , cmul1 , cmul2 , cmul3) = cmuls
 
+  
   def fig6_a = {
     val dfg = DFGGraph[SInt]
     cmuls.foreach(dfg.addVertex(_))
