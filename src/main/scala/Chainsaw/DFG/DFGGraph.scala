@@ -10,11 +10,10 @@ import java.util
 import scala.collection.JavaConversions._
 
 
-/** Graph properties:
- * directed: yes
- * weighted: yes
- * self-loop: yes
- * parallel edge: yes
+/**
+ * @param holderProvider
+ * @tparam T
+ * learn more: [[]]
  */
 class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
 
@@ -49,7 +48,9 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
   /** Confirm that the graph has no mux(parallel edges)
    */
   // classification
-  def hasNoMux = vertexSeq.forall(vertex => vertex.targets.distinct.size == vertex.targets.size)
+  def hasNoParallelEdge = vertexSeq.forall(vertex => vertex.targets.distinct.size == vertex.targets.size)
+
+  def hasNoMux = edgeSeq.forall(edge => edge.schedules.size == 1 && edge.schedules.head == Schedule(0, 1))
 
   // constructing graph
   override def setEdgeWeight(e: DSPEdge[T], weight: Double): Unit = {
@@ -57,66 +58,74 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
     super.setEdgeWeight(e, weight)
   }
 
-  def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double): Unit = {
-    val inOrder = target.incomingEdges.size // default strategy
-    val outOrder = 0 // default strategy
-    val edge = DefaultDelay[T](outOrder, inOrder)
-    if (addEdge(source, target, edge)) setEdgeWeight(edge, delay)
+  @deprecated // mark the original addEdge as deprecated to ask the developer/user to use methods we provide
+  override def addEdge(sourceVertex: DSPNode[T], targetVertex: DSPNode[T], e: DSPEdge[T]): Boolean = super.addEdge(sourceVertex, targetVertex, e)
+
+  /** Add edge with full information, it is the basic method for adding edge in DFG
+   *
+   * @param source    source node
+   * @param target    target node
+   * @param outOrder  the output port number of source node
+   * @param inOrder   the input port number of target node
+   * @param delay     delay(weight) of this edge
+   * @param schedules schedules on this edge
+   */
+  def addEdge(source: DSPNode[T], target: DSPNode[T], outOrder: Int, inOrder: Int, delay: Double, schedules: Seq[Schedule] = NoMUX()): Unit = {
+    val edge = DefaultDelay[T](schedules, outOrder, inOrder)
+    if (super.addEdge(source, target, edge)) setEdgeWeight(edge, delay)
   }
 
-  def addEdge(source: DSPNodeWithOrder[T], target: DSPNodeWithOrder[T], delay: Double): Unit = {
-    val inOrder = target.order // default strategy
-    val outOrder = source.order // default strategy
-    val edge = DefaultDelay[T](outOrder, inOrder)
-    if (addEdge(source.node, target.node, edge)) setEdgeWeight(edge, delay)
-  }
+  // Add edge into basicDFG(MISO, no MUX)
+  def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double, schedules: Seq[Schedule]): Unit =
+    addEdge(source, target, 0, target.incomingEdges.size, delay, schedules)
 
+  def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double): Unit =
+    addEdge(source, target, 0, target.incomingEdges.size, delay)
 
+  // Add edge by DSPNodeWithOrder format
+  def addEdge(source: DSPNodeWithOrder[T], target: DSPNodeWithOrder[T], delay: Double, schedules: Seq[Schedule]): Unit =
+    addEdge(source.node, target.node, source.order, target.order, delay, schedules)
+
+  def addEdge(source: DSPNodeWithOrder[T], target: DSPNodeWithOrder[T], delay: Double): Unit =
+    addEdge(source.node, target.node, source.order, target.order, delay)
+
+  /** Add an expression to a basic DFG, that is, "derive" a new node by several driving nodes
+   * @example dfg.add(Seq(a,b) >=> (0,1) >=> c), when c is an adder, this means c.output = a.output + b.output
+   */
   def addExp(exp: DSPAssignment[T]): Unit = {
     import exp._
+    if (sources.exists(_.hardware.outWidths.size > 1)) printlnYellow(s"warning: using addExp(which provides no port number or MUX info) on a MIMO DFG")
     sources.foreach(addVertex(_))
     addVertex(target)
     sources.zip(delays).foreach { case (src, delay) => addEdge(src, target, delay) }
   }
 
+  /** Add a interleaved sequence of nodes and delays to a basic DFG
+   *
+   * @example dfg.addPath(a >> b >> 1 >> c), there's no delay between a and b, 1 delay between b and c
+   */
   def addPath(path: DSPPath[T]): Unit = {
     import path._
     require(nodes.size == delays.size + 1)
+    // TODO: using a solid ERROR/WARNING/INFO library instead of do println in different colors
+    if (nodes.exists(_.hardware.outWidths.size > 1)) printlnYellow(s"warning: using addPath(which provides no port number or MUX info) on a MIMO DFG")
     nodes.foreach(addVertex)
     nodes.init.zip(nodes.tail).zip(delays).foreach { case ((src, des), delay) => addEdge(src, des, delay) }
   }
 
-  def setInput(target: DSPNode[T], inOrder: Int) = {
-    val inputName = s"input${inputNodes.size}"
-    val inputNode = InputNode[T](inputName)
-    val edge = DefaultDelay[T](0, inOrder)
-    addVertex(inputNode)
-    addEdge(inputNode, target, edge)
-    setEdgeWeight(edge, 0)
-    inputNode
-  }
-
-  def setInput(target: DSPNode[T], name: String = "") = {
+  def setInput(target: DSPNode[T], inOrder: Int = 0, name: String = "", schedules: Seq[Schedule] = NoMUX()) = {
     val inputName = if (name.nonEmpty) name else s"input${inputNodes.size}"
     val inputNode = InputNode[T](inputName)
-    addExp(inputNode >=> 0 >=> target)
+    addVertex(inputNode)
+    addEdge(inputNode(0), target(inOrder), 0, schedules)
     inputNode
   }
 
-  def setOutput(source: DSPNode[T], outOrder: Int) = {
-    val outputName = s"output${outputNodes.size}"
-    val outputNode = OutputNode[T](outputName)
-    val edge = DefaultDelay[T](outOrder, 0)
-    addVertex(outputNode)
-    addEdge(source, outputNode, edge)
-    setEdgeWeight(edge, 0)
-    outputNode
-  }
-
-  def setOutput(source: DSPNode[T], name: String = "") = {
+  def setOutput(source: DSPNode[T], outOrder: Int = 0, name: String = "", schedules: Seq[Schedule] = NoMUX()): OutputNode[T] = {
     val outputName = if (name.nonEmpty) name else s"output${outputNodes.size}"
     val outputNode = OutputNode[T](outputName)
-    addExp(source >=> 0 >=> outputNode)
+    addVertex(outputNode)
+    addEdge(source(outOrder), outputNode(0), 0, schedules)
     outputNode
   }
 

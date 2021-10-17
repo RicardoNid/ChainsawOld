@@ -41,7 +41,7 @@ package object DFG {
 
     def symbol = s"$source(${edge.outOrder}) -> ${edge.weight} -> $target(${edge.inOrder})"
 
-    def hasNoMux = (edge.schedules.size == 1 && edge.schedules.head == Schedule(0,1))
+    def hasNoMux = edge.schedules.size == 1 && edge.schedules.head == Schedule(0,1)
   }
 
   implicit class NodeProperties[T <: Data](node: DSPNode[T])(implicit dfg: DFGGraph[T]) {

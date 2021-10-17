@@ -67,7 +67,7 @@ object DFGTestUtil {
         dataIn.setMonitor(inputRecord, "input")
         clockDomain.forkStimulus(2)
         clockDomain.waitSampling()
-        if(speedUp != 1) clockDomain.waitSampling() // for mux unfolding
+        if(speedUp > 1) clockDomain.waitSampling() // FIXME: specially for mux unfolding
         clockDomain.waitSampling((inputSchedule.time - 1)  + transformed.globalLcm)
         dataOut.setMonitor(outputRecord, "output")
 

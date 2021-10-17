@@ -24,6 +24,10 @@ case class Schedule(time: Int, period: Int) {
   override def toString: String = s"$time / $period"
 }
 
+object NoMUX {
+  def apply() = Seq(Schedule(0, 1))
+}
+
 case class GlobalCount(value: UInt)
 
 case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])

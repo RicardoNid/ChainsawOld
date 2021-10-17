@@ -80,7 +80,7 @@ object chap5 {
     dfg.addVertex(zero)
     dfg.setInput(add, 0)
     dfg.setInput(add, 1)
-    dfg.setOutput(add, 0)
+    dfg.setOutput(add, outOrder = 0)
 
     val zero2add = DefaultDelay[SInt](Seq(Schedule(0, 4)), outOrder = 0, inOrder = 2)
     val out2add = DefaultDelay[SInt](Seq(Schedule(1, 4), Schedule(2, 4), Schedule(3, 4)), outOrder = 1, inOrder = 2)
@@ -212,7 +212,7 @@ object MIMO {
     dfg.addEdge(b1(0), c0(1), 0)
     dfg.addEdge(b1(1), c1(1), 0)
 
-    Seq(c0, c1).foreach(butterfly => Seq(0, 1).foreach(dfg.setOutput(butterfly, _)))
+    Seq(c0, c1).foreach(butterfly => Seq(0, 1).foreach((outOrder: Int) => dfg.setOutput(butterfly, outOrder = outOrder)))
 
     dfg
   }

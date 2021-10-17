@@ -23,7 +23,7 @@ class Unfolding[T <: Data](dfg: DFGGraph[T], unfoldingFactor: Int) {
 
   // TODO: considering fold a dfg by 2 and then unfold it by 4
   // currently, we do not  allow this
-  if (!dfg.hasNoMux) require(dfg.globalLcm % unfoldingFactor == 0) // when there's mux and we use unfolding
+  if (!dfg.hasNoParallelEdge) require(dfg.globalLcm % unfoldingFactor == 0) // when there's mux and we use unfolding
 
   /** Preprocess the dfg to separate delay and mux
    *
