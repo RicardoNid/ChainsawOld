@@ -64,12 +64,17 @@ class Unfolding[T <: Data](dfg: DFGGraph[T], unfoldingFactor: Int) {
         (0 until unfoldingFactor).foreach { i =>
           val j = (i + w) % unfoldingFactor
           val unfoldedDelay = (i + w) / unfoldingFactor
-          unfoldedDFG.addPath(sources(i) >> unfoldedDelay >> targets(j))
+          val unfoldedEdge = DefaultDelay[T](Seq(Schedule(0,1)), edge.outOrder, edge.inOrder)
+          unfoldedDFG.addVertex(sources(i))
+          unfoldedDFG.addVertex(targets(j))
+          unfoldedDFG.addEdge(sources(i), targets(j), unfoldedEdge)
+          unfoldedDFG.setEdgeWeight(unfoldedEdge, unfoldedDelay)
         }
       } else {
         require(edge.weight == 0)
         (0 until unfoldingFactor).foreach { i =>
           val unfoldedSchedules = edge.schedules.filter(_.time % unfoldingFactor == i)
+            .map(schedule => Schedule(schedule.time / unfoldingFactor, schedule.period / unfoldingFactor))
           if(unfoldedSchedules.nonEmpty){
             val unfoldedEdge = DefaultDelay[T](unfoldedSchedules, edge.outOrder, edge.inOrder)
             unfoldedDFG.addVertex(sources(i))

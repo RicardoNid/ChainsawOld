@@ -36,7 +36,6 @@ object DFGTestUtil {
     val transFormedTestCases = ArrayBuffer[BigInt]()
     val transFormedResults = ArrayBuffer[BigInt]()
 
-
     // FIXME: this only works for SISO / homogeneous MIMO DFG
     // FIXME: find out the actual latency formula
     implicit val currentDFG = transformed
@@ -68,6 +67,7 @@ object DFGTestUtil {
         dataIn.setMonitor(inputRecord, "input")
         clockDomain.forkStimulus(2)
         clockDomain.waitSampling()
+        if(speedUp != 1) clockDomain.waitSampling() // for mux unfolding
         clockDomain.waitSampling((inputSchedule.time - 1)  + transformed.globalLcm)
         dataOut.setMonitor(outputRecord, "output")
 
@@ -88,7 +88,9 @@ object DFGTestUtil {
             }
           } else {
             testCases.grouped(transformed.inputNodes.size).toSeq.foreach { testCase =>
-              dataIn.poke(testCase)
+              // folding would change the order of input
+              val forUnfolded = DSP.interleave.Algos.matIntrlv(testCase, speedUp, testCase.size / speedUp)
+              dataIn.poke(forUnfolded)
               clockDomain.waitSampling()
             }
           }
