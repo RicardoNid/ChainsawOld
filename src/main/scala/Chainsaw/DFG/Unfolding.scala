@@ -21,21 +21,65 @@ import scala.collection.JavaConversions._
 
 class Unfolding[T <: Data](dfg: DFGGraph[T], unfoldingFactor: Int) {
 
-  require(dfg.hasNoMux) // TODO: implement unfolding for MUX
-  val unfoldedDFG = DFGGraph[T](dfg.holderProvider)
+  // TODO: considering fold a dfg by 2 and then unfold it by 4
+  // currently, we do not  allow this
+  if (!dfg.hasNoMux) require(dfg.globalLcm % unfoldingFactor == 0) // when there's mux and we use unfolding
 
-  val nodeMap = dfg.vertexSeq.map(vertex => vertex -> (0 until unfoldingFactor).map(i => vertex.copy(s"${vertex.name}_unfolded_$i"))).toMap
-  println(nodeMap.mkString("\n"))
-  dfg.foreachEdge { edge =>
-    val w = dfg.getEdgeWeight(edge).toInt
-    val sources = nodeMap(dfg.getEdgeSource(edge))
-    val targets = nodeMap(dfg.getEdgeTarget(edge))
-    (0 until unfoldingFactor).foreach { i =>
-      val j = (i + w) % unfoldingFactor
-      val wPrime = (i + w) / unfoldingFactor
-      unfoldedDFG.addPath(sources(i) >> wPrime >> targets(j))
+  /** Preprocess the dfg to separate delay and mux
+   *
+   */
+  def preprocessed = {
+    val preprocessedDFG = dfg.clone().asInstanceOf[DFGGraph[T]]
+    implicit def currentDFG = preprocessedDFG
+    preprocessedDFG.foreachEdge { edge =>
+      val source = edge.source
+      val target = edge.target
+      if (!edge.hasNoMux && edge.weight != 0) {
+        val virtualNode = GeneralNode[T](s"virtual_from_${edge.source}", 0 cycles, 0 ns, target.hardware.outWidths(edge.outOrder))
+        // separate mux and delay
+        val delayEdge = DefaultDelay[T](Seq(Schedule(0, 1)), edge.outOrder, 0)
+        val muxEdge = DefaultDelay[T](edge.schedules, 0, edge.inOrder)
+        preprocessedDFG.addVertex(virtualNode)
+        preprocessedDFG.addEdge(source, virtualNode, delayEdge)
+        preprocessedDFG.addEdge(virtualNode, target, muxEdge)
+        preprocessedDFG.setEdgeWeight(delayEdge, edge.weight)
+        preprocessedDFG.setEdgeWeight(muxEdge, 0)
+        preprocessedDFG.removeEdge(edge)
+      }
     }
+    printlnGreen(preprocessedDFG)
+    preprocessedDFG
   }
 
-  def unfolded = unfoldedDFG
+  def unfolded = {
+    implicit val preprocessedDFG = preprocessed
+    val unfoldedDFG = DFGGraph[T](dfg.holderProvider)
+    val nodeMap = preprocessedDFG.vertexSeq.map(vertex => vertex -> (0 until unfoldingFactor).map(i => vertex.copy(s"${vertex.name}_unfolded_$i"))).toMap
+    preprocessedDFG.foreachEdge { edge =>
+      val w = edge.weightWithSource
+      val sources = nodeMap(edge.source)
+      val targets = nodeMap(edge.target)
+
+      if (edge.hasNoMux) {
+        (0 until unfoldingFactor).foreach { i =>
+          val j = (i + w) % unfoldingFactor
+          val unfoldedDelay = (i + w) / unfoldingFactor
+          unfoldedDFG.addPath(sources(i) >> unfoldedDelay >> targets(j))
+        }
+      } else {
+        require(edge.weight == 0)
+        (0 until unfoldingFactor).foreach { i =>
+          val unfoldedSchedules = edge.schedules.filter(_.time % unfoldingFactor == i)
+          if(unfoldedSchedules.nonEmpty){
+            val unfoldedEdge = DefaultDelay[T](unfoldedSchedules, edge.outOrder, edge.inOrder)
+            unfoldedDFG.addVertex(sources(i))
+            unfoldedDFG.addVertex(targets(i))
+            unfoldedDFG.addEdge(sources(i), targets(i), unfoldedEdge)
+            unfoldedDFG.setEdgeWeight(unfoldedEdge, 0)
+          }
+        }
+      }
+    }
+    unfoldedDFG
+  }
 }

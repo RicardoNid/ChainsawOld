@@ -38,7 +38,9 @@ class GeneralNode[T <: Data](implp: DSPHardware[T], namep: String, delayp: Cycle
 object GeneralNode {
   def apply[T <: Data](hardware: DSPHardware[T], namep: String, delayp: CyclesCount, exeTimep: TimeNumber): GeneralNode[T] = new GeneralNode(hardware, namep, delayp, exeTimep)
 
-  def apply[T <: Data](namep: String, delayp: CyclesCount, exeTimep: TimeNumber): GeneralNode[T] = new GeneralNode(Operators.Line[T], namep, delayp, exeTimep)
+  def apply[T <: Data](namep: String, delayp: CyclesCount, exeTimep: TimeNumber): GeneralNode[T] = new GeneralNode(Operators.Line[T](), namep, delayp, exeTimep)
+
+  def apply[T <: Data](namep: String, delayp: CyclesCount, exeTimep: TimeNumber, width: BitCount): GeneralNode[T] = new GeneralNode(Operators.Line[T](width), namep, delayp, exeTimep)
 }
 
 object VoidNode {
@@ -46,10 +48,11 @@ object VoidNode {
 }
 
 class InputNode[T <: Data](namev: String) extends DSPNode[T] {
-  override val hardware = Operators.Line[T]
+  override val hardware = Operators.Line[T]()
   override val name: String = namev
   override val delay: Int = 0
   override val exeTime: Double = 0
+
   override def copy(newName: String): DSPNode[T] = new InputNode[T](newName)
 }
 
@@ -58,10 +61,11 @@ object InputNode {
 }
 
 class OutputNode[T <: Data](namev: String) extends DSPNode[T] {
-  override val hardware = Operators.Line[T]
+  override val hardware = Operators.Line[T]()
   override val name: String = namev
   override val delay: Int = 0
   override val exeTime: Double = 0
+
   override def copy(newName: String): DSPNode[T] = new OutputNode[T](newName)
 }
 

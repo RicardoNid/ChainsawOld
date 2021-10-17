@@ -129,12 +129,16 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
 
   /** The least common multiple of all muxes in this DFG
    */
-  def globalLcm = edgeSeq.map(_.schedules).flatten.map(_.period).reduce(lcm(_, _))
+  def globalLcm = edgeSeq.map(_.schedules).flatten.map(_.period).sorted.reverse.reduce(lcm(_, _))
 
-  def latency = { // FIXME: find a clear definition for both SISO, MIMO, and DFG with MUX
+  def latencyPath = {
     val algo = new alg.shortestpath.BellmanFordShortestPath(this)
-    Seq.tabulate(inputNodes.size, outputNodes.size)((i, j) => algo.getPathWeight(inputNodes(i), outputNodes(j))).flatten.min.toInt
+    Seq.tabulate(inputNodes.size, outputNodes.size)((i, j) => algo.getPath(inputNodes(i), outputNodes(j))).flatten.minBy(_.getWeight)
   }
+
+  // FIXME: find a clear definition for both SISO, MIMO, and DFG with MUX
+  def latency = latencyPath.getWeight.toInt
+
 
   def impl = new DFGImpl(this).impl
 

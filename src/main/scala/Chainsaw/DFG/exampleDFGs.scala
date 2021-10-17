@@ -45,6 +45,7 @@ object chap2 {
 
 object chap5 {
   def fig5_2 = {
+
     val Seq(a, b, d) = Seq("a", "b", "d").map(name => sintKeep(10 bits).asDSPNode(name, 0 cycles, 1 ns))
     val c = sIntAdder(10 bits, 0 cycles).asDSPNode("c", 0 cycles, 1 ns)
     printlnGreen("using fig 5.2")
@@ -67,6 +68,28 @@ object chap5 {
     dfg.addPath(x >> a >> e)
     dfg.setInput(x)
     dfg.setOutput(e)
+    dfg
+  }
+
+  def fig5_12 = {
+    val zero = SIntConst("sint_0", 0, 10 bits)
+    val add = SIntAdderC("add", 10 bits, 0 cycles, 1 ns)
+
+    val dfg = DFGGraph[SInt]
+    dfg.addVertex(add)
+    dfg.addVertex(zero)
+    dfg.setInput(add, 0)
+    dfg.setInput(add, 1)
+    dfg.setOutput(add, 0)
+
+    val zero2add = DefaultDelay[SInt](Seq(Schedule(0, 4)), outOrder = 0, inOrder = 2)
+    val out2add = DefaultDelay[SInt](Seq(Schedule(1, 4), Schedule(2, 4), Schedule(3, 4)), outOrder = 1, inOrder = 2)
+
+    dfg.addEdge(add, add,  out2add)
+    dfg.setEdgeWeight(out2add, 1)
+    dfg.addEdge(zero, add, zero2add)
+    dfg.setEdgeWeight(zero2add, 0)
+
     dfg
   }
 }

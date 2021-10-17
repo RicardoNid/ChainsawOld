@@ -11,11 +11,24 @@ object Operators {
     def asDSPNode(name: String, delay: CyclesCount, exeTime: TimeNumber) = GeneralNode(hardware, name, delay, exeTime)
   }
 
-  def Line[T <: Data] = DSPHardware(
-    impl = (dataIns: Seq[T], globalCount: GlobalCount) => dataIns,
+  def Line[T <: Data](width: BitCount = -1 bits) = DSPHardware(
+    impl = (dataIns: Seq[T], _: GlobalCount) => dataIns,
     inDegree = 1,
-    outWidths = Seq(-1 bits)
+    outWidths = Seq(width)
   )
+
+  def sIntConst(constant: Int, width: BitCount) = DSPHardware(
+    (_: Seq[SInt], _: GlobalCount) => Seq(S(constant, width)),
+    1,
+    Seq(width))
+
+  class SIntConst(name: String, constant: Int, width: BitCount) extends
+    GeneralNode(sIntConst(constant, width), name, 0 cycles, 0 ns)
+
+  object SIntConst {
+    def apply(name: String, constant: Int, width: BitCount): SIntConst = new SIntConst(name, constant, width)
+  }
+
 
   def sIntInc(width: BitCount, delay: CyclesCount) = DSPHardware(
     (dataIns: Seq[SInt], _: GlobalCount) => Seq(Delay(dataIns(0) + 1, delay.toInt, init = dataIns.head.getZero)),
@@ -29,12 +42,29 @@ object Operators {
     Seq(width))
 
   class SIntAdder(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber)
-    extends GeneralNode(sIntAdder(width, delay), name, delay, exeTime) with Foldable[SInt]{
+    extends GeneralNode(sIntAdder(width, delay), name, delay, exeTime) with Foldable[SInt] {
     override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = SIntAdder(s"foldFrom${sources.head.name}", width, delay, exeTime)
   }
 
   object SIntAdder {
     def apply(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber): SIntAdder = new SIntAdder(name, width, delay, exeTime)
+  }
+
+  def sIntAdderC(width: BitCount, delay: CyclesCount) = DSPHardware(
+    (dataIns: Seq[SInt], _: GlobalCount) => { // dataIns(2) is the carry
+      val full = Delay(dataIns(0) +^ dataIns(1) + dataIns(2), delay.toInt, init = dataIns.head.getZero)
+      Seq(full(full.getBitsWidth - 2 downto 0), full.msb.asSInt)
+    },
+    3,
+    Seq(width, 1 bits))
+
+  class SIntAdderC(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber)
+    extends GeneralNode(sIntAdderC(width, delay), name, delay, exeTime) with Foldable[SInt] {
+    override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = SIntAdderC(s"foldFrom${sources.head.name}", width, delay, exeTime)
+  }
+
+  object SIntAdderC {
+    def apply(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber): SIntAdderC = new SIntAdderC(name, width, delay, exeTime)
   }
 
   // constant multiplier
@@ -89,6 +119,7 @@ object Operators {
     def delayed(signal: ComplexNumber) = Delay(signal, latency)
 
     def toFixedCoeff: Double => SFix = SF(_, coeffType().maxExp exp, coeffType().minExp exp)
+
     // multiply (1 - j) / sqrt(2)
     def multiply1minusj(signal: ComplexNumber) = {
       val A = signal.real + signal.imag

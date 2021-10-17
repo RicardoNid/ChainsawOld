@@ -5,6 +5,7 @@ import spinal.core._
 import spinal.lib._
 
 import scala.collection.mutable
+import scala.util.{Failure, Success, Try}
 
 class DFGImpl[T <: Data](dfg: DFGGraph[T]) {
   implicit def currentDFG = dfg
@@ -31,7 +32,12 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T]) {
       //        println(s"mux to target $target:\n" +
       //          s"${dataInsOnePort.map(_.schedules.mkString(" ")).mkString("\n")}")
       val mux = DFGMUX[T](dataInsOnePort.map(_.schedules))
-      mux.impl(dataCandidates, globalLcm)
+      val succeed = Try(mux.impl(dataCandidates, globalLcm))
+      succeed match {
+        case Failure(exception) => printlnRed(s"collision between:\n${dataInsOnePort.map(_.symbol).mkString("\n")}")
+          mux.impl(dataCandidates, globalLcm)
+        case Success(value) => value
+      }
     }
     // implement target using dataIns from different ports
     target.hardware.impl(dataInsOnPorts, globalCount)
@@ -40,8 +46,9 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T]) {
   // implement a recursive graph
   def implRecursive: Seq[T] => Seq[T] = (dataIns: Seq[T]) => {
     printlnGreen("implementing DFG by algo for recursive DFG")
-    val signalMap: Map[DSPNode[T], Seq[T]] = vertexSeq.map(node => // a map to connect nodes with their outputs(placeholder)
-      node -> node.hardware.outWidths.map(i => if (i.value == -1) holderProvider(-1 bits) else holderProvider(i))).toMap
+    val signalMap: Map[DSPNode[T], Seq[T]] = vertexSeq.map{node => // a map to connect nodes with their outputs(placeholder)
+      printlnRed(s"vertex $node: ${node.hardware.outWidths.mkString(" ")}")
+      node -> node.hardware.outWidths.map(i => if (i.value == -1) holderProvider(-1 bits) else holderProvider(i))}.toMap
 
     implicit val globalCount = initGlobalCount()
 

@@ -37,9 +37,11 @@ package object DFG {
 
     def weight = dfg.getEdgeWeight(edge)
 
-    def weightWithSource = edge.weight + edge.source.delay
+    def weightWithSource = (edge.weight + edge.source.delay).toInt
 
     def symbol = s"$source(${edge.outOrder}) -> ${edge.weight} -> $target(${edge.inOrder})"
+
+    def hasNoMux = (edge.schedules.size == 1 && edge.schedules.head == Schedule(0,1))
   }
 
   implicit class NodeProperties[T <: Data](node: DSPNode[T])(implicit dfg: DFGGraph[T]) {

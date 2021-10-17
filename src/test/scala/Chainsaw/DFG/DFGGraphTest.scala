@@ -3,10 +3,6 @@ package Chainsaw.DFG
 import Chainsaw._
 import org.scalatest.flatspec.AnyFlatSpec
 import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-
-import scala.collection.JavaConversions._
 
 /** Regression test of DFG
  *
@@ -97,6 +93,15 @@ class DFGGraphTest extends AnyFlatSpec {
 
     println(unfoldedDFG)
     DFGTestUtil.verifyFunctionalConsistency(dfg, unfoldedDFG, SInt(10 bits), 10, 0)
+  }
+
+  "unfolding algo" should "work on fig5.12" in {
+    val dfg = chap5.fig5_12
+    val algo = new Unfolding(dfg, 2)
+    val unfoldedDFG = algo.unfolded
+
+    println(unfoldedDFG)
+    DFGTestUtil.verifyFunctionalConsistency(dfg, unfoldedDFG, SInt(10 bits), 2, 0)
   }
 
   it should "work on fig5.10" in {

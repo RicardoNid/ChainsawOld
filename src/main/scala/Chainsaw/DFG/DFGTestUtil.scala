@@ -13,109 +13,106 @@ object DFGTestUtil {
 
   /** Verify that the transformed DFG has the same function as the original one
    *
-   * @param original DFG before transformation
+   * @param original    DFG before transformation
    * @param transformed DFG after transformation
-   * @param speedUp the throughput of transformed DFG, 3 for *3, -3 for 1/3
-   * @param delay   extra delay on latency, latency' = latency / speedUp + delayed
+   * @param speedUp     the throughput of transformed DFG, 3 for *3, -3 for 1/3
+   * @param delay       extra delay on latency, latency' = latency / speedUp + delayed
    * @tparam T
    */
   def verifyFunctionalConsistency[T <: BitVector](original: DFGGraph[T], transformed: DFGGraph[T], elementType: HardType[T], speedUp: Int, delay: Int, testLength: Int = 50) = {
 
+    // requirement on the input/output size
     if (speedUp > 1) { // throughput > 1, bigger port number
       require(transformed.inputNodes.size == original.inputNodes.size * speedUp)
       require(transformed.outputNodes.size == original.outputNodes.size * speedUp)
     } else if (speedUp < -1) { // throughput < 1, keep the port number
       require(transformed.inputNodes.size == original.inputNodes.size)
       require(transformed.outputNodes.size == original.outputNodes.size)
-    } else throw new IllegalArgumentException()
+    } else throw new IllegalArgumentException("speed up factor doesn't match the port number")
 
-    val testCases = ArrayBuffer[BigInt]()
-    val results = ArrayBuffer[BigInt]()
+    // data tobe filled
+    val originalTestCases = ArrayBuffer[BigInt]()
+    val originalResults = ArrayBuffer[BigInt]()
     val transFormedTestCases = ArrayBuffer[BigInt]()
     val transFormedResults = ArrayBuffer[BigInt]()
 
-    val inputSchedule = transformed.outgoingEdgesOf(transformed.inputNodes.head).head.schedules.head
-    val outputSchedule = transformed.incomingEdgesOf(transformed.outputNodes.head).head.schedules.head
 
-    // TODO: make it correct
+    // FIXME: this only works for SISO / homogeneous MIMO DFG
+    // FIXME: find out the actual latency formula
+    implicit val currentDFG = transformed
+    val inputSchedule = transformed.inputNodes.head.outgoingEdges.head.schedules.head
+    val outputSchedule = transformed.outputNodes.head.incomingEdges.head.schedules.head
     val transformedLatency = if (speedUp < 0) {
-      (original.latency * -speedUp) + (outputSchedule.time * transformed.globalLcm / outputSchedule.period) - (inputSchedule.time * transformed.globalLcm / inputSchedule.period)
+      (original.latency * -speedUp) + outputSchedule.time - inputSchedule.time
     } else {
       original.latency
     } + delay
 
-    printlnGreen(original.latency, transformedLatency)
+    def testDFG(dfg: DFGGraph[T], latency: Int, speedUp: Int,
+                inputRecord: ArrayBuffer[BigInt], outputRecord: ArrayBuffer[BigInt],
+                testCases: ArrayBuffer[BigInt] = null) = {
+      SimConfig.withWave.compile(new Component {
+        val dataIn = slave Flow Vec(elementType, dfg.inputNodes.size)
+        val dataOut = master Flow Vec(elementType, dfg.outputNodes.size)
+        dataOut.payload := Vec(dfg.impl(dataIn.payload))
+        dataOut.valid := Delay(dataIn.valid, latency, init = False)
+      }).doSim { dut =>
+        import dut.{clockDomain, dataIn, dataOut}
 
-    // get data from the original
-    SimConfig.withWave.compile(new Component {
-      val dataIn = slave Flow Vec(elementType, original.inputNodes.size)
-      val dataOut = master Flow Vec(elementType, original.outputNodes.size)
-      dataOut.payload := Vec(original.impl(dataIn.payload))
-      dataOut.valid := Delay(dataIn.valid, original.latency, init = False)
-    }).doSim { dut =>
-      import dut.{clockDomain, dataIn, dataOut}
+        implicit val currentDFG = dfg
+        val inputSchedule = dfg.inputNodes.head.outgoingEdges.head.schedules.head
 
-      dataIn.halt()
-      dataIn.payload.foreach(_ #= 0)
-      clockDomain.forkStimulus(2)
-      clockDomain.waitSampling()
-      dataIn.setMonitor(testCases) // FIXME: one extra sampling on the first input, why?
-      dataOut.setMonitor(results)
-
-      (0 until testLength).foreach { testCase =>
-        dataIn.pokeRandom()
+        dataIn.halt()
+        dataIn.payload.foreach(_ #= 0)
+        // FIXME: solve sampling problem by
+        dataIn.setMonitor(inputRecord, "input")
+        clockDomain.forkStimulus(2)
         clockDomain.waitSampling()
+        clockDomain.waitSampling((inputSchedule.time - 1)  + transformed.globalLcm)
+        dataOut.setMonitor(outputRecord, "output")
+
+        if (testCases == null) {
+          (0 until testLength).foreach { _ =>
+            dataIn.pokeRandom()
+            clockDomain.waitSampling()
+          }
+        }
+        else {
+
+          if (speedUp < 0) {
+            testCases.grouped(original.inputNodes.size).toSeq.foreach { testCase =>
+              dataIn.poke(testCase)
+              clockDomain.waitSampling()
+              dataIn.halt()
+              clockDomain.waitSampling(-speedUp - 1)
+            }
+          } else {
+            testCases.grouped(transformed.inputNodes.size).toSeq.foreach { testCase =>
+              dataIn.poke(testCase)
+              clockDomain.waitSampling()
+            }
+          }
+        }
+        clockDomain.waitSampling(latency)
       }
-      clockDomain.waitSampling(original.latency)
     }
 
-    // using the same data on the transformed dfg
-    SimConfig
-      .withWave.compile(new Component {
-      val dataIn = slave Flow Vec(elementType, transformed.inputNodes.size)
-      val dataOut = master Flow Vec(elementType, transformed.outputNodes.size)
-      dataOut.payload := Vec(transformed.impl(dataIn.payload))
-      dataOut.valid := Delay(dataIn.valid, transformedLatency, init = False)
-    }).doSim { dut =>
-      import dut.{clockDomain, dataIn, dataOut}
+    testDFG(original, original.latency, 1, originalTestCases, originalResults)
+    testDFG(transformed, transformedLatency, speedUp, transFormedTestCases, transFormedResults, originalTestCases)
 
-      dataIn.halt()
-      dataIn.payload.foreach(_ #= 0)
-      clockDomain.forkStimulus(2)
-      clockDomain.waitSampling()
-      clockDomain.waitSampling((inputSchedule.time - 1) * transformed.globalLcm / inputSchedule.period + transformed.globalLcm)
-      dataIn.setMonitor(transFormedTestCases)
-      dataOut.setMonitor(transFormedResults)
-
-      if (speedUp < 0) {
-        testCases.tail.grouped(original.inputNodes.size).toSeq.foreach { testCase =>
-          dataIn.poke(testCase)
-          clockDomain.waitSampling()
-          dataIn.halt()
-          clockDomain.waitSampling(-speedUp - 1)
-        }
-      } else {
-        testCases.tail.grouped(transformed.inputNodes.size).toSeq.foreach { testCase =>
-          dataIn.poke(testCase)
-          clockDomain.waitSampling()
-        }
-      }
-      clockDomain.waitSampling(transformedLatency)
-    }
-
-    println(s"input to the original ${testCases.mkString(" ")}")
+    println(s"input to the original ${originalTestCases.mkString(" ")}")
     println(s"input to the transformed ${transFormedTestCases.mkString(" ")}")
-    printlnGreen(results.mkString(" "))
+    printlnGreen(originalResults.mkString(" "))
     printlnGreen(transFormedResults.mkString(" "))
-    printlnGreen(results.diff(transFormedResults))
+    printlnGreen(originalResults.diff(transFormedResults))
 
-    assert(results.dropWhile(_ == 0).size > 10)
+    assert(originalResults.dropWhile(_ == 0).size > 10)
     assert(transFormedResults.dropWhile(_ == 0).size > 10)
     // FIXME: this is a test after shifting, finally, you should implement a test with exact timing
-    assert(results.dropWhile(_ == 0).zip(transFormedResults.dropWhile(_ == 0)).forall { case (ori, trans) => ori == trans })
+    assert(originalResults.dropWhile(_ == 0).zip(transFormedResults.dropWhile(_ == 0)).forall { case (ori, trans) => ori == trans })
   }
 
-  def verifyFolding(original: DFGGraph[SInt], foldingSets: Seq[Seq[DSPNode[SInt] with Foldable[SInt]]] ) = {
+  def verifyFolding(original: DFGGraph[SInt], foldingSets: Seq[Seq[DSPNode[SInt] with Foldable[SInt]]]) = {
     val foldedDFG = new Folding(original, foldingSets).folded
     val N = foldingSets.head.size
     verifyFunctionalConsistency(original, foldedDFG, HardType(SInt(10 bits)), -N, 0)

@@ -161,7 +161,8 @@ package object dspTest {
     }
 
     // set monitors for all kinds of DataCarrier
-    def setMonitor[D](Container: ArrayBuffer[D]) = forkWhenValid {
+    def setMonitor[D](Container: ArrayBuffer[D], name:String = "") = forkWhenValid {
+//      println(s"sampling $name at ${simTime()}")
       dc.payload match {
         case vec: Vec[_] => Container ++= peekWhatever(vec)
         case fragment: Fragment[_] =>
