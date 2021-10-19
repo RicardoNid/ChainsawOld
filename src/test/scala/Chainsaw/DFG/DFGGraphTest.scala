@@ -83,10 +83,65 @@ class DFGGraphTest extends AnyFlatSpec {
     DFGTestUtil.verifyFolding(dfg, foldingSet)
   }
 
+  /*
+    it report some error:
+    key not found: zeronode_0
+   */
+  it should "fold correctly on paper1992 fig9_b" in {
+    val dfg = paper1992OnFolding.fig9_a
+    val foldingSet = paper1992OnFolding.foldingSet9_a_example7
+    DFGTestUtil.verifyFolding(dfg, foldingSet)
+  }
+
+  /*
+   it report some error:
+   LATCH DETECTED from the combinatorial signal
+   */
   it should "fold correctly on paper1992 fig10_b" in {
     val dfg = paper1992OnFolding.fig10_a
     val foldingSet = paper1992OnFolding.foldingSet10_a_example8
     DFGTestUtil.verifyFolding(dfg, foldingSet)
+  }
+
+  it should "retimed correctly on paper1992 fig10_a" in {
+    val dfg = paper1992OnFolding.fig10_c
+    println(s"-----")
+    println(dfg.retimed(dfg.fcg.getSolution.map(_.toInt)))
+  }
+
+  /* it report some error:
+     Negative cycleCount is not allowed in Delay
+   */
+  it should "fold correctly on paper1992 fig12_b" in {
+    val dfg = paper1992OnFolding.fig12_a
+    val foldingSet = paper1992OnFolding.foldingSet12_a_example11
+    DFGTestUtil.verifyFolding(dfg, foldingSet)
+  }
+
+  it should "fold correctly on paper1992 fig13_d" in {
+    val dfg = paper1992OnFolding.fig13_a
+    val foldingSet = paper1992OnFolding.foldingSet13_a_example12
+    DFGTestUtil.verifyFolding(dfg, foldingSet)
+  }
+
+  /*
+   it report some error:
+   key not found: zeronode_0
+   */
+  it should "fold correctly on paper1992 fig14_b" in {
+    val dfg = paper1992OnFolding.fig14_a
+    val foldingSet = paper1992OnFolding.foldingSet14_a_example13
+    DFGTestUtil.verifyFolding(dfg , foldingSet)
+  }
+
+  /*
+  it report some error:
+  key not found: zeronode_0
+ */
+  it should "fold correctly on paper1992 fig15_a" in {
+    val dfg = paper1992OnFolding.fig14_a
+    val foldingSet = paper1992OnFolding.foldingSet14_a_example13_v2
+    DFGTestUtil.verifyFolding(dfg , foldingSet)
   }
 
   "constraint graph" should "work on fig4.3" in {

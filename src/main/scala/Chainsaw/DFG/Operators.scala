@@ -50,6 +50,48 @@ object Operators {
     def apply(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber): SIntAdder = new SIntAdder(name, width, delay, exeTime)
   }
 
+  def sIntCAdder(constant : Int ,width :BitCount , delay: CyclesCount) = DSPHardware(
+    (dataIns :Seq[SInt] , _:GlobalCount) => Seq(Delay(dataIns(0) + constant , delay.toInt , init = dataIns.head.getZero)),
+    1,
+    Seq(width)
+  )
+
+  class SIntCAdder(name :String , val constant : Int , width : BitCount , delay : CyclesCount , exeTime : TimeNumber )
+  extends GeneralNode(sIntCAdder(constant , width , delay), name, delay, exeTime) with Foldable[SInt] {
+    override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = {
+      val constants = sources.map(_.asInstanceOf[SIntCAdder].constant)
+      val foldedFunction = (dataIns: Seq[SInt], globalCount: GlobalCount) =>
+        Seq(Delay((dataIns(0) + sintCoeffROM(constants, width, globalCount)), delay.toInt, init = dataIns.head.getZero))
+      val foldedHardware = DSPHardware(foldedFunction, 1, Seq(width))
+      GeneralNode(foldedHardware, s"foldFrom${sources.head.name}", delay, exeTime)
+    }
+  }
+
+  object SIntCAdder {
+    def apply(name: String, constant : Int , width: BitCount, delay: CyclesCount, exeTime: TimeNumber): SIntCAdder = new SIntCAdder(name ,constant , width, delay, exeTime)
+  }
+
+  def sIntCMulAdder(constant : Int ,width :BitCount , delay: CyclesCount) = DSPHardware(
+    (dataIns :Seq[SInt] , _:GlobalCount) => Seq(Delay( dataIns(0) * constant + dataIns(1) , delay.toInt , init = dataIns.head.getZero)),
+    1,
+    Seq(width)
+  )
+
+  class SIntCMulAdder(name :String , val constant : Int , width : BitCount , delay : CyclesCount , exeTime : TimeNumber )
+    extends GeneralNode(sIntCMulAdder(constant , width , delay), name, delay, exeTime) with Foldable[SInt] {
+    override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = {
+      val constants = sources.map(_.asInstanceOf[SIntCMulAdder].constant)
+      val foldedFunction = (dataIns: Seq[SInt], globalCount: GlobalCount) =>
+        Seq(Delay(dataIns(0) * sintCoeffROM(constants, width, globalCount) + dataIns(1), delay.toInt, init = dataIns.head.getZero))
+      val foldedHardware = DSPHardware(foldedFunction, 1, Seq(width))
+      GeneralNode(foldedHardware, s"foldFrom${sources.head.name}", delay, exeTime)
+    }
+  }
+
+  object SIntCMulAdder {
+    def apply(name: String, constant : Int , width: BitCount, delay: CyclesCount, exeTime: TimeNumber): SIntCMulAdder = new SIntCMulAdder(name ,constant , width, delay, exeTime)
+  }
+
   def sIntAdderC(width: BitCount, delay: CyclesCount) = DSPHardware(
     (dataIns: Seq[SInt], _: GlobalCount) => { // dataIns(2) is the carry
       val full = Delay(dataIns(0) +^ dataIns(1) + dataIns(2), delay.toInt, init = dataIns.head.getZero)
