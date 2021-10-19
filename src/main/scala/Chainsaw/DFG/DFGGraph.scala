@@ -8,55 +8,55 @@ import spinal.core._
 
 import java.util
 import scala.collection.JavaConversions._
+import scala.collection.mutable
 
+import org.slf4j.{LoggerFactory, Logger}
 
-/**
- * @param holderProvider
+/** Main class of DFG model
+ *
+ * @param holderProvider function which generates a holder of a known/unknown width signal
  * @tparam T
  * learn more: [[]]
  */
 class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
 
-  implicit def currentDFG = this
+  implicit def currentDFG: DFGGraph[T] = this
+  val logger = LoggerFactory.getLogger(classOf[DFGGraph[T]])
 
   @deprecated override def vertexSet(): util.Set[DSPNode[T]] = super.vertexSet()
 
   @deprecated override def edgeSet(): util.Set[DSPEdge[T]] = super.edgeSet()
 
-  def vertexSeq = super.vertexSet().toSeq
+  def vertexSeq: Seq[DSPNode[T]] = super.vertexSet().toSeq
 
-  def edgeSeq = super.edgeSet().toSeq
+  def edgeSeq: Seq[DSPEdge[T]] = super.edgeSet().toSeq
 
-  def inputNodes = vertexSeq.filter(_.isInstanceOf[InputNode[T]])
+  def inputNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isInstanceOf[InputNode[T]])
 
-  def outputNodes = vertexSeq.filter(_.isInstanceOf[OutputNode[T]])
+  def outputNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isInstanceOf[OutputNode[T]])
 
-  def foreachVertex(body: DSPNode[T] => Unit) = vertexSeq.foreach(body)
+  def foreachVertex(body: DSPNode[T] => Unit): Unit = vertexSeq.foreach(body)
 
-  def foreachInnerVertex(body: DSPNode[T] => Unit) = vertexSeq.filterNot(_.isIO).foreach(body)
+  def foreachInnerVertex(body: DSPNode[T] => Unit): Unit = vertexSeq.filterNot(_.isIO).foreach(body)
 
-  def foreachEdge(body: DSPEdge[T] => Unit) = edgeSeq.foreach(body)
+  def foreachEdge(body: DSPEdge[T] => Unit): Unit = edgeSeq.foreach(body)
 
-  def foreachInnerEdge(body: DSPEdge[T] => Unit) = edgeSeq.filterNot(edge => edge.source.isIO || edge.target.isIO).foreach(body)
+  def foreachInnerEdge(body: DSPEdge[T] => Unit): Unit = edgeSeq.filterNot(edge => edge.source.isIO || edge.target.isIO).foreach(body)
 
-  def sourcesOf(node: DSPNode[T]) = incomingEdgesOf(node).map(_.source)
+  def sourcesOf(node: DSPNode[T]): mutable.Set[DSPNode[T]] = incomingEdgesOf(node).map(_.source)
 
-  def targetsOf(node: DSPNode[T]) = outgoingEdgesOf(node).map(_.target)
+  def targetsOf(node: DSPNode[T]): mutable.Set[DSPNode[T]] = outgoingEdgesOf(node).map(_.target)
 
-  def executionTimes = vertexSeq.map(_.exeTime)
+  def executionTimes: Seq[Double] = vertexSeq.map(_.exeTime)
 
   /** Confirm that the graph has no mux(parallel edges)
    */
   // classification
-  def hasNoParallelEdge = vertexSeq.forall(vertex => vertex.targets.distinct.size == vertex.targets.size)
+  def hasNoParallelEdge: Boolean = vertexSeq.forall(vertex => vertex.targets.distinct.size == vertex.targets.size)
 
-  def hasNoMux = edgeSeq.forall(edge => edge.schedules.size == 1 && edge.schedules.head == Schedule(0, 1))
+  def hasNoMux: Boolean = edgeSeq.forall(edge => edge.schedules.size == 1 && edge.schedules.head == Schedule(0, 1))
 
-  // constructing graph
-  override def setEdgeWeight(e: DSPEdge[T], weight: Double): Unit = {
-    //    if (!this.isInstanceOf[ConstraintGraph[T]]) require(weight >= 0, s"negative delay on ${e.symbol} is not allowed")
-    super.setEdgeWeight(e, weight)
-  }
+  override def setEdgeWeight(e: DSPEdge[T], weight: Double): Unit = super.setEdgeWeight(e, weight)
 
   @deprecated // mark the original addEdge as deprecated to ask the developer/user to use methods we provide
   override def addEdge(sourceVertex: DSPNode[T], targetVertex: DSPNode[T], e: DSPEdge[T]): Boolean = super.addEdge(sourceVertex, targetVertex, e)
@@ -76,11 +76,15 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
   }
 
   // Add edge into basicDFG(MISO, no MUX)
-  def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double, schedules: Seq[Schedule]): Unit =
+  def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double, schedules: Seq[Schedule]): Unit = {
+    if(source.hardware.outWidths.size > 1) logger.warn("adding edge to MIMO node with no specified port number")
     addEdge(source, target, 0, target.incomingEdges.size, delay, schedules)
+  }
 
-  def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double): Unit =
+  def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double): Unit = {
+    if(source.hardware.outWidths.size > 1) logger.warn("adding edge to MIMO node with no specified port number")
     addEdge(source, target, 0, target.incomingEdges.size, delay)
+  }
 
   // Add edge by DSPNodeWithOrder format
   def addEdge(source: DSPNodeWithOrder[T], target: DSPNodeWithOrder[T], delay: Double, schedules: Seq[Schedule]): Unit =
@@ -90,12 +94,13 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
     addEdge(source.node, target.node, source.order, target.order, delay)
 
   /** Add an expression to a basic DFG, that is, "derive" a new node by several driving nodes
+   *
    * @example dfg.add(Seq(a,b) >=> (0,1) >=> c), when c is an adder, this means c.output = a.output + b.output
    */
   def addExp(exp: DSPAssignment[T]): Unit = {
     import exp._
     if (sources.exists(_.hardware.outWidths.size > 1)) printlnYellow(s"warning: using addExp(which provides no port number or MUX info) on a MIMO DFG")
-    sources.foreach(addVertex(_))
+    sources.foreach(addVertex)
     addVertex(target)
     sources.zip(delays).foreach { case (src, delay) => addEdge(src, target, delay) }
   }
@@ -113,7 +118,7 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
     nodes.init.zip(nodes.tail).zip(delays).foreach { case ((src, des), delay) => addEdge(src, des, delay) }
   }
 
-  def setInput(target: DSPNode[T], inOrder: Int = 0, name: String = "", schedules: Seq[Schedule] = NoMUX()) = {
+  def setInput(target: DSPNode[T], inOrder: Int = 0, name: String = "", schedules: Seq[Schedule] = NoMUX()): InputNode[T] = {
     val inputName = if (name.nonEmpty) name else s"input${inputNodes.size}"
     val inputNode = InputNode[T](inputName)
     addVertex(inputNode)
@@ -134,32 +139,31 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
 
   def isForwarding: Boolean = !isRecursive
 
-  def delayAmount = vertexSeq.map(node => (node.outgoingEdges.map(_.weight) :+ 0.0).max).sum
+  def delayAmount: Double = vertexSeq.map(node => (node.outgoingEdges.map(_.weight) :+ 0.0).max).sum
 
   /** The least common multiple of all muxes in this DFG
    */
-  def globalLcm = edgeSeq.map(_.schedules).flatten.map(_.period).sorted.reverse.reduce(lcm(_, _))
+  def globalLcm: Int = edgeSeq.flatMap(_.schedules).map(_.period).sorted.reverse.reduce(lcm)
 
-  def latencyPath = {
+  def latencyPath: GraphPath[DSPNode[T], DSPEdge[T]] = {
     val algo = new alg.shortestpath.BellmanFordShortestPath(this)
     Seq.tabulate(inputNodes.size, outputNodes.size)((i, j) => algo.getPath(inputNodes(i), outputNodes(j))).flatten.minBy(_.getWeight)
   }
 
   // FIXME: find a clear definition for both SISO, MIMO, and DFG with MUX
-  def latency = latencyPath.getWeight.toInt
+  def latency: Int = latencyPath.getWeight.toInt
 
-
-  def impl = new DFGImpl(this).impl
+  def impl: Seq[T] => Seq[T] = new DFGImpl(this).impl
 
   // feasibilityConstraintGraph
-  def fcg = {
+  def fcg: ConstraintGraph[T] = {
     val cg = ConstraintGraph[T]
     foreachInnerVertex(cg.addVertex(_))
     foreachInnerEdge(edge => cg.addConstraint(edge.source - edge.target <= edge.weight.toInt))
     cg
   }
 
-  def retimed(solutions: Seq[Int]) = {
+  def retimed(solutions: Seq[Int]): DFGGraph[T] = {
     val r: Map[DSPNode[T], Int] = vertexSeq.filterNot(_.isIO).zip(solutions).map { case (node, i) => node -> i }.toMap
     foreachInnerEdge(edge => setEdgeWeight(edge, edge.weight + r(edge.target) - r(edge.source)))
     this

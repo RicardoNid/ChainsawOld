@@ -49,7 +49,7 @@ class DFGGraphTest extends AnyFlatSpec {
   //  val testCases = (0 until 20).map(_ => 1)
 
   // fig 6.3
-  it should "fold correctly" in {
+  "the folding algorithm" should "fold correctly on chap6 fig6_3" in {
     val dfg = chap6.fig6_3
     val foldingSet = chap6.foldingSets
 
@@ -157,7 +157,7 @@ class DFGGraphTest extends AnyFlatSpec {
     assert(algo.iterationBound == 2.0)
   }
 
-  "unfolding algo" should "work on fig5.2" in {
+  "the unfolding algorithm" should "work on fig5.2" in {
     val dfg = chap5.fig5_2
     val algo = new Unfolding(dfg, 10)
     printlnGreen(new CriticalPathAlgo(dfg).iterationBound)
@@ -168,7 +168,7 @@ class DFGGraphTest extends AnyFlatSpec {
     DFGTestUtil.verifyFunctionalConsistency(dfg, unfoldedDFG, SInt(10 bits), 10, 0)
   }
 
-  "unfolding algo" should "work on fig5.12" in {
+  it should "work on fig5.12" in {
     val dfg = chap5.fig5_12
     val algo = new Unfolding(dfg, 2)
     val unfoldedDFG = algo.unfolded

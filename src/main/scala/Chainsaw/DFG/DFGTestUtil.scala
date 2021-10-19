@@ -42,11 +42,21 @@ object DFGTestUtil {
     val inputSchedule = transformed.inputNodes.head.outgoingEdges.head.schedules.head
     val outputSchedule = transformed.outputNodes.head.incomingEdges.head.schedules.head
     val transformedLatency = if (speedUp < 0) {
-      (original.latency * -speedUp) + outputSchedule.time - inputSchedule.time
+      val basic = (original.latency * -speedUp) + outputSchedule.time - inputSchedule.time
+      if (basic < 0) basic + transformed.globalLcm else basic
     } else {
       original.latency
     } + delay
 
+    /** Describe the simulation procedure
+     *
+     * @param dfg
+     * @param latency
+     * @param speedUp
+     * @param inputRecord
+     * @param outputRecord
+     * @param testCases
+     */
     def testDFG(dfg: DFGGraph[T], latency: Int, speedUp: Int,
                 inputRecord: ArrayBuffer[BigInt], outputRecord: ArrayBuffer[BigInt],
                 testCases: ArrayBuffer[BigInt] = null) = {
@@ -61,14 +71,13 @@ object DFGTestUtil {
         implicit val currentDFG = dfg
         val inputSchedule = dfg.inputNodes.head.outgoingEdges.head.schedules.head
 
-        dataIn.halt()
+        dataIn.halt() // TODO: halt should also set zero on the payload
         dataIn.payload.foreach(_ #= 0)
         // FIXME: solve sampling problem by
         dataIn.setMonitor(inputRecord, "input")
         clockDomain.forkStimulus(2)
-        clockDomain.waitSampling()
-        if(speedUp > 1) clockDomain.waitSampling() // FIXME: specially for mux unfolding
-        clockDomain.waitSampling((inputSchedule.time - 1)  + transformed.globalLcm)
+        clockDomain.waitSampling() // now, the global counter value is 1
+        clockDomain.waitSampling((inputSchedule.time - 1) + dfg.globalLcm) // to align the counter value with input schedule
         dataOut.setMonitor(outputRecord, "output")
 
         if (testCases == null) {
@@ -87,7 +96,7 @@ object DFGTestUtil {
               clockDomain.waitSampling(-speedUp - 1)
             }
           } else {
-            testCases.grouped(transformed.inputNodes.size).toSeq.foreach { testCase =>
+            testCases.grouped(transformed.inputNodes.size).toSeq.init.foreach { testCase => // using init to drop the incomplete group
               // folding would change the order of input
               val forUnfolded = DSP.interleave.Algos.matIntrlv(testCase, speedUp, testCase.size / speedUp)
               dataIn.poke(forUnfolded)

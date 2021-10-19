@@ -24,6 +24,12 @@ package object DFG {
     def isIO = node.isInstanceOf[InputNode[T]] || node.isInstanceOf[OutputNode[T]]
 
     def apply(order:Int) = DSPNodeWithOrder(node, order)
+
+    /** Extend a virtual node from a output port of current node
+     * @param order
+     */
+    def extendVirtual(order:Int) = GeneralNode[T](s"${node}_v", 0 cycles, 0 ns, node.hardware.outWidths(order))
+
   }
 
   implicit class nodesUtils[T <: Data](nodes: Seq[DSPNode[T]]) {
@@ -39,9 +45,13 @@ package object DFG {
 
     def weightWithSource = (edge.weight + edge.source.delay).toInt
 
-    def symbol = s"$source(${edge.outOrder}) -> ${edge.weight} -> $target(${edge.inOrder})"
+    def symbol = s"$source(${edge.outOrder}) -> ${edge.weight.toInt} -> $target(${edge.inOrder})"
 
     def hasNoMux = edge.schedules.size == 1 && edge.schedules.head == Schedule(0,1)
+
+    /** Get a new edge with different schedules
+     */
+    def withSchedules(schedules: Seq[Schedule]) = DefaultDelay[T](schedules, edge.outOrder, edge.inOrder)
   }
 
   implicit class NodeProperties[T <: Data](node: DSPNode[T])(implicit dfg: DFGGraph[T]) {

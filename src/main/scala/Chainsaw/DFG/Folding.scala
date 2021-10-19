@@ -15,11 +15,15 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
 class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T] with Foldable[T]]]) {
 
-  println(s"original:\n $dfg")
+  val logger = LoggerFactory.getLogger(classOf[Folding[T]])
+
   val N = foldingSets.head.length
-  require(foldingSets.forall(_.size == N))
+  require(foldingSets.forall(_.size == N), "folding set should have the same folding factor")
   // node -> folding order of the node
   val foldingOrders: Map[DSPNode[T], Int] = foldingSets.map { set => set.zipWithIndex.map { case (node, i) => node -> i } }.flatten.toMap
   // node -> the device it belongs(folded to)
@@ -41,8 +45,7 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T] with 
 
     val solutions = Try(cg.getSolution)
     solutions match {
-      case Failure(exception) =>
-        printlnRed(s"no solution for given folding set:\n${foldingSets.map(_.mkString(" ")).mkString("\n")}")
+      case Failure(exception) => logger.error(s"no solution for given folding set:\n${foldingSets.map(_.mkString(" ")).mkString("\n")}")
         Seq[Int]()
       case Success(value) => value.map(_.toInt)
     }
@@ -51,7 +54,9 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T] with 
   def retimed = dfg.clone().asInstanceOf[DFGGraph[T]].retimed(solveRetiming())
 
   def folded = {
+    logger.info(s"original:\n$dfg")
     val retimedDFG = retimed
+    logger.info(s"retimed dfg:\n$retimedDFG")
     // adding vertices
     val foldedDFG = DFGGraph[T](dfg.holderProvider)
     (retimedDFG.inputNodes ++ retimedDFG.outputNodes).foreach(foldedDFG.addVertex(_))
@@ -71,13 +76,14 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T] with 
 
       val foldedSchedules = edge.schedules.map { schedule => // new delay
         val newPeriod = schedule.period * N
-        val newTime = schedule.time * N + v + (if (Vv.isIO) U.delay else 0) % newPeriod
+        val newTime = (schedule.time * N + v + (if (Vv.isIO) U.delay else 0)) % newPeriod
         Schedule(newTime, newPeriod)
       }
       val foldedEdge = DefaultDelay[T](foldedSchedules, edge.outOrder, edge.inOrder) // new schedule
       foldedDFG.addEdge(U, V, foldedEdge)
       foldedDFG.setEdgeWeight(foldedEdge, foldedDelay)
     }
+    logger.info(s"folded dfg:\n$foldedDFG")
     foldedDFG
   }
 }

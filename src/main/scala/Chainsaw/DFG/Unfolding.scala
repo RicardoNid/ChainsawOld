@@ -1,58 +1,43 @@
 package Chainsaw.DFG
 
+import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
-
-import org.jgrapht._
-import org.jgrapht.graph._
-import org.jgrapht.graph.builder._
-import org.jgrapht.nio._
-import org.jgrapht.nio.dot._
-import org.jgrapht.traverse._
-import org.jgrapht.generate._
-
-import scala.collection.JavaConversions._
 
 class Unfolding[T <: Data](dfg: DFGGraph[T], unfoldingFactor: Int) {
 
-  // TODO: considering fold a dfg by 2 and then unfold it by 4
+  val logger: Logger = LoggerFactory.getLogger(classOf[Unfolding[T]])
+
+  // TODO: considering fold a dfg by 2 and then unfold it by 4 - should this be supported?
   // currently, we do not  allow this
   if (!dfg.hasNoParallelEdge) require(dfg.globalLcm % unfoldingFactor == 0) // when there's mux and we use unfolding
 
   /** Preprocess the dfg to separate delay and mux
    *
    */
-  def preprocessed = {
+  def preprocessed: DFGGraph[T] = {
     val preprocessedDFG = dfg.clone().asInstanceOf[DFGGraph[T]]
-    implicit def currentDFG = preprocessedDFG
+
+    logger.info(s"original DFG:\n$dfg")
+
+    implicit def currentDFG: DFGGraph[T] = preprocessedDFG
+
     preprocessedDFG.foreachEdge { edge =>
       val source = edge.source
       val target = edge.target
       if (!edge.hasNoMux && edge.weight != 0) {
-        val virtualNode = GeneralNode[T](s"virtual_from_${edge.source}", 0 cycles, 0 ns, target.hardware.outWidths(edge.outOrder))
-        // separate mux and delay
-        val delayEdge = DefaultDelay[T](Seq(Schedule(0, 1)), edge.outOrder, 0)
-        val muxEdge = DefaultDelay[T](edge.schedules, 0, edge.inOrder)
+        val virtualNode = edge.source.extendVirtual(edge.outOrder)
+        // separate MUX and delay
         preprocessedDFG.addVertex(virtualNode)
-        preprocessedDFG.addEdge(source, virtualNode, delayEdge)
-        preprocessedDFG.addEdge(virtualNode, target, muxEdge)
-        preprocessedDFG.setEdgeWeight(delayEdge, edge.weight)
-        preprocessedDFG.setEdgeWeight(muxEdge, 0)
-        preprocessedDFG.removeEdge(edge)
+        preprocessedDFG.addEdge(source, virtualNode, edge.outOrder, 0, edge.weight) // the edge with delay
+        preprocessedDFG.addEdge(virtualNode(0), target(edge.inOrder), 0, edge.schedules) // the edge with MUX
+        preprocessedDFG.removeEdge(edge) // replace the original MUX
       }
     }
-    printlnGreen(preprocessedDFG)
     preprocessedDFG
   }
 
-  def unfolded = {
-    implicit val preprocessedDFG = preprocessed
+  def unfolded: DFGGraph[T] = {
+    implicit val preprocessedDFG: DFGGraph[T] = preprocessed
     val unfoldedDFG = DFGGraph[T](dfg.holderProvider)
     val nodeMap = preprocessedDFG.vertexSeq.map(vertex => vertex -> (0 until unfoldingFactor).map(i => vertex.copy(s"${vertex.name}_unfolded_$i"))).toMap
     preprocessedDFG.foreachEdge { edge =>
@@ -60,27 +45,25 @@ class Unfolding[T <: Data](dfg: DFGGraph[T], unfoldingFactor: Int) {
       val sources = nodeMap(edge.source)
       val targets = nodeMap(edge.target)
 
-      if (edge.hasNoMux) {
+      if (edge.hasNoMux) { // for edges with no MUX
         (0 until unfoldingFactor).foreach { i =>
           val j = (i + w) % unfoldingFactor
-          val unfoldedDelay = (i + w) / unfoldingFactor
-          val unfoldedEdge = DefaultDelay[T](Seq(Schedule(0,1)), edge.outOrder, edge.inOrder)
-          unfoldedDFG.addVertex(sources(i))
-          unfoldedDFG.addVertex(targets(j))
-          unfoldedDFG.addEdge(sources(i), targets(j), unfoldedEdge)
-          unfoldedDFG.setEdgeWeight(unfoldedEdge, unfoldedDelay)
+          val (source, target) = (sources(i), targets(j)) // determining new connection
+          unfoldedDFG.addVertex(source)
+          unfoldedDFG.addVertex(target)
+          val unfoldedDelay = (i + w) / unfoldingFactor // determining new delay
+          unfoldedDFG.addEdge(source(edge.outOrder), target(edge.inOrder), unfoldedDelay, NoMUX())
         }
-      } else {
+      } else { // for edges with MUX
         require(edge.weight == 0)
         (0 until unfoldingFactor).foreach { i =>
-          val unfoldedSchedules = edge.schedules.filter(_.time % unfoldingFactor == i)
+          val (source, target) = (sources(i), targets(i)) // determining new connection
+          val unfoldedSchedules = edge.schedules.filter(_.time % unfoldingFactor == i) // MUX transformation
             .map(schedule => Schedule(schedule.time / unfoldingFactor, schedule.period / unfoldingFactor))
-          if(unfoldedSchedules.nonEmpty){
-            val unfoldedEdge = DefaultDelay[T](unfoldedSchedules, edge.outOrder, edge.inOrder)
-            unfoldedDFG.addVertex(sources(i))
-            unfoldedDFG.addVertex(targets(i))
-            unfoldedDFG.addEdge(sources(i), targets(i), unfoldedEdge)
-            unfoldedDFG.setEdgeWeight(unfoldedEdge, 0)
+          if (unfoldedSchedules.nonEmpty) {
+            unfoldedDFG.addVertex(source)
+            unfoldedDFG.addVertex(target)
+            unfoldedDFG.addEdge(source(edge.outOrder), target(edge.inOrder), 0, unfoldedSchedules)
           }
         }
       }

@@ -22,8 +22,15 @@ object Operators {
     1,
     Seq(width))
 
-  class SIntConst(name: String, constant: Int, width: BitCount) extends
-    GeneralNode(sIntConst(constant, width), name, 0 cycles, 0 ns)
+  class SIntConst(name: String, val constant: Int, width: BitCount) extends
+    GeneralNode(sIntConst(constant, width), name, 0 cycles, 0 ns) with Foldable[SInt]{
+    override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = {
+      val constants = sources.map(_.asInstanceOf[SIntConst].constant)
+      val foldedFunction = (_: Seq[SInt], _: GlobalCount) => Seq(sintCoeffROM(constants, width))
+      val foldedHardware = DSPHardware[SInt](foldedFunction, 1, Seq(width))
+      GeneralNode(foldedHardware,  s"foldFrom${sources.head.name}", 0 cycles, 0 ns)
+    }
+  }
 
   object SIntConst {
     def apply(name: String, constant: Int, width: BitCount): SIntConst = new SIntConst(name, constant, width)
@@ -50,46 +57,46 @@ object Operators {
     def apply(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber): SIntAdder = new SIntAdder(name, width, delay, exeTime)
   }
 
-  def sIntCAdder(constant : Int ,width :BitCount , delay: CyclesCount) = DSPHardware(
-    (dataIns :Seq[SInt] , _:GlobalCount) => Seq(Delay(dataIns(0) + constant , delay.toInt , init = dataIns.head.getZero)),
+  def sIntCAdder(constant: Int, width: BitCount, delay: CyclesCount) = DSPHardware(
+    (dataIns: Seq[SInt], _: GlobalCount) => Seq(Delay(dataIns(0) + constant, delay.toInt, init = dataIns.head.getZero)),
     1,
     Seq(width)
   )
 
-  class SIntCAdder(name :String , val constant : Int , width : BitCount , delay : CyclesCount , exeTime : TimeNumber )
-  extends GeneralNode(sIntCAdder(constant , width , delay), name, delay, exeTime) with Foldable[SInt] {
+  class SIntCAdder(name: String, val constant: Int, width: BitCount, delay: CyclesCount, exeTime: TimeNumber)
+    extends GeneralNode(sIntCAdder(constant, width, delay), name, delay, exeTime) with Foldable[SInt] {
     override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = {
       val constants = sources.map(_.asInstanceOf[SIntCAdder].constant)
       val foldedFunction = (dataIns: Seq[SInt], globalCount: GlobalCount) =>
-        Seq(Delay((dataIns(0) + sintCoeffROM(constants, width, globalCount)), delay.toInt, init = dataIns.head.getZero))
+        Seq(Delay((dataIns(0) + sintCoeffROM(constants, width)), delay.toInt, init = dataIns.head.getZero))
       val foldedHardware = DSPHardware(foldedFunction, 1, Seq(width))
       GeneralNode(foldedHardware, s"foldFrom${sources.head.name}", delay, exeTime)
     }
   }
 
   object SIntCAdder {
-    def apply(name: String, constant : Int , width: BitCount, delay: CyclesCount, exeTime: TimeNumber): SIntCAdder = new SIntCAdder(name ,constant , width, delay, exeTime)
+    def apply(name: String, constant: Int, width: BitCount, delay: CyclesCount, exeTime: TimeNumber): SIntCAdder = new SIntCAdder(name, constant, width, delay, exeTime)
   }
 
-  def sIntCMulAdder(constant : Int ,width :BitCount , delay: CyclesCount) = DSPHardware(
-    (dataIns :Seq[SInt] , _:GlobalCount) => Seq(Delay( dataIns(0) * constant + dataIns(1) , delay.toInt , init = dataIns.head.getZero)),
+  def sIntCMulAdder(constant: Int, width: BitCount, delay: CyclesCount) = DSPHardware(
+    (dataIns: Seq[SInt], _: GlobalCount) => Seq(Delay((dataIns(0) * constant).resized + dataIns(1), delay.toInt, init = dataIns.head.getZero)),
     1,
     Seq(width)
   )
 
-  class SIntCMulAdder(name :String , val constant : Int , width : BitCount , delay : CyclesCount , exeTime : TimeNumber )
-    extends GeneralNode(sIntCMulAdder(constant , width , delay), name, delay, exeTime) with Foldable[SInt] {
+  class SIntCMulAdder(name: String, val constant: Int, width: BitCount, delay: CyclesCount, exeTime: TimeNumber)
+    extends GeneralNode(sIntCMulAdder(constant, width, delay), name, delay, exeTime) with Foldable[SInt] {
     override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = {
       val constants = sources.map(_.asInstanceOf[SIntCMulAdder].constant)
       val foldedFunction = (dataIns: Seq[SInt], globalCount: GlobalCount) =>
-        Seq(Delay(dataIns(0) * sintCoeffROM(constants, width, globalCount) + dataIns(1), delay.toInt, init = dataIns.head.getZero))
+        Seq(Delay((dataIns(0) * sintCoeffROM(constants, width)).resized + dataIns(1), delay.toInt, init = dataIns.head.getZero))
       val foldedHardware = DSPHardware(foldedFunction, 1, Seq(width))
       GeneralNode(foldedHardware, s"foldFrom${sources.head.name}", delay, exeTime)
     }
   }
 
   object SIntCMulAdder {
-    def apply(name: String, constant : Int , width: BitCount, delay: CyclesCount, exeTime: TimeNumber): SIntCMulAdder = new SIntCMulAdder(name ,constant , width, delay, exeTime)
+    def apply(name: String, constant: Int, width: BitCount, delay: CyclesCount, exeTime: TimeNumber): SIntCMulAdder = new SIntCMulAdder(name, constant, width, delay, exeTime)
   }
 
   def sIntAdderC(width: BitCount, delay: CyclesCount) = DSPHardware(
@@ -115,9 +122,10 @@ object Operators {
     1,
     Seq(width))
 
-  def sintCoeffROM(constants: Seq[Int], width: BitCount, globalCount: GlobalCount) = {
+  def sintCoeffROM(constants: Seq[Int], width: BitCount) = {
     val ROM = Mem(constants.map(S(_, width)))
-    ROM.readAsync(globalCount.value)
+    val localCounter = CounterFreeRun(constants.size)
+    ROM.readAsync(localCounter.value)
   }
 
   class SIntCMult(name: String, val constant: Int, width: BitCount, delay: CyclesCount, exeTime: TimeNumber) extends
@@ -125,7 +133,7 @@ object Operators {
     override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = {
       val constants = sources.map(_.asInstanceOf[SIntCMult].constant)
       val foldedFunction = (dataIns: Seq[SInt], globalCount: GlobalCount) =>
-        Seq(Delay((dataIns(0) * sintCoeffROM(constants, width, globalCount)).resize(dataIns(0).getBitsWidth), delay.toInt, init = dataIns.head.getZero))
+        Seq(Delay((dataIns(0) * sintCoeffROM(constants, width)).resize(dataIns(0).getBitsWidth), delay.toInt, init = dataIns.head.getZero))
       val foldedHardware = DSPHardware(foldedFunction, 1, Seq(width))
       GeneralNode(foldedHardware, s"foldFrom${sources.head.name}", delay, exeTime)
     }

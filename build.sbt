@@ -66,7 +66,12 @@ libraryDependencies += "org.slf4j"%"slf4j-simple"% "1.7.26"
 libraryDependencies += "com.microsoft.onnxruntime"%"onnxruntime"% "1.4.0"
 libraryDependencies += "ai.djl.pytorch"%"pytorch-native-auto"% "1.8.1"
 
+//libraryDependencies += "org.nd4j" % "nd4j-native-platform" % "0.8.0"
+
 // for matlab co-sim
 javaOptions += "-Djava.library.path=/usr/local/MATLAB/R2018b/bin/glnxa64:/usr/local/MATLAB/R2018b/sys/os/glnxa64"
 scalacOptions += "-Djava.library.path=/usr/local/MATLAB/R2018b/bin/glnxa64:/usr/local/MATLAB/R2018b/sys/os/glnxa64"
+
+
+
 

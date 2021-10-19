@@ -111,6 +111,7 @@ package object dspTest {
         dc.valid #= false
         dc.payload match {
           case fragment: Fragment[T] => fragment.last #= false
+          fragment.fragment.randomize()
           case _ => // do nothing
         }
       }

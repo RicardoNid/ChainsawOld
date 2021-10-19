@@ -224,7 +224,7 @@ object paper1992OnFolding {
     dfg
   }
 
-  def foldingSet9_a_example7 = Seq(Seq(sCMulAdd0 , sCMulAdd1 ,sCMulAdd2) , Seq(sCMulAdd3 , sCMulAdd4 , null))
+  def foldingSet9_a_example7 = Seq(Seq(sCMulAdd0 , sCMulAdd1 ,sCMulAdd2) , Seq(sCMulAdd3 , sCMulAdd4 , null) , Seq(zeronode_0 , null , null))
 
   /*  -----------------------------------fig10_a_example8------------------------------------*/
 
@@ -333,11 +333,11 @@ object paper1992OnFolding {
     dfg
   }
 
-  def foldingSet14_a_example13 = Seq(Seq(sAddC0 , sAddC1 ,sAddC2))
+  def foldingSet14_a_example13 = Seq(Seq(sAddC0 , sAddC1 ,sAddC2) , Seq(zeroNode0 , zeroNode1 , zeroNode2))
 
   /*  -----------------------------------fig14_a_example13------------------------------------*/
 
-  def foldingSet14_a_example13_v2 = Seq(Seq(sAddC1 , sAddC2 ,sAddC0))
+  def foldingSet14_a_example13_v2 = Seq(Seq(sAddC1 , sAddC2 ,sAddC0) , Seq(zeroNode1 , zeroNode2 , zeroNode0))
 }
 
 object chap4 {
