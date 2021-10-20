@@ -66,4 +66,6 @@ package object DFG {
 
   }
 
+  implicit def defaultOrder[T <: Data](node:DSPNode[T]): DSPNodeWithOrder[T] = DSPNodeWithOrder(node, 0)
+
 }

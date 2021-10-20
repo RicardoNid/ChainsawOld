@@ -118,10 +118,15 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
     nodes.init.zip(nodes.tail).zip(delays).foreach { case ((src, des), delay) => addEdge(src, des, delay) }
   }
 
-  def setInput(target: DSPNode[T], inOrder: Int = 0, name: String = "", schedules: Seq[Schedule] = NoMUX()): InputNode[T] = {
+  def addInput(name: String = "") = {
     val inputName = if (name.nonEmpty) name else s"input${inputNodes.size}"
     val inputNode = InputNode[T](inputName)
     addVertex(inputNode)
+    inputNode
+  }
+
+  def setInput(target: DSPNode[T], inOrder: Int = 0, name: String = "", schedules: Seq[Schedule] = NoMUX()): InputNode[T] = {
+    val inputNode = addInput(name)
     addEdge(inputNode(0), target(inOrder), 0, schedules)
     inputNode
   }
@@ -145,13 +150,19 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
    */
   def globalLcm: Int = edgeSeq.flatMap(_.schedules).map(_.period).sorted.reverse.reduce(lcm)
 
-  def latencyPath: GraphPath[DSPNode[T], DSPEdge[T]] = {
+  def delayPaths: Seq[GraphPath[DSPNode[T], DSPEdge[T]]] = {
     val algo = new alg.shortestpath.BellmanFordShortestPath(this)
-    Seq.tabulate(inputNodes.size, outputNodes.size)((i, j) => algo.getPath(inputNodes(i), outputNodes(j))).flatten.minBy(_.getWeight)
+    Seq.tabulate(inputNodes.size, outputNodes.size)((i, j) => algo.getPath(inputNodes(i), outputNodes(j))).flatten
   }
+
+  def isHomogeneous: Boolean = delayPaths.forall(_.getWeight == delayPaths.head.getWeight)
+
+  def latencyPath: GraphPath[DSPNode[T], DSPEdge[T]] = delayPaths.minBy(_.getWeight)
 
   // FIXME: find a clear definition for both SISO, MIMO, and DFG with MUX
   def latency: Int = latencyPath.getWeight.toInt
+
+  def criticalPathLength: Double = new CriticalPathAlgo(this).criticalPathLength
 
   def impl: Seq[T] => Seq[T] = new DFGImpl(this).impl
 
@@ -176,6 +187,13 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
       s"loops:\n${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}\n" +
       s"------end------\n"
 
+  def asNode = {
+    require(isForwarding && isHomogeneous)
+    val fakeImpl = (dataIns:Seq[T], _:GlobalCount) => impl(dataIns)
+    val hardware = DSPHardware(fakeImpl, inputNodes.size, Seq.fill(outputNodes.size)(-1 bits))
+    GeneralNode(hardware, "subgraph", latency cycles, 1 ns) // TODO: consider the exeTime of a subgraph
+  }
+
   /** Besides nodes and edges, we clone the weights
    */
   override def clone(): AnyRef = {
@@ -183,6 +201,17 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
     graph.foreachEdge(edge => graph.setEdgeWeight(edge, edge.weight))
     graph
   }
+
+  // graph-level methods
+  /** Cascading
+   */
+//  def ++(that:DFGGraph[T]) = {
+//    require(that.inputNodes.size == this.outputNodes.size)
+//    implicit val ret = this.clone().asInstanceOf[DFGGraph[T]]
+//    Graphs.addGraph(ret, that)
+//    ret.outputNodes.foreach(ret.removeVertex(_))
+//    that.inputNodes.remove()
+//  }
 }
 
 object DFGGraph {

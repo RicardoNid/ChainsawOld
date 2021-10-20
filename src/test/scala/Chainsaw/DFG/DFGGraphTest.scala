@@ -45,6 +45,10 @@ class DFGGraphTest extends AnyFlatSpec {
     })
   }
 
+  it should "work on nested DFG" in {
+    println(implementingDFGs.nestedDFG)
+  }
+
   val testCases = (0 until 10).map(_ => DSPRand.nextInt(4))
   //  val testCases = (0 until 20).map(_ => 1)
 

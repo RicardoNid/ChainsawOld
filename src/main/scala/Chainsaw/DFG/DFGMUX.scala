@@ -49,7 +49,7 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
           logger.info(s"implementing MUX, ${occupationsOneSource.mkString(" ")} / $localLcm")
         }
 
-        if(!isFull || !isPow2(globalLcm)) default(ret := dataIns.head.getZero)
+        if (!isFull || !isPow2(globalLcm)) default(ret assignFromBits B(0, dataIns.map(_.getBitsWidth).max bits))
       }
       ret
     }

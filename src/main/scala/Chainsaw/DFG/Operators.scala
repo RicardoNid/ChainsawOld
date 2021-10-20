@@ -101,7 +101,7 @@ object Operators {
 
   def sIntAdderC(width: BitCount, delay: CyclesCount) = DSPHardware(
     (dataIns: Seq[SInt], _: GlobalCount) => { // dataIns(2) is the carry
-      val full = Delay(dataIns(0) +^ dataIns(1) + dataIns(2), delay.toInt, init = dataIns.head.getZero)
+      val full = Delay(dataIns(0) +^ dataIns(1) + dataIns(2), delay.toInt, init = dataIns.head.getZero.resize(dataIns.head.getBitsWidth + 1))
       Seq(full(full.getBitsWidth - 2 downto 0), full.msb.asSInt)
     },
     3,
