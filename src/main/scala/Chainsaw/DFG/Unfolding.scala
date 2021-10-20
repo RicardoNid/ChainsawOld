@@ -38,7 +38,7 @@ class Unfolding[T <: Data](dfg: DFGGraph[T], unfoldingFactor: Int) {
 
   def unfolded: DFGGraph[T] = {
     implicit val preprocessedDFG: DFGGraph[T] = preprocessed
-    val unfoldedDFG = DFGGraph[T](dfg.holderProvider)
+    val unfoldedDFG = DFGGraph[T]()
     val nodeMap = preprocessedDFG.vertexSeq.map(vertex => vertex -> (0 until unfoldingFactor).map(i => vertex.copy(s"${vertex.name}_unfolded_$i"))).toMap
     preprocessedDFG.foreachEdge { edge =>
       val w = edge.weightWithSource

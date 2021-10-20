@@ -8,12 +8,11 @@ import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 import org.slf4j.{Logger,LoggerFactory}
 
-class DFGImpl[T <: Data](dfg: DFGGraph[T]) {
+class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount => T) {
 
   val logger = LoggerFactory.getLogger(classOf[DFGImpl[T]])
 
   implicit def currentDFG = dfg
-  implicit val holderProvider = dfg.holderProvider
 
   // attributes tobe used
   val vertexSeq = dfg.vertexSeq

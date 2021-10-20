@@ -17,9 +17,9 @@ object DFGTestUtil {
    * @param transformed DFG after transformation
    * @param speedUp     the throughput of transformed DFG, 3 for *3, -3 for 1/3
    * @param delay       extra delay on latency, latency' = latency / speedUp + delayed
-   * @tparam T
+   * @tparam SInt
    */
-  def verifyFunctionalConsistency[T <: BitVector](original: DFGGraph[T], transformed: DFGGraph[T], elementType: HardType[T], speedUp: Int, delay: Int, testLength: Int = 50) = {
+  def verifyFunctionalConsistency(original: DFGGraph[SInt], transformed: DFGGraph[SInt], elementType: HardType[SInt], speedUp: Int, delay: Int, testLength: Int = 50) = {
 
     // requirement on the input/output size
     if (speedUp > 1) { // throughput > 1, bigger port number
@@ -57,7 +57,7 @@ object DFGTestUtil {
      * @param outputRecord
      * @param testCases
      */
-    def testDFG(dfg: DFGGraph[T], latency: Int, speedUp: Int,
+    def testDFG(dfg: DFGGraph[SInt], latency: Int, speedUp: Int,
                 inputRecord: ArrayBuffer[BigInt], outputRecord: ArrayBuffer[BigInt],
                 testCases: ArrayBuffer[BigInt] = null) = {
       SimConfig.withWave.compile(new Component {

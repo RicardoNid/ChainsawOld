@@ -72,7 +72,7 @@ class CriticalPathAlgo[T <: Data](dfg: DFGGraph[T]) {
   def criticalPathLength = weightMatix.flatten.max
 
   def iterationBound = {
-    val Gd = DFGGraph[T](dfg.holderProvider)
+    val Gd = DFGGraph[T]()
     Seq.tabulate(starts.size, ends.size)((i, j) => if (weightMatix(i)(j) >= 0) Gd.addPath(delays(i) >> -weightMatix(i)(j) >> delays(j)))
     println(Gd)
     // step4: running MCM on Gd

@@ -58,7 +58,7 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T] with 
     val retimedDFG = retimed
     logger.info(s"retimed dfg:\n$retimedDFG")
     // adding vertices
-    val foldedDFG = DFGGraph[T](dfg.holderProvider)
+    val foldedDFG = DFGGraph[T]()
     (retimedDFG.inputNodes ++ retimedDFG.outputNodes).foreach(foldedDFG.addVertex(_))
     devices.foreach(foldedDFG.addVertex(_))
     // adding edges

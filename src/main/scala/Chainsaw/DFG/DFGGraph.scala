@@ -18,7 +18,7 @@ import org.slf4j.{LoggerFactory, Logger}
  * @tparam T
  * learn more: [[]]
  */
-class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
+class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
 
   implicit def currentDFG: DFGGraph[T] = this
   val logger = LoggerFactory.getLogger(classOf[DFGGraph[T]])
@@ -164,7 +164,7 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
 
   def criticalPathLength: Double = new CriticalPathAlgo(this).criticalPathLength
 
-  def impl: Seq[T] => Seq[T] = new DFGImpl(this).impl
+  def impl(dataIns:Seq[T])(implicit holderProvider: BitCount => T): Seq[T] = new DFGImpl(this).impl(dataIns)
 
   // feasibilityConstraintGraph
   def fcg: ConstraintGraph[T] = {
@@ -187,7 +187,7 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
       s"loops:\n${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}\n" +
       s"------end------\n"
 
-  def asNode = {
+  def asNode(implicit holderProvider: BitCount => T) = {
     require(isForwarding && isHomogeneous)
     val fakeImpl = (dataIns:Seq[T], _:GlobalCount) => impl(dataIns)
     val hardware = DSPHardware(fakeImpl, inputNodes.size, Seq.fill(outputNodes.size)(-1 bits))
@@ -215,5 +215,5 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
 }
 
 object DFGGraph {
-  def apply[T <: Data](implicit holderProvider: BitCount => T): DFGGraph[T] = new DFGGraph()
+  def apply[T <: Data](): DFGGraph[T] = new DFGGraph()
 }
