@@ -60,7 +60,7 @@ class DFGGraphTest extends AnyFlatSpec {
     val algo = new Folding[SInt](dfg, foldingSet)
     val foldedDFG = algo.folded
     println(algo.folded)
-    DFGTestUtil.verifyFunctionalConsistency(dfg, foldedDFG, SInt(10 bits), -4, 0)
+    DFGTestUtil.verifyFunctionalConsistency(dfg, foldedDFG, SInt(10 bits), -4, 0, name = "chap6_fig6_3")
   }
 
   it should "fold correctly on simple graph" in {
@@ -81,20 +81,16 @@ class DFGGraphTest extends AnyFlatSpec {
     DFGTestUtil.verifyFolding(dfg , foldingSet)
   }
 
-  it should "fold correctly on paper1992 fig8_b" in {
+  it should "fold correctly on paper1992 fig8_a(example6)" in {
     val dfg = paper1992OnFolding.fig8_a
     val foldingSet = paper1992OnFolding.foldingSet8_a_example6
     DFGTestUtil.verifyFolding(dfg, foldingSet)
   }
 
-  /*
-    it report some error:
-    key not found: zeronode_0
-   */
-  it should "fold correctly on paper1992 fig9_b" in {
+  it should "fold correctly on paper1992 fig9_a" in {
     val dfg = paper1992OnFolding.fig9_a
     val foldingSet = paper1992OnFolding.foldingSet9_a_example7
-    DFGTestUtil.verifyFolding(dfg, foldingSet, "paper1992_fig9_b")
+    DFGTestUtil.verifyFolding(dfg, foldingSet, "paper1992_fig9_a")
   }
 
   /*
@@ -119,7 +115,7 @@ class DFGGraphTest extends AnyFlatSpec {
   it should "fold correctly on paper1992 fig12_b" in {
     val dfg = paper1992OnFolding.fig12_a
     val foldingSet = paper1992OnFolding.foldingSet12_a_example11
-    DFGTestUtil.verifyFolding(dfg, foldingSet)
+    DFGTestUtil.verifyFolding(dfg, foldingSet, name = "paper1992_fig12_b")
   }
 
   it should "fold correctly on paper1992 fig13_d" in {
@@ -145,7 +141,7 @@ class DFGGraphTest extends AnyFlatSpec {
   it should "fold correctly on paper1992 fig15_a" in {
     val dfg = paper1992OnFolding.fig14_a
     val foldingSet = paper1992OnFolding.foldingSet14_a_example13_v2
-    DFGTestUtil.verifyFolding(dfg , foldingSet)
+    DFGTestUtil.verifyFolding(dfg , foldingSet, name = "paper1992_fig15_a")
   }
 
   "constraint graph" should "work on fig4.3" in {

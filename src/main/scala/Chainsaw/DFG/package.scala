@@ -23,6 +23,8 @@ package object DFG {
 
     def isIO = node.isInstanceOf[InputNode[T]] || node.isInstanceOf[OutputNode[T]]
 
+    def isConstant = node.isInstanceOf[ConstantNode[T]]
+
     def apply(order:Int) = DSPNodeWithOrder(node, order)
 
     /** Extend a virtual node from a output port of current node
@@ -45,7 +47,7 @@ package object DFG {
 
     def weightWithSource = (edge.weight + edge.source.delay).toInt
 
-    def symbol = s"$source(${edge.outOrder}) -> ${edge.weight.toInt} -> $target(${edge.inOrder})"
+    def symbol = s"$source(${edge.outOrder}) -> ${edge.weightWithSource} -> $target(${edge.inOrder})"
 
     def hasNoMux = edge.schedules.size == 1 && edge.schedules.head == Schedule(0,1)
 

@@ -13,7 +13,6 @@ import scala.collection.mutable
 import org.slf4j.{LoggerFactory, Logger}
 
 
-
 /** Main class of DFG model
  *
  * @param holderProvider function which generates a holder of a known/unknown width signal
@@ -37,13 +36,15 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
 
   def outputNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isInstanceOf[OutputNode[T]])
 
+  def constantNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isInstanceOf[ConstantNode[T]]) // TODO: design a constant class
+
   def foreachVertex(body: DSPNode[T] => Unit): Unit = vertexSeq.foreach(body)
 
   def foreachInnerVertex(body: DSPNode[T] => Unit): Unit = vertexSeq.filterNot(_.isIO).foreach(body)
 
   def foreachEdge(body: DSPEdge[T] => Unit): Unit = edgeSeq.foreach(body)
 
-  def foreachInnerEdge(body: DSPEdge[T] => Unit): Unit = edgeSeq.filterNot(edge => edge.source.isIO || edge.target.isIO).foreach(body)
+  def foreachInnerEdge(body: DSPEdge[T] => Unit): Unit = edgeSeq.filterNot(edge => edge.source.isIO || edge.target.isIO || edge.source.isConstant).foreach(body)
 
   def sourcesOf(node: DSPNode[T]): mutable.Set[DSPNode[T]] = incomingEdgesOf(node).map(_.source)
 
@@ -177,8 +178,9 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
   }
 
   def retimed(solutions: Seq[Int]): DFGGraph[T] = {
-    val r: Map[DSPNode[T], Int] = vertexSeq.filterNot(_.isIO).zip(solutions).map { case (node, i) => node -> i }.toMap
-    foreachInnerEdge(edge => setEdgeWeight(edge, edge.weight + r(edge.target) - r(edge.source)))
+    val rInner: Map[DSPNode[T], Int] = vertexSeq.filterNot(_.isIO).zip(solutions).map { case (node, i) => node -> i }.toMap
+    val r = rInner ++ inputNodes.map(node => node -> rInner.values.min).toMap ++  outputNodes.map(node => node -> rInner.values.max).toMap
+    foreachEdge(edge => setEdgeWeight(edge, edge.weight + r(edge.target) - r(edge.source)))
     this
   }
 
@@ -203,19 +205,6 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
     graph.foreachEdge(edge => graph.setEdgeWeight(edge, edge.weight))
     graph
   }
-
-  // graph-level methods
-  /** Cascading
-   */
-//  def ++(that:DFGGraph[T]) = {
-//    require(that.inputNodes.size == this.outputNodes.size)
-//    implicit val ret = this.clone().asInstanceOf[DFGGraph[T]]
-//    Graphs.addGraph(ret, that)
-//    ret.outputNodes.foreach(ret.removeVertex(_))
-//    that.inputNodes.remove()
-//  }
-
-//  def name: String = nameOf[DFGGraph[T]](this)
 }
 
 object DFGGraph {

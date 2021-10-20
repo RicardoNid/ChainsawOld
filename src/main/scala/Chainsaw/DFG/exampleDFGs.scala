@@ -206,7 +206,7 @@ object paper1992OnFolding {
   /*  -----------------------------------fig8_a_example6------------------------------------*/
 
 
-  val cmults = (0 until 5).map(i => SIntCMult(s"cmult_$i", i + 1, 10 bits, 1 cycles, 2 ns))
+  val cmults = (0 until 5).map(i => SIntCMult(s"cmult_$i", i + 1, 10 bits, 0 cycles, 2 ns))
   val Seq(cmult0, cmult1, cmult2, cmult3, cmult4) = cmults
 
   def fig8_a = {
@@ -225,17 +225,19 @@ object paper1992OnFolding {
 
   /*  -----------------------------------fig9_a_example7------------------------------------*/
 
-  val sCMulAdds = (0 until 5).map(i => SIntCMulAdder(s"scmuladd_$i", i + 1, 10 bits, 3 cycles, 1 ns))
+  val sCMulAdds = (0 until 5).map(i => SIntCMulAdder(s"scmuladd_$i", i + 1, 10 bits, 0 cycles, 1 ns))
   val Seq(sCMulAdd0, sCMulAdd1, sCMulAdd2, sCMulAdd3, sCMulAdd4) = sCMulAdds
   val zeronode_0 = SIntConst(s"zeronode_0", 0, 10 bits)
   val constantNodes = (0 until 5).map(i => SIntConst(s"a_$i", i + 2, 10 bits))
+
+  val sKeeps = (0 until 5).map(i => SIntCMult(s"skeep_$i", 1,  10 bits, 0 cycles, 0 ns))
+  val Seq(sk0, sk1, sk2, sk3, sk4) = sKeeps
 
   def fig9_a = {
     val dfg = DFGGraph[SInt]
     sCMulAdds.foreach(dfg.addVertex(_))
     dfg.addVertex(zeronode_0)
-    val x_n = InputNode[SInt](s"x_n")
-    dfg.addVertex(x_n)
+    val x_n = dfg.addInput(s"x_n")
     dfg.addEdge(x_n, sCMulAdd0, 0)
     dfg.addEdge(x_n, sCMulAdd1, 0)
     dfg.addEdge(x_n, sCMulAdd2, 0)
@@ -250,7 +252,9 @@ object paper1992OnFolding {
     dfg
   }
 
-  def foldingSet9_a_example7 = Seq(Seq(sCMulAdd0, sCMulAdd1, sCMulAdd2), Seq(sCMulAdd3, sCMulAdd4, null), Seq(zeronode_0, null, null))
+  def foldingSet9_a_example7 = Seq(
+    Seq(sCMulAdd0, sCMulAdd1, sCMulAdd2),
+    Seq(sCMulAdd3, sCMulAdd4, null))
 
   /*  -----------------------------------fig10_a_example8------------------------------------*/
 

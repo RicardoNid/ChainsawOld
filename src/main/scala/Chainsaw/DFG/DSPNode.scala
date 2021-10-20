@@ -72,3 +72,16 @@ class OutputNode[T <: Data](namev: String) extends DSPNode[T] {
 object OutputNode {
   def apply[T <: Data](namev: String): OutputNode[T] = new OutputNode(namev)
 }
+
+class ConstantNode[T <: Data](implp: DSPHardware[T], namep: String) extends DSPNode[T] {
+  override val hardware: DSPHardware[T] = implp
+  override val name: String = namep // TODO: implement reflection
+  override val delay: Int = 0
+  override val exeTime: Double = 0.0
+  
+  override def copy(newName: String): DSPNode[T] = new ConstantNode(hardware, newName)
+}
+
+object ConstantNode {
+  def apply[T <: Data](implp: DSPHardware[T], namep: String): ConstantNode[T] = new ConstantNode(implp, namep)
+}
