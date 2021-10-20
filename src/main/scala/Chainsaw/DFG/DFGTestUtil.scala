@@ -8,6 +8,8 @@ import spinal.lib._
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
+import org.slf4j.{Logger, LoggerFactory}
+
 
 object DFGTestUtil {
 
@@ -19,7 +21,11 @@ object DFGTestUtil {
    * @param delay       extra delay on latency, latency' = latency / speedUp + delayed
    * @tparam SInt
    */
-  def verifyFunctionalConsistency(original: DFGGraph[SInt], transformed: DFGGraph[SInt], elementType: HardType[SInt], speedUp: Int, delay: Int, testLength: Int = 50) = {
+  def verifyFunctionalConsistency(original: DFGGraph[SInt], transformed: DFGGraph[SInt],
+                                  elementType: HardType[SInt], speedUp: Int, delay: Int, testLength: Int = 50,
+                                  name: String = null) = {
+
+    val logger = LoggerFactory.getLogger("FunctionalConsistencyLogger")
 
     // requirement on the input/output size
     if (speedUp > 1) { // throughput > 1, bigger port number
@@ -41,6 +47,9 @@ object DFGTestUtil {
     implicit val currentDFG = transformed
     val inputSchedule = transformed.inputNodes.head.outgoingEdges.head.schedules.head
     val outputSchedule = transformed.outputNodes.head.incomingEdges.head.schedules.head
+
+    logger.info(s"\ninput should happen when counter value is $inputSchedule, output should happen when counter value is $outputSchedule")
+
     val transformedLatency = if (speedUp < 0) {
       val basic = (original.latency * -speedUp) + outputSchedule.time - inputSchedule.time
       if (basic < 0) basic + transformed.globalLcm else basic
@@ -51,21 +60,23 @@ object DFGTestUtil {
     /** Describe the simulation procedure
      *
      * @param dfg
-     * @param latency
+     * @param latencies
      * @param speedUp
      * @param inputRecord
      * @param outputRecord
      * @param testCases
      */
-    def testDFG(dfg: DFGGraph[SInt], latency: Int, speedUp: Int,
+    def testDFG(dfg: DFGGraph[SInt], latencies: Int, speedUp: Int,
                 inputRecord: ArrayBuffer[BigInt], outputRecord: ArrayBuffer[BigInt],
                 testCases: ArrayBuffer[BigInt] = null) = {
-      SimConfig.withWave.compile(new Component {
-        val dataIn = slave Flow Vec(elementType, dfg.inputNodes.size)
-        val dataOut = master Flow Vec(elementType, dfg.outputNodes.size)
-        dataOut.payload := Vec(dfg.impl(dataIn.payload))
-        dataOut.valid := Delay(dataIn.valid, latency, init = False)
-      }).doSim { dut =>
+      SimConfig.withWave
+        .workspaceName(name)
+        .compile(new Component {
+          val dataIn = slave Flow Vec(elementType, dfg.inputNodes.size)
+          val dataOut = master Flow Vec(elementType, dfg.outputNodes.size)
+          dataOut.payload := Vec(dfg.impl(dataIn.payload))
+          dataOut.valid := Delay(dataIn.valid, latencies, init = False)
+        }).doSim { dut =>
         import dut.{clockDomain, dataIn, dataOut}
 
         implicit val currentDFG = dfg
@@ -104,7 +115,7 @@ object DFGTestUtil {
             }
           }
         }
-        clockDomain.waitSampling(latency)
+        clockDomain.waitSampling(latencies)
       }
     }
 
@@ -123,10 +134,10 @@ object DFGTestUtil {
     assert(originalResults.dropWhile(_ == 0).zip(transFormedResults.dropWhile(_ == 0)).forall { case (ori, trans) => ori == trans })
   }
 
-  def verifyFolding(original: DFGGraph[SInt], foldingSets: Seq[Seq[DSPNode[SInt] with Foldable[SInt]]]) = {
+  def verifyFolding(original: DFGGraph[SInt], foldingSets: Seq[Seq[DSPNode[SInt] with Foldable[SInt]]], name:String = null) = {
     val foldedDFG = new Folding(original, foldingSets).folded
     val N = foldingSets.head.size
-    verifyFunctionalConsistency(original, foldedDFG, HardType(SInt(10 bits)), -N, 0)
+    verifyFunctionalConsistency(original, foldedDFG, HardType(SInt(10 bits)), -N, 0, name = name)
   }
 
 }

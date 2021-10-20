@@ -12,6 +12,8 @@ import scala.collection.mutable
 
 import org.slf4j.{LoggerFactory, Logger}
 
+
+
 /** Main class of DFG model
  *
  * @param holderProvider function which generates a holder of a known/unknown width signal
@@ -212,6 +214,8 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
 //    ret.outputNodes.foreach(ret.removeVertex(_))
 //    that.inputNodes.remove()
 //  }
+
+//  def name: String = nameOf[DFGGraph[T]](this)
 }
 
 object DFGGraph {

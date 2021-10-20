@@ -68,10 +68,6 @@ libraryDependencies += "ai.djl.pytorch"%"pytorch-native-auto"% "1.8.1"
 
 //libraryDependencies += "org.nd4j" % "nd4j-native-platform" % "0.8.0"
 
-// for matlab co-sim
-javaOptions += "-Djava.library.path=/usr/local/MATLAB/R2018b/bin/glnxa64:/usr/local/MATLAB/R2018b/sys/os/glnxa64"
-scalacOptions += "-Djava.library.path=/usr/local/MATLAB/R2018b/bin/glnxa64:/usr/local/MATLAB/R2018b/sys/os/glnxa64"
-
-
+libraryDependencies += "com.github.dwickern" %% "scala-nameof" % "3.0.0" % "provided"
 
 
