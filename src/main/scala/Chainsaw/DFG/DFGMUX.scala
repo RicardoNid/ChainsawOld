@@ -38,7 +38,6 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
     require(dataIns.size == schedules.size)
     if (dataIns.size == 1 && schedules.head.head == Schedule(0, 1)) dataIns.head
     else {
-
       val multiple = globalLcm / localLcm
       val ret = holderProvider(-1 bits)
       switch(globalCount.value) {
@@ -49,6 +48,7 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
           logger.info(s"implementing MUX, ${occupationsOneSource.mkString(" ")} / $localLcm")
         }
 
+        //        if (!isFull || !isPow2(globalLcm)) default(ret.assignDontCare()) // FIXME: this should work, why?
         if (!isFull || !isPow2(globalLcm)) default(ret assignFromBits B(0, dataIns.map(_.getBitsWidth).max bits))
       }
       ret

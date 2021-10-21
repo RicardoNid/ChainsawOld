@@ -21,16 +21,19 @@ package object DFG {
 
     def -(that: DSPNode[T]) = DSPConstraint(node, that, 0)
 
-    def isIO = node.isInstanceOf[InputNode[T]] || node.isInstanceOf[OutputNode[T]]
+    def isIO = node.isInstanceOf[InputNode[T]] || node.isInstanceOf[ConstantNode[T]] || node.isInstanceOf[OutputNode[T]]
 
-    def isConstant = node.isInstanceOf[ConstantNode[T]]
+    def isInput = node.isInstanceOf[InputNode[T]] || node.isInstanceOf[ConstantNode[T]]
 
-    def apply(order:Int) = DSPNodeWithOrder(node, order)
+    def isOutput = node.isInstanceOf[OutputNode[T]]
+
+    def apply(order: Int) = DSPNodeWithOrder(node, order)
 
     /** Extend a virtual node from a output port of current node
+     *
      * @param order
      */
-    def extendVirtual(order:Int) = GeneralNode[T](s"${node}_v", 0 cycles, 0 ns, node.hardware.outWidths(order))
+    def extendVirtual(order: Int) = GeneralNode[T](s"${node}_v", 0 cycles, 0 ns, node.hardware.outWidths(order))
 
   }
 
@@ -49,7 +52,7 @@ package object DFG {
 
     def symbol = s"$source(${edge.outOrder}) -> ${edge.weightWithSource} -> $target(${edge.inOrder})"
 
-    def hasNoMux = edge.schedules.size == 1 && edge.schedules.head == Schedule(0,1)
+    def hasNoMux = edge.schedules.size == 1 && edge.schedules.head == Schedule(0, 1)
 
     /** Get a new edge with different schedules
      */
@@ -68,6 +71,6 @@ package object DFG {
 
   }
 
-  implicit def defaultOrder[T <: Data](node:DSPNode[T]): DSPNodeWithOrder[T] = DSPNodeWithOrder(node, 0)
+  implicit def defaultOrder[T <: Data](node: DSPNode[T]): DSPNodeWithOrder[T] = DSPNodeWithOrder(node, 0)
 
 }

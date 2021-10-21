@@ -93,29 +93,22 @@ class DFGGraphTest extends AnyFlatSpec {
     DFGTestUtil.verifyFolding(dfg, foldingSet, "paper1992_fig9_a")
   }
 
-  /*
-   it report some error:
-   LATCH DETECTED from the combinatorial signal
-   */
-  it should "fold correctly on paper1992 fig10_b" in {
+  it should "fold correctly on paper1992 fig10_a(example8)" in {
     val dfg = paper1992OnFolding.fig10_a
-    val foldingSet = paper1992OnFolding.foldingSet10_a_example8
-    DFGTestUtil.verifyFolding(dfg, foldingSet)
+    val foldingSet = paper1992OnFolding.foldingSet10_a_example8and10
+    DFGTestUtil.verifyFolding(dfg, foldingSet, "paper1992_fig10_a")
   }
 
-  it should "retimed correctly on paper1992 fig10_a" in {
+  it should "retimed correctly on paper1992 fig10_c(example10)" in {
     val dfg = paper1992OnFolding.fig10_c
-    println(s"-----")
-    println(dfg.retimed(dfg.fcg.getSolution.map(_.toInt)))
+    val foldingSet = paper1992OnFolding.foldingSet10_a_example8and10
+    DFGTestUtil.verifyFolding(dfg, foldingSet, "paper1992_fig10_c")
   }
 
-  /* it report some error:
-     Negative cycleCount is not allowed in Delay
-   */
-  it should "fold correctly on paper1992 fig12_b" in {
+  it should "fold correctly on paper1992 fig12_a(example11)" in {
     val dfg = paper1992OnFolding.fig12_a
-    val foldingSet = paper1992OnFolding.foldingSet12_a_example11
-    DFGTestUtil.verifyFolding(dfg, foldingSet, name = "paper1992_fig12_b")
+    val foldingSet = paper1992OnFolding.foldingSet_example11
+    DFGTestUtil.verifyFolding(dfg, foldingSet, name = "paper1992_fig12_a")
   }
 
   it should "fold correctly on paper1992 fig13_d" in {
@@ -124,20 +117,12 @@ class DFGGraphTest extends AnyFlatSpec {
     DFGTestUtil.verifyFolding(dfg, foldingSet)
   }
 
-  /*
-   it report some error:
-   key not found: zeronode_0
-   */
-  it should "fold correctly on paper1992 fig14_b" in {
+  it should "fold correctly on paper1992 fig14_a" in {
     val dfg = paper1992OnFolding.fig14_a
-    val foldingSet = paper1992OnFolding.foldingSet14_a_example13
-    DFGTestUtil.verifyFolding(dfg , foldingSet, "paper1992_fig14_b")
+    val foldingSet = paper1992OnFolding.foldingSet_example13
+    DFGTestUtil.verifyFolding(dfg , foldingSet, "paper1992_fig14_a")
   }
 
-  /*
-  it report some error:
-  key not found: zeronode_0
- */
   it should "fold correctly on paper1992 fig15_a" in {
     val dfg = paper1992OnFolding.fig14_a
     val foldingSet = paper1992OnFolding.foldingSet14_a_example13_v2
@@ -146,7 +131,8 @@ class DFGGraphTest extends AnyFlatSpec {
 
   "constraint graph" should "work on fig4.3" in {
     val cg = chap4.fig4_3
-    assert(cg.getSolution.zip(Seq(0, 0, 0, -1)).forall { case (d, i) => d == i })
+    // (0,0,0,-1) => (1,1,1,0)
+    assert(cg.getSolution.values.zip(Seq(1, 1, 1, 0)).forall { case (d, i) => d == i })
   }
 
   "critical-path-related algos" should "work on fig2.2" in { // TODO: add a test for graph with MIMO devices

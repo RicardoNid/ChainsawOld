@@ -89,9 +89,9 @@ object Operators {
     override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = {
       val constants = sources.map(_.asInstanceOf[SIntCMulAdder].constant)
       val foldedFunction = (dataIns: Seq[SInt], _: GlobalCount) =>
-        Seq(Delay((dataIns(0) * sintCoeffROM(constants, width)).resized + dataIns(1), delay.toInt, init = dataIns.head.getZero))
+        Seq(Delay((dataIns(0) * sintCoeffROM(constants, width)).resized + dataIns(1), 3, init = dataIns.head.getZero))
       val foldedHardware = DSPHardware(foldedFunction, 1, Seq(width))
-      GeneralNode(foldedHardware, s"foldFrom${sources.head.name}", delay, exeTime)
+      GeneralNode(foldedHardware, s"foldFrom${sources.head.name}", 3 cycles, exeTime)
     }
   }
 
@@ -125,6 +125,7 @@ object Operators {
   def sintCoeffROM(constants: Seq[Int], width: BitCount) = {
     val ROM = Mem(constants.map(S(_, width)))
     val localCounter = CounterFreeRun(constants.size)
+    localCounter.setName("ROMCounter")
     ROM.readAsync(localCounter.value)
   }
 
@@ -132,7 +133,7 @@ object Operators {
     GeneralNode(sIntCMult(constant, width, delay), name, delay, exeTime) with Foldable[SInt] {
     override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = {
       val constants = sources.map(_.asInstanceOf[SIntCMult].constant)
-      val foldedFunction = (dataIns: Seq[SInt], globalCount: GlobalCount) =>
+      val foldedFunction = (dataIns: Seq[SInt], _: GlobalCount) =>
         Seq(Delay((dataIns(0) * sintCoeffROM(constants, width)).resize(dataIns(0).getBitsWidth), 2, init = dataIns.head.getZero))
       val foldedHardware = DSPHardware(foldedFunction, 1, Seq(width))
       GeneralNode(foldedHardware, s"foldFrom${sources.head.name}", 2 cycles, exeTime)

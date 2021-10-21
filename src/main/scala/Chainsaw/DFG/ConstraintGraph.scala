@@ -15,6 +15,7 @@ import org.jgrapht.nio._
 import org.jgrapht.nio.dot._
 import org.jgrapht.traverse._
 import org.jgrapht.generate._
+import org.slf4j.{LoggerFactory, Logger}
 
 import scala.util.{Failure, Success, Try}
 import scala.collection.JavaConversions._
@@ -22,11 +23,10 @@ import scala.collection.JavaConversions._
 
 class ConstraintGraph[T <: Data]() extends DFGGraph[T]() {
 
-  // init
-  val referenceNode = VoidNode[T]()
+  val referenceNode: GeneralNode[T] = VoidNode[T]()
   super.addVertex(referenceNode)
 
-  def initFrom(dfg: DFGGraph[T]) = dfg.vertexSeq.filterNot(_.isIO).foreach(addVertex(_))
+  def initFrom(dfg: DFGGraph[T]): Unit = dfg.vertexSeq.foreach(addVertex)
 
   override def addVertex(constraintNode: DSPNode[T]): Boolean = {
     val succeed = super.addVertex(constraintNode)
@@ -44,10 +44,13 @@ class ConstraintGraph[T <: Data]() extends DFGGraph[T]() {
     } else setEdgeWeight(e, value min e.weight)
   }
 
-  def getSolution = {
+  def getSolution: Map[DSPNode[T], Int] = {
+    //    logger.info(s"solving constraint graph: $this")
     val algo = new BellmanFordShortestPath(this)
     val paths = algo.getPaths(referenceNode)
-    vertexSeq.filterNot(_ == referenceNode).map(paths.getWeight(_))
+    val ret: Map[DSPNode[T], Int] = vertexSeq.filterNot(_ == referenceNode).map(node => node -> paths.getWeight(node).toInt).toMap
+    val minValue = ret.values.min
+    ret.map { case (node, value) => node -> (value - minValue) } // so that the minimum value is 0, but the retiming won't change
   }
 
   override def toString: String =

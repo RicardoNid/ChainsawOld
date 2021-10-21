@@ -30,7 +30,8 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
     val dataIns: Seq[Seq[DSPEdge[T]]] = target.incomingEdges.groupBy(_.inOrder).toSeq.sortBy(_._1).map(_._2)
     val dataInsOnPorts = dataIns.zipWithIndex.map { case (dataInsOnePort, i) => // combine dataIns at the same port by a mux
       val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.hardware(signalMap(edge.source), edge.weight.toInt).apply(edge.outOrder))
-      val mux = DFGMUX[T](dataInsOnePort.map(_.schedules))
+      val schedulesOnePort: Seq[Seq[Schedule]] = dataInsOnePort.map(_.schedules)
+      val mux = DFGMUX[T](schedulesOnePort)
       val succeed = Try(mux.impl(dataCandidates, globalLcm))
       succeed match {
         case Failure(exception) => printlnRed(s"collision between:\n${dataInsOnePort.map(_.symbol).mkString("\n")}")

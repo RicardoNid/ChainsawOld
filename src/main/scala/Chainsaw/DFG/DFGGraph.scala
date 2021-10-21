@@ -22,6 +22,7 @@ import org.slf4j.{LoggerFactory, Logger}
 class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
 
   implicit def currentDFG: DFGGraph[T] = this
+
   val logger = LoggerFactory.getLogger(classOf[DFGGraph[T]])
 
   @deprecated override def vertexSet(): util.Set[DSPNode[T]] = super.vertexSet()
@@ -44,7 +45,7 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
 
   def foreachEdge(body: DSPEdge[T] => Unit): Unit = edgeSeq.foreach(body)
 
-  def foreachInnerEdge(body: DSPEdge[T] => Unit): Unit = edgeSeq.filterNot(edge => edge.source.isIO || edge.target.isIO || edge.source.isConstant).foreach(body)
+  def foreachInnerEdge(body: DSPEdge[T] => Unit): Unit = edgeSeq.filterNot(edge => edge.source.isIO || edge.target.isIO).foreach(body)
 
   def sourcesOf(node: DSPNode[T]): mutable.Set[DSPNode[T]] = incomingEdgesOf(node).map(_.source)
 
@@ -80,12 +81,13 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
 
   // Add edge into basicDFG(MISO, no MUX)
   def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double, schedules: Seq[Schedule]): Unit = {
-    if(source.hardware.outWidths.size > 1) logger.warn("adding edge to MIMO node with no specified port number")
+    if (source.hardware.outWidths.size > 1) logger.warn("adding edge to MIMO node with no specified port number")
     addEdge(source, target, 0, target.incomingEdges.size, delay, schedules)
   }
 
   def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double): Unit = {
-    if(source.hardware.outWidths.size > 1) logger.warn("adding edge to MIMO node with no specified port number")
+    if (source.hardware.outWidths.size > 1 ) logger.warn(s"adding to MIMO node $source with no specified port number")
+    if (target.hardware.inDegree > 1) logger.warn(s"adding to MIMO node $target with no specified port number")
     addEdge(source, target, 0, target.incomingEdges.size, delay)
   }
 
@@ -167,7 +169,7 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
 
   def criticalPathLength: Double = new CriticalPathAlgo(this).criticalPathLength
 
-  def impl(dataIns:Seq[T])(implicit holderProvider: BitCount => T): Seq[T] = new DFGImpl(this).impl(dataIns)
+  def impl(dataIns: Seq[T])(implicit holderProvider: BitCount => T): Seq[T] = new DFGImpl(this).impl(dataIns)
 
   // feasibilityConstraintGraph
   def fcg: ConstraintGraph[T] = {
@@ -177,10 +179,12 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
     cg
   }
 
-  def retimed(solutions: Seq[Int]): DFGGraph[T] = {
-    val rInner: Map[DSPNode[T], Int] = vertexSeq.filterNot(_.isIO).zip(solutions).map { case (node, i) => node -> i }.toMap
-    val r = rInner ++ inputNodes.map(node => node -> rInner.values.min).toMap ++  outputNodes.map(node => node -> rInner.values.max).toMap
-    foreachEdge(edge => setEdgeWeight(edge, edge.weight + r(edge.target) - r(edge.source)))
+  def retimed(solutions: Map[DSPNode[T], Int]): DFGGraph[T] = {
+    val r = solutions
+    foreachEdge { edge =>
+      if (solutions.contains(edge.source) && solutions.contains(edge.target))
+        setEdgeWeight(edge, edge.weight + r(edge.target) - r(edge.source))
+    }
     this
   }
 
@@ -193,7 +197,7 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
 
   def asNode(implicit holderProvider: BitCount => T) = {
     require(isForwarding && isHomogeneous)
-    val fakeImpl = (dataIns:Seq[T], _:GlobalCount) => impl(dataIns)
+    val fakeImpl = (dataIns: Seq[T], _: GlobalCount) => impl(dataIns)
     val hardware = DSPHardware(fakeImpl, inputNodes.size, Seq.fill(outputNodes.size)(-1 bits))
     GeneralNode(hardware, "subgraph", latency cycles, 1 ns) // TODO: consider the exeTime of a subgraph
   }

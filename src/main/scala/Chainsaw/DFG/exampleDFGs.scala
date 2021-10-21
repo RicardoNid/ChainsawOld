@@ -6,12 +6,6 @@ import spinal.core._
 
 import scala.language.postfixOps
 
-object ShowGraphs {
-  def main(args: Array[String]): Unit = {
-    println(paper1992OnFolding.fig12_a)
-  }
-}
-
 object simpleFolding {
 
   val incs = (0 until 4).map(i => SIntCMult(s"cmult_$i", i + 1, 10 bits, 0 cycles, 2 ns))
@@ -225,93 +219,93 @@ object paper1992OnFolding {
 
   /*  -----------------------------------fig9_a_example7------------------------------------*/
 
-  val sCMulAdds = (0 until 5).map(i => SIntCMulAdder(s"scmuladd_$i", i + 1, 10 bits, 0 cycles, 1 ns))
-  val Seq(sCMulAdd0, sCMulAdd1, sCMulAdd2, sCMulAdd3, sCMulAdd4) = sCMulAdds
-  val zeronode_0 = SIntConst(s"zeronode_0", 0, 10 bits)
+  val fig9Nodes = (0 until 5).map(i => SIntCMulAdder(s"ma${i + 1}", i % 3 + 1, 10 bits, 0 cycles, 1 ns))
+  val Seq(ma1, ma2, ma3, ma4, ma5) = fig9Nodes
+  val zero = SIntConst(s"zero", 0, 10 bits)
   val constantNodes = (0 until 5).map(i => SIntConst(s"a_$i", i + 2, 10 bits))
 
-  val sKeeps = (0 until 5).map(i => SIntCMult(s"skeep_$i", 1,  10 bits, 0 cycles, 0 ns))
+  val sKeeps = (0 until 5).map(i => SIntCMult(s"skeep_$i", 1, 10 bits, 0 cycles, 0 ns))
   val Seq(sk0, sk1, sk2, sk3, sk4) = sKeeps
 
-  def fig9_a = {
-    val dfg = DFGGraph[SInt]
-    sCMulAdds.foreach(dfg.addVertex(_))
-    dfg.addVertex(zeronode_0)
+  def fig9_a: DFGGraph[SInt] = {
+    val dfg = DFGGraph[SInt]()
+    fig9Nodes.foreach(dfg.addVertex(_))
+    dfg.addVertex(zero)
     val x_n = dfg.addInput(s"x_n")
-    dfg.addEdge(x_n, sCMulAdd0, 0)
-    dfg.addEdge(x_n, sCMulAdd1, 0)
-    dfg.addEdge(x_n, sCMulAdd2, 0)
-    dfg.addEdge(x_n, sCMulAdd3, 0)
-    dfg.addEdge(x_n, sCMulAdd4, 0)
-    dfg.addEdge(zeronode_0, sCMulAdd0, 0)
-    dfg.addEdge(sCMulAdd0, sCMulAdd1, 1)
-    dfg.addEdge(sCMulAdd1, sCMulAdd2, 1)
-    dfg.addEdge(sCMulAdd2, sCMulAdd3, 1)
-    dfg.addEdge(sCMulAdd3, sCMulAdd4, 1)
-    dfg.setOutput(sCMulAdd4, 0, s"y_n")
+    dfg.setOutput(ma5, 0, s"y_n")
+
+    fig9Nodes.foreach(node => dfg.addEdge(x_n(0), node(0), 0))
+    dfg.addPath(zero >> ma1 >> 1 >> ma2 >> 1 >> ma3 >> 1 >> ma4 >> 1 >> ma5)
+
     dfg
   }
 
   def foldingSet9_a_example7 = Seq(
-    Seq(sCMulAdd0, sCMulAdd1, sCMulAdd2),
-    Seq(sCMulAdd3, sCMulAdd4, null))
+    Seq(ma1, ma2, ma3),
+    Seq(ma4, ma5, null))
 
   /*  -----------------------------------fig10_a_example8------------------------------------*/
 
-  def fig10_a = {
-    val dfg = DFGGraph[SInt]
-    cmuls.foreach(dfg.addVertex(_))
-    dfg.addPath(cmul0 >> 1 >> cmul1 >> 1 >> cmul2)
-    dfg.setInput(cmul0, 0, s"x_1", Seq(Schedule(0, 2)))
-    dfg.setInput(cmul0, 0, s"x_2", Seq(Schedule(1, 2)))
-    dfg.addEdge(cmul0, cmul3, 0, 0, 2, Seq(Schedule(1, 3)))
-    dfg.addEdge(cmul2, cmul3, 0, 0, 1, Seq(Schedule(0, 3), Schedule(2, 3)))
-    dfg.setOutput(cmul3)
-    dfg
+  val fig10Nodes = (0 until 4).map(i => SIntCMult(s"A${i + 1}", i + 1, 10 bits, 0 cycles, 1 ns))
+  val Seq(a1, a2, a3, a4) = fig10Nodes
+  val foldingSet = Seq(Seq(a1, a2, a3, a4))
+
+  def fig10 = {
+
+    val fig10a = DFGGraph[SInt]()
+    fig10Nodes.foreach(fig10a.addVertex(_))
+    val x_1 = fig10a.setInput(a1, 0, s"x_1", Seq(Schedule(0, 2)))
+    val x_2 = fig10a.setInput(a1, 0, s"x_2", Seq(Schedule(1, 2)))
+    fig10a.addPath(a1 >> 1 >> a2 >> 1 >> a3)
+    fig10a.addEdge(a1, a4, 2, Seq(Schedule(1, 3)))
+    fig10a.addEdge(a3, a4, 1, Seq(Schedule(0, 3), Schedule(2, 3)))
+    fig10a.setOutput(a4)
+
+    val fig10c = fig10a.clone().asInstanceOf[DFGGraph[SInt]]
+    fig10c.setEdgeWeight(fig10c.getEdge(a1, a2), 0)
+    fig10c.setEdgeWeight(fig10c.getEdge(a2, a3), 0)
+    fig10c.removeEdge(fig10c.getEdge(a1, a4))
+    fig10c.removeEdge(fig10c.getEdge(a3, a4))
+    fig10c.addEdge(a1, a4, 0, Seq(Schedule(2, 3)))
+    fig10c.addEdge(a3, a4, 1, Seq(Schedule(0, 3), Schedule(1, 3)))
+
+    (fig10a, fig10c, foldingSet)
   }
 
-  def foldingSet10_a_example8 = Seq(Seq(cmul0, cmul1, cmul2, cmul3))
+  def fig10_a = fig10._1
+
+  def fig10_c = fig10._2
+
+  def foldingSet10_a_example8and10 = fig10._3
+
 
   /*  -----------------------------------fig10_c_example10------------------------------------*/
-  def fig10_c = {
-    val dfg = DFGGraph[SInt]
-    cmuls.foreach(dfg.addVertex(_))
-    dfg.addPath(cmul0 >> 0 >> cmul1 >> 0 >> cmul2)
-    val x_1 = InputNode[SInt](s"input_x_1")
-    val x_2 = InputNode[SInt](s"input_x_2")
-    dfg.addVertex(x_1)
-    dfg.addEdge(x_1, cmul0, 0, Seq(Schedule(0, 2)))
-    dfg.addVertex(x_2)
-    dfg.addEdge(x_2, cmul0, 0, Seq(Schedule(1, 2)))
-    dfg.addEdge(cmul0, cmul3, 0, Seq(Schedule(2, 3)))
-    dfg.addEdge(cmul2, cmul3, 1, Seq(Schedule(0, 3), Schedule(1, 3)))
-    dfg.setOutput(cmul3)
-    dfg
-  }
+
 
   /*  -----------------------------------fig12_a_example11------------------------------------*/
 
-  val cMults = (0 until 4).map(i => SIntCMult(s"cmult_$i", i + 1, 10 bits, 2 cycles, 1 ns))
-  val Seq(cMult0, cMult1, cMult2, cMult3) = cMults
 
-  val adds = (0 until 4).map(i => SIntAdder(s"add_$i", 10 bits, 1 cycles, 1 ns))
-  val Seq(add0, add1, add2, add3) = adds
+  val fig12Ms = (0 until 4).map(i => SIntCMult(s"M${i + 1}", i + 1, 10 bits, 0 cycles, 1 ns))
+  val fig12As = (0 until 4).map(i => SIntAdder(s"A${i + 1}", 10 bits, 0 cycles, 1 ns))
+  val Seq(a_1, a_2, a_3, a_4) = fig12As
+  val Seq(m1, m2, m3, m4) = fig12Ms
+
+  def foldingSet_example11 = Seq(Seq(a_4, a_2, null, a_3, a_1), Seq(m1, m3, m2, m4, null))
 
   def fig12_a = {
     val dfg = DFGGraph[SInt]
-    adds.foreach(dfg.addVertex(_))
-    cMults.foreach(dfg.addVertex(_))
-    dfg.setInput(add0)
-    dfg.addPath(add0 >> 0 >> add1)
-    dfg.setOutput(add1)
-    dfg.addPath(add0 >> 1 >> cMult0 >> 0 >> add2 >> 0 >> add0)
-    dfg.addPath(add0 >> 1 >> cMult1 >> 0 >> add3 >> 0 >> add1)
-    dfg.addPath(add0 >> 2 >> cMult2 >> add2)
-    dfg.addPath(add0 >> 2 >> cMult3 >> 0 >> add3)
+    (fig12As ++ fig12Ms).foreach(dfg.addVertex(_))
+    dfg.setInput(a_1)
+    dfg.addPath(a_1 >> a_2)
+    dfg.setOutput(a_2)
+    dfg.addPath(a_1 >> 1 >> m1 >> a_3 >> a_1)
+    dfg.addPath(a_1 >> 1 >> m2 >> a_4 >> a_2)
+    dfg.addPath(a_1 >> 2 >> m3 >> a_3)
+    dfg.addPath(a_1 >> 2 >> m4 >> a_4)
     dfg
   }
 
-  def foldingSet12_a_example11 = Seq(Seq(add3, add1, null, add2, add0), Seq(cMult0, cMult2, cMult1, cMult3, null))
+
 
   /*  -----------------------------------fig13_a_example12------------------------------------*/
 
@@ -336,38 +330,29 @@ object paper1992OnFolding {
 
   /*  -----------------------------------fig14_a_example13------------------------------------*/
 
-  val sAdderCs = (0 until 3).map(i => SIntAdderC(s"sadderc_$i", 10 bits, 1 cycles, 1 ns))
-  val Seq(sAddC0, sAddC1, sAddC2) = sAdderCs
-  val zeroNodes = (0 until 3).map(i => SIntConst(s"zeronode_$i", 0, 10 bits))
-  val Seq(zeroNode0, zeroNode1, zeroNode2) = zeroNodes
+  val fig14ACs = (0 until 3).map(i => SIntAdderC(s"A${i + 1}", 10 bits, 0 cycles, 1 ns))
+  val Seq(ac1, ac2, ac3) = fig14ACs
 
-  def fig14_a = {
-    val dfg = DFGGraph[SInt]
-    sAdderCs.foreach(dfg.addVertex(_))
-    zeroNodes.foreach(dfg.addVertex(_))
-    dfg.addEdge(sAddC0, sAddC1, 1, 2, 0, Seq(Schedule(0, 4), Schedule(2, 4), Schedule(3, 4)))
-    dfg.addEdge(sAddC1, sAddC2, 1, 2, 0, Seq(Schedule(0, 4), Schedule(1, 4), Schedule(3, 4)))
-    dfg.addEdge(sAddC2, sAddC0, 1, 2, 1, Seq(Schedule(1, 4), Schedule(2, 4), Schedule(3, 4)))
-    dfg.addEdge(zeroNode0, sAddC0, 0, 2, 0, Seq(Schedule(0, 4)))
-    dfg.addEdge(zeroNode1, sAddC1, 0, 2, 0, Seq(Schedule(1, 4)))
-    dfg.addEdge(zeroNode2, sAddC2, 0, 2, 0, Seq(Schedule(2, 4)))
-    dfg.setInput(sAddC0, 0, s"x_3k")
-    dfg.setInput(sAddC0, 1, s"y_3k")
-    dfg.setInput(sAddC1, 0, s"x_3k_1")
-    dfg.setInput(sAddC1, 1, s"y_3k_1")
-    dfg.setInput(sAddC2, 0, s"x_3k_2")
-    dfg.setInput(sAddC2, 1, s"y_3k_2")
-    dfg.setOutput(sAddC0, 0, s"s_3k")
-    dfg.setOutput(sAddC1, 0, s"s_3k_1")
-    dfg.setOutput(sAddC2, 0, s"s_3k_2")
+  def fig14_a: DFGGraph[SInt] = {
+    val dfg = DFGGraph[SInt]()
+    fig14ACs.foreach(dfg.addVertex(_))
+    dfg.addVertex(zero)
+    // zero => adder
+    fig14ACs.zipWithIndex.foreach{ case (ac, i) => dfg.addEdge(zero(0), ac(2), 0, Seq(Schedule(i, 4)))}
+    // carry => next adder
+    dfg.addEdge(ac1(1), ac2(2), 0, Seq(Schedule(0, 4), Schedule(2, 4), Schedule(3, 4)))
+    dfg.addEdge(ac2(1), ac3(2), 0, Seq(Schedule(0, 4), Schedule(1, 4), Schedule(3, 4)))
+    dfg.addEdge(ac3(1), ac1(2), 1, Seq(Schedule(1, 4), Schedule(2, 4), Schedule(3, 4)))
+    // input => adder
+    fig14ACs.zipWithIndex.foreach{ case (ac, i) => dfg.setInput(ac, 0, s"x_3k_$i")}
+    fig14ACs.zipWithIndex.foreach{ case (ac, i) => dfg.setInput(ac, 1, s"y_3k_$i")}
+    fig14ACs.zipWithIndex.foreach{ case (ac, i) => dfg.setOutput(ac, 0, s"s_3k_$i")}
+
     dfg
   }
 
-  def foldingSet14_a_example13 = Seq(Seq(sAddC0, sAddC1, sAddC2), Seq(zeroNode0, zeroNode1, zeroNode2))
-
-  /*  -----------------------------------fig14_a_example13------------------------------------*/
-
-  def foldingSet14_a_example13_v2 = Seq(Seq(sAddC1, sAddC2, sAddC0), Seq(zeroNode1, zeroNode2, zeroNode0))
+  def foldingSet_example13 = Seq(Seq(ac1, ac2, ac3))
+  def foldingSet14_a_example13_v2 = Seq(Seq(ac2, ac3, ac1))
 }
 
 object chap4 {
