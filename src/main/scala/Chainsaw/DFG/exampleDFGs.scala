@@ -16,7 +16,7 @@ object simpleFolding {
 
   def dfg = {
     printlnGreen("using simple graph for folding")
-    val dfg = DFGGraph[SInt]
+    val dfg = DFGGraph[SInt]()
     incs.foreach(dfg.addVertex(_))
     dfg.setInput(inc0)
     dfg.addExp(inc0 >=> 1 >=> inc1)
@@ -28,7 +28,7 @@ object simpleFolding {
 }
 
 object implementingDFGs {
-  def nestedDFG = {
+  def nestedDFG: DFGGraph[SInt] = {
     val butterfly = DFGGraph[SInt]
     val add0 = SIntAdder("add0", 10 bits, 1 cycles, 1 ns)
     val add1 = SIntAdder("add1", 10 bits, 1 cycles, 1 ns)

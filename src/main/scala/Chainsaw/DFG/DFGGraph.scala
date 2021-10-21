@@ -4,18 +4,17 @@ import Chainsaw._
 import org.jgrapht._
 import org.jgrapht.alg.cycle.CycleDetector
 import org.jgrapht.graph._
+import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 
 import java.util
 import scala.collection.JavaConversions._
 import scala.collection.mutable
-
-import org.slf4j.{LoggerFactory, Logger}
+import scala.language.postfixOps
 
 
 /** Main class of DFG model
  *
- * @param holderProvider function which generates a holder of a known/unknown width signal
  * @tparam T
  * learn more: [[]]
  */
@@ -23,7 +22,7 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
 
   implicit def currentDFG: DFGGraph[T] = this
 
-  val logger = LoggerFactory.getLogger(classOf[DFGGraph[T]])
+  val logger: Logger = LoggerFactory.getLogger(classOf[DFGGraph[T]])
 
   @deprecated override def vertexSet(): util.Set[DSPNode[T]] = super.vertexSet()
 
@@ -37,7 +36,7 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
 
   def outputNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isInstanceOf[OutputNode[T]])
 
-  def constantNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isInstanceOf[ConstantNode[T]]) // TODO: design a constant class
+  def constantNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isInstanceOf[ConstantNode[T]])
 
   def foreachVertex(body: DSPNode[T] => Unit): Unit = vertexSeq.foreach(body)
 
@@ -109,7 +108,7 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
    */
   def addExp(exp: DSPAssignment[T]): Unit = {
     import exp._
-    if (sources.exists(_.hardware.outWidths.size > 1)) printlnYellow(s"warning: using addExp(which provides no port number or MUX info) on a MIMO DFG")
+    if (sources.exists(_.hardware.outWidths.size > 1)) logger.warn(s"using addExp(which provides no port number or MUX info) on a MIMO DFG")
     sources.foreach(addVertex)
     addVertex(target)
     sources.zip(delays).foreach { case (src, delay) => addEdge(src, target, delay) }
@@ -122,13 +121,12 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
   def addPath(path: DSPPath[T]): Unit = {
     import path._
     require(nodes.size == delays.size + 1)
-    // TODO: using a solid ERROR/WARNING/INFO library instead of do println in different colors
-    if (nodes.exists(_.hardware.outWidths.size > 1)) printlnYellow(s"warning: using addPath(which provides no port number or MUX info) on a MIMO DFG")
+    if (nodes.exists(_.hardware.outWidths.size > 1)) logger.warn(s"using addPath(which provides no port number or MUX info) on a MIMO DFG")
     nodes.foreach(addVertex)
     nodes.init.zip(nodes.tail).zip(delays).foreach { case ((src, des), delay) => addEdge(src, des, delay) }
   }
 
-  def addInput(name: String = "") = {
+  def addInput(name: String = ""): InputNode[T] = {
     val inputName = if (name.nonEmpty) name else s"input${inputNodes.size}"
     val inputNode = InputNode[T](inputName)
     addVertex(inputNode)
@@ -167,9 +165,10 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
 
   def isHomogeneous: Boolean = delayPaths.forall(_.getWeight == delayPaths.head.getWeight)
 
-  def latencyPath: GraphPath[DSPNode[T], DSPEdge[T]] = delayPaths.minBy(_.getWeight)
+  /** Currently, it is defined as the shortest path between inputs and outputs
+   */
+  def latencyPath: GraphPath[DSPNode[T], DSPEdge[T]] = delayPaths.minBy(_.getWeight) // TODO: a serious definition of latency
 
-  // FIXME: find a clear definition for both SISO, MIMO, and DFG with MUX
   def latency: Int = latencyPath.getWeight.toInt
 
   def criticalPathLength: Double = new CriticalPathAlgo(this).criticalPathLength
@@ -178,13 +177,15 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
 
   // feasibilityConstraintGraph
   def fcg: ConstraintGraph[T] = {
-    val cg = ConstraintGraph[T]
+    val cg = ConstraintGraph[T]()
     foreachInnerVertex(cg.addVertex(_))
     foreachInnerEdge(edge => cg.addConstraint(edge.source - edge.target <= edge.weight.toInt))
     cg
   }
 
   def retimed(solutions: Map[DSPNode[T], Int]): DFGGraph[T] = new Retiming(this, solutions).retimed
+
+  def folded(foldingSet: Seq[Seq[DSPNode[T] with Foldable[T]]]): DFGGraph[T] = new Folding(this, foldingSet).folded
 
   override def toString: String =
     s"-----graph-----\n" +
@@ -193,11 +194,12 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
       s"loops:\n${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}\n" +
       s"------end------\n"
 
-  def asNode(implicit holderProvider: BitCount => T) = {
+  // TODO: consider the exeTime of a subgraph, more test on this
+  def asNode(implicit holderProvider: BitCount => T): GeneralNode[T] = {
     require(isForwarding && isHomogeneous)
     val fakeImpl = (dataIns: Seq[T], _: GlobalCount) => impl(dataIns)
     val hardware = DSPHardware(fakeImpl, inputNodes.size, Seq.fill(outputNodes.size)(-1 bits))
-    GeneralNode(hardware, "subgraph", latency cycles, 1 ns) // TODO: consider the exeTime of a subgraph
+    GeneralNode(hardware, "subgraph", latency cycles, 1 ns)
   }
 
   /** Besides nodes and edges, we clone the weights

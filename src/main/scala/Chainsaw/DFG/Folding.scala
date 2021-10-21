@@ -4,21 +4,21 @@ import org.slf4j.LoggerFactory
 import spinal.core._
 import scala.math.floor
 
-class Folding[T <: Data](dfg: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T] with Foldable[T]]]) extends Transform {
+class Folding[T <: Data](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with Foldable[T]]]) extends Transform {
 
   val logger = LoggerFactory.getLogger(classOf[Folding[T]])
 
-  val N = foldingSets.head.length
-  require(foldingSets.forall(_.size == N), "folding set should have the same folding factor")
+  val N = foldingSet.head.length
+  require(foldingSet.forall(_.size == N), "folding set should have the same folding factor")
   // node -> folding order of the node
-  val foldingOrderOf: Map[DSPNode[T], Int] = foldingSets.flatMap { set => set.zipWithIndex.filterNot(_._1 == null) map { case (node, i) => node -> i } }.toMap
+  val foldingOrderOf: Map[DSPNode[T], Int] = foldingSet.flatMap { set => set.zipWithIndex.filterNot(_._1 == null) map { case (node, i) => node -> i } }.toMap
   // node -> the device it belongs(folded to)
-  val devices: Seq[DSPNode[T]] = foldingSets.map { nodes =>
+  val devices: Seq[DSPNode[T]] = foldingSet.map { nodes =>
     val nonEmptyNode = nodes.filterNot(_ == null).head // TODO: better solution
     val filledNodes = nodes.map(node => if (node != null) node else nonEmptyNode) // replace null by an arbitrary nonempty node
     filledNodes.head.fold(filledNodes)
   }
-  val deviceOf: Map[DSPNode[T], DSPNode[T]] = foldingSets.zip(devices).flatMap { case (nodes, device) => nodes.map(_ -> device) }.toMap
+  val deviceOf: Map[DSPNode[T], DSPNode[T]] = foldingSet.zip(devices).flatMap { case (nodes, device) => nodes.map(_ -> device) }.toMap
 
   /** Mapping delays to folded delays
    *

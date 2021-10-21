@@ -21,6 +21,10 @@ package object DFG {
 
     def -(that: DSPNode[T]) = DSPConstraint(node, that, 0)
 
+    /** Pointing out whether a node is I/O or not, this is necessary as I/O are treated differently is most algos
+     *
+     *  Caution: constant nodes are also inputs
+     */
     def isIO = node.isInstanceOf[InputNode[T]] || node.isInstanceOf[ConstantNode[T]] || node.isInstanceOf[OutputNode[T]]
 
     def isInput = node.isInstanceOf[InputNode[T]] || node.isInstanceOf[ConstantNode[T]]

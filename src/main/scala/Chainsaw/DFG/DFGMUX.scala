@@ -34,7 +34,7 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
 
   def impl(dataIns: Seq[T], globalLcm: Int)(implicit globalCount: GlobalCount): T = {
     //    printlnGreen(s"implementing mux $this")
-    require(hasNoCollisions, s"schedule collision:\n${schedules.mkString(" ")}") // no collision TODO: print collision location
+    require(hasNoCollisions, s"schedule collision:\n${schedules.mkString(" ")}")
     require(dataIns.size == schedules.size)
     if (dataIns.size == 1 && schedules.head.head == Schedule(0, 1)) dataIns.head
     else {

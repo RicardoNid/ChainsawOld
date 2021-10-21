@@ -1,32 +1,33 @@
 package Chainsaw.DFG
 
 import Chainsaw._
+import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 import spinal.lib._
 
 import scala.collection.mutable
+import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
-import org.slf4j.{Logger,LoggerFactory}
 
 class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount => T) {
 
-  val logger = LoggerFactory.getLogger(classOf[DFGImpl[T]])
+  val logger: Logger = LoggerFactory.getLogger(s"implementing procedure")
 
-  implicit def currentDFG = dfg
+  implicit def currentDFG: DFGGraph[T] = dfg
 
   // attributes tobe used
-  val vertexSeq = dfg.vertexSeq
-  val globalLcm = dfg.globalLcm
-  val inputNodes = dfg.inputNodes
-  val outputNodes = dfg.outputNodes
+  val vertexSeq: Seq[DSPNode[T]] = dfg.vertexSeq
+  val globalLcm: Int = dfg.globalLcm
+  val inputNodes: Seq[DSPNode[T]] = dfg.inputNodes
+  val outputNodes: Seq[DSPNode[T]] = dfg.outputNodes
 
-  def initGlobalCount() = {
+  def initGlobalCount(): GlobalCount = {
     val globalCounter = CounterFreeRun(globalLcm)
     globalCounter.value.setName("globalCounter")
     GlobalCount(globalCounter.value)
   }
 
-  def implVertex(target: DSPNode[T], signalMap: Map[DSPNode[T], Seq[T]])(implicit globalCount: GlobalCount) = {
+  def implVertex(target: DSPNode[T], signalMap: Map[DSPNode[T], Seq[T]])(implicit globalCount: GlobalCount): Seq[T] = {
     val dataIns: Seq[Seq[DSPEdge[T]]] = target.incomingEdges.groupBy(_.inOrder).toSeq.sortBy(_._1).map(_._2)
     val dataInsOnPorts = dataIns.zipWithIndex.map { case (dataInsOnePort, i) => // combine dataIns at the same port by a mux
       val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.hardware(signalMap(edge.source), edge.weight.toInt).apply(edge.outOrder))
@@ -34,7 +35,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
       val mux = DFGMUX[T](schedulesOnePort)
       val succeed = Try(mux.impl(dataCandidates, globalLcm))
       succeed match {
-        case Failure(exception) => printlnRed(s"collision between:\n${dataInsOnePort.map(_.symbol).mkString("\n")}")
+        case Failure(exception) => logger.error(s"MUX impl failed on:\n${dataInsOnePort.map(_.symbol).mkString(" ")}")
           mux.impl(dataCandidates, globalLcm)
         case Success(value) => value
       }
@@ -50,7 +51,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
       printlnRed(s"vertex $node: ${node.hardware.outWidths.mkString(" ")}")
       node -> node.hardware.outWidths.map(i => if (i.value == -1) holderProvider(-1 bits) else holderProvider(i))}.toMap
 
-    implicit val globalCount = initGlobalCount()
+    implicit val globalCount: GlobalCount = initGlobalCount()
 
     inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap(node).head := bits }
     vertexSeq.diff(inputNodes).foreach{target =>
@@ -60,13 +61,13 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
       if (placeholders.size == 1) placeholders.head.setName(target.name) // name these signals
       else placeholders.zipWithIndex.foreach { case (placeholder, i) => placeholder.setName(s"${target}_$i") }
     }
-    outputNodes.map(signalMap(_)).flatten
+    outputNodes.flatMap(signalMap(_))
   }
 
   def implForwarding: Seq[T] => Seq[T] = (dataIns: Seq[T]) => {
     logger.info("implementing DFG by algo for forwarding DFG")
     val signalMap = mutable.Map[DSPNode[T], Seq[T]]()
-    implicit val globalCount = initGlobalCount()
+    implicit val globalCount: GlobalCount = initGlobalCount()
     inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap += node -> Seq(bits) }
 
     def implemented = signalMap.keys.toSeq
@@ -83,9 +84,9 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
         else rets.zipWithIndex.foreach { case (ret, i) => ret.setName(s"${target}_$i") }
       }
     }
-    outputNodes.map(signalMap(_)).flatten
+    outputNodes.flatMap(signalMap(_))
   }
 
-  def impl = if(dfg.isRecursive) implRecursive else implForwarding
+  def impl: Seq[T] => Seq[T] = if(dfg.isRecursive) implRecursive else implForwarding
 
 }
