@@ -4,6 +4,8 @@ import Chainsaw._
 import org.scalatest.flatspec.AnyFlatSpec
 import spinal.core._
 
+import scala.language.postfixOps
+
 /** Regression test of DFG
  *
  */
@@ -12,7 +14,7 @@ class DFGGraphTest extends AnyFlatSpec {
   import Operators._
 
   "dfg" should "be implemented correctly" in {
-    val dfg = DFGGraph[SInt]
+    val dfg = DFGGraph[SInt]()
 
     val pts = (0 until 4).map(i => sintKeep.asDSPNode(s"pt$i", 1 cycles, 1 ns))
     val Seq(pt0, pt1, pt2, pt3) = pts
@@ -24,23 +26,10 @@ class DFGGraphTest extends AnyFlatSpec {
     println(dfg.edgeSeq.mkString(" "))
   }
 
-  // TODO : add these tests
-  it should "work on mixed-type operators" in {
-    val dfg = DFGGraph[SInt]
-  }
-
-  it should "work on unknown-width operators in forwarding DFG" in {
-
-  }
-
-  it should "work on partially-known-width operators in forwarding DFG" in {
-
-  }
-
   it should "work on MIMO DFG" in {
     GenRTL(new Component {
-      val dataIns = in(Vec(ComplexNumber(1, -6), 4))
-      val dataOuts = out(Vec(ComplexNumber(1, -6), 4))
+      val dataIns: Vec[ComplexNumber] = in(Vec(ComplexNumber(1, -6), 4))
+      val dataOuts: Vec[ComplexNumber] = out(Vec(ComplexNumber(1, -6), 4))
       dataOuts := Vec(MIMO.fft4.impl(dataIns))
     })
   }
@@ -49,18 +38,14 @@ class DFGGraphTest extends AnyFlatSpec {
     println(implementingDFGs.nestedDFG)
   }
 
-  val testCases = (0 until 10).map(_ => DSPRand.nextInt(4))
+  val testCases: Seq[Int] = (0 until 10).map(_ => DSPRand.nextInt(4))
   //  val testCases = (0 until 20).map(_ => 1)
 
   // fig 6.3
   "the folding algorithm" should "fold correctly on chap6 fig6_3" in {
     val dfg = chap6.fig6_3
-    val foldingSet = chap6.foldingSets
-
-    val algo = new Folding[SInt](dfg, foldingSet)
-    val foldedDFG = algo.folded
-    println(algo.folded)
-    DFGTestUtil.verifyFunctionalConsistency(dfg, foldedDFG, SInt(10 bits), -4, 0, name = "chap6_fig6_3")
+    val foldingSet = chap6.foldingSet
+    DFGTestUtil.verifyFolding(dfg, foldingSet, "chap6_fig6_3")
   }
 
   it should "fold correctly on simple graph" in {
@@ -72,13 +57,13 @@ class DFGGraphTest extends AnyFlatSpec {
   it should "fold correctly on paper1992 fig6_b" in {
     val dfg = paper1992OnFolding.fig6_a
     val foldingSet = paper1992OnFolding.foldingSet6_a_example3
-    DFGTestUtil.verifyFolding(dfg , foldingSet)
+    DFGTestUtil.verifyFolding(dfg, foldingSet)
   }
 
   it should "fold correctly on paper1992 fig7_a" in {
     val dfg = paper1992OnFolding.fig6_a
     val foldingSet = paper1992OnFolding.foldingSet6_a_example4
-    DFGTestUtil.verifyFolding(dfg , foldingSet)
+    DFGTestUtil.verifyFolding(dfg, foldingSet)
   }
 
   it should "fold correctly on paper1992 fig8_a(example6)" in {
@@ -120,13 +105,13 @@ class DFGGraphTest extends AnyFlatSpec {
   it should "fold correctly on paper1992 fig14_a" in {
     val dfg = paper1992OnFolding.fig14_a
     val foldingSet = paper1992OnFolding.foldingSet_example13
-    DFGTestUtil.verifyFolding(dfg , foldingSet, "paper1992_fig14_a")
+    DFGTestUtil.verifyFolding(dfg, foldingSet, "paper1992_fig14_a")
   }
 
   it should "fold correctly on paper1992 fig15_a" in {
     val dfg = paper1992OnFolding.fig14_a
     val foldingSet = paper1992OnFolding.foldingSet14_a_example13_v2
-    DFGTestUtil.verifyFolding(dfg , foldingSet, name = "paper1992_fig15_a")
+    DFGTestUtil.verifyFolding(dfg, foldingSet, name = "paper1992_fig15_a")
   }
 
   "constraint graph" should "work on fig4.3" in {

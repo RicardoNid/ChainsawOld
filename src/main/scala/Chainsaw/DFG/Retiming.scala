@@ -19,6 +19,22 @@ import org.jgrapht.generate._
 
 import scala.collection.JavaConversions._
 
-class Retiming[T <: Data](dfg: DFGGraph[T], solution: Seq[Int]) {
+class Retiming[T <: Data](val dfg: DFGGraph[T], solution: Map[DSPNode[T], Int]) extends Transform {
 
+  def retimed: DFGGraph[T] = {
+    val r = solution
+    implicit val retimedDFG = dfg.clone().asInstanceOf[DFGGraph[T]]
+    retimedDFG.foreachEdge { edge =>
+      val (u, v) = (edge.source, edge.target)
+      if (solution.contains(u) && solution.contains(v)) {
+        retimedDFG.setEdgeWeight(edge, edge.weight + r(v) - r(u))
+        // MUX transformation: new time = time + r(v)
+        retimedDFG.setEdgeSchedules(edge, edge.schedules.map(schedule =>
+          Schedule((schedule.time + r(v)) % schedule.period , schedule.period)))
+      }
+    }
+    retimedDFG
+  }
+
+  override def latencyTrans: LatencyTrans = LatencyTrans(1, solution(dfg.outputNodes.head) - solution(dfg.inputNodes.head))
 }

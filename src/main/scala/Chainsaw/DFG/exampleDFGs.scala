@@ -121,7 +121,7 @@ object chap6 {
   val cmults = (0 until 4).map(i => SIntCMult(s"cmult_$i", 2, 10 bits, 1 cycles, 2 ns))
   val Seq(cmult0, cmult1, cmult2, cmult3) = cmults
 
-  val foldingSets = Seq(
+  val foldingSet = Seq(
     Seq(add3, add1, add2, add0),
     Seq(cmult0, cmult3, cmult1, cmult2)
   )

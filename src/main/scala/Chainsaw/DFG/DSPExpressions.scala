@@ -18,7 +18,14 @@ import org.jgrapht.generate._
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
 
-case class DSPAssignment[T <: Data](sources: Seq[DSPNode[T]], delays: Seq[Double], var target: DSPNode[T]){
+/** A linear transformation on latency, x => scale * x + shift
+ */
+case class LatencyTrans(scale: Int, shift: Int) {
+  // cascading linear transform
+  def +(that: LatencyTrans) = LatencyTrans(scale * that.scale, shift * that.scale + that.shift)
+}
+
+case class DSPAssignment[T <: Data](sources: Seq[DSPNode[T]], delays: Seq[Double], var target: DSPNode[T]) {
   def >=>(that: DSPNode[T]) = {
     target = that
     this
@@ -31,13 +38,14 @@ object DSPAssignment {
 
 
 /** A path containing interleaving nodes and edge
+ *
  * @example a >> 1 >> b >> 2 >> c, a >> b equals a >> 0 >> b
  */
-case class DSPPath[T <: Data](nodes: ArrayBuffer[DSPNode[T]], delays: ArrayBuffer[Double]){
+case class DSPPath[T <: Data](nodes: ArrayBuffer[DSPNode[T]], delays: ArrayBuffer[Double]) {
 
   def >>(that: DSPNode[T]) = {
     nodes += that
-    if(nodes.size != delays.size + 1) delays += 0
+    if (nodes.size != delays.size + 1) delays += 0
     this
   }
 
@@ -51,6 +59,6 @@ case class DSPConstraint[T <: Data](target: DSPNode[T], source: DSPNode[T], valu
   def <=(value: Int) = DSPConstraint(target, source, value = value)
 }
 
-case class DSPNodeWithOrder[T <: Data](node: DSPNode[T], order: Int){
+case class DSPNodeWithOrder[T <: Data](node: DSPNode[T], order: Int) {
 
 }

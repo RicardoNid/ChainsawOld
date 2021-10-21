@@ -62,6 +62,11 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
 
   override def setEdgeWeight(e: DSPEdge[T], weight: Double): Unit = super.setEdgeWeight(e, weight)
 
+  def setEdgeSchedules(e: DSPEdge[T], schedules: Seq[Schedule]): Unit = {
+    addEdge(e.source(e.outOrder), e.target(e.inOrder), e.weight, schedules)
+    removeEdge(e)
+  }
+
   @deprecated // mark the original addEdge as deprecated to ask the developer/user to use methods we provide
   override def addEdge(sourceVertex: DSPNode[T], targetVertex: DSPNode[T], e: DSPEdge[T]): Boolean = super.addEdge(sourceVertex, targetVertex, e)
 
@@ -86,7 +91,7 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
   }
 
   def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double): Unit = {
-    if (source.hardware.outWidths.size > 1 ) logger.warn(s"adding to MIMO node $source with no specified port number")
+    if (source.hardware.outWidths.size > 1) logger.warn(s"adding to MIMO node $source with no specified port number")
     if (target.hardware.inDegree > 1) logger.warn(s"adding to MIMO node $target with no specified port number")
     addEdge(source, target, 0, target.incomingEdges.size, delay)
   }
@@ -179,14 +184,7 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
     cg
   }
 
-  def retimed(solutions: Map[DSPNode[T], Int]): DFGGraph[T] = {
-    val r = solutions
-    foreachEdge { edge =>
-      if (solutions.contains(edge.source) && solutions.contains(edge.target))
-        setEdgeWeight(edge, edge.weight + r(edge.target) - r(edge.source))
-    }
-    this
-  }
+  def retimed(solutions: Map[DSPNode[T], Int]): DFGGraph[T] = new Retiming(this, solutions).retimed
 
   override def toString: String =
     s"-----graph-----\n" +
