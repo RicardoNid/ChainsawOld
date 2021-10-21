@@ -65,6 +65,12 @@ class DFGGraphTest extends AnyFlatSpec {
     DFGTestUtil.verifyFolding(dfg, foldingSet)
   }
 
+  it should "fold correctly on paper1992 fig3" in {
+    val dfg = paper1992OnFolding.fig1
+    val foldingSet = paper1992OnFolding.foldingSetfig1_example1
+    DFGTestUtil.verifyFolding(dfg , foldingSet)
+  }
+
   it should "fold correctly on paper1992 fig6_b" in {
     val dfg = paper1992OnFolding.fig6_a
     val foldingSet = paper1992OnFolding.foldingSet6_a_example3
@@ -93,10 +99,6 @@ class DFGGraphTest extends AnyFlatSpec {
     DFGTestUtil.verifyFolding(dfg, foldingSet)
   }
 
-  /*
-   it report some error:
-   LATCH DETECTED from the combinatorial signal
-   */
   it should "fold correctly on paper1992 fig10_b" in {
     val dfg = paper1992OnFolding.fig10_a
     val foldingSet = paper1992OnFolding.foldingSet10_a_example8
@@ -110,7 +112,7 @@ class DFGGraphTest extends AnyFlatSpec {
   }
 
   /* it report some error:
-     Negative cycleCount is not allowed in Delay
+     result is error
    */
   it should "fold correctly on paper1992 fig12_b" in {
     val dfg = paper1992OnFolding.fig12_a
@@ -126,7 +128,7 @@ class DFGGraphTest extends AnyFlatSpec {
 
   /*
    it report some error:
-   key not found: zeronode_0
+   width mismatch
    */
   it should "fold correctly on paper1992 fig14_b" in {
     val dfg = paper1992OnFolding.fig14_a
@@ -136,7 +138,7 @@ class DFGGraphTest extends AnyFlatSpec {
 
   /*
   it report some error:
-  key not found: zeronode_0
+  width mismatch
  */
   it should "fold correctly on paper1992 fig15_a" in {
     val dfg = paper1992OnFolding.fig14_a

@@ -9,6 +9,7 @@ import spinal.core._
 import java.util
 import scala.collection.JavaConversions._
 import scala.collection.mutable
+import scala.math._
 
 import org.slf4j.{LoggerFactory, Logger}
 
@@ -132,6 +133,159 @@ class DFGGraph[T <: Data](implicit val holderProvider: BitCount => T) extends Di
     addVertex(outputNode)
     addEdge(source(outOrder), outputNode(0), 0, schedules)
     outputNode
+  }
+
+  def addRegularGraph(hardwareSeq : Seq[DSPNode[T] with Foldable[T]], diagdirect : String, digdelay : Double) = {
+
+    require(hardwareSeq.map(_.hardware.inDegree) == hardwareSeq.map(_.hardware.outWidths.size))
+    require(hardwareSeq.forall(_.hardware.inDegree == 3))
+    require(diagdirect == "Positive" | diagdirect == "Negtive")
+
+    val size: Int = floor(sqrt(hardwareSeq.size)).toInt
+    val nodes = Seq.tabulate(size, size)((i, j) => hardwareSeq(size*i + j))
+
+
+      nodes.foreach(_.foreach(addVertex(_)))
+      nodes.foreach { i =>
+        val indexi = nodes.indexOf(i)
+        i.foreach { j =>
+          val indexj = nodes(indexi).indexOf(j)
+          if(indexi == 0 | indexj ==0) {
+            if(diagdirect == s"Positive") {
+              val output_ij = OutputNode[T](s"output_${indexi}_${indexj}")
+              addVertex(output_ij)
+              addEdge(nodes(indexi)(indexj) , output_ij , 2 , 0 , digdelay)
+            }
+            else {
+              val input_ij = InputNode[T](s"input_${indexi}_${indexj}")
+              addVertex(input_ij)
+              addEdge(input_ij , nodes(indexi)(indexj) , 0 , 2 , digdelay )
+            }
+              if(indexi == 0) {
+                setInput(nodes(indexi)(indexj) , 0 , s"input_down_$indexj")
+                if(indexj == 0) setInput(nodes(indexi)(indexj) , 1 , s"input_right_$indexi")
+                else addEdge(nodes(indexi)(indexj - 1) , nodes(indexi)(indexj) , 1 , 1 , 0)
+              }
+              else{
+                addEdge(nodes(indexi - 1)(indexj) , nodes(indexi)(indexj) , 0 , 0 , 0)
+                setInput(nodes(indexi)(indexj) , 1 , s"input_right_$indexi")
+              }
+          }
+          else {
+            addEdge(nodes(indexi - 1)(indexj) , nodes(indexi)(indexj) , 0 , 0 , 0)
+            addEdge(nodes(indexi)(indexj - 1) , nodes(indexi)(indexj) , 1 , 1 , 0)
+            if(diagdirect == s"Positive") addEdge(nodes(indexi)(indexj) , nodes(indexi - 1)(indexj - 1) , 2 , 2 , digdelay)
+            else addEdge(nodes(indexi -1)(indexj - 1) , nodes(indexi)(indexj) , 2 , 2 , digdelay)
+          }
+
+          if(indexi == size - 1 | indexj == size - 1) {
+            if(indexj == size - 1) {
+
+              if(diagdirect == s"Positive") {
+                val input_ij = InputNode[T](s"input_${indexi}_${indexj}")
+                addVertex(input_ij)
+                addEdge(input_ij , nodes(indexi)(indexj), 0 , 2 , digdelay)
+              }
+              else {
+                val output_ij = OutputNode[T](s"output_${indexi}_${indexj}")
+                addVertex(output_ij)
+                addEdge(nodes(indexi)(indexj), output_ij ,  2 , 0 , digdelay)
+              }
+              if(indexi == size - 1) setOutput(nodes(indexi)(indexj) , 0 , s"output_down_$indexj")
+              setOutput(nodes(indexi)(indexj) , 1 , s"output_right_$indexi")
+            }
+            else {
+
+              if(diagdirect == s"Positive") {
+                val input_ij = InputNode[T](s"input_${indexi}_${indexj}")
+                addVertex(input_ij)
+                addEdge(input_ij , nodes(indexi)(indexj), 0 , 2 , digdelay)
+              }
+              else {
+                val output_ij = OutputNode[T](s"output_${indexi}_${indexj}")
+                addVertex(output_ij)
+                addEdge(nodes(indexi)(indexj), output_ij ,  2 , 0 , digdelay)
+              }
+
+              setOutput(nodes(indexi)(indexj) , 0 , s"output_down_$indexj")
+            }
+          }
+        }
+      }
+      this
+    /*else {
+      nodes.foreach(_.foreach(addVertex(_)))
+      nodes.foreach { i =>
+        val indexi = nodes.indexOf(i)
+        i.foreach { j =>
+          val indexj = nodes(indexi).indexOf(j)
+
+          if(indexi == 0 | indexj ==0) {
+
+            if(diagdirect == s"Positive") {
+              val output_ij = OutputNode[T](s"output_($indexi , $indexj)")
+              addVertex(output_ij)
+              addEdge(nodes(indexi)(indexj) , output_ij , 2 , 0 , digdelay)
+            }
+            else {
+              val input_ij = InputNode[T](s"input_($indexi , $indexj)")
+              addVertex(input_ij)
+              addEdge(input_ij , nodes(indexi)(indexj) , 0 , 2 , digdelay )
+            }
+
+            if(indexi == 0) {
+              setInput(nodes(indexi)(indexj) , 0 , s"input_down_$indexj")
+            }
+            else{
+              addPath(nodes(indexi - 1)(indexj) >> nodes(indexi)(indexj))
+            }
+
+          }
+
+          else {
+            addPath(nodes(indexi - 1)(indexj) >> nodes(indexi)(indexj))
+            if(diagdirect == s"Positive") addEdge(nodes(indexi)(indexj) , nodes(indexi - 1)(indexj - 1) , 2 , 2 , digdelay)
+            else addEdge(nodes(indexi -1)(indexj - 1) , nodes(indexi)(indexj) , 2 , 2 , digdelay)
+          }
+
+          if(indexi == size - 1 | indexj == size - 1) {
+            if(indexj == size - 1) {
+
+              if(diagdirect == s"Positive") {
+                val input_ij = InputNode[T](s"input_($indexi , $indexj)")
+                addVertex(input_ij)
+                addEdge(input_ij , nodes(indexi)(indexj), 0 , 2 , digdelay)
+              }
+              else {
+                val output_ij = OutputNode[T](s"output_($indexi , $indexj)")
+                addVertex(output_ij)
+                addEdge(nodes(indexi)(indexj), output_ij ,  2 , 0 , digdelay)
+              }
+              if(indexi == size - 1) setOutput(nodes(indexi)(indexj) , 0 , s"output_down_$indexj")
+            }
+            else {
+
+              if(diagdirect == s"Positive") {
+                val input_ij = InputNode[T](s"input_($indexi , $indexj)")
+                addVertex(input_ij)
+                addEdge(input_ij , nodes(indexi)(indexj), 0 , 2 , digdelay)
+              }
+              else {
+                val output_ij = OutputNode[T](s"output_($indexi , $indexj)")
+                addVertex(output_ij)
+                addEdge(nodes(indexi)(indexj), output_ij ,  2 , 0 , digdelay)
+              }
+
+              setOutput(nodes(indexi)(indexj) , 0 , s"output_down_$indexj")
+
+            }
+          }
+        }
+      }
+      this
+    }
+    */
+
   }
 
   // properties

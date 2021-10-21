@@ -80,7 +80,7 @@ object Operators {
 
   def sIntCMulAdder(constant: Int, width: BitCount, delay: CyclesCount) = DSPHardware(
     (dataIns: Seq[SInt], _: GlobalCount) => Seq(Delay((dataIns(0) * constant).resized + dataIns(1), delay.toInt, init = dataIns.head.getZero)),
-    1,
+    2,
     Seq(width)
   )
 
@@ -91,6 +91,31 @@ object Operators {
       val foldedFunction = (dataIns: Seq[SInt], globalCount: GlobalCount) =>
         Seq(Delay((dataIns(0) * sintCoeffROM(constants, width)).resized + dataIns(1), delay.toInt, init = dataIns.head.getZero))
       val foldedHardware = DSPHardware(foldedFunction, 1, Seq(width))
+      GeneralNode(foldedHardware, s"foldFrom${sources.head.name}", delay, exeTime)
+    }
+  }
+
+  object TestSIntMulAdder {
+    def apply(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber): TestSIntCMulAdder = new TestSIntCMulAdder(name, width, delay, exeTime)
+  }
+
+  def testsIntMulAdder(width: BitCount, delay: CyclesCount) = DSPHardware(
+    (dataIns: Seq[SInt], _: GlobalCount) => {
+      val result = Delay((dataIns(0) * dataIns(1)).resized + dataIns(2), delay.toInt, init = dataIns.head.getZero)
+      Seq(dataIns(0) , dataIns(1) , result)
+    },
+    3,
+    Seq(width , width , width)
+  )
+
+  class TestSIntCMulAdder(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber)
+    extends GeneralNode(testsIntMulAdder(width, delay), name, delay, exeTime) with Foldable[SInt] {
+    override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = {
+      val foldedFunction = (dataIns: Seq[SInt], globalCount: GlobalCount) => {
+        val result = Delay((dataIns(0) * dataIns(1)).resized + dataIns(2), delay.toInt, init = dataIns.head.getZero)
+        Seq(dataIns(0) , dataIns(1) , result)
+      }
+      val foldedHardware = DSPHardware(foldedFunction, 3, Seq(width , width))
       GeneralNode(foldedHardware, s"foldFrom${sources.head.name}", delay, exeTime)
     }
   }

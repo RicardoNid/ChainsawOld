@@ -6,7 +6,7 @@ import spinal.core._
 
 object ShowGraphs {
   def main(args: Array[String]): Unit = {
-    println(paper1992OnFolding.fig12_a)
+    println(paper1992OnFolding.fig1)
   }
 }
 
@@ -154,7 +154,13 @@ object chap6 {
 object paper1992OnFolding {
 
   /*  -----------------------------------fig1_example1------------------------------------*/
+  val TestNodes = (0 until 16).map( i => TestSIntMulAdder(s"testnode_$i" , 10 bits , 2 cycles , 2 ns))
+  def fig1 = {
+    val dfg = DFGGraph[SInt]
+    dfg.addRegularGraph(TestNodes , "Positive" , 4)
+  }
 
+  def foldingSetfig1_example1 = Seq(Seq(TestNodes(0) , TestNodes(4) , TestNodes(8) , TestNodes(12)) , Seq(TestNodes(13) , TestNodes(1) , TestNodes(5) , TestNodes(9)) , Seq(TestNodes(10) , TestNodes(14) , TestNodes(2) , TestNodes(6)) , Seq(TestNodes(7) , TestNodes(11) , TestNodes(15) , TestNodes(3)))
 
   /*  -----------------------------------fig6_a_example3------------------------------------*/
 
