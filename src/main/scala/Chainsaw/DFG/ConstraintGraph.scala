@@ -21,7 +21,7 @@ import scala.util.{Failure, Success, Try}
 import scala.collection.JavaConversions._
 
 
-class ConstraintGraph[T <: Data]() extends DFGGraph[T]() {
+class ConstraintGraph[T]() extends DFGGraph[T]() {
 
   val referenceNode: GeneralNode[T] = VoidNode[T]()
   super.addVertex(referenceNode)
@@ -60,9 +60,9 @@ class ConstraintGraph[T <: Data]() extends DFGGraph[T]() {
 }
 
 object ConstraintGraph {
-  def apply[T <: Data](): ConstraintGraph[T] = new ConstraintGraph[T]()
+  def apply[T](): ConstraintGraph[T] = new ConstraintGraph[T]()
 
-  def apply[T <: Data](dfg: DFGGraph[T]): ConstraintGraph[T] = {
+  def apply[T](dfg: DFGGraph[T]): ConstraintGraph[T] = {
     val ret = ConstraintGraph[T]()
     ret.initFrom(dfg)
     ret

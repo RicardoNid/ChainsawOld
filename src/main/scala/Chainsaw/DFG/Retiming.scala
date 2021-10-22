@@ -19,7 +19,7 @@ import org.jgrapht.generate._
 
 import scala.collection.JavaConversions._
 
-class Retiming[T <: Data](val dfg: DFGGraph[T], solution: Map[DSPNode[T], Int]) extends Transform {
+class Retiming[T](val dfg: DFGGraph[T], solution: Map[DSPNode[T], Int]) extends Transform {
 
   def retimed: DFGGraph[T] = {
     val r = solution

@@ -4,7 +4,7 @@ import org.slf4j.LoggerFactory
 import spinal.core._
 import scala.math.floor
 
-class Folding[T <: Data](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with Foldable[T]]]) extends Transform {
+class Folding[T](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with Foldable[T]]]) extends Transform {
 
   val logger = LoggerFactory.getLogger(classOf[Folding[T]])
 

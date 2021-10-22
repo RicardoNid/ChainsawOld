@@ -28,6 +28,7 @@ object simpleFolding {
 }
 
 object implementingDFGs {
+  //
   def nestedDFG: DFGGraph[SInt] = {
     val butterfly = DFGGraph[SInt]
     val add0 = SIntAdder("add0", 10 bits, 1 cycles, 1 ns)
@@ -45,8 +46,8 @@ object implementingDFGs {
 
     println(butterfly)
     val whole = DFGGraph[SInt]
-    whole.addVertex(butterfly.asNode)
-    whole.addVertex(butterfly.asNode)
+    //    whole.addVertex(butterfly.asNode)
+    //    whole.addVertex(butterfly.asNode)
     whole
   }
 }
@@ -348,20 +349,21 @@ object paper1992OnFolding {
     fig14ACs.foreach(dfg.addVertex(_))
     dfg.addVertex(zero)
     // zero => adder
-    fig14ACs.zipWithIndex.foreach{ case (ac, i) => dfg.addEdge(zero(0), ac(2), 0, Seq(Schedule(i, 4)))}
+    fig14ACs.zipWithIndex.foreach { case (ac, i) => dfg.addEdge(zero(0), ac(2), 0, Seq(Schedule(i, 4))) }
     // carry => next adder
     dfg.addEdge(ac1(1), ac2(2), 0, Seq(Schedule(0, 4), Schedule(2, 4), Schedule(3, 4)))
     dfg.addEdge(ac2(1), ac3(2), 0, Seq(Schedule(0, 4), Schedule(1, 4), Schedule(3, 4)))
     dfg.addEdge(ac3(1), ac1(2), 1, Seq(Schedule(1, 4), Schedule(2, 4), Schedule(3, 4)))
     // input => adder
-    fig14ACs.zipWithIndex.foreach{ case (ac, i) => dfg.setInput(ac, 0, s"x_3k_$i")}
-    fig14ACs.zipWithIndex.foreach{ case (ac, i) => dfg.setInput(ac, 1, s"y_3k_$i")}
-    fig14ACs.zipWithIndex.foreach{ case (ac, i) => dfg.setOutput(ac, 0, s"s_3k_$i")}
+    fig14ACs.zipWithIndex.foreach { case (ac, i) => dfg.setInput(ac, 0, s"x_3k_$i") }
+    fig14ACs.zipWithIndex.foreach { case (ac, i) => dfg.setInput(ac, 1, s"y_3k_$i") }
+    fig14ACs.zipWithIndex.foreach { case (ac, i) => dfg.setOutput(ac, 0, s"s_3k_$i") }
 
     dfg
   }
 
   def foldingSet_example13 = Seq(Seq(ac1, ac2, ac3))
+
   def foldingSet14_a_example13_v2 = Seq(Seq(ac2, ac3, ac1))
 }
 

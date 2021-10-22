@@ -12,13 +12,12 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable
 import scala.language.postfixOps
 
-
 /** Main class of DFG model
  *
  * @tparam T
  * learn more: [[]]
  */
-class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
+class DFGGraph[T]() extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
 
   implicit def currentDFG: DFGGraph[T] = this
 
@@ -173,7 +172,8 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
 
   def criticalPathLength: Double = new CriticalPathAlgo(this).criticalPathLength
 
-  def impl(dataIns: Seq[T])(implicit holderProvider: BitCount => T): Seq[T] = new DFGImpl(this).impl(dataIns)
+  def impl[THard <: Data](dataIns: Seq[THard])(implicit holderProvider: BitCount => THard): Seq[THard] =
+    new DFGImpl(this.asInstanceOf[DFGGraph[THard]])(holderProvider).impl(dataIns)
 
   // feasibilityConstraintGraph
   def fcg: ConstraintGraph[T] = {
@@ -195,12 +195,12 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
       s"------end------\n"
 
   // TODO: consider the exeTime of a subgraph, more test on this
-  def asNode(implicit holderProvider: BitCount => T): GeneralNode[T] = {
-    require(isForwarding && isHomogeneous)
-    val fakeImpl = (dataIns: Seq[T], _: GlobalCount) => impl(dataIns)
-    val hardware = DSPHardware(fakeImpl, inputNodes.size, Seq.fill(outputNodes.size)(-1 bits))
-    GeneralNode(hardware, "subgraph", latency cycles, 1 ns)
-  }
+//  def asNode(implicit holderProvider: BitCount => T): GeneralNode[T] = {
+//    require(isForwarding && isHomogeneous)
+//    val fakeImpl = (dataIns: Seq[T], _: GlobalCount) => impl(dataIns)
+//    val hardware = DSPHardware(fakeImpl, inputNodes.size, Seq.fill(outputNodes.size)(-1 bits))
+//    GeneralNode(hardware, "subgraph", latency cycles, 1 ns)
+//  }
 
   /** Besides nodes and edges, we clone the weights
    */
@@ -212,5 +212,5 @@ class DFGGraph[T <: Data]() extends DirectedWeightedPseudograph[DSPNode[T], DSPE
 }
 
 object DFGGraph {
-  def apply[T <: Data](): DFGGraph[T] = new DFGGraph()
+  def apply[T](): DFGGraph[T] = new DFGGraph()
 }

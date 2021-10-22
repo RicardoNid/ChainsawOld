@@ -30,7 +30,11 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
   def implVertex(target: DSPNode[T], signalMap: Map[DSPNode[T], Seq[T]])(implicit globalCount: GlobalCount): Seq[T] = {
     val dataIns: Seq[Seq[DSPEdge[T]]] = target.incomingEdges.groupBy(_.inOrder).toSeq.sortBy(_._1).map(_._2)
     val dataInsOnPorts = dataIns.zipWithIndex.map { case (dataInsOnePort, i) => // combine dataIns at the same port by a mux
-      val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.hardware(signalMap(edge.source), edge.weight.toInt).apply(edge.outOrder))
+      //      val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.hardware(signalMap(edge.source), edge.weight.toInt).apply(edge.outOrder))
+      val dataCandidates: Seq[T] = dataInsOnePort.map { edge =>
+        val dataIn = signalMap(edge.source)(edge.outOrder)
+        Delay(dataIn, edge.weight.toInt, init = dataIn.getZero)
+      }
       val schedulesOnePort: Seq[Seq[Schedule]] = dataInsOnePort.map(_.schedules)
       val mux = DFGMUX[T](schedulesOnePort)
       val succeed = Try(mux.impl(dataCandidates, globalLcm))
@@ -47,14 +51,15 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
   // implement a recursive graph
   def implRecursive: Seq[T] => Seq[T] = (dataIns: Seq[T]) => {
     logger.info("implementing DFG by algo for recursive DFG")
-    val signalMap: Map[DSPNode[T], Seq[T]] = vertexSeq.map{node => // a map to connect nodes with their outputs(placeholder)
+    val signalMap: Map[DSPNode[T], Seq[T]] = vertexSeq.map { node => // a map to connect nodes with their outputs(placeholder)
       printlnRed(s"vertex $node: ${node.hardware.outWidths.mkString(" ")}")
-      node -> node.hardware.outWidths.map(i => if (i.value == -1) holderProvider(-1 bits) else holderProvider(i))}.toMap
+      node -> node.hardware.outWidths.map(i => if (i.value == -1) holderProvider(-1 bits) else holderProvider(i))
+    }.toMap
 
     implicit val globalCount: GlobalCount = initGlobalCount()
 
     inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap(node).head := bits }
-    vertexSeq.diff(inputNodes).foreach{target =>
+    vertexSeq.diff(inputNodes).foreach { target =>
       val rets = implVertex(target, signalMap)
       val placeholders = signalMap(target)
       placeholders.zip(rets).foreach { case (placeholder, ret) => placeholder := ret.resized }
@@ -87,6 +92,6 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
     outputNodes.flatMap(signalMap(_))
   }
 
-  def impl: Seq[T] => Seq[T] = if(dfg.isRecursive) implRecursive else implForwarding
+  def impl: Seq[T] => Seq[T] = if (dfg.isRecursive) implRecursive else implForwarding
 
 }

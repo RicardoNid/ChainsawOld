@@ -10,9 +10,9 @@ import Chainsaw.dspTest._
 
 import scala.collection.mutable.ArrayBuffer
 
-case class DSPHardware[T <: Data](impl: (Seq[T], GlobalCount) => Seq[T], inDegree: Int, outWidths: Seq[BitCount])
+case class DSPHardware[T](impl: (Seq[T], GlobalCount) => Seq[T], inDegree: Int, outWidths: Seq[BitCount])
 
-abstract class DSPNode[T <: Data] {
+abstract class DSPNode[T] {
   val hardware: DSPHardware[T]
   val name: String
   val delay: Int
@@ -25,7 +25,7 @@ abstract class DSPNode[T <: Data] {
 
 /** Providing basic constructors
  */
-class GeneralNode[T <: Data](implp: DSPHardware[T], namep: String, delayp: CyclesCount, exeTimep: TimeNumber) extends DSPNode[T] {
+class GeneralNode[T](implp: DSPHardware[T], namep: String, delayp: CyclesCount, exeTimep: TimeNumber) extends DSPNode[T] {
   override val hardware: DSPHardware[T] = implp
   override val name: String = namep // TODO: implement reflection
   override val delay: Int = delayp.toInt
@@ -36,18 +36,18 @@ class GeneralNode[T <: Data](implp: DSPHardware[T], namep: String, delayp: Cycle
 }
 
 object GeneralNode {
-  def apply[T <: Data](hardware: DSPHardware[T], namep: String, delayp: CyclesCount, exeTimep: TimeNumber): GeneralNode[T] = new GeneralNode(hardware, namep, delayp, exeTimep)
+  def apply[T](hardware: DSPHardware[T], namep: String, delayp: CyclesCount, exeTimep: TimeNumber): GeneralNode[T] = new GeneralNode(hardware, namep, delayp, exeTimep)
 
-  def apply[T <: Data](namep: String, delayp: CyclesCount, exeTimep: TimeNumber): GeneralNode[T] = new GeneralNode(Operators.Line[T](), namep, delayp, exeTimep)
+  def apply[T](namep: String, delayp: CyclesCount, exeTimep: TimeNumber): GeneralNode[T] = new GeneralNode(Operators.Line[T](), namep, delayp, exeTimep)
 
-  def apply[T <: Data](namep: String, delayp: CyclesCount, exeTimep: TimeNumber, width: BitCount): GeneralNode[T] = new GeneralNode(Operators.Line[T](width), namep, delayp, exeTimep)
+  def apply[T](namep: String, delayp: CyclesCount, exeTimep: TimeNumber, width: BitCount): GeneralNode[T] = new GeneralNode(Operators.Line[T](width), namep, delayp, exeTimep)
 }
 
 object VoidNode {
-  def apply[T <: Data](name: String = "void") = GeneralNode[T](name, delayp = 0 cycles, exeTimep = 0 ns)
+  def apply[T](name: String = "void") = GeneralNode[T](name, delayp = 0 cycles, exeTimep = 0 ns)
 }
 
-class InputNode[T <: Data](namev: String) extends DSPNode[T] {
+class InputNode[T](namev: String) extends DSPNode[T] {
   override val hardware = Operators.Line[T]()
   override val name: String = namev
   override val delay: Int = 0
@@ -57,10 +57,10 @@ class InputNode[T <: Data](namev: String) extends DSPNode[T] {
 }
 
 object InputNode {
-  def apply[T <: Data](namev: String): InputNode[T] = new InputNode(namev)
+  def apply[T](namev: String): InputNode[T] = new InputNode(namev)
 }
 
-class OutputNode[T <: Data](namev: String) extends DSPNode[T] {
+class OutputNode[T](namev: String) extends DSPNode[T] {
   override val hardware = Operators.Line[T]()
   override val name: String = namev
   override val delay: Int = 0
@@ -70,10 +70,10 @@ class OutputNode[T <: Data](namev: String) extends DSPNode[T] {
 }
 
 object OutputNode {
-  def apply[T <: Data](namev: String): OutputNode[T] = new OutputNode(namev)
+  def apply[T](namev: String): OutputNode[T] = new OutputNode(namev)
 }
 
-class ConstantNode[T <: Data](implp: DSPHardware[T], namep: String) extends DSPNode[T] {
+class ConstantNode[T](implp: DSPHardware[T], namep: String) extends DSPNode[T] {
   override val hardware: DSPHardware[T] = implp
   override val name: String = namep // TODO: implement reflection
   override val delay: Int = 0
@@ -83,5 +83,5 @@ class ConstantNode[T <: Data](implp: DSPHardware[T], namep: String) extends DSPN
 }
 
 object ConstantNode {
-  def apply[T <: Data](implp: DSPHardware[T], namep: String): ConstantNode[T] = new ConstantNode(implp, namep)
+  def apply[T](implp: DSPHardware[T], namep: String): ConstantNode[T] = new ConstantNode(implp, namep)
 }

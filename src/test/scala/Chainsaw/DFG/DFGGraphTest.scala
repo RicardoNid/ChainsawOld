@@ -1,6 +1,6 @@
 package Chainsaw.DFG
 
-import Chainsaw.DFG.DFGTestUtil.{verifyFolding, verifyFunctionalConsistency, verifyUnfolding}
+import Chainsaw.DFG.DFGTestUtil.{verifyFolding, verifyUnfolding}
 import Chainsaw._
 import org.scalatest.flatspec.AnyFlatSpec
 import spinal.core._

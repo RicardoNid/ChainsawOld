@@ -12,7 +12,7 @@ package object DFG {
   implicit val bitsProvider = (width: BitCount) => if (width.value >= 1) Bits(width) else Bits()
   implicit val complexProvider = (width: BitCount) => ComplexNumber(1, width.value - 2)
 
-  implicit class nodeUtils[T <: Data](node: DSPNode[T]) {
+  implicit class nodeUtils[T](node: DSPNode[T]) {
     def >=>(delay: Double) = DSPAssignment(node, delay, node)
 
     def >>(delay: Double) = DSPPath(ArrayBuffer(node), ArrayBuffer(delay))
@@ -41,11 +41,11 @@ package object DFG {
 
   }
 
-  implicit class nodesUtils[T <: Data](nodes: Seq[DSPNode[T]]) {
+  implicit class nodesUtils[T](nodes: Seq[DSPNode[T]]) {
     def >=>(delays: Seq[Double]) = DSPAssignment(nodes, delays, nodes.head)
   }
 
-  implicit class EdgeProperties[T <: Data](edge: DSPEdge[T])(implicit dfg: DFGGraph[T]) {
+  implicit class EdgeProperties[T](edge: DSPEdge[T])(implicit dfg: DFGGraph[T]) {
     def target = dfg.getEdgeTarget(edge)
 
     def source = dfg.getEdgeSource(edge)
@@ -63,7 +63,7 @@ package object DFG {
     def withSchedules(schedules: Seq[Schedule]) = DefaultDelay[T](schedules, edge.outOrder, edge.inOrder)
   }
 
-  implicit class NodeProperties[T <: Data](node: DSPNode[T])(implicit dfg: DFGGraph[T]) {
+  implicit class NodeProperties[T](node: DSPNode[T])(implicit dfg: DFGGraph[T]) {
 
     def outgoingEdges = dfg.outgoingEdgesOf(node).toSeq
 
@@ -75,6 +75,6 @@ package object DFG {
 
   }
 
-  implicit def defaultOrder[T <: Data](node: DSPNode[T]): DSPNodeWithOrder[T] = DSPNodeWithOrder(node, 0)
+  implicit def defaultOrder[T](node: DSPNode[T]): DSPNodeWithOrder[T] = DSPNodeWithOrder(node, 0)
 
 }

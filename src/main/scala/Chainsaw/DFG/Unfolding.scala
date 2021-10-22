@@ -3,7 +3,7 @@ package Chainsaw.DFG
 import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 
-class Unfolding[T <: Data](dfg: DFGGraph[T], unfoldingFactor: Int) {
+class Unfolding[T](dfg: DFGGraph[T], unfoldingFactor: Int) {
 
   val logger: Logger = LoggerFactory.getLogger("unfolding procedure")
 

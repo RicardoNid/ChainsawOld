@@ -11,7 +11,7 @@ object Operators {
     def asDSPNode(name: String, delay: CyclesCount, exeTime: TimeNumber) = GeneralNode(hardware, name, delay, exeTime)
   }
 
-  def Line[T <: Data](width: BitCount = -1 bits) = DSPHardware(
+  def Line[T](width: BitCount = -1 bits) = DSPHardware(
     impl = (dataIns: Seq[T], _: GlobalCount) => dataIns,
     inDegree = 1,
     outWidths = Seq(width)

@@ -9,7 +9,7 @@ import scala.collection.mutable.ArrayBuffer
 
 /** Create Gd from dfg
  */
-class CriticalPathAlgo[T <: Data](dfg: DFGGraph[T]) {
+class CriticalPathAlgo[T](dfg: DFGGraph[T]) {
 
   // building the CriticalPathGraph for following functions
   val graph = dfg.clone().asInstanceOf[DFGGraph[T]]
