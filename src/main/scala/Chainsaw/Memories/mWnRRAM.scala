@@ -1,10 +1,9 @@
 package Chainsaw.Memories
 
-import collection.JavaConversions._
 import Chainsaw._
-import xilinx._
 import spinal.core._
 import spinal.lib._
+import xilinx._
 
 object mWnRMode extends Enumeration {
   type mWnRMode = Value

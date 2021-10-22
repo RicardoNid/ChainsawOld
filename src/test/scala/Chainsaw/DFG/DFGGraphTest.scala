@@ -45,6 +45,8 @@ class DFGGraphTest extends AnyFlatSpec {
   "the folding algorithm" should "fold correctly on chap6 fig6_3" in {
     val dfg = chap6.fig6_3
     val foldingSet = chap6.foldingSet
+    val foldedDFG = new Folding(dfg, foldingSet).folded
+    printlnGreen(new CriticalPathAlgo(foldedDFG).delaysCount)
     DFGTestUtil.verifyFolding(dfg, foldingSet, "chap6_fig6_3")
   }
 
@@ -128,16 +130,10 @@ class DFGGraphTest extends AnyFlatSpec {
     assert(algo.iterationBound == 2.0)
   }
 
-  "the unfolding algorithm" should "work on fig5.2" in {
-    val dfg = chap5.fig5_2
-    val algo = new Unfolding(dfg, 10)
-    printlnGreen(new CriticalPathAlgo(dfg).iterationBound)
-    val unfoldedDFG = algo.unfolded
-    printlnGreen(new CriticalPathAlgo(unfoldedDFG).iterationBound)
+  "the unfolding algorithm" should "work on fig5.2" in DFGTestUtil.verifyUnfolding(chap5.fig5_2, 2)
 
-    println(unfoldedDFG)
-    DFGTestUtil.verifyFunctionalConsistency(dfg, unfoldedDFG, SInt(10 bits), 10, 0)
-  }
+//  it should "work on fig5.2 with innder delay" in DFGTestUtil.verifyUnfolding(chap5.fig5_2_inner_delay, 2)
+
 
   it should "work on fig5.12" in {
     val dfg = chap5.fig5_12

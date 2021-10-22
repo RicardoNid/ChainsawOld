@@ -64,16 +64,28 @@ object chap2 {
 }
 
 object chap5 {
-  def fig5_2 = {
 
-    val Seq(a, b, d) = Seq("a", "b", "d").map(name => sintKeep(10 bits).asDSPNode(name, 0 cycles, 1 ns))
-    val c = sIntAdder(10 bits, 0 cycles).asDSPNode("c", 0 cycles, 1 ns)
-    printlnGreen("using fig 5.2")
-    val dfg = DFGGraph[SInt]
-    dfg.addPath(a >> c >> 9 >> d >> c)
-    dfg.addPath(c >> b)
-    dfg.setInput(a)
-    dfg.setOutput(b)
+  val add = SIntAdder("add", 10 bits, 0 cycles, 1 ns)
+  val add_inner_delay = SIntAdder("add0", 10 bits, 8 cycles, 1 ns)
+  val cmult = SIntCMult("cmult", 2, 10 bits, 0 cycles, 1 ns)
+
+  def fig5_2 = {
+    val dfg = DFGGraph[SInt]()
+    dfg.addVertex(add)
+    dfg.addVertex(cmult)
+    dfg.setInput(add)
+    dfg.setOutput(add)
+    dfg.addPath(add >> 9 >> cmult >> add)
+    dfg
+  }
+
+  def fig5_2_inner_delay = {
+    val dfg = DFGGraph[SInt]()
+    dfg.addVertex(add_inner_delay)
+    dfg.addVertex(cmult)
+    dfg.setInput(add_inner_delay)
+    dfg.setOutput(add_inner_delay)
+    dfg.addPath(add_inner_delay >> 1 >> cmult >> add_inner_delay)
     dfg
   }
 

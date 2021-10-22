@@ -36,7 +36,6 @@ object DSPAssignment {
   def apply[T <: Data](sources: DSPNode[T], delay: Double, target: DSPNode[T]): DSPAssignment[T] = new DSPAssignment(Seq(sources), Seq(delay), target)
 }
 
-
 /** A path containing interleaving nodes and edge
  *
  * @example a >> 1 >> b >> 2 >> c, a >> b equals a >> 0 >> b
@@ -59,6 +58,4 @@ case class DSPConstraint[T <: Data](target: DSPNode[T], source: DSPNode[T], valu
   def <=(value: Int) = DSPConstraint(target, source, value = value)
 }
 
-case class DSPNodeWithOrder[T <: Data](node: DSPNode[T], order: Int) {
-
-}
+case class DSPNodeWithOrder[T <: Data](node: DSPNode[T], order: Int)

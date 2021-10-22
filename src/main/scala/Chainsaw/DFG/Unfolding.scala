@@ -5,10 +5,9 @@ import spinal.core._
 
 class Unfolding[T <: Data](dfg: DFGGraph[T], unfoldingFactor: Int) {
 
-  val logger: Logger = LoggerFactory.getLogger(classOf[Unfolding[T]])
+  val logger: Logger = LoggerFactory.getLogger("unfolding procedure")
 
-  // TODO: considering fold a dfg by 2 and then unfold it by 4 - should this be supported?
-  // currently, we do not  allow this
+  // TODO: considering fold a dfg by 2 and then unfold it by 4 - should this be supported? currently, we do not  allow this
   if (!dfg.hasNoParallelEdge) require(dfg.globalLcm % unfoldingFactor == 0) // when there's mux and we use unfolding
 
   /** Preprocess the dfg to separate delay and mux
@@ -41,7 +40,7 @@ class Unfolding[T <: Data](dfg: DFGGraph[T], unfoldingFactor: Int) {
     val unfoldedDFG = DFGGraph[T]()
     val nodeMap = preprocessedDFG.vertexSeq.map(vertex => vertex -> (0 until unfoldingFactor).map(i => vertex.copy(s"${vertex.name}_unfolded_$i"))).toMap
     preprocessedDFG.foreachEdge { edge =>
-      val w = edge.weightWithSource
+      val w = edge.weightWithSource // TODO: when inner delay = 3, edge delay = 1, N = 2?
       val sources = nodeMap(edge.source)
       val targets = nodeMap(edge.target)
 
@@ -51,7 +50,7 @@ class Unfolding[T <: Data](dfg: DFGGraph[T], unfoldingFactor: Int) {
           val (source, target) = (sources(i), targets(j)) // determining new connection
           unfoldedDFG.addVertex(source)
           unfoldedDFG.addVertex(target)
-          val unfoldedDelay = (i + w) / unfoldingFactor // determining new delay
+          val unfoldedDelay = ((i + w) / unfoldingFactor) - source.delay // determining new delay
           unfoldedDFG.addEdge(source(edge.outOrder), target(edge.inOrder), unfoldedDelay, NoMUX())
         }
       } else { // for edges with MUX

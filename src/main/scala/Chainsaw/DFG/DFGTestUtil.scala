@@ -50,12 +50,7 @@ object DFGTestUtil {
 
     logger.info(s"\ninput should happen when counter value is $inputSchedule, output should happen when counter value is $outputSchedule")
 
-    val transformedLatency = if (speedUp < 0) {
-      val basic = (original.latency * -speedUp) + outputSchedule.time - inputSchedule.time
-      if (basic < 0) basic + transformed.globalLcm else basic
-    } else {
-      original.latency
-    } + delay
+    val transformedLatency =  (if (speedUp < 0) original.latency * -speedUp else original.latency / speedUp) + delay
 
     /** Describe the simulation procedure
      *
@@ -128,16 +123,22 @@ object DFGTestUtil {
     printlnGreen(transFormedResults.mkString(" "))
     printlnGreen(originalResults.diff(transFormedResults))
 
-    assert(originalResults.dropWhile(_ == 0).size > 10)
-    assert(transFormedResults.dropWhile(_ == 0).size > 10)
+    assert(originalResults.size > 10)
+    assert(transFormedResults.size > 10)
     // FIXME: this is a test after shifting, finally, you should implement a test with exact timing
-    assert(originalResults.dropWhile(_ == 0).zip(transFormedResults.dropWhile(_ == 0)).forall { case (ori, trans) => ori == trans })
+    assert(originalResults.zip(transFormedResults).forall { case (ori, trans) => ori == trans })
   }
 
-  def verifyFolding(original: DFGGraph[SInt], foldingSets: Seq[Seq[DSPNode[SInt] with Foldable[SInt]]], name:String = null) = {
-    val foldedDFG = new Folding(original, foldingSets).folded
+  def verifyFolding(original: DFGGraph[SInt], foldingSets: Seq[Seq[DSPNode[SInt] with Foldable[SInt]]], name: String = null) = {
+    val algo = new Folding(original, foldingSets)
+    val foldedDFG = algo.folded
     val N = foldingSets.head.size
-    verifyFunctionalConsistency(original, foldedDFG, HardType(SInt(10 bits)), -N, 0, name = name)
+    verifyFunctionalConsistency(original, foldedDFG, HardType(SInt(10 bits)), -N, delay = algo.latencyTrans.shift, name = name)
+  }
+
+  def verifyUnfolding(original: DFGGraph[SInt], unfoldingFactor: Int, name: String = null) = {
+    val foldedDFG = new Unfolding(original, unfoldingFactor).unfolded
+    verifyFunctionalConsistency(original, foldedDFG, HardType(SInt(10 bits)), unfoldingFactor, 0, name = name)
   }
 
 }
