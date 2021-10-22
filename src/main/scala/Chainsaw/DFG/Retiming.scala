@@ -36,5 +36,5 @@ class Retiming[T](val dfg: DFGGraph[T], solution: Map[DSPNode[T], Int]) extends 
     retimedDFG
   }
 
-  override def latencyTrans: LatencyTrans = LatencyTrans(1, solution(dfg.outputNodes.head) - solution(dfg.inputNodes.head))
+  override def latencyTransformations: Seq[LatencyTrans] = Seq(LatencyTrans(1, solution(dfg.outputNodes.head) - solution(dfg.inputNodes.head)))
 }

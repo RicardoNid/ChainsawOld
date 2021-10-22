@@ -21,8 +21,7 @@ import scala.collection.mutable.ArrayBuffer
 /** A linear transformation on latency, x => scale * x + shift
  */
 case class LatencyTrans(scale: Int, shift: Int) {
-  // cascading linear transform
-  def +(that: LatencyTrans) = LatencyTrans(scale * that.scale, shift * that.scale + that.shift)
+  def trans(original: Int) =  scale * original + shift
 }
 
 case class DSPAssignment[T](sources: Seq[DSPNode[T]], delays: Seq[Double], var target: DSPNode[T]) {

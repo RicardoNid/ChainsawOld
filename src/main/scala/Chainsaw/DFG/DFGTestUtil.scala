@@ -22,7 +22,7 @@ object DFGTestUtil {
    * @tparam SInt
    */
   def verifyFunctionalConsistency(original: DFGGraph[SInt], transformed: DFGGraph[SInt],
-                                  elementType: HardType[SInt], speedUp: Int, delay: Int, testLength: Int = 50,
+                                  elementType: HardType[SInt], speedUp: Int, latencyTransformations: Seq[LatencyTrans], testLength: Int = 50,
                                   name: String = null) = {
 
     val logger = LoggerFactory.getLogger("FunctionalConsistencyLogger")
@@ -50,7 +50,8 @@ object DFGTestUtil {
 
     logger.info(s"\ninput should happen when counter value is $inputSchedule, output should happen when counter value is $outputSchedule")
 
-    val transformedLatency =  (if (speedUp < 0) original.latency * -speedUp else original.latency / speedUp) + delay
+    var transformedLatency = original.latency
+    latencyTransformations.foreach(trans => transformedLatency = trans.trans(transformedLatency))
 
     /** Describe the simulation procedure
      *
@@ -133,12 +134,13 @@ object DFGTestUtil {
     val algo = new Folding(original, foldingSets)
     val foldedDFG = algo.folded
     val N = foldingSets.head.size
-    verifyFunctionalConsistency(original, foldedDFG, HardType(SInt(10 bits)), -N, delay = algo.latencyTrans.shift, name = name)
+    verifyFunctionalConsistency(original, foldedDFG, HardType(SInt(10 bits)), -N, algo.latencyTransformations, name = name)
   }
 
   def verifyUnfolding(original: DFGGraph[SInt], unfoldingFactor: Int, name: String = null) = {
-    val foldedDFG = new Unfolding(original, unfoldingFactor).unfolded
-    verifyFunctionalConsistency(original, foldedDFG, HardType(SInt(10 bits)), unfoldingFactor, 0, name = name)
+    val algo = new Unfolding(original, unfoldingFactor)
+    val unfoldedDFG = algo.unfolded
+    verifyFunctionalConsistency(original, unfoldedDFG, HardType(SInt(10 bits)), unfoldingFactor, algo.latencyTransformations, name = name)
   }
 
 }

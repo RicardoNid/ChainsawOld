@@ -81,10 +81,10 @@ class Folding[T](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with Foldable[
     foldedDFG
   }
 
-  override def latencyTrans: LatencyTrans = {
+  override def latencyTransformations: Seq[LatencyTrans] = {
     implicit val sourceDFG: DFGGraph[T] = folded // TODO: avoid rerun this
     val inputSchedule: Int = folded.inputNodes.head.outgoingEdges.map(_.schedules.map(_.time)).flatten.min
     val outputSchedule: Int = folded.outputNodes.head.incomingEdges.head.schedules.head.time
-    new Retiming(dfg, solveRetiming()).latencyTrans +LatencyTrans(N, outputSchedule - inputSchedule)
+    new Retiming(dfg, solveRetiming()).latencyTransformations :+ LatencyTrans(N, outputSchedule - inputSchedule)
   }
 }

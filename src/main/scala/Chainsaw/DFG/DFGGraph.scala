@@ -65,6 +65,8 @@ class DFGGraph[T]() extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](
     removeEdge(e)
   }
 
+  def addVertices(vertices: DSPNode[T]*) = vertices.foreach(addVertex)
+
   @deprecated // mark the original addEdge as deprecated to ask the developer/user to use methods we provide
   override def addEdge(sourceVertex: DSPNode[T], targetVertex: DSPNode[T], e: DSPEdge[T]): Boolean = super.addEdge(sourceVertex, targetVertex, e)
 
@@ -195,12 +197,12 @@ class DFGGraph[T]() extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](
       s"------end------\n"
 
   // TODO: consider the exeTime of a subgraph, more test on this
-//  def asNode(implicit holderProvider: BitCount => T): GeneralNode[T] = {
-//    require(isForwarding && isHomogeneous)
-//    val fakeImpl = (dataIns: Seq[T], _: GlobalCount) => impl(dataIns)
-//    val hardware = DSPHardware(fakeImpl, inputNodes.size, Seq.fill(outputNodes.size)(-1 bits))
-//    GeneralNode(hardware, "subgraph", latency cycles, 1 ns)
-//  }
+  //  def asNode(implicit holderProvider: BitCount => T): GeneralNode[T] = {
+  //    require(isForwarding && isHomogeneous)
+  //    val fakeImpl = (dataIns: Seq[T], _: GlobalCount) => impl(dataIns)
+  //    val hardware = DSPHardware(fakeImpl, inputNodes.size, Seq.fill(outputNodes.size)(-1 bits))
+  //    GeneralNode(hardware, "subgraph", latency cycles, 1 ns)
+  //  }
 
   /** Besides nodes and edges, we clone the weights
    */
