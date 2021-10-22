@@ -21,7 +21,7 @@ class DFGGraph[T]() extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](
 
   implicit def currentDFG: DFGGraph[T] = this
 
-  val logger: Logger = LoggerFactory.getLogger(classOf[DFGGraph[T]])
+  val logger: Logger = LoggerFactory.getLogger("editing DFG")
 
   @deprecated override def vertexSet(): util.Set[DSPNode[T]] = super.vertexSet()
 
@@ -86,7 +86,8 @@ class DFGGraph[T]() extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](
 
   // Add edge into basicDFG(MISO, no MUX)
   def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double, schedules: Seq[Schedule]): Unit = {
-    if (source.hardware.outWidths.size > 1) logger.warn("adding edge to MIMO node with no specified port number")
+    if (source.hardware.outWidths.size > 1) logger.warn(s"adding edge to MIMO node $source with no specified port number")
+    if (target.hardware.inDegree > 1) logger.warn(s"adding to MIMO node $target with no specified port number")
     addEdge(source, target, 0, target.incomingEdges.size, delay, schedules)
   }
 

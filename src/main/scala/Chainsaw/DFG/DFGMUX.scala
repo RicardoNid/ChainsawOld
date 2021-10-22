@@ -45,7 +45,7 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
           val occupationsOneSource = schedulesOneSource.flatMap(occupationOf)
           val actualOccupations: Seq[Int] = (0 until multiple).flatMap(i => occupationsOneSource.map(_ + i * localLcm))
           actualOccupations.foreach(is(_)(ret := bits.resized))
-          logger.info(s"implementing MUX, ${occupationsOneSource.mkString(" ")} / $localLcm")
+          logger.debug(s"implementing MUX, ${occupationsOneSource.mkString(" ")} / $localLcm")
         }
 
         //        if (!isFull || !isPow2(globalLcm)) default(ret.assignDontCare()) // FIXME: this should work, why?

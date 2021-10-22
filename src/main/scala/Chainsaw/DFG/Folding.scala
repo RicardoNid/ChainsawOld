@@ -1,21 +1,20 @@
 package Chainsaw.DFG
 
 import org.slf4j.LoggerFactory
-import spinal.core._
 import scala.math.floor
 
 class Folding[T](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with Foldable[T]]]) extends Transform {
-
   val logger = LoggerFactory.getLogger(classOf[Folding[T]])
 
+  // preparing context for folding
   val N = foldingSet.head.length
-  require(foldingSet.forall(_.size == N), "folding set should have the same folding factor")
-  // node -> folding order of the node
+  require(foldingSet.forall(_.size == N), "folding set should have the same folding factor on each node")
+  // map node -> folding order of the node
   val foldingOrderOf: Map[DSPNode[T], Int] = foldingSet.flatMap { set => set.zipWithIndex.filterNot(_._1 == null) map { case (node, i) => node -> i } }.toMap
-  // node -> the device it belongs(folded to)
-  val devices: Seq[DSPNode[T]] = foldingSet.map { nodes =>
+  val devices: Seq[DSPNode[T]] = foldingSet.map { nodes => // map node -> the device it belongs(folded to)
     val nonEmptyNode = nodes.filterNot(_ == null).head // TODO: better solution
-    val filledNodes = nodes.map(node => if (node != null) node else nonEmptyNode) // replace null by an arbitrary nonempty node
+    // replace null by an arbitrary nonempty node, which should have no influence on the function as result of null operation won't be used
+    val filledNodes = nodes.map(node => if (node != null) node else nonEmptyNode)
     filledNodes.head.fold(filledNodes)
   }
   val deviceOf: Map[DSPNode[T], DSPNode[T]] = foldingSet.zip(devices).flatMap { case (nodes, device) => nodes.map(_ -> device) }.toMap
@@ -28,18 +27,18 @@ class Folding[T](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with Foldable[
   def foldedDelay(edge: DSPEdge[T])(implicit dfg: DFGGraph[T]): Int = {
     val U = edge.source
     val V = edge.target
-    val u = if (U.isIO) foldingOrderOf(V) else foldingOrderOf(U)
-    val v = if (V.isIO) foldingOrderOf(U) else foldingOrderOf(V)
+    val u = if (U.isIO) foldingOrderOf(V) else foldingOrderOf(U) // input follows its target
+    val v = if (V.isIO) foldingOrderOf(U) else foldingOrderOf(V) // output follows its source
     val w = edge.weightWithSource
     val Pu = if (U.isIO) 0 else deviceOf(U).delay
-    //    logger.info(s"calculating delay: $N * $w - $Pu + $v - $u = ${N * w - Pu + v - u}")
+    logger.debug(s"calculating delay: $N * $w - $Pu + $v - $u = ${N * w - Pu + v - u}")
     N * w - Pu + v - u
   }
 
-  def solveRetiming(): Map[DSPNode[T], Int] = {
+  lazy val solveRetiming: Map[DSPNode[T], Int] = {
     implicit val sourceDFG: DFGGraph[T] = dfg
     val cg = ConstraintGraph(dfg)
-    logger.info(s"original folded delays ${dfg.edgeSeq.map(foldedDelay).mkString(" ")}")
+    logger.debug(s"original folded delays ${dfg.edgeSeq.map(foldedDelay).mkString(" ")}")
     dfg.foreachEdge { edge => // for each edge, add the folding equation constraint as extra constraint
       val U = edge.source
       val V = edge.target
@@ -49,15 +48,16 @@ class Folding[T](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with Foldable[
     cg.getSolution
   }
 
-  def retimed = dfg.retimed(solveRetiming())
+  lazy val retimed = dfg.retimed(solveRetiming)
 
-  def folded = {
-    logger.info(s"original:\n$dfg")
-    val solution = solveRetiming()
-    logger.info(s"retiming solution:\n${solution.mkString(" ")}")
+  lazy val folded = {
+    logger.info("start folding")
+    logger.debug(s"original:\n$dfg")
+    val solution = solveRetiming
+    logger.debug(s"retiming solution:\n${solution.mkString(" ")}")
     implicit val retimedDFG: DFGGraph[T] = dfg.retimed(solution)
-    logger.info(s"retimed dfg:\n$retimedDFG")
-    logger.info(s"retimed folded delays ${retimedDFG.edgeSeq.map(foldedDelay).mkString(" ")}")
+    logger.debug(s"retimed dfg:\n$retimedDFG")
+    logger.debug(s"retimed folded delays ${retimedDFG.edgeSeq.map(foldedDelay).mkString(" ")}")
     // adding vertices
     val foldedDFG = DFGGraph[T]()
     (retimedDFG.inputNodes ++ retimedDFG.outputNodes ++ retimedDFG.constantNodes).foreach(foldedDFG.addVertex(_))
@@ -77,14 +77,14 @@ class Folding[T](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with Foldable[
       }
       foldedDFG.addEdge(Hu(edge.outOrder), Hv(edge.inOrder), foldedDelay, foldedSchedules)
     }
-    logger.info(s"folded dfg:\n$foldedDFG")
+    logger.debug(s"folded dfg:\n$foldedDFG")
     foldedDFG
   }
 
   override def latencyTransformations: Seq[LatencyTrans] = {
-    implicit val sourceDFG: DFGGraph[T] = folded // TODO: avoid rerun this
-    val inputSchedule: Int = folded.inputNodes.head.outgoingEdges.map(_.schedules.map(_.time)).flatten.min
-    val outputSchedule: Int = folded.outputNodes.head.incomingEdges.head.schedules.head.time
-    new Retiming(dfg, solveRetiming()).latencyTransformations :+ LatencyTrans(N, outputSchedule - inputSchedule)
+    implicit val foldedDFG: DFGGraph[T] = folded // TODO: avoid rerun this
+    val inputSchedule: Int = foldedDFG.inputNodes.head.outgoingEdges.map(_.schedules.map(_.time)).flatten.min
+    val outputSchedule: Int = foldedDFG.outputNodes.head.incomingEdges.head.schedules.head.time
+    new Retiming(dfg, solveRetiming).latencyTransformations :+ LatencyTrans(N, outputSchedule - inputSchedule)
   }
 }

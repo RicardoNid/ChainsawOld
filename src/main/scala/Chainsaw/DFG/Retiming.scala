@@ -21,7 +21,7 @@ import scala.collection.JavaConversions._
 
 class Retiming[T](val dfg: DFGGraph[T], solution: Map[DSPNode[T], Int]) extends Transform {
 
-  def retimed: DFGGraph[T] = {
+  lazy val retimed: DFGGraph[T] = {
     val r = solution
     implicit val retimedDFG = dfg.clone().asInstanceOf[DFGGraph[T]]
     retimedDFG.foreachEdge { edge =>

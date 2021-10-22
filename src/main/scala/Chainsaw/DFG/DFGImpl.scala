@@ -52,7 +52,6 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
   def implRecursive: Seq[T] => Seq[T] = (dataIns: Seq[T]) => {
     logger.info("implementing DFG by algo for recursive DFG")
     val signalMap: Map[DSPNode[T], Seq[T]] = vertexSeq.map { node => // a map to connect nodes with their outputs(placeholder)
-      printlnRed(s"vertex $node: ${node.hardware.outWidths.mkString(" ")}")
       node -> node.hardware.outWidths.map(i => if (i.value == -1) holderProvider(-1 bits) else holderProvider(i))
     }.toMap
 

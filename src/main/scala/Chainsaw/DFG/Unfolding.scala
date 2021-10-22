@@ -10,7 +10,7 @@ class Unfolding[T](dfg: DFGGraph[T], unfoldingFactor: Int) extends Transform {
 
   /** Preprocess the dfg to separate delay and mux
    */
-  def preprocessed: DFGGraph[T] = {
+  lazy val preprocessed: DFGGraph[T] = {
     implicit val preprocessedDFG = dfg.clone().asInstanceOf[DFGGraph[T]]
     logger.info(s"original DFG:\n$dfg")
 
@@ -30,7 +30,7 @@ class Unfolding[T](dfg: DFGGraph[T], unfoldingFactor: Int) extends Transform {
 
   /** Unfolding algo
    */
-  def unfolded: DFGGraph[T] = {
+  lazy val unfolded: DFGGraph[T] = {
     implicit val preprocessedDFG: DFGGraph[T] = preprocessed
     val unfoldedDFG = DFGGraph[T]()
     // nodes duplicated on the unfolded DFG, including I/O nodes
