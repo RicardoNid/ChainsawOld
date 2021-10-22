@@ -86,16 +86,15 @@ class DFGGraph[T]() extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](
 
   // Add edge into basicDFG(MISO, no MUX)
   def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double, schedules: Seq[Schedule]): Unit = {
-    if (source.hardware.outWidths.size > 1) logger.warn(s"adding edge to MIMO node $source with no specified port number")
-    if (target.hardware.inDegree > 1) logger.warn(s"adding to MIMO node $target with no specified port number")
+    if (!this.isInstanceOf[ConstraintGraph[T]]){
+      if (source.hardware.outWidths.size > 1) logger.warn(s"adding edge to MIMO node $source with no specified port number")
+      if (target.hardware.inDegree > 1) logger.warn(s"adding to MIMO node $target with no specified port number")
+    }
     addEdge(source, target, 0, target.incomingEdges.size, delay, schedules)
   }
 
-  def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double): Unit = {
-    if (source.hardware.outWidths.size > 1) logger.warn(s"adding to MIMO node $source with no specified port number")
-    if (target.hardware.inDegree > 1) logger.warn(s"adding to MIMO node $target with no specified port number")
-    addEdge(source, target, 0, target.incomingEdges.size, delay)
-  }
+  def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double): Unit =
+    addEdge(source, target, delay, NoMUX())
 
   // Add edge by DSPNodeWithOrder format
   def addEdge(source: DSPNodeWithOrder[T], target: DSPNodeWithOrder[T], delay: Double, schedules: Seq[Schedule]): Unit =

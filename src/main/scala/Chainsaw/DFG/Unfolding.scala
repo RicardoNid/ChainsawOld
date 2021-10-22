@@ -12,8 +12,7 @@ class Unfolding[T](dfg: DFGGraph[T], unfoldingFactor: Int) extends Transform {
    */
   lazy val preprocessed: DFGGraph[T] = {
     implicit val preprocessedDFG = dfg.clone().asInstanceOf[DFGGraph[T]]
-    logger.info(s"original DFG:\n$dfg")
-
+    logger.debug(s"original DFG:\n$dfg")
     preprocessedDFG.foreachEdge { edge =>
       val (source, target) = (edge.source, edge.target)
       if (!edge.hasNoMux && edge.weight != 0) { // when there's mux & delay on the same edge
@@ -31,6 +30,7 @@ class Unfolding[T](dfg: DFGGraph[T], unfoldingFactor: Int) extends Transform {
   /** Unfolding algo
    */
   lazy val unfolded: DFGGraph[T] = {
+    logger.info("start unfolding")
     implicit val preprocessedDFG: DFGGraph[T] = preprocessed
     val unfoldedDFG = DFGGraph[T]()
     // nodes duplicated on the unfolded DFG, including I/O nodes

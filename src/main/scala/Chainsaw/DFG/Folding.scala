@@ -4,7 +4,7 @@ import org.slf4j.LoggerFactory
 import scala.math.floor
 
 class Folding[T](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with Foldable[T]]]) extends Transform {
-  val logger = LoggerFactory.getLogger(classOf[Folding[T]])
+  val logger = LoggerFactory.getLogger("folding procedure")
 
   // preparing context for folding
   val N = foldingSet.head.length

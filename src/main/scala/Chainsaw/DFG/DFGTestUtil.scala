@@ -48,7 +48,7 @@ object DFGTestUtil {
     val inputSchedule = transformed.inputNodes.head.outgoingEdges.head.schedules.head
     val outputSchedule = transformed.outputNodes.head.incomingEdges.head.schedules.head
 
-    logger.info(s"\ninput should happen when counter value is $inputSchedule, output should happen when counter value is $outputSchedule")
+    logger.info(s"input at $inputSchedule, output at $outputSchedule")
 
     var transformedLatency = original.latency
     latencyTransformations.foreach(trans => transformedLatency = trans.trans(transformedLatency))
@@ -118,16 +118,16 @@ object DFGTestUtil {
     testDFG(original, original.latency, 1, originalTestCases, originalResults)
     testDFG(transformed, transformedLatency, speedUp, transFormedTestCases, transFormedResults, originalTestCases)
 
-    println(s"input to the original ${originalTestCases.mkString(" ")}")
-    println(s"input to the transformed ${transFormedTestCases.mkString(" ")}")
-    printlnGreen(originalResults.mkString(" "))
-    printlnGreen(transFormedResults.mkString(" "))
-    printlnGreen(originalResults.diff(transFormedResults))
+    logger.info(s"verification result:" +
+      s"\ninput to the original    ${originalTestCases.mkString(" ")}" +
+      s"\ninput to the transformed ${transFormedTestCases.mkString(" ")}" +
+      s"\noriginal result    ${originalResults.mkString(" ")}" +
+      s"\ntransformed result ${transFormedResults.mkString(" ")}" +
+      s"\ndiff part          ${originalResults.diff(transFormedResults).mkString(" ")}")
 
     assert(originalResults.size > 10)
     assert(transFormedResults.size > 10)
-    // FIXME: this is a test after shifting, finally, you should implement a test with exact timing
-    assert(originalResults.zip(transFormedResults).forall { case (ori, trans) => ori == trans })
+    assert(originalResults.zip(transFormedResults).forall { case (ori, trans) => ori == trans }) // FIXME: verify the unaligned part
   }
 
   def verifyFolding(original: DFGGraph[SInt], foldingSets: Seq[Seq[DSPNode[SInt] with Foldable[SInt]]], name: String = null) = {
