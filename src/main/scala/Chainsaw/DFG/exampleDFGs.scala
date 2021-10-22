@@ -12,7 +12,7 @@ object simpleFolding {
   val Seq(inc0, inc1, inc2, inc3) = incs
   // add some comments
   val incGen = () => sIntInc(10 bits, 1 cycles).asDSPNode(s"", 1 cycles, 1 ns)
-  val foldingSets = Seq(Seq(inc0, inc1), Seq(inc2, inc3))
+  val foldingSet = Seq(Seq(inc0, inc1), Seq(inc2, inc3))
 
   def dfg = {
     printlnGreen("using simple graph for folding")
@@ -203,11 +203,11 @@ object paper1992OnFolding {
     dfg
   }
 
-  def foldingSet6_a_example3 = Seq(Seq(cmul0, cmul1), Seq(cmul2, cmul3))
+  def foldingSet_example3 = Seq(Seq(cmul0, cmul1), Seq(cmul2, cmul3))
 
   /*  -----------------------------------fig6_a_example4------------------------------------*/
 
-  def foldingSet6_a_example4 = Seq(Seq(cmul0, cmul2), Seq(cmul1, cmul3))
+  def foldingSet_example4 = Seq(Seq(cmul0, cmul2), Seq(cmul1, cmul3))
 
   /*  -----------------------------------fig8_a_example6------------------------------------*/
 
@@ -316,8 +316,6 @@ object paper1992OnFolding {
     dfg.addPath(a_1 >> 2 >> m4 >> a_4)
     dfg
   }
-
-
 
   /*  -----------------------------------fig13_a_example12------------------------------------*/
 

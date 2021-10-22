@@ -1,5 +1,6 @@
 package Chainsaw.DFG
 
+import Chainsaw.DFG.DFGTestUtil.{verifyFolding, verifyFunctionalConsistency, verifyUnfolding}
 import Chainsaw._
 import org.scalatest.flatspec.AnyFlatSpec
 import spinal.core._
@@ -38,82 +39,59 @@ class DFGGraphTest extends AnyFlatSpec {
     println(implementingDFGs.nestedDFG)
   }
 
-  val testCases: Seq[Int] = (0 until 10).map(_ => DSPRand.nextInt(4))
-  //  val testCases = (0 until 20).map(_ => 1)
 
-  // fig 6.3
-  "the folding algorithm" should "fold correctly on chap6 fig6_3" in {
-    val dfg = chap6.fig6_3
-    val foldingSet = chap6.foldingSet
-    val foldedDFG = new Folding(dfg, foldingSet).folded
-    printlnGreen(new CriticalPathAlgo(foldedDFG).delaysCount)
-    DFGTestUtil.verifyFolding(dfg, foldingSet, "chap6_fig6_3")
-  }
+  "the folding algorithm" should "fold correctly on chap6 fig6_3" in verifyFolding(chap6.fig6_3, chap6.foldingSet, "chap6_fig6_3")
+  it should "fold correctly on simple graph" in verifyFolding(simpleFolding.dfg, simpleFolding.foldingSet)
+  it should "fold correctly on paper1992 fig6_a(example3)" in verifyFolding(paper1992OnFolding.fig6_a, paper1992OnFolding.foldingSet_example3)
+  it should "fold correctly on paper1992 fig7_a(example4)" in verifyFolding(paper1992OnFolding.fig6_a, paper1992OnFolding.foldingSet_example4)
 
-  it should "fold correctly on simple graph" in {
-    val dfg = simpleFolding.dfg
-    val foldingSet = simpleFolding.foldingSets
-    DFGTestUtil.verifyFolding(dfg, foldingSet)
-  }
-
-  it should "fold correctly on paper1992 fig6_b" in {
-    val dfg = paper1992OnFolding.fig6_a
-    val foldingSet = paper1992OnFolding.foldingSet6_a_example3
-    DFGTestUtil.verifyFolding(dfg, foldingSet)
-  }
-
-  it should "fold correctly on paper1992 fig7_a" in {
-    val dfg = paper1992OnFolding.fig6_a
-    val foldingSet = paper1992OnFolding.foldingSet6_a_example4
-    DFGTestUtil.verifyFolding(dfg, foldingSet)
-  }
 
   it should "fold correctly on paper1992 fig8_a(example6)" in {
     val dfg = paper1992OnFolding.fig8_a
     val foldingSet = paper1992OnFolding.foldingSet8_a_example6
-    DFGTestUtil.verifyFolding(dfg, foldingSet)
+    verifyFolding(dfg, foldingSet)
   }
 
   it should "fold correctly on paper1992 fig9_a" in {
     val dfg = paper1992OnFolding.fig9_a
     val foldingSet = paper1992OnFolding.foldingSet9_a_example7
-    DFGTestUtil.verifyFolding(dfg, foldingSet, "paper1992_fig9_a")
+    verifyFolding(dfg, foldingSet, "paper1992_fig9_a")
   }
 
   it should "fold correctly on paper1992 fig10_a(example8)" in {
     val dfg = paper1992OnFolding.fig10_a
     val foldingSet = paper1992OnFolding.foldingSet10_a_example8and10
-    DFGTestUtil.verifyFolding(dfg, foldingSet, "paper1992_fig10_a")
+    verifyFolding(dfg, foldingSet, "paper1992_fig10_a")
   }
 
   it should "retimed correctly on paper1992 fig10_c(example10)" in {
     val dfg = paper1992OnFolding.fig10_c
     val foldingSet = paper1992OnFolding.foldingSet10_a_example8and10
-    DFGTestUtil.verifyFolding(dfg, foldingSet, "paper1992_fig10_c")
+    verifyFolding(dfg, foldingSet, "paper1992_fig10_c")
   }
 
   it should "fold correctly on paper1992 fig12_a(example11)" in {
     val dfg = paper1992OnFolding.fig12_a
     val foldingSet = paper1992OnFolding.foldingSet_example11
-    DFGTestUtil.verifyFolding(dfg, foldingSet, name = "paper1992_fig12_a")
+    verifyFolding(dfg, foldingSet, name = "paper1992_fig12_a")
   }
 
   it should "fold correctly on paper1992 fig13_d" in {
     val dfg = paper1992OnFolding.fig13_a
     val foldingSet = paper1992OnFolding.foldingSet13_a_example12
-    DFGTestUtil.verifyFolding(dfg, foldingSet)
+    verifyFolding(dfg, foldingSet)
   }
 
   it should "fold correctly on paper1992 fig14_a" in {
     val dfg = paper1992OnFolding.fig14_a
     val foldingSet = paper1992OnFolding.foldingSet_example13
-    DFGTestUtil.verifyFolding(dfg, foldingSet, "paper1992_fig14_a")
+    verifyFolding(dfg, foldingSet, "paper1992_fig14_a")
   }
 
   it should "fold correctly on paper1992 fig15_a" in {
     val dfg = paper1992OnFolding.fig14_a
     val foldingSet = paper1992OnFolding.foldingSet14_a_example13_v2
-    DFGTestUtil.verifyFolding(dfg, foldingSet, name = "paper1992_fig15_a")
+    verifyFolding(dfg, foldingSet, name = "paper1992_fig15_a")
   }
 
   "constraint graph" should "work on fig4.3" in {
@@ -130,26 +108,9 @@ class DFGGraphTest extends AnyFlatSpec {
     assert(algo.iterationBound == 2.0)
   }
 
-  "the unfolding algorithm" should "work on fig5.2" in DFGTestUtil.verifyUnfolding(chap5.fig5_2, 2)
+  "the unfolding algorithm" should "work on fig5.2" in verifyUnfolding(chap5.fig5_2, 2)
+  //  it should "work on fig5.2 with innder delay" in DFGTestUtil.verifyUnfolding(chap5.fig5_2_inner_delay, 2)
+  it should "work on fig5.10" in verifyUnfolding(chap5.fig5_10, 3, "fig5.10")
+  it should "work on fig5.12" in verifyUnfolding(chap5.fig5_12, 2, "fig5.12")
 
-//  it should "work on fig5.2 with innder delay" in DFGTestUtil.verifyUnfolding(chap5.fig5_2_inner_delay, 2)
-
-
-  it should "work on fig5.12" in {
-    val dfg = chap5.fig5_12
-    val algo = new Unfolding(dfg, 2)
-    val unfoldedDFG = algo.unfolded
-
-    println(unfoldedDFG)
-    DFGTestUtil.verifyFunctionalConsistency(dfg, unfoldedDFG, SInt(10 bits), 2, 0)
-  }
-
-  it should "work on fig5.10" in {
-    val dfg = chap5.fig5_10
-    val algo = new Unfolding(dfg, 3)
-    val unfoldedDFG = algo.unfolded
-
-    println(unfoldedDFG)
-    DFGTestUtil.verifyFunctionalConsistency(dfg, unfoldedDFG, SInt(10 bits), 3, 0)
-  }
 }
