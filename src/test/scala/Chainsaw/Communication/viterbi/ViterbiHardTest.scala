@@ -21,7 +21,7 @@ class ViterbiHardTest extends AnyFlatSpec {
     SimConfig.withWave.compile(ViterbiHard(trellis, 100, temp)).doSim { dut =>
       import dut.{clockDomain, dataIn, dataOut}
       clockDomain.forkStimulus(2)
-      dutResult = flowPeekPokeRound(dut, testCases.map(BigInt(_)), dataIn, dataOut, dut.latency).asInstanceOf[Seq[BigInt]]
+      dutResult = flowPeekPoke(dut, testCases.map(BigInt(_)), dataIn, dataOut, dut.latency).asInstanceOf[Seq[BigInt]]
     }
     dutResult
   }

@@ -359,11 +359,16 @@ package object Chainsaw extends RealFactory {
     def rotateRight(that: UInt): Vec[T] = vecShiftWrapper(bits.rotateLeft, that)
   }
 
+  implicit class BitsUtil(bits: Bits) {
+    def asBoolsKeepOrder: Seq[Bool] = bits.asBools.reverse
+  }
+
   implicit class StreamUtil[T <: Data](stream: Stream[T]) {
     def >=>(that: Stream[T]): Unit = {
 
     }
   }
+
 
   /*
   * following methods are designed for doing synth/impl through command-line
@@ -434,7 +439,7 @@ package object Chainsaw extends RealFactory {
     Process(cmd) !
   }
 
-  def gcd(a: Int, b: Int):Int = {
+  def gcd(a: Int, b: Int): Int = {
     require(a >= b)
     if (b == 0) a
     else gcd(b, a % b)

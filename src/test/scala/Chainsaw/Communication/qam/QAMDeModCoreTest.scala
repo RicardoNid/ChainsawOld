@@ -27,7 +27,7 @@ class QAMDeModCoreTest extends AnyFlatSpec {
     SimConfig.withWave.compile(QAMDeModCore(HardType(ComplexNumber(1, -14)), bitsAllocated, factor)).doSim { dut =>
       import dut.{clockDomain, dataIn, dataOut}
       clockDomain.forkStimulus(2)
-      dutResults = flowPeekPokeRound(dut, testCases, dataIn, dataOut, 1)
+      dutResults = flowPeekPoke(dut, testCases, dataIn, dataOut, 1)
     }
 
     val golden: Array[Int] = Refs.qamdemod(testCasesBeforeNorm.toArray, bitsAllocated)

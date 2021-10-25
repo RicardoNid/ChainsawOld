@@ -4,7 +4,10 @@ version := "0.1"
 scalaVersion := "2.11.12"
 //val spinalVersion = "1.4.3"
 val spinalVersion = "1.5.0"
-val jgraphtVersion = "1.5.1"
+
+// 1.5.1 -> has MCM, need JVM 11
+// 1.4.0 -> has no MCM, need JVM 8
+val jgraphtVersion = "1.4.0"
 
 // 编译器选项
 scalacOptions ++= Seq(
@@ -69,5 +72,7 @@ libraryDependencies += "ai.djl.pytorch"%"pytorch-native-auto"% "1.8.1"
 //libraryDependencies += "org.nd4j" % "nd4j-native-platform" % "0.8.0"
 
 libraryDependencies += "com.github.dwickern" %% "scala-nameof" % "3.0.0" % "provided"
+
+libraryDependencies += "org.typelevel" %% "spire" % "0.17.0-M1"
 
 

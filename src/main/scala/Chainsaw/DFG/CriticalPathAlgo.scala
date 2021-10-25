@@ -1,7 +1,7 @@
 package Chainsaw.DFG
 
 import org.jgrapht._
-import org.jgrapht.alg.cycle.HowardMinimumMeanCycle
+// import org.jgrapht.alg.cycle.HowardMinimumMeanCycle
 import spinal.core._
 
 import scala.collection.JavaConversions._
@@ -76,7 +76,9 @@ class CriticalPathAlgo[T](dfg: DFGGraph[T]) {
     Seq.tabulate(starts.size, ends.size)((i, j) => if (weightMatix(i)(j) >= 0) Gd.addPath(delays(i) >> -weightMatix(i)(j) >> delays(j)))
     println(Gd)
     // step4: running MCM on Gd
-    val mcmAlgo = new HowardMinimumMeanCycle(Gd)
-    -mcmAlgo.getCycleMean
+    // FIXME: this algo needs JGraphT 1.5.1, thus needs JVM 11
+//    val mcmAlgo = new HowardMinimumMeanCycle(Gd)
+//    -mcmAlgo.getCycleMean
+    0.0
   }
 }

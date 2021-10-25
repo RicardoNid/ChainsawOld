@@ -8,10 +8,12 @@ import spinal.lib._
 object Operators {
 
   implicit class hardware2Node[T <: Data](hardware: DSPHardware[T]) {
-    def asDSPNode(name: String, delay: CyclesCount, exeTime: TimeNumber) = GeneralNode(hardware, name, delay, exeTime)
+    def asDSPNode(name: String, delay: CyclesCount, exeTime: TimeNumber): GeneralNode[T] = GeneralNode(hardware, name, delay, exeTime)
   }
 
-  def Line[T](width: BitCount = -1 bits) = DSPHardware(
+  /** An operator which won't output the input, whether it is of hardware or software
+   */
+  def Line[T](width: BitCount = -1 bits): DSPHardware[T] = DSPHardware(
     impl = (dataIns: Seq[T], _: GlobalCount) => dataIns,
     inDegree = 1,
     outWidths = Seq(width)
@@ -42,6 +44,20 @@ object Operators {
     1,
     Seq(width))
 
+  def sIntMult(width: BitCount, delay: CyclesCount) = DSPHardware(
+    (dataIns: Seq[SInt], _: GlobalCount) => Seq(Delay(dataIns(0) * dataIns(1), delay.toInt, init = dataIns.head.getZero)),
+    2,
+    Seq(width))
+
+  class SIntMult(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber)
+    extends GeneralNode(sIntMult(width, delay), name, delay, exeTime) with Foldable[SInt] {
+    override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = SIntAdder(s"foldFrom${sources.head.name}", width, delay, exeTime)
+  }
+
+  object SIntMult{
+    def apply(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber = 1 ns): SIntMult = new SIntMult(name, width, delay, exeTime)
+  }
+
   // binary adder
   def sIntAdder(width: BitCount, delay: CyclesCount) = DSPHardware(
     (dataIns: Seq[SInt], _: GlobalCount) => Seq(Delay(dataIns(0) + dataIns(1), delay.toInt, init = dataIns.head.getZero)),
@@ -54,7 +70,7 @@ object Operators {
   }
 
   object SIntAdder {
-    def apply(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber): SIntAdder = new SIntAdder(name, width, delay, exeTime)
+    def apply(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber = 1 ns): SIntAdder = new SIntAdder(name, width, delay, exeTime)
   }
 
   def sIntCAdder(constant: Int, width: BitCount, delay: CyclesCount) = DSPHardware(

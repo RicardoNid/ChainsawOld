@@ -70,6 +70,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
 
   def implForwarding: Seq[T] => Seq[T] = (dataIns: Seq[T]) => {
     logger.info("implementing DFG by algo for forwarding DFG")
+    require(inputNodes.size == dataIns.size, "input size mismatch")
     val signalMap = mutable.Map[DSPNode[T], Seq[T]]()
     implicit val globalCount: GlobalCount = initGlobalCount()
     inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap += node -> Seq(bits) }

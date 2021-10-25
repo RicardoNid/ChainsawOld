@@ -15,7 +15,7 @@ class ViterbiForwardingTest extends AnyFlatSpec {
     SimConfig.withWave.compile(ViterbiForwarding(trellis)).doSim { dut =>
       import dut.{clockDomain, dataIn, dataOut, disNextLatency}
       clockDomain.forkStimulus(2)
-      dutResults = flowPeekPokeRound(dut, testCases.map(BigInt(_)), dataIn, dataOut, dut.disNextLatency).asInstanceOf[Seq[BigInt]]
+      dutResults = flowPeekPoke(dut, testCases.map(BigInt(_)), dataIn, dataOut, dut.disNextLatency).asInstanceOf[Seq[BigInt]]
     }
     val dutString = dutResults.grouped(trellis.numStates).toSeq.map(_.map(i => if (i >= 8) '-' else i.toString()).mkString(" ")).mkString("\n")
     dutString
