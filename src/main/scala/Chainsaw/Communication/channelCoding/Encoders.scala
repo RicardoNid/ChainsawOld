@@ -3,22 +3,22 @@ package Chainsaw.Communication.channelCoding
 import spinal.core._
 import spinal.lib._
 import Chainsaw._
-
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
-
 import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
+
+import scala.language.postfixOps
 
 object Encoders {
 
   def sumOfProducts[T <: Data](add: (T, T) => T, mult: (T, T) => T, dataIns: Seq[T], coeffs: Seq[T]): T =
     dataIns.zip(coeffs).map { case (data, coeff) => mult(data, coeff) }.reduceBalancedTree(add)
 
-  def convenc(dataIns: Seq[Bits], convConfig: ConvConfig): Seq[Bool] = {
+  def convenc(dataIns: Seq[Bits], convConfig: ConvConfig): Seq[Bits] = {
     import convConfig._
 
     require(dataIns.size == n)
@@ -29,7 +29,7 @@ object Encoders {
       .map(_.map(char => if (char == '1') True else False)).reduce(_ ++ _)) // string to bools
     require(data.size == coeffs.head.size, s"data size ${data.size}, coeff size ${coeffs.head.size}")
 
-    coeffs.map(coeff => sumOfProducts[Bool](_ ^ _, _ & _, data, coeff))
+    coeffs.map(coeff => sumOfProducts[Bool](_ ^ _, _ & _, data, coeff).asBits)
   }
 }
 
@@ -38,13 +38,14 @@ case class ConvEncoder(convConfig: ConvConfig) extends Component with DSPTestabl
   import convConfig._
 
   // testable interface
-  val clear = in Bool()
+  val clear: Bool = in Bool()
   override val dataIn: Flow[Vec[Bits]] = slave Flow Vec(Bits(1 bits), n)
   override val dataOut: Flow[Vec[Bits]] = master Flow Vec(Bits(1 bits), k)
   override val latency: Int = 0
+
   // registers and shifting logic
   val regs: Array[Bits] = ms.map(m => RegInit(B(0, m bits)))
-//  when(clear)(regs.foreach(_.clearAll()))
+  //  when(clear)(regs.foreach(_.clearAll()))
   //    .otherwise(regs.zip(dataIn.payload).foreach { case (bits, bool) => bits := bool ## (bits >> 1) })
 
   regs.zip(dataIn.payload).foreach { case (bits, bool) => bits := bool ## (bits >> 1) }

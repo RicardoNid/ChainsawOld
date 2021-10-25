@@ -9,8 +9,23 @@ import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
 import scala.collection.mutable.ArrayBuffer
+import scala.language.postfixOps
 
-case class DSPHardware[T](impl: (Seq[T], GlobalCount) => Seq[T], inDegree: Int, outWidths: Seq[BitCount])
+class DSPHardware[T](val impl: (Seq[T], GlobalCount) => Seq[T], val inDegree: Int, val outWidths: Seq[BitCount] = Seq(-1 bit))
+
+object DSPHardware {
+  def apply[T](impl: (Seq[T], GlobalCount) => Seq[T], inDegree: Int, outWidths: Seq[BitCount]): DSPHardware[T] = new DSPHardware(impl, inDegree, outWidths)
+}
+
+case class BinaryHardware[T](op: (T, T) => T, width: BitCount = -1 bits)
+  extends DSPHardware[T](impl = (dataIns: Seq[T], _: GlobalCount) => Seq(op(dataIns(0), dataIns(1))), inDegree = 2, outWidths = Seq(width))
+
+class BinaryNode[T](op: (T, T) => T, width: BitCount = -1 bits, name: String, delay: CyclesCount, exeTime: TimeNumber)
+  extends GeneralNode[T](BinaryHardware(op, width), name, delay, exeTime)
+
+object BinaryNode {
+  def apply[T](op: (T, T) => T, name: String, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): BinaryNode[T] = new BinaryNode(op, width, name, delay, exeTime)
+}
 
 abstract class DSPNode[T] {
   val hardware: DSPHardware[T]
@@ -78,10 +93,17 @@ class ConstantNode[T](implp: DSPHardware[T], namep: String) extends DSPNode[T] {
   override val name: String = namep // TODO: implement reflection
   override val delay: Int = 0
   override val exeTime: Double = 0.0
-  
+
   override def copy(newName: String): DSPNode[T] = new ConstantNode(hardware, newName)
 }
 
 object ConstantNode {
   def apply[T](implp: DSPHardware[T], namep: String): ConstantNode[T] = new ConstantNode(implp, namep)
+
+  def apply[THard <: Data, TSoft](name: String, constant: TSoft, width: BitCount)(implicit converter: (TSoft, BitCount) => THard): ConstantNode[THard] = {
+    val hardware = DSPHardware(
+      impl = (_: Seq[THard], _: GlobalCount) => Seq(converter(constant, width)),
+      inDegree = 1, outWidths = Seq(width))
+    ConstantNode(hardware, name)
+  }
 }

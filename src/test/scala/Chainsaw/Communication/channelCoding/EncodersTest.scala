@@ -15,7 +15,7 @@ class EncodersTest extends AnyFlatSpec {
   def verifyConvEncoder(convConfig: ConvConfig, testCase: Seq[BigInt], name: String): Unit = {
     import convConfig._
     val trellisM = Refs.poly2trellisM(convConfig.ms.map(_ + 1), convConfig.codeGens)
-    val golden: Array[Int] = Refs.convenc(testCase.map(bool => if (bool) 1 else 0).toArray, trellisM)
+    val golden: Array[Int] = Refs.convenc(testCase.map(_.toInt).toArray, trellisM)
     val testCases = testCase.grouped(n).toSeq
     doFlowPeekPokeTest(ConvEncoder(convConfig), name, testCases, golden)
 

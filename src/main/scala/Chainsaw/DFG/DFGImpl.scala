@@ -23,7 +23,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
 
   def initGlobalCount(): GlobalCount = {
     val globalCounter = CounterFreeRun(globalLcm)
-    globalCounter.value.setName("globalCounter")
+    globalCounter.value.setName("globalCounter", weak = true)
     GlobalCount(globalCounter.value)
   }
 
@@ -62,8 +62,8 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
       val rets = implVertex(target, signalMap)
       val placeholders = signalMap(target)
       placeholders.zip(rets).foreach { case (placeholder, ret) => placeholder := ret.resized }
-      if (placeholders.size == 1) placeholders.head.setName(target.name) // name these signals
-      else placeholders.zipWithIndex.foreach { case (placeholder, i) => placeholder.setName(s"${target}_$i") }
+      if (placeholders.size == 1) placeholders.head.setName(target.name, weak = true) // name these signals
+      else placeholders.zipWithIndex.foreach { case (placeholder, i) => placeholder.setName(s"${target}_$i", weak = true) }
     }
     outputNodes.flatMap(signalMap(_))
   }
@@ -85,8 +85,8 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
       nextStageNodes.foreach { target =>
         val rets = implVertex(target, signalMap.toMap)
         signalMap += target -> rets
-        if (target.hardware.outWidths.size == 1) rets.head.setName(target.name)
-        else rets.zipWithIndex.foreach { case (ret, i) => ret.setName(s"${target}_$i") }
+        if (target.hardware.outWidths.size == 1) rets.head.setName(target.name, weak = true)
+        else rets.zipWithIndex.foreach { case (ret, i) => ret.setName(s"${target}_$i", weak = true) }
       }
     }
     outputNodes.flatMap(signalMap(_))

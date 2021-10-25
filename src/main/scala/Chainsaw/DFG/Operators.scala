@@ -11,6 +11,10 @@ object Operators {
     def asDSPNode(name: String, delay: CyclesCount, exeTime: TimeNumber): GeneralNode[T] = GeneralNode(hardware, name, delay, exeTime)
   }
 
+  val and: (Bits, Bits) => Bits = (a: Bits, b: Bits) => a & b
+  val or: (Bits, Bits) => Bits = (a: Bits, b: Bits) => a | b
+  val xor: (Bits, Bits) => Bits = (a: Bits, b: Bits) => a ^ b
+
   /** An operator which won't output the input, whether it is of hardware or software
    */
   def Line[T](width: BitCount = -1 bits): DSPHardware[T] = DSPHardware(
@@ -25,12 +29,12 @@ object Operators {
     Seq(width))
 
   class SIntConst(name: String, val constant: Int, width: BitCount) extends
-    ConstantNode(sIntConst(constant, width), name) with Foldable[SInt]{
+    ConstantNode(sIntConst(constant, width), name) with Foldable[SInt] {
     override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = {
       val constants = sources.map(_.asInstanceOf[SIntConst].constant)
       val foldedFunction = (_: Seq[SInt], _: GlobalCount) => Seq(sintCoeffROM(constants, width))
       val foldedHardware = DSPHardware[SInt](foldedFunction, 1, Seq(width))
-      ConstantNode(foldedHardware,  s"foldFrom${sources.head.name}")
+      ConstantNode(foldedHardware, s"foldFrom${sources.head.name}")
     }
   }
 
@@ -54,7 +58,7 @@ object Operators {
     override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = SIntAdder(s"foldFrom${sources.head.name}", width, delay, exeTime)
   }
 
-  object SIntMult{
+  object SIntMult {
     def apply(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber = 1 ns): SIntMult = new SIntMult(name, width, delay, exeTime)
   }
 

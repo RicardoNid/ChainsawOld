@@ -10,7 +10,11 @@ package object DFG {
   implicit val sintProvider = (width: BitCount) => if (width.value >= 1) SInt(width) else SInt()
   implicit val uintProvider = (width: BitCount) => if (width.value >= 1) UInt(width) else UInt()
   implicit val bitsProvider = (width: BitCount) => if (width.value >= 1) Bits(width) else Bits()
-  implicit val complexProvider = (width: BitCount) => ComplexNumber(1, width.value - 2)
+  implicit val complexProvider = (width: BitCount) => ComplexNumber(1, width.value - 2) // FIXME: we use 1 bit in integral part now
+
+  implicit val sintConverter: (Int, BitCount) => SInt = (value: Int, width: BitCount) => S(value, width)
+  implicit val uintConverter: (Int, BitCount) => UInt = (value: Int, width: BitCount) => U(value, width)
+  implicit val bitsConverter: (Int, BitCount) => Bits = (value: Int, width: BitCount) => B(value, width)
 
   implicit class nodeUtils[T](node: DSPNode[T]) {
     def >=>(delay: Double) = DSPAssignment(node, delay, node)
@@ -23,7 +27,7 @@ package object DFG {
 
     /** Pointing out whether a node is I/O or not, this is necessary as I/O are treated differently is most algos
      *
-     *  Caution: constant nodes are also inputs
+     * Caution: constant nodes are also inputs
      */
     def isIO = node.isInstanceOf[InputNode[T]] || node.isInstanceOf[ConstantNode[T]] || node.isInstanceOf[OutputNode[T]]
 
