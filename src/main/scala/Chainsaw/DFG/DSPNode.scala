@@ -17,16 +17,6 @@ object DSPHardware {
   def apply[T](impl: (Seq[T], GlobalCount) => Seq[T], inDegree: Int, outWidths: Seq[BitCount]): DSPHardware[T] = new DSPHardware(impl, inDegree, outWidths)
 }
 
-case class BinaryHardware[T](op: (T, T) => T, width: BitCount = -1 bits)
-  extends DSPHardware[T](impl = (dataIns: Seq[T], _: GlobalCount) => Seq(op(dataIns(0), dataIns(1))), inDegree = 2, outWidths = Seq(width))
-
-class BinaryNode[T](op: (T, T) => T, width: BitCount = -1 bits, name: String, delay: CyclesCount, exeTime: TimeNumber)
-  extends GeneralNode[T](BinaryHardware(op, width), name, delay, exeTime)
-
-object BinaryNode {
-  def apply[T](op: (T, T) => T, name: String, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): BinaryNode[T] = new BinaryNode(op, width, name, delay, exeTime)
-}
-
 abstract class DSPNode[T] {
   val hardware: DSPHardware[T]
   val name: String
@@ -106,4 +96,14 @@ object ConstantNode {
       inDegree = 1, outWidths = Seq(width))
     ConstantNode(hardware, name)
   }
+}
+
+case class BinaryHardware[T](op: (T, T) => T, width: BitCount = -1 bits)
+  extends DSPHardware[T](impl = (dataIns: Seq[T], _: GlobalCount) => Seq(op(dataIns(0), dataIns(1))), inDegree = 2, outWidths = Seq(width))
+
+class BinaryNode[T](op: (T, T) => T, width: BitCount = -1 bits, name: String, delay: CyclesCount, exeTime: TimeNumber)
+  extends GeneralNode[T](BinaryHardware(op, width), name, delay, exeTime)
+
+object BinaryNode {
+  def apply[T](op: (T, T) => T, name: String, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): BinaryNode[T] = new BinaryNode(op, width, name, delay, exeTime)
 }

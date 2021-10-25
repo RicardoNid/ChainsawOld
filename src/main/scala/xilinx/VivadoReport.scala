@@ -57,4 +57,6 @@ class VivadoReport(workspacePath: String,
 
   // fixme : not working now
   def getReport = Array(LUT.toString, FF.toString, DSP.toString, BRAM.toString, Frequency.toString)
+
+  override def toString: String = s"LUT $LUT, FF $FF, DSP $DSP, BRAM $BRAM, Freq $Frequency"
 }

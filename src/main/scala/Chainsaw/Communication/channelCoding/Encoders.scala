@@ -1,17 +1,11 @@
 package Chainsaw.Communication.channelCoding
 
-import Chainsaw.DFG._
 import Chainsaw.DFG.FirType.DIRECT
-import spinal.core._
-import spinal.lib._
+import Chainsaw.DFG._
 import Chainsaw._
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-import Chainsaw._
-import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
+import spinal.core._
+import spinal.lib._
 
 import scala.language.postfixOps
 
@@ -32,6 +26,21 @@ object Encoders {
     require(data.size == coeffs.head.size, s"data size ${data.size}, coeff size ${coeffs.head.size}")
 
     coeffs.map(coeff => sumOfProducts[Bool](_ ^ _, _ & _, data, coeff).asBits)
+  }
+
+  def convencDFG(dataIn: Seq[Bits], convConfig: ConvConfig): Seq[Bits] = {
+    import convConfig._
+
+    val and: BinaryNode[Bits] = BinaryNode(Operators.and, "and")
+    val xor: BinaryNode[Bits] = BinaryNode(Operators.xor, "xor")
+    def convDirect(coeffs: Seq[Int]): DFGGraph[Bits] = DFGGens.fir(xor, and, DIRECT, coeffs, 1 bits)
+
+    val convMatrix = Seq.tabulate(n,k) {(i, j) =>
+      val gen = binaryCodeGens(i)(j).reverse.map(_.asDigit)
+      convDirect(gen).impl(Seq(dataIn(i))).head
+    }
+
+    (0 until k).map(i => (0 until n).map(j => convMatrix(j)(i)).reduce(_ ^ _))
   }
 }
 
@@ -57,13 +66,12 @@ case class ConvEncoder(convConfig: ConvConfig) extends Component with DSPTestabl
 
   dataOut.payload := Vec(Encoders.convenc(data, convConfig))
   dataOut.valid := dataIn.valid
-
 }
 
 case class ConvEncoderDFG(convConfig: ConvConfig) extends Component with DSPTestable[Vec[Bits], Vec[Bits]] {
 
-  val and = BinaryNode(Operators.and, "and")
-  val xor = BinaryNode(Operators.xor, "xor")
+  val and: BinaryNode[Bits] = BinaryNode(Operators.and, "and")
+  val xor: BinaryNode[Bits] = BinaryNode(Operators.xor, "xor")
 
   def convDirect(coeffs: Seq[Int]): DFGGraph[Bits] = DFGGens.fir(xor, and, DIRECT, coeffs, 1 bits)
 
@@ -72,7 +80,7 @@ case class ConvEncoderDFG(convConfig: ConvConfig) extends Component with DSPTest
   val dataIn: Flow[Vec[Bits]] = slave Flow Vec(Bits(1 bits), n)
   val dataOut: Flow[Vec[Bits]] = master Flow Vec(Bits(), k)
   val latency = 0
+
   dataOut.valid := Delay(dataIn.valid, latency, init = False)
-  dataOut.payload(0) := convDirect(BigInt("171", 8).toString(2).reverse.padTo(7, '0').map(_.asDigit)).impl(Seq(dataIn.payload.head)).head
-  dataOut.payload(1) := convDirect(BigInt("133", 8).toString(2).reverse.padTo(7, '0').map(_.asDigit)).impl(Seq(dataIn.payload).head).head
+  dataOut.payload := Vec(Encoders.convencDFG(dataIn.payload, convConfig))
 }
