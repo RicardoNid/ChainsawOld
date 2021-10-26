@@ -2,13 +2,12 @@ package Chainsaw.DFG
 
 import Chainsaw._
 import Chainsaw.dspTest._
+import org.slf4j.LoggerFactory
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 
-import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
-import org.slf4j.{Logger, LoggerFactory}
 
 
 object DFGTestUtil {
@@ -28,13 +27,10 @@ object DFGTestUtil {
     val logger = LoggerFactory.getLogger("FunctionalConsistencyLogger")
 
     // requirement on the input/output size
-    if (speedUp > 1) { // throughput > 1, bigger port number
-      require(transformed.inputNodes.size == original.inputNodes.size * speedUp)
-      require(transformed.outputNodes.size == original.outputNodes.size * speedUp)
-    } else if (speedUp < -1) { // throughput < 1, keep the port number
-      require(transformed.inputNodes.size == original.inputNodes.size)
-      require(transformed.outputNodes.size == original.outputNodes.size)
-    } else throw new IllegalArgumentException("speed up factor doesn't match the port number")
+    val scaleFactor = if(speedUp > 1) speedUp else 1
+    require(transformed.inputNodes.size == original.inputNodes.size * scaleFactor &&
+      transformed.outputNodes.size == original.outputNodes.size * scaleFactor,
+      "speed up factor doesn't match the port number")
 
     // data tobe filled
     val originalTestCases = ArrayBuffer[BigInt]()
@@ -105,6 +101,7 @@ object DFGTestUtil {
           } else {
             testCases.grouped(transformed.inputNodes.size).toSeq.init.foreach { testCase => // using init to drop the incomplete group
               // folding would change the order of input
+              // TODO: clarify this part
               val forUnfolded = DSP.interleave.Algos.matIntrlv(testCase, speedUp, testCase.size / speedUp)
               dataIn.poke(forUnfolded)
               clockDomain.waitSampling()

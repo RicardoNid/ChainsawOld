@@ -1,7 +1,6 @@
 package Chainsaw.DFG
 
 import Chainsaw._
-import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 
 import scala.language.postfixOps
@@ -18,8 +17,6 @@ case class GlobalCount(value: UInt)
 
 case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
                             (implicit holderProvider: BitCount => T) {
-
-  val logger: Logger = LoggerFactory.getLogger(classOf[DFGMUX[T]])
 
   def localLcm: Int = schedules.flatten.map(_.period).sorted.reverse.reduce(lcm)
 

@@ -16,7 +16,7 @@ object simpleFolding {
 
   def dfg = {
     printlnGreen("using simple graph for folding")
-    val dfg = DFGGraph[SInt]()
+    val dfg = DFGGraph[SInt]("simpleFolding")
     incs.foreach(dfg.addVertex(_))
     dfg.setInput(inc0)
     dfg.addExp(inc0 >=> 1 >=> inc1)
@@ -30,7 +30,13 @@ object simpleFolding {
 object implementingDFGs {
   //
   def nestedDFG: DFGGraph[SInt] = {
-    val butterfly = DFGGraph[SInt]()
+
+    val add = (a:SInt, b:SInt) => a + b
+    val mult = (a:SInt, b:SInt) => a * b
+    val addNode = BinaryNode(add, "add")
+    val multNode = BinaryNode(mult, "mult")
+
+    val butterfly = DFGGraph[SInt]("butterfly")
     val add0 = SIntAdder("add0", 10 bits, 1 cycles, 1 ns)
     val add1 = SIntAdder("add1", 10 bits, 1 cycles, 1 ns)
     butterfly.addVertex(add0)
@@ -45,9 +51,9 @@ object implementingDFGs {
     butterfly.setOutput(add1)
 
     println(butterfly)
-    val whole = DFGGraph[SInt]()
-    //    whole.addVertex(butterfly.asNode)
-    //    whole.addVertex(butterfly.asNode)
+    val whole = DFGGraph[SInt]("simpleNested")
+//        whole.addVertex(butterfly.asNode)
+//        whole.addVertex(butterfly.asNode)
     whole
   }
 }
@@ -55,8 +61,7 @@ object implementingDFGs {
 object chap2 {
   def fig2_2 = {
     val Seq(n1, n2, n3, n4, n5, n6) = Seq(1, 1, 1, 2, 2, 2).zipWithIndex.map { case (exe, i) => GeneralNode[SInt](s"node${i + 1}", 0 cycles, exe sec) }
-    printlnGreen("using fig 2.2")
-    val dfg = DFGGraph[SInt]()
+    val dfg = DFGGraph[SInt]("fig2.2")
     dfg.addPath(n1 >> 2 >> n4 >> n2 >> n1)
     dfg.addPath(n1 >> 3 >> n5 >> n3 >> n2)
     dfg.addPath(n1 >> 4 >> n6 >> n3)
@@ -71,7 +76,7 @@ object chap5 {
   val cmult = SIntCMult("cmult", 2, 10 bits, 0 cycles, 1 ns)
 
   def fig5_2 = {
-    val dfg = DFGGraph[SInt]()
+    val dfg = DFGGraph[SInt]("fig5.2")
     dfg.addVertex(add)
     dfg.addVertex(cmult)
     dfg.setInput(add)
@@ -81,7 +86,7 @@ object chap5 {
   }
 
   def fig5_2_inner_delay = {
-    val dfg = DFGGraph[SInt]()
+    val dfg = DFGGraph[SInt]("fig5.2_inner_delay")
     dfg.addVertex(add_inner_delay)
     dfg.addVertex(cmult)
     dfg.setInput(add_inner_delay)
@@ -95,7 +100,7 @@ object chap5 {
     val Seq(a, b, c) = Seq("a", "b", "c").map(name => sIntCMult(2, 10 bits, 0 cycles).asDSPNode(name, 0 cycles, 1 ns))
     val Seq(d, e) = Seq("d", "e").map(name => sIntAdder(10 bits, 0 cycles).asDSPNode(name, 0 cycles, 1 ns))
     printlnGreen("using fig 5.10")
-    val dfg = DFGGraph[SInt]
+    val dfg = DFGGraph[SInt]("fig5.10")
     dfg.addPath(x >> c >> 2 >> d >> 4 >> e)
     dfg.addPath(x >> b >> d)
     dfg.addPath(x >> a >> e)
@@ -108,7 +113,7 @@ object chap5 {
     val zero = SIntConst("sint_0", 0, 10 bits)
     val add = SIntAdderC("add", 10 bits, 0 cycles, 1 ns)
 
-    val dfg = DFGGraph[SInt]
+    val dfg = DFGGraph[SInt]("fig5.12")
     dfg.addVertex(add)
     dfg.addVertex(zero)
     dfg.setInput(add, 0)
@@ -140,8 +145,7 @@ object chap6 {
   )
 
   def fig6_3 = {
-    printlnGreen("using fig 6.3")
-    val dfg = DFGGraph[SInt]
+    val dfg = DFGGraph[SInt]("fig6.3")
     // add vertices
     (adds ++ cmults).foreach(dfg.addVertex(_))
     // drive vertices
@@ -162,8 +166,7 @@ object chap6 {
 
   // fig6.5(fig 6.3 before retiming)
   def fig6_5 = {
-    printlnGreen("using fig 6.3 before retiming")
-    val dfg = DFGGraph[SInt]
+    val dfg = DFGGraph[SInt]("fig6.5")
     (adds ++ cmults).foreach(dfg.addVertex(_))
     val input = dfg.setInput(add0)
     val exps = Seq(
@@ -196,7 +199,7 @@ object paper1992OnFolding {
 
 
   def fig6_a = {
-    val dfg = DFGGraph[SInt]
+    val dfg = DFGGraph[SInt]("paper1992fig6_a")
     cmuls.foreach(dfg.addVertex(_))
     dfg.addPath(cmul0 >> 0 >> cmul1 >> 1 >> cmul2 >> 2 >> cmul3)
     dfg.setInput(cmul0)
@@ -217,7 +220,7 @@ object paper1992OnFolding {
   val Seq(cmult0, cmult1, cmult2, cmult3, cmult4) = cmults
 
   def fig8_a = {
-    val dfg = DFGGraph[SInt]
+    val dfg = DFGGraph[SInt]("paper1992fig8_a")
     cmults.foreach(dfg.addVertex(_)) // mult0-4 = A1, A2, A3, A4, B
     dfg.addPath(cmult0 >> 1 >> cmult1 >> 1 >> cmult2 >> 2 >> cmult4) // A1 >> A2 >> A3 >> B
     dfg.addPath(cmult0 >> cmult3 >> cmult4) // A1 >> A4 >> B
@@ -241,7 +244,7 @@ object paper1992OnFolding {
   val Seq(sk0, sk1, sk2, sk3, sk4) = sKeeps
 
   def fig9_a: DFGGraph[SInt] = {
-    val dfg = DFGGraph[SInt]()
+    val dfg = DFGGraph[SInt]("paper1992fig9_a")
     fig9Nodes.foreach(dfg.addVertex(_))
     dfg.addVertex(zero)
     val x_n = dfg.addInput(s"x_n")
@@ -265,7 +268,7 @@ object paper1992OnFolding {
 
   def fig10 = {
 
-    val fig10a = DFGGraph[SInt]()
+    val fig10a = DFGGraph[SInt]("paper1992fig10_a")
     fig10Nodes.foreach(fig10a.addVertex(_))
     val x_1 = fig10a.setInput(a1, 0, s"x_1", Seq(Schedule(0, 2)))
     val x_2 = fig10a.setInput(a1, 0, s"x_2", Seq(Schedule(1, 2)))
@@ -306,7 +309,7 @@ object paper1992OnFolding {
   def foldingSet_example11 = Seq(Seq(a_4, a_2, null, a_3, a_1), Seq(m1, m3, m2, m4, null))
 
   def fig12_a = {
-    val dfg = DFGGraph[SInt]
+    val dfg = DFGGraph[SInt]("paper1992fig12_a")
     (fig12As ++ fig12Ms).foreach(dfg.addVertex(_))
     dfg.setInput(a_1)
     dfg.addPath(a_1 >> a_2)
@@ -327,7 +330,7 @@ object paper1992OnFolding {
   val Seq(sAdd0, sAdd1) = sAdds
 
   def fig13_a = {
-    val dfg = DFGGraph[SInt]
+    val dfg = DFGGraph[SInt]("paper1992fig13_a")
     cMuls.foreach(dfg.addVertex(_))
     sAdds.foreach(dfg.addVertex(_))
     dfg.addPath(sAdd0 >> 1 >> cMul0 >> 1 >> sAdd1 >> 1 >> cMul1 >> 2 >> sAdd0)
@@ -345,7 +348,7 @@ object paper1992OnFolding {
   val Seq(ac1, ac2, ac3) = fig14ACs
 
   def fig14_a: DFGGraph[SInt] = {
-    val dfg = DFGGraph[SInt]()
+    val dfg = DFGGraph[SInt]("paper1992fig14_a")
     fig14ACs.foreach(dfg.addVertex(_))
     dfg.addVertex(zero)
     // zero => adder
@@ -390,7 +393,7 @@ object MIMO {
       Seq(add, sub)
     }
 
-    val dfg = DFGGraph[ComplexNumber]
+    val dfg = DFGGraph[ComplexNumber]("fft4")
 
     import Operators._
 

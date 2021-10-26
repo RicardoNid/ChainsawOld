@@ -1,10 +1,12 @@
 package Chainsaw.DFG
 
+import Chainsaw._
 import org.slf4j.{Logger, LoggerFactory}
 
 // TODO: when inner delay = 3, edge delay = 1, N = 2, we need a pre-retiming
 class Unfolding[T](dfg: DFGGraph[T], unfoldingFactor: Int) extends Transform {
-  val logger: Logger = LoggerFactory.getLogger("unfolding procedure")
+
+  val logger = LoggerFactory.getLogger("unfolding procedure")
 
   if (!dfg.hasNoParallelEdge) require(dfg.globalLcm % unfoldingFactor == 0) // when there's mux and we use unfolding
 
@@ -32,7 +34,7 @@ class Unfolding[T](dfg: DFGGraph[T], unfoldingFactor: Int) extends Transform {
   lazy val unfolded: DFGGraph[T] = {
     logger.info("start unfolding")
     implicit val preprocessedDFG: DFGGraph[T] = preprocessed
-    val unfoldedDFG = DFGGraph[T]()
+    val unfoldedDFG = DFGGraph[T](s"${dfg.name}_unfolded")
     // nodes duplicated on the unfolded DFG, including I/O nodes
     val nodeMap = preprocessedDFG.vertexSeq.map(vertex => vertex -> (0 until unfoldingFactor).map(i => vertex.copy(s"${vertex.name}_unfolded_$i"))).toMap
     preprocessedDFG.foreachEdge { edge =>

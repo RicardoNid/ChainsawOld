@@ -17,7 +17,7 @@ object DSPHardware {
   def apply[T](impl: (Seq[T], GlobalCount) => Seq[T], inDegree: Int, outWidths: Seq[BitCount]): DSPHardware[T] = new DSPHardware(impl, inDegree, outWidths)
 }
 
-abstract class DSPNode[T] {
+trait DSPNode[T] {
   val hardware: DSPHardware[T]
   val name: String
   val delay: Int

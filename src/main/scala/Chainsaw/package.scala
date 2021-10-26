@@ -17,6 +17,10 @@ package object Chainsaw extends RealFactory {
 
   /*
   * following methods are designed for Real type*/
+
+  import org.slf4j.{LoggerFactory, Logger}
+  val logger = LoggerFactory.getLogger("Chainsaw logger")
+
   var ChainsawNumericDebug = false
   var ChainsawExpLowerBound = -65536
 

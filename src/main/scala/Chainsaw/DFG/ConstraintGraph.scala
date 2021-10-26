@@ -21,7 +21,7 @@ import scala.util.{Failure, Success, Try}
 import scala.collection.JavaConversions._
 
 
-class ConstraintGraph[T]() extends DFGGraph[T]() {
+class ConstraintGraph[T]() extends DFGGraph[T]("constraintGraph") {
 
   val referenceNode: GeneralNode[T] = VoidNode[T]()
   super.addVertex(referenceNode)

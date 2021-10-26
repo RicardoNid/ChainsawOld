@@ -28,7 +28,7 @@ import EdgeDirection._
 
 case class RegularEdge(direction: EdgeDirection, outOrder: Int, inOrder: Int, delay: Double)
 
-class RegularDFG[T] extends DFGGraph[T] {
+class RegularDFG[T](name:String) extends DFGGraph[T](name) {
 
   def build2D(row: Int, col: Int, node: DSPNode[T], edges: Seq[RegularEdge]) = {
 
@@ -53,7 +53,7 @@ class RegularDFG[T] extends DFGGraph[T] {
 
 object RegularDFG {
   def main(args: Array[String]): Unit = {
-    val dfg = new RegularDFG[Bits]()
+    val dfg = new RegularDFG[Bits]("examplRegularGraph")
     val and: BinaryNode[Bits] = BinaryNode(Operators.and, "and")
     dfg.build2D(3, 3, and, Seq[RegularEdge]())
   }

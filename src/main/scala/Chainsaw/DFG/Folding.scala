@@ -59,7 +59,7 @@ class Folding[T](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with Foldable[
     logger.debug(s"retimed dfg:\n$retimedDFG")
     logger.debug(s"retimed folded delays ${retimedDFG.edgeSeq.map(foldedDelay).mkString(" ")}")
     // adding vertices
-    val foldedDFG = DFGGraph[T]()
+    val foldedDFG = DFGGraph[T](s"${dfg.name}_folded")
     (retimedDFG.inputNodes ++ retimedDFG.outputNodes ++ retimedDFG.constantNodes).foreach(foldedDFG.addVertex(_))
     devices.foreach(foldedDFG.addVertex(_))
 

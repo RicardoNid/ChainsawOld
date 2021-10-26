@@ -62,26 +62,26 @@ package object dspTest {
   def pokeZero[D](port: Data): Unit = {
     val complex0 = MComplex(0, 0)
     port match {
-//      case bool: Bool => bool #= false
+      //      case bool: Bool => bool #= false
       case bitVector: BitVector => bitVector #= 0
       case sfix: SFix => sfix #= 0
       case complexNumber: ComplexNumber => complexNumber #= complex0
       case vec: Vec[_] =>
         vec.head match {
-//          case bool: Bool => vec.asInstanceOf[Vec[Bool]].foreach(_ #= false)
+          //          case bool: Bool => vec.asInstanceOf[Vec[Bool]].foreach(_ #= false)
           case bitVector: BitVector => vec.asInstanceOf[Vec[BitVector]].foreach(_ #= 0)
           case sfix: SFix => vec.asInstanceOf[Vec[SFix]].foreach(_ #= 0)
           case complexNumber: ComplexNumber => vec.asInstanceOf[Vec[ComplexNumber]].foreach(_ #= complex0)
         }
       case fragment: Fragment[_] =>
         fragment.fragment match {
-//          case bool: Bool => bool #= false
+          //          case bool: Bool => bool #= false
           case bitVector: BitVector => bitVector #= 0
           case sfix: SFix => sfix #= 0
           case complexNumber: ComplexNumber => complexNumber #= complex0
           case vec: Vec[_] =>
             vec.head match {
-//              case bool: Bool => vec.asInstanceOf[Vec[Bool]].foreach(_ #= false)
+              //              case bool: Bool => vec.asInstanceOf[Vec[Bool]].foreach(_ #= false)
               case bitVector: BitVector => vec.asInstanceOf[Vec[BitVector]].foreach(_ #= 0)
               case sfix: SFix => vec.asInstanceOf[Vec[SFix]].foreach(_ #= 0)
               case complexNumber: ComplexNumber => vec.asInstanceOf[Vec[ComplexNumber]].foreach(_ #= complex0)
@@ -170,10 +170,13 @@ package object dspTest {
     def halt() = {
       if (dc.valid.isInput) { // as slave
         dc.valid #= false
+
         dc.payload match {
           case fragment: Fragment[T] => fragment.last #= false
-            fragment.fragment.randomize()
-          case payload => payload.randomize()
+          // CAUTION: payload should remains the same
+          //            fragment.fragment.randomize()
+          //          case payload => payload.randomize()
+          case _ => // do nothing
         }
       }
       else { // as master

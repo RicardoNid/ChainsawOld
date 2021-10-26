@@ -1,10 +1,10 @@
 package Chainsaw.DFG
 
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.LoggerFactory
 
 class Retiming[T](val dfg: DFGGraph[T], solution: Map[DSPNode[T], Int]) extends Transform {
 
-  val logger: Logger = LoggerFactory.getLogger("retiming procedure")
+  val logger = LoggerFactory.getLogger("retiming procedure")
 
   lazy val retimed: DFGGraph[T] = {
     logger.info("start retiming")

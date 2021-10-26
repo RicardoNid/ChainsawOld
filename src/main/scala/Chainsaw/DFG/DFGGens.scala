@@ -17,7 +17,7 @@ object DFGGens {
   def fir[THard <: Data, TSoft](add: DSPNode[THard], mult: DSPNode[THard], firType: FirType,
                                 coeffs: Seq[TSoft], coeffWidth: BitCount)(implicit converter: (TSoft, BitCount) => THard): DFGGraph[THard] = {
 
-    val dfg = DFGGraph[THard]()
+    val dfg = DFGGraph[THard]("fir graph")
     val size = coeffs.size
     val mults = (0 until size).map(i => mult.copy(s"${mult.name}_$i"))
     val adds = (0 until size - 1).map(i => add.copy(s"${add.name}_$i"))

@@ -4,6 +4,7 @@ import Chainsaw._
 import org.jgrapht._
 import org.jgrapht.alg.cycle.CycleDetector
 import org.jgrapht.graph._
+import org.jgrapht.util.TypeUtil
 import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 
@@ -17,7 +18,7 @@ import scala.language.postfixOps
  * @tparam T
  * learn more: [[]]
  */
-class DFGGraph[T]() extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
+class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
 
   implicit def currentDFG: DFGGraph[T] = this
 
@@ -86,7 +87,7 @@ class DFGGraph[T]() extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](
 
   // Add edge into basicDFG(MISO, no MUX)
   def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double, schedules: Seq[Schedule]): Unit = {
-    if (!this.isInstanceOf[ConstraintGraph[T]]){
+    if (!this.isInstanceOf[ConstraintGraph[T]]) {
       if (source.hardware.outWidths.size > 1) logger.warn(s"adding edge to MIMO node $source with no specified port number")
       if (target.hardware.inDegree > 1) logger.warn(s"adding to MIMO node $target with no specified port number")
     }
@@ -190,19 +191,11 @@ class DFGGraph[T]() extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](
   def folded(foldingSet: Seq[Seq[DSPNode[T] with Foldable[T]]]): DFGGraph[T] = new Folding(this, foldingSet).folded
 
   override def toString: String =
-    s"-----graph-----\n" +
+    s"-----graph:$name-----\n" +
       s"nodes:\n${vertexSeq.mkString(" ")}\n" +
       s"edges:\n${edgeSeq.map(edge => s"${edge.symbol} $edge").mkString("\n")}\n" +
       s"loops:\n${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}\n" +
       s"------end------\n"
-
-  // TODO: consider the exeTime of a subgraph, more test on this
-  //  def asNode(implicit holderProvider: BitCount => T): GeneralNode[T] = {
-  //    require(isForwarding && isHomogeneous)
-  //    val fakeImpl = (dataIns: Seq[T], _: GlobalCount) => impl(dataIns)
-  //    val hardware = DSPHardware(fakeImpl, inputNodes.size, Seq.fill(outputNodes.size)(-1 bits))
-  //    GeneralNode(hardware, "subgraph", latency cycles, 1 ns)
-  //  }
 
   /** Besides nodes and edges, we clone the weights
    */
@@ -214,5 +207,5 @@ class DFGGraph[T]() extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](
 }
 
 object DFGGraph {
-  def apply[T](): DFGGraph[T] = new DFGGraph()
+  def apply[T](name: String): DFGGraph[T] = new DFGGraph(name)
 }

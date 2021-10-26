@@ -12,10 +12,11 @@ import scala.language.postfixOps
  */
 class DFGGraphTest extends AnyFlatSpec {
 
+
   import Operators._
 
   "dfg" should "be implemented correctly" in {
-    val dfg = DFGGraph[SInt]()
+    val dfg = DFGGraph[SInt]("simpleGraph")
 
     val pts = (0 until 4).map(i => sintKeep.asDSPNode(s"pt$i", 1 cycles, 1 ns))
     val Seq(pt0, pt1, pt2, pt3) = pts
@@ -100,13 +101,14 @@ class DFGGraphTest extends AnyFlatSpec {
     assert(cg.getSolution.values.zip(Seq(1, 1, 1, 0)).forall { case (d, i) => d == i })
   }
 
-  "critical-path-related algos" should "work on fig2.2" in { // TODO: add a test for graph with MIMO devices
-    val dfg = chap2.fig2_2
-    val algo = new CriticalPathAlgo(dfg)
-    assert(algo.delaysCount == 4)
-    assert(algo.criticalPathLength == 5.0)
-    assert(algo.iterationBound == 2.0)
-  }
+  // FIXME: while using JVM 8(thus, JGraphT 1.4.0), this is not available
+  //  "critical-path-related algos" should "work on fig2.2" in { // TODO: add a test for graph with MIMO devices
+  //    val dfg = chap2.fig2_2
+  //    val algo = new CriticalPathAlgo(dfg)
+  //    assert(algo.delaysCount == 4)
+  //    assert(algo.criticalPathLength == 5.0)
+  //    assert(algo.iterationBound == 2.0)
+  //  }
 
   "the unfolding algorithm" should "work on fig5.2" in verifyUnfolding(chap5.fig5_2, 2)
   //  it should "work on fig5.2 with innder delay" in DFGTestUtil.verifyUnfolding(chap5.fig5_2_inner_delay, 2)
