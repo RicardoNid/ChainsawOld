@@ -37,7 +37,7 @@ class DFGGraphTest extends AnyFlatSpec {
   }
 
   it should "work on nested DFG" in {
-    println(implementingDFGs.nestedDFG)
+    println(new DFGImpl(implementingDFGs.nestedDFG).implAsComponent())
   }
 
 

@@ -31,14 +31,13 @@ object implementingDFGs {
   //
   def nestedDFG: DFGGraph[SInt] = {
 
-    val add = (a:SInt, b:SInt) => a + b
-    val mult = (a:SInt, b:SInt) => a * b
+    val add = (a: SInt, b: SInt) => a + b
+    val mult = (a: SInt, b: SInt) => a * b
     val addNode = BinaryNode(add, "add")
     val multNode = BinaryNode(mult, "mult")
 
     val butterfly = DFGGraph[SInt]("butterfly")
-    val add0 = SIntAdder("add0", 10 bits, 1 cycles, 1 ns)
-    val add1 = SIntAdder("add1", 10 bits, 1 cycles, 1 ns)
+    val Seq(add0, add1) = (0 until 2).map(i => addNode.copy(s"add$i"))
     butterfly.addVertex(add0)
     butterfly.addVertex(add1)
     val in0 = butterfly.addInput("in0")
@@ -52,8 +51,15 @@ object implementingDFGs {
 
     println(butterfly)
     val whole = DFGGraph[SInt]("simpleNested")
-//        whole.addVertex(butterfly.asNode)
-//        whole.addVertex(butterfly.asNode)
+    val butterflies = (0 until 2).map(i => butterfly.asNode[SInt](s"b$i"))
+    val Seq(b0, b1) = butterflies
+    whole.addVertices(butterflies: _*)
+    whole.addEdge(b0(0), b1(0), 1)
+    whole.addEdge(b0(1), b1(1), 1)
+    whole.setInput(b0, 0)
+    whole.setInput(b0, 1)
+    whole.setOutput(b1, 0)
+    whole.setOutput(b1, 1)
     whole
   }
 }

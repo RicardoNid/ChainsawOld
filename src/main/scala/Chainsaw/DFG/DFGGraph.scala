@@ -204,6 +204,21 @@ class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[
     graph.foreachEdge(edge => graph.setEdgeWeight(edge, edge.weight))
     graph
   }
+
+  // TODO: consider carefully on these properties
+  def asNode[THard <: Data](name: String)(implicit holderProvider: BitCount => THard): GeneralNode[THard] = {
+    require(isForwarding && isHomogeneous)
+    GeneralNode[THard](
+      DSPHardware(
+        impl = (dataIns: Seq[THard], _: GlobalCount) => impl[THard](dataIns), // FIXME: this won't provide the counter of outer graph, is that legal?
+        inDegree = inputNodes.size,
+        outWidths = Seq.fill(outputNodes.size)(-1 bits) // FIXME: what if we use subgraph in
+      ),
+      name,
+      latency cycles,
+      0.0 ns // FIXME: this could be difficult to define
+    )
+  }
 }
 
 object DFGGraph {

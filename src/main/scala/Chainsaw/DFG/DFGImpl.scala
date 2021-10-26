@@ -94,4 +94,13 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
 
   def impl: Seq[T] => Seq[T] = if (dfg.isRecursive) implRecursive else implForwarding
 
+  def implAsComponent(inputWidths: Seq[BitCount] = Seq.fill(dfg.inputNodes.size)(10 bits)): Unit = {
+    GenRTL(new Component {
+      val dataIn: Flow[Vec[T]] = slave Flow Vec(inputWidths.map(holderProvider(_)))
+      val dataOut: Flow[Vec[T]] = master Flow Vec(dfg.outputNodes.map(output => holderProvider(output.hardware.outWidths.head)))
+      dataOut.payload := Vec(impl(dataIn.payload))
+      dataOut.valid := Delay(dataIn.valid, dfg.latency, init = False)
+    })
+  }
+
 }
