@@ -36,7 +36,7 @@ class DFGGensTest extends AnyFlatSpec {
 
     val and = BinaryNode(Operators.and, "and")
     val xor = BinaryNode(Operators.xor, "xor")
-    def convDirect(coeffs: Seq[Int]): DFGGraph[Bits] = DFGGens.fir(xor, and, DIRECT, coeffs, 1 bits)
+    def convDirect(coeffs: Seq[Int]): DFGGraph[Bits] = DFGGens.fir(xor, and, SYSTOLIC, coeffs, 1 bits)
 
     import Communication.channelCoding._
     val testCase = (0 until 100).map(_ => DSPRand.nextBigInt(1))
