@@ -26,7 +26,6 @@ object DFGGens {
     val input = dfg.addInput("input")
 
     // allocate the coeff to mults, this is the same for all architectures
-
     firType match {
       case DIRECT =>
         mults.zip(consts.reverse).foreach { case (mult, coeff) => dfg.addEdge(coeff(0), mult(0), 0) }
@@ -43,8 +42,6 @@ object DFGGens {
     dfg.setOutput(adds.last)
     dfg
   }
-
-  import dspTest._
 
   def main(args: Array[String]): Unit = {
 

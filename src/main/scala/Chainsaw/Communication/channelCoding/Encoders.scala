@@ -58,29 +58,19 @@ case class ConvEncoder(convConfig: ConvConfig) extends Component with DSPTestabl
   val regs: Array[Bits] = ms.map(m => RegInit(B(0, m bits)))
   //  when(clear)(regs.foreach(_.clearAll()))
   //    .otherwise(regs.zip(dataIn.payload).foreach { case (bits, bool) => bits := bool ## (bits >> 1) })
-
   regs.zip(dataIn.payload).foreach { case (bits, bool) => bits := bool ## (bits >> 1) }
-
   val data: IndexedSeq[Bits] = regs.zip(dataIn.payload).map { case (bits, bool) => bool ## bits }
   data.zipWithIndex.foreach { case (bits, i) => bits.setName(s"data$i") }
-
   dataOut.payload := Vec(Encoders.convenc(data, convConfig))
   dataOut.valid := dataIn.valid
 }
 
 case class ConvEncoderDFG(convConfig: ConvConfig) extends Component with DSPTestable[Vec[Bits], Vec[Bits]] {
-
-  val and: BinaryNode[Bits] = BinaryNode(Operators.and, "and")
-  val xor: BinaryNode[Bits] = BinaryNode(Operators.xor, "xor")
-
-  def convDirect(coeffs: Seq[Int]): DFGGraph[Bits] = DFGGens.fir(xor, and, DIRECT, coeffs, 1 bits)
-
   import convConfig._
-
-  val dataIn: Flow[Vec[Bits]] = slave Flow Vec(Bits(1 bits), n)
-  val dataOut: Flow[Vec[Bits]] = master Flow Vec(Bits(), k)
-  val latency = 0
-
+  override val dataIn: Flow[Vec[Bits]] = slave Flow Vec(Bits(1 bits), n)
+  override val dataOut: Flow[Vec[Bits]] = master Flow Vec(Bits(), k)
+  override val latency: Int = 0
   dataOut.valid := Delay(dataIn.valid, latency, init = False)
   dataOut.payload := Vec(Encoders.convencDFG(dataIn.payload, convConfig))
+  override type RefOwnerType = this.type
 }

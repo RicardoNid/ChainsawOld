@@ -30,7 +30,7 @@ object simpleFolding {
 object implementingDFGs {
   //
   def nestedDFG: DFGGraph[SInt] = {
-    val butterfly = DFGGraph[SInt]
+    val butterfly = DFGGraph[SInt]()
     val add0 = SIntAdder("add0", 10 bits, 1 cycles, 1 ns)
     val add1 = SIntAdder("add1", 10 bits, 1 cycles, 1 ns)
     butterfly.addVertex(add0)
@@ -45,7 +45,7 @@ object implementingDFGs {
     butterfly.setOutput(add1)
 
     println(butterfly)
-    val whole = DFGGraph[SInt]
+    val whole = DFGGraph[SInt]()
     //    whole.addVertex(butterfly.asNode)
     //    whole.addVertex(butterfly.asNode)
     whole
@@ -56,7 +56,7 @@ object chap2 {
   def fig2_2 = {
     val Seq(n1, n2, n3, n4, n5, n6) = Seq(1, 1, 1, 2, 2, 2).zipWithIndex.map { case (exe, i) => GeneralNode[SInt](s"node${i + 1}", 0 cycles, exe sec) }
     printlnGreen("using fig 2.2")
-    val dfg = DFGGraph[SInt]
+    val dfg = DFGGraph[SInt]()
     dfg.addPath(n1 >> 2 >> n4 >> n2 >> n1)
     dfg.addPath(n1 >> 3 >> n5 >> n3 >> n2)
     dfg.addPath(n1 >> 4 >> n6 >> n3)

@@ -36,7 +36,7 @@ class EncodersTest extends AnyFlatSpec {
   it should "be implemented efficiently" in {
     val impls = Seq(basicEncoder, DFGEncoder)
     val configs = Seq(conv802_11, convMatlab)
-    val reports =  Seq.tabulate(2,2)((i,j) => synthConvEncoder(impls(i), configs(j))).flatten
+    val reports = Seq.tabulate(2,2)((i,j) => synthConvEncoder(impls(i), configs(j))).flatten
     println(reports.mkString("\n"))
   }
 
