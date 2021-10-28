@@ -66,7 +66,7 @@ object DFGTestUtil {
         .compile(new Component {
           val dataIn = slave Flow Vec(elementType, dfg.inputNodes.size)
           val dataOut = master Flow Vec(elementType, dfg.outputNodes.size)
-          dataOut.payload := Vec(dfg.impl(dataIn.payload))
+          dataOut.payload := Vec(dfg.impl(dataIn.payload)).resized
           dataOut.valid := Delay(dataIn.valid, latencies, init = False)
         }).doSim { dut =>
         import dut.{clockDomain, dataIn, dataOut}
@@ -131,7 +131,7 @@ object DFGTestUtil {
     val algo = new Folding(original, foldingSets)
     val foldedDFG = algo.folded
     val N = foldingSets.head.size
-    verifyFunctionalConsistency(original, foldedDFG, HardType(SInt(10 bits)), -N, algo.latencyTransformations, name = name)
+    verifyFunctionalConsistency(original, foldedDFG, HardType(SInt(10 bits)), -N, algo.latencyTransformations, name = name) // TODO: customized width
   }
 
   def verifyUnfolding(original: DFGGraph[SInt], unfoldingFactor: Int, name: String = null) = {

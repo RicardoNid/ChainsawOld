@@ -25,6 +25,7 @@ class EncodersTest extends AnyFlatSpec {
 
   val conv802_11: ConvConfig = ConvConfig(Array(171, 133), radix = 8)
   val convMatlab: ConvConfig = ConvConfig(Array(Array(23, 35, 0), Array(0, 5, 13)), radix = 8)
+
   val basicEncoder: ConvConfig => ConvEncoder = ConvEncoder
   val DFGEncoder: ConvConfig => ConvEncoderDFG = ConvEncoderDFG
 

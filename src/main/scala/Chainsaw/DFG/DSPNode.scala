@@ -1,14 +1,8 @@
 package Chainsaw.DFG
 
+import scalaxy.debug.impl
 import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
 
-import scala.collection.mutable.ArrayBuffer
 import scala.language.postfixOps
 
 class DSPHardware[T](val impl: (Seq[T], GlobalCount) => Seq[T], val inDegree: Int, val outWidths: Seq[BitCount] = Seq(-1 bit))
@@ -102,8 +96,23 @@ case class BinaryHardware[T](op: (T, T) => T, width: BitCount = -1 bits)
   extends DSPHardware[T](impl = (dataIns: Seq[T], _: GlobalCount) => Seq(op(dataIns(0), dataIns(1))), inDegree = 2, outWidths = Seq(width))
 
 class BinaryNode[T](op: (T, T) => T, width: BitCount = -1 bits, name: String, delay: CyclesCount, exeTime: TimeNumber)
-  extends GeneralNode[T](BinaryHardware(op, width), name, delay, exeTime)
+  extends GeneralNode[T](BinaryHardware(op, width), name, delay, exeTime) with Foldable[T] {
+  override def copy(newName: String): BinaryNode[T] = new BinaryNode(op, width, newName, delay, exeTime)
+}
 
 object BinaryNode {
   def apply[T](op: (T, T) => T, name: String, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): BinaryNode[T] = new BinaryNode(op, width, name, delay, exeTime)
+}
+
+case class TrinaryHardware[T](op: (T, T, T) => T, width: BitCount = -1 bits)
+  extends DSPHardware[T](impl = (dataIns: Seq[T], _: GlobalCount) => Seq(op(dataIns(0), dataIns(1), dataIns(2))), inDegree = 3, outWidths = Seq(width))
+
+class TrinaryNode[T](op: (T, T, T) => T, width: BitCount = -1 bits, name: String, delay: CyclesCount, exeTime: TimeNumber)
+  extends GeneralNode[T](TrinaryHardware(op, width), name, delay, exeTime) with Foldable[T] {
+  override def copy(newName: String): TrinaryNode[T] = new TrinaryNode(op, width, newName, delay, exeTime)
+}
+
+object TrinaryNode {
+  def apply[T](op: (T, T, T) => T, name: String, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): TrinaryNode[T] =
+    new TrinaryNode(op, width, name, delay, exeTime)
 }

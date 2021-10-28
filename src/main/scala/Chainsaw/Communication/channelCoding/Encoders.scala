@@ -1,6 +1,6 @@
 package Chainsaw.Communication.channelCoding
 
-import Chainsaw.DFG.FirType.DIRECT
+import Chainsaw.DFG.FirArch.DIRECT
 import Chainsaw.DFG._
 import Chainsaw._
 import Chainsaw.dspTest._

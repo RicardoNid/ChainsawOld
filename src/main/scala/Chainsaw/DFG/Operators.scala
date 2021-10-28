@@ -15,6 +15,15 @@ object Operators {
   val or: (Bits, Bits) => Bits = (a: Bits, b: Bits) => a | b
   val xor: (Bits, Bits) => Bits = (a: Bits, b: Bits) => a ^ b
 
+  val sintAdd: (SInt, SInt) => SInt = (a: SInt, b: SInt) => a + b
+  val sintMult: (SInt, SInt) => SInt = (a: SInt, b: SInt) => a * b
+
+  def sintMACDSP(delay: Int): (SInt, SInt, SInt) => SInt = (a: SInt, b: SInt, c: SInt) => {
+    val ret = if (delay == 0) a * b + c else RegNext(a * b) + c
+    ret.addAttribute("use_dsp", "yes")
+    ret
+  }
+
   /** An operator which won't output the input, whether it is of hardware or software
    */
   def Line[T](width: BitCount = -1 bits): DSPHardware[T] = DSPHardware(
@@ -205,7 +214,7 @@ object Operators {
     }
 
     // trivial values
-    val trivialValue = if (N % 8 == 0 && index % (N / 8) == 0) index / (N / 8) else -1
+    val trivialValue = if (N % 8 == 0 && index % (N / 8) == 0) index / (N / 8) else -114
     trivialValue match {
       case 0 => delayed(signal)
       case 2 => delayed(-signal.multiplyI)
@@ -224,5 +233,7 @@ object Operators {
         fullComplex.truncated(dataType)
       }
     }
+
+
   }
 }

@@ -14,7 +14,9 @@ class Folding[T](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with Foldable[
   val devices: Seq[DSPNode[T]] = foldingSet.map { nodes => // map node -> the device it belongs(folded to)
     val nonEmptyNode = nodes.filterNot(_ == null).head // TODO: better solution
     // replace null by an arbitrary nonempty node, which should have no influence on the function as result of null operation won't be used
-    val filledNodes = nodes.map(node => if (node != null) node else nonEmptyNode)
+    val filledNodes: Seq[DSPNode[T] with Foldable[T]] = nodes.map(node => if (node != null) node else nonEmptyNode)
+    logger.debug(s"folding ${filledNodes.mkString(" ")}")
+    logger.debug(s"folding ${filledNodes.map(_.getClass).mkString(" ")}")
     filledNodes.head.fold(filledNodes)
   }
   val deviceOf: Map[DSPNode[T], DSPNode[T]] = foldingSet.zip(devices).flatMap { case (nodes, device) => nodes.map(_ -> device) }.toMap
