@@ -6,6 +6,8 @@ import spinal.core._
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
 
+// something new
+
 package object DFG {
 
   implicit val sintProvider = (width: BitCount) => if (width.value >= 1) SInt(width) else SInt()
