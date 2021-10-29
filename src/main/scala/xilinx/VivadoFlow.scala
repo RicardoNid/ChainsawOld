@@ -107,7 +107,10 @@ class VivadoFlow[T <: Component](
       assert(force, "the workspace is not empty, to flush it anyway, using \"force = true\"")
       FileUtils.deleteDirectory(workspacePathFile)
     }
-    workspacePathFile.mkdir()
+
+//    workspacePathFile.mkdir()    // this may lead to bug
+    Process(s"mkdir -p $workspacePath") !      // create directory in this way instead
+
     // generate systemverilog
     val spinalReport = SpinalConfig(targetDirectory = workspacePath).generateSystemVerilog(design.setDefinitionName(topModuleName))
 
