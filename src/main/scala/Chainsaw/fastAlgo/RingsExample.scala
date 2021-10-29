@@ -19,6 +19,38 @@ object RingsExample {
     val value: IntZ = product.evaluate(3)
     println(value.intValue())
 
+    println(s"Z is a field: ${Z.isField}")
+    println(s"Z/4 is a field: ${Zp(4).isField}")
+    println(s"GF(3) is a field: ${GF(3, 1).isField}")
+    println(s"Z/7 is a field: ${Zp(7).isField}")
+
+
+    case class Term(coeff: Long, order: Long)
+
+    def buildString(terms: Seq[Term], symbol: String) = {
+      terms.map(term => s"${term.coeff}*$symbol^${term.order}").mkString("+")
+    }
+
+    def evaluateHUAWEI(poly0: Seq[Term], poly1: Seq[Term], ret: Seq[Term]) = {
+      val polyRing = UnivariateRingZp64(3329, "x")
+      val modulo = polyRing("x^256 + 1")
+
+      val poly0String = buildString(poly0, "x")
+      val poly1String = buildString(poly1, "x")
+      val golden = polyRing(buildString(poly0, "x")) * polyRing(buildString(poly1, "x")) % modulo
+      val goldenTerms = (0 until 255).map(i => i -> golden.get(i)).filterNot(_._2 == 0).map{ case (order, coeff) => Term(coeff, order)}
+
+      println("evaluate HUAWEI")
+      println(s"yours:  ${ret.mkString(" ")}")
+      println(s"golden: ${goldenTerms.mkString(" ")}")
+      assert(ret.diff(goldenTerms).isEmpty, s"${ret.diff(goldenTerms)}")
+    }
+
+    val thePoly1 = Seq(Term(278,245), Term(1,0))
+    val thePoly2 = Seq(Term(213,399), Term(2,0))
+    val result = Seq(Term(2,0), Term(2621,132), Term(3116,143), Term(556,246))
+    evaluateHUAWEI(thePoly1, thePoly2, result)
+
     val Z7 = Zp(7)
 
     // do arithmetics
@@ -33,7 +65,7 @@ object RingsExample {
     /** Lagrange polynomial interpolation formula
      *
      * @param points x -> p(x) pairs
-     * @param ring the background polynomial ring of interpolation
+     * @param ring   the background polynomial ring of interpolation
      * @tparam Poly the polynomial type
      * @tparam Coef the coefficient ring type
      * @return result polynomial of Lagrange interpolation
