@@ -81,10 +81,28 @@ object lattice {
     val n = coeffsF.size
     val phi = getPhi(cfRing, n)
     val inversePhi: Long = cfRing.pow(phi, -1)
-    val modifiedCoeffsF = coeffsF.zipWithIndex.map{ case (coeff, i) => coeff * cfRing.pow(phi, i)}
-    val modifiedCoeffsG = coeffsG.zipWithIndex.map{ case (coeff, i) => coeff * cfRing.pow(phi, i)}
+    val modifiedCoeffsF = coeffsF.zipWithIndex.map { case (coeff, i) => coeff * cfRing.pow(phi, i) }
+    val modifiedCoeffsG = coeffsG.zipWithIndex.map { case (coeff, i) => coeff * cfRing.pow(phi, i) }
     val ret = CCByNTT(modifiedCoeffsF, modifiedCoeffsG)
-    ret.zipWithIndex.map{ case (coeff, i) => coeff * cfRing.pow(inversePhi, i)}.map(cfRing(_))
+    ret.zipWithIndex.map { case (coeff, i) => coeff * cfRing.pow(inversePhi, i) }.map(cfRing(_))
+  }
+
+  def K2RED(c: Int, q: Int) = { // TODO: generalize this for different q
+    val m = (q - 1).toBinaryString.reverse.takeWhile(_ == '0').size
+    val k = (q - 1) / (1 << m)
+    require(q == k * (1 << m) + 1) // q = k * 2^m + 1
+
+    val factor = 1 << m
+    val cl = c % factor
+    val ch = c / factor
+    val cPrime = k * cl - ch
+    val cPrimeSize = cPrime.toBinaryString.dropWhile(_ == '1').size + 1
+    require(cPrimeSize <= 17, s"$ch, $cl") // extra bit(16 + 1) for sign extension
+    val cPrimel = cPrime % factor // c7 -> c0
+    val cPrimeh = cPrime / factor // c15 -> c8
+    val cPrime2 = k * cPrimel - cPrimeh
+    val ret = if (cPrime2 < 0) (cPrime2 % q) + q else cPrime2
+    ret
   }
 
 }

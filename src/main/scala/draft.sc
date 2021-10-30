@@ -1,3 +1,3 @@
-def gcd(x:Int, y:Int):Int = if(y == 0) x else gcd(y, x % y)
-
-(213 * 245) % 3329
+val a = "1234"
+val b = "12"
+a.diff(b)

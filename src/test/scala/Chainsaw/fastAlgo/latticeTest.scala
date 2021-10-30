@@ -59,10 +59,13 @@ class latticeTest extends AnyFlatSpec {
 
   val f, g = getTestCase(n)
   val a, b = getTestCase(n / 2)
+  val cs = (0 until 100).map(_ => DSPRand.nextInt(3328 * 3328))
   "the algo to accelerate polynomial multiplication on ideal lattice" should "have a correct decomposition" in verifyDecomposition(f, g, 256)
 
   it should "be transformed by NTT correctly" in assert(a.diff(INTT(NTT(a))).isEmpty)
   it should "be implemented as cyclic convolution correctly" in assert(CCByNTT(a, b).diff(cyclicConvolution(a, b)).isEmpty)
   it should "be implemented as negative wrapped convolution correctly" in assert(NWCByNTT(a, b).diff(NWC(a, b)).isEmpty)
+
+  it should "implements K2RED algo correctly" in assert(cs.forall(c => (K2RED(c, 3329) % 3329) == (13 * 13 * c) % 3329))
 
 }
