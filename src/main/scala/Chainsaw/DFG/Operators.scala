@@ -17,6 +17,7 @@ object Operators {
 
   val sintAdd: (SInt, SInt) => SInt = (a: SInt, b: SInt) => a + b
   val sintMult: (SInt, SInt) => SInt = (a: SInt, b: SInt) => a * b
+  val sintMultAdd:(SInt , SInt , SInt) => SInt = (a: SInt , b: SInt , c: SInt) => (a * b).resized + c
 
   def sintMACDSP(delay: Int): (SInt, SInt, SInt) => SInt = (a: SInt, b: SInt, c: SInt) => {
     val ret = if (delay == 0) a * b + c else RegNext(a * b) + c
@@ -32,101 +33,6 @@ object Operators {
     outWidths = Seq(width)
   )
 
-  def sIntConst(constant: Int, width: BitCount) = DSPHardware(
-    (_: Seq[SInt], _: GlobalCount) => Seq(S(constant, width)),
-    1,
-    Seq(width))
-
-  class SIntConst(name: String, val constant: Int, width: BitCount) extends
-    ConstantNode(sIntConst(constant, width), name) with Foldable[SInt] {
-    override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = {
-      val constants = sources.map(_.asInstanceOf[SIntConst].constant)
-      val foldedFunction = (_: Seq[SInt], _: GlobalCount) => Seq(sintCoeffROM(constants, width))
-      val foldedHardware = DSPHardware[SInt](foldedFunction, 1, Seq(width))
-      ConstantNode(foldedHardware, s"foldFrom${sources.head.name}")
-    }
-  }
-
-  object SIntConst {
-    def apply(name: String, constant: Int, width: BitCount): SIntConst = new SIntConst(name, constant, width)
-  }
-
-
-  def sIntInc(width: BitCount, delay: CyclesCount) = DSPHardware(
-    (dataIns: Seq[SInt], _: GlobalCount) => Seq(Delay(dataIns(0) + 1, delay.toInt, init = dataIns.head.getZero)),
-    1,
-    Seq(width))
-
-  def sIntMult(width: BitCount, delay: CyclesCount) = DSPHardware(
-    (dataIns: Seq[SInt], _: GlobalCount) => Seq(Delay(dataIns(0) * dataIns(1), delay.toInt, init = dataIns.head.getZero)),
-    2,
-    Seq(width))
-
-  class SIntMult(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber)
-    extends GeneralNode(sIntMult(width, delay), name, delay, exeTime) with Foldable[SInt] {
-    override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = SIntAdder(s"foldFrom${sources.head.name}", width, delay, exeTime)
-  }
-
-  object SIntMult {
-    def apply(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber = 1 ns): SIntMult = new SIntMult(name, width, delay, exeTime)
-  }
-
-  // binary adder
-  def sIntAdder(width: BitCount, delay: CyclesCount) = DSPHardware(
-    (dataIns: Seq[SInt], _: GlobalCount) => Seq(Delay(dataIns(0) + dataIns(1), delay.toInt, init = dataIns.head.getZero)),
-    2,
-    Seq(width))
-
-  class SIntAdder(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber)
-    extends GeneralNode(sIntAdder(width, delay), name, delay, exeTime) with Foldable[SInt] {
-    override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = SIntAdder(s"foldFrom${sources.head.name}", width, delay, exeTime)
-  }
-
-  object SIntAdder {
-    def apply(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber = 1 ns): SIntAdder = new SIntAdder(name, width, delay, exeTime)
-  }
-
-  def sIntCAdder(constant: Int, width: BitCount, delay: CyclesCount) = DSPHardware(
-    (dataIns: Seq[SInt], _: GlobalCount) => Seq(Delay(dataIns(0) + constant, delay.toInt, init = dataIns.head.getZero)),
-    1,
-    Seq(width)
-  )
-
-  class SIntCAdder(name: String, val constant: Int, width: BitCount, delay: CyclesCount, exeTime: TimeNumber)
-    extends GeneralNode(sIntCAdder(constant, width, delay), name, delay, exeTime) with Foldable[SInt] {
-    override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = {
-      val constants = sources.map(_.asInstanceOf[SIntCAdder].constant)
-      val foldedFunction = (dataIns: Seq[SInt], globalCount: GlobalCount) =>
-        Seq(Delay((dataIns(0) + sintCoeffROM(constants, width)), delay.toInt, init = dataIns.head.getZero))
-      val foldedHardware = DSPHardware(foldedFunction, 1, Seq(width))
-      GeneralNode(foldedHardware, s"foldFrom${sources.head.name}", delay, exeTime)
-    }
-  }
-
-  object SIntCAdder {
-    def apply(name: String, constant: Int, width: BitCount, delay: CyclesCount, exeTime: TimeNumber): SIntCAdder = new SIntCAdder(name, constant, width, delay, exeTime)
-  }
-
-  def sIntCMulAdder(constant: Int, width: BitCount, delay: CyclesCount) = DSPHardware(
-    (dataIns: Seq[SInt], _: GlobalCount) => Seq(Delay((dataIns(0) * constant).resized + dataIns(1), delay.toInt, init = dataIns.head.getZero)),
-    2,
-    Seq(width)
-  )
-
-  class SIntCMulAdder(name: String, val constant: Int, width: BitCount, delay: CyclesCount, exeTime: TimeNumber)
-    extends GeneralNode(sIntCMulAdder(constant, width, delay), name, delay, exeTime) with Foldable[SInt] {
-    override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = {
-      val constants = sources.map(_.asInstanceOf[SIntCMulAdder].constant)
-      val foldedFunction = (dataIns: Seq[SInt], _: GlobalCount) =>
-        Seq(Delay((dataIns(0) * sintCoeffROM(constants, width)).resized + dataIns(1), 3, init = dataIns.head.getZero))
-      val foldedHardware = DSPHardware(foldedFunction, 1, Seq(width))
-      GeneralNode(foldedHardware, s"foldFrom${sources.head.name}", 3 cycles, exeTime)
-    }
-  }
-
-  object SIntCMulAdder {
-    def apply(name: String, constant: Int, width: BitCount, delay: CyclesCount, exeTime: TimeNumber): SIntCMulAdder = new SIntCMulAdder(name, constant, width, delay, exeTime)
-  }
 
   def sIntAdderC(width: BitCount, delay: CyclesCount) = DSPHardware(
     (dataIns: Seq[SInt], _: GlobalCount) => { // dataIns(2) is the carry
@@ -146,39 +52,15 @@ object Operators {
   }
 
   // constant multiplier
-  def sIntCMult(constant: Int, width: BitCount, delay: CyclesCount) = DSPHardware(
-    (dataIns: Seq[SInt], _: GlobalCount) => Seq(Delay((dataIns(0) * constant).resize(dataIns(0).getBitsWidth), delay.toInt, init = dataIns.head.getZero)),
-    1,
-    Seq(width))
-
+  /*
   def sintCoeffROM(constants: Seq[Int], width: BitCount) = {
     val ROM = Mem(constants.map(S(_, width)))
     val localCounter = CounterFreeRun(constants.size)
     localCounter.setName("ROMCounter")
     ROM.readAsync(localCounter.value)
   }
+  */
 
-  class SIntCMult(name: String, val constant: Int, width: BitCount, delay: CyclesCount, exeTime: TimeNumber) extends
-    GeneralNode(sIntCMult(constant, width, delay), name, delay, exeTime) with Foldable[SInt] {
-    override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = {
-      val constants = sources.map(_.asInstanceOf[SIntCMult].constant)
-      val foldedFunction = (dataIns: Seq[SInt], _: GlobalCount) =>
-        Seq(Delay((dataIns(0) * sintCoeffROM(constants, width)).resize(dataIns(0).getBitsWidth), 2, init = dataIns.head.getZero))
-      val foldedHardware = DSPHardware(foldedFunction, 1, Seq(width))
-      GeneralNode(foldedHardware, s"foldFrom${sources.head.name}", 2 cycles, exeTime)
-    }
-  }
-
-  object SIntCMult {
-    def apply(name: String, constant: Int, width: BitCount, delay: CyclesCount, exeTime: TimeNumber): SIntCMult = new SIntCMult(name, constant, width, delay, exeTime)
-  }
-
-  // for simulation(using delay)
-  def sintKeep = DSPHardware((dataIns: Seq[SInt], _: GlobalCount) => Seq(dataIns(0)), 1, Seq(-1 bits))
-
-  def sintKeep(width: BitCount) = DSPHardware((dataIns: Seq[SInt], _: GlobalCount) => Seq(dataIns(0)), 1, Seq(width))
-
-  def bitsKeep = DSPHardware((dataIns: Seq[Bits], _: GlobalCount) => Seq(dataIns(0)), 1, Seq(-1 bits))
 
   def WNnk(N: Int, nk: Int): MComplex = {
     import scala.math.{Pi, cos, sin}
