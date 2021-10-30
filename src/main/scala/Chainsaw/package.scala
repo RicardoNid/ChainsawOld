@@ -392,20 +392,20 @@ package object Chainsaw extends RealFactory {
   val synthWorkspace = "/home/ltr/IdeaProjects/Chainsaw/synthWorkspace"
 
   def VivadoSynth[T <: Component](gen: => T, name: String = "temp") = {
-    val report = VivadoFlow(design = gen, name, s"synthWorkspace/$name").doit()
+    val report = VivadoFlow(design = gen, name, s"$synthWorkspace/$name").doit()
     report.printArea()
     report.printFMax()
     report
   }
 
   def VivadoSynth[T <: Component](source: String): Unit = {
-    val report = VivadoFlow(design = Chainsaw.examples.ZyboDesign0(), "temp", s"synthWorkspace/temp", designPath = source).doit()
+    val report = VivadoFlow(design = Chainsaw.examples.ZyboDesign0(), "temp", s"$synthWorkspace/temp", designPath = source).doit()
     report.printArea()
     report.printFMax()
   }
 
   def VivadoImpl[T <: Component](gen: => T, name: String = "temp", xdcPath: String = "") = {
-    val report = VivadoFlow(design = gen, name, s"synthWorkspace/$name", vivadoTask = VivadoTask(taskType = IMPL)).doit()
+    val report = VivadoFlow(design = gen, name, s"$synthWorkspace/$name", vivadoTask = VivadoTask(taskType = IMPL)).doit()
     report.printArea()
     report.printFMax()
     report
