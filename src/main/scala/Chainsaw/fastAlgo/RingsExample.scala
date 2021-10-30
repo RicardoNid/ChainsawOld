@@ -31,19 +31,24 @@ object RingsExample {
       terms.map(term => s"${term.coeff}*$symbol^${term.order}").mkString("+")
     }
 
+    import cc.redberry.rings.primes._
+    println(SmallPrimes.isPrime(3329))
+    val zp3329 = Zp(3329)
+    println(s"power ${zp3329.pow(2, 256)}")
+
+    /** HUAWEI,Competition [[https://cpipc.acge.org.cn//cw/detail/10/2c90800c78715fdd0178a1cb74720c89]]Problem 3
+     */
     def evaluateHUAWEI(poly0: Seq[Term], poly1: Seq[Term], ret: Seq[Term]) = {
       val polyRing = UnivariateRingZp64(3329, "x")
       val modulo = polyRing("x^256 + 1")
 
-      val poly0String = buildString(poly0, "x")
-      val poly1String = buildString(poly1, "x")
       val golden = polyRing(buildString(poly0, "x")) * polyRing(buildString(poly1, "x")) % modulo
       val goldenTerms = (0 until 255).map(i => i -> golden.get(i)).filterNot(_._2 == 0).map{ case (order, coeff) => Term(coeff, order)}
 
       println("evaluate HUAWEI")
       println(s"yours:  ${ret.mkString(" ")}")
       println(s"golden: ${goldenTerms.mkString(" ")}")
-      assert(ret.diff(goldenTerms).isEmpty, s"${ret.diff(goldenTerms)}")
+//      assert(ret.diff(goldenTerms).isEmpty, s"${ret.diff(goldenTerms)}")
     }
 
     val thePoly1 = Seq(Term(278,245), Term(1,0))
