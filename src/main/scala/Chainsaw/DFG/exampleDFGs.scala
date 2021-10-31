@@ -8,7 +8,7 @@ import spinal.lib.Delay
 import scala.language.postfixOps
 
 object printdfg extends App {
-  println(paper1992OnFolding.fig10_a)
+  println(chap5.fig5_12)
 }
 object simpleFolding {
 
@@ -126,8 +126,8 @@ object chap5 {
   }
 
   def fig5_12 = {
-    val zero = ConstantNode[SInt , Int]("sint_0", 0, 10 bits)
-    val add = SIntAdderC("add", 10 bits, 0 cycles, 1 ns)
+    val zero = ConstantNode[SInt , Int]("zero", 0, 10 bits)
+    val add = AdderC(sintAddC , "add", Seq(10 bits , 1 bits), 0 cycles, 1 ns)
 
     val dfg = DFGGraph[SInt]("fig5.12")
     dfg.addVertex(add)
@@ -136,8 +136,8 @@ object chap5 {
     dfg.setInput(add, 1)
     dfg.setOutput(add, outOrder = 0)
 
-    dfg.addEdge(add(0), add(2), 1 ,Seq(Schedule(0, 4)))
-    dfg.addEdge(zero(1), add(2), 0 , Seq(Schedule(1, 4), Schedule(2, 4), Schedule(3, 4)))
+    dfg.addEdge(zero(0), add(2), 0 ,Seq(Schedule(0, 4)))
+    dfg.addEdge(add(1), add(2), 1 , Seq(Schedule(1, 4), Schedule(2, 4), Schedule(3, 4)))
 
     dfg
   }
@@ -374,7 +374,7 @@ object paper1992OnFolding {
 
   /*  -----------------------------------fig14_a_example13------------------------------------*/
 
-  val fig14ACs = (0 until 3).map(i => SIntAdderC(s"A${i + 1}", 10 bits, 0 cycles, 1 ns))
+  val fig14ACs = (0 until 3).map(i => AdderC(sintAddC , s"A${i + 1}", Seq(10 bits , 1 bits), 0 cycles, 1 ns))
   val Seq(ac1, ac2, ac3) = fig14ACs
 
   def fig14_a: DFGGraph[SInt] = {

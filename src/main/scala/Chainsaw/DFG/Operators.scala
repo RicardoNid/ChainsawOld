@@ -18,6 +18,10 @@ object Operators {
   val sintAdd: (SInt, SInt) => SInt = (a: SInt, b: SInt) => a + b
   val sintMult: (SInt, SInt) => SInt = (a: SInt, b: SInt) => a * b
   val sintMultAdd:(SInt , SInt , SInt) => SInt = (a: SInt , b: SInt , c: SInt) => (a * b).resized + c
+  val sintAddC: (SInt , SInt ,SInt) => Seq[SInt] = (a: SInt , b: SInt , c: SInt) => {
+    val result = a +^ b + c
+    Seq(result(result.getBitsWidth - 2 downto 0) , result.msb.asSInt)
+  }
 
   def sintMACDSP(delay: Int): (SInt, SInt, SInt) => SInt = (a: SInt, b: SInt, c: SInt) => {
     val ret = if (delay == 0) a * b + c else RegNext(a * b) + c
@@ -33,23 +37,18 @@ object Operators {
     outWidths = Seq(width)
   )
 
-
-  def sIntAdderC(width: BitCount, delay: CyclesCount) = DSPHardware(
-    (dataIns: Seq[SInt], _: GlobalCount) => { // dataIns(2) is the carry
-      val full = Delay(dataIns(0) +^ dataIns(1) + dataIns(2), delay.toInt, init = dataIns.head.getZero.resize(dataIns.head.getBitsWidth + 1))
-      Seq(full(full.getBitsWidth - 2 downto 0), full.msb.asSInt)
-    },
-    3,
-    Seq(width, 1 bits))
-
-  class SIntAdderC(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber)
-    extends GeneralNode(sIntAdderC(width, delay), name, delay, exeTime) with Foldable[SInt] {
-    override def fold(sources: Seq[DSPNode[SInt]]): DSPNode[SInt] = SIntAdderC(s"foldFrom${sources.head.name}", width, delay, exeTime)
+  // adder with carry
+  class AdderC[THard <: Data](op: (THard, THard ,THard) => Seq[THard], width: Seq[BitCount] = Seq(-1 bits), name: String, delay: CyclesCount, exeTime: TimeNumber)
+    extends GeneralNode[THard](DSPHardware((dataIns: Seq[THard], _: GlobalCount) => op(dataIns(0), dataIns(1) ,dataIns(2)), 3 , width), name, delay, exeTime) with Foldable[THard] {
+    require(width.size == 2)
+    override def copy(newName: String): AdderC[THard] = new AdderC(op, width, newName, delay, exeTime)
   }
 
-  object SIntAdderC {
-    def apply(name: String, width: BitCount, delay: CyclesCount, exeTime: TimeNumber): SIntAdderC = new SIntAdderC(name, width, delay, exeTime)
+  object AdderC {
+    def apply[THard <: Data](op: (THard, THard ,THard) => Seq[THard] , name: String, width: Seq[BitCount], delay: CyclesCount, exeTime: TimeNumber): AdderC[THard] = new AdderC(op , width, name, delay, exeTime)
   }
+
+
 
   // constant multiplier
   /*
