@@ -3,15 +3,21 @@ package Chainsaw.DFG
 import Chainsaw.DFG.Operators._
 import Chainsaw._
 import spinal.core._
+import spinal.lib.Delay
 
 import scala.language.postfixOps
 
+object printdfg extends App {
+  println(chap5.fig5_12)
+}
 object simpleFolding {
 
-  val incs = (0 until 4).map(i => SIntCMult(s"cmult_$i", i + 1, 10 bits, 0 cycles, 2 ns))
+  val incs = (0 until 4).map(i => BinaryNode(sintMult, s"cmult_$i" , 10 bits, 0 cycles, 2 ns))
+  val cnodes = (0 until 4).map(i => ConstantNode[SInt , Int](s"cnode_${i + 1}" , i + 1 , 10 bits))
   val Seq(inc0, inc1, inc2, inc3) = incs
   // add some comments
-  val incGen = () => sIntInc(10 bits, 1 cycles).asDSPNode(s"", 1 cycles, 1 ns)
+  // val incGen = () => sIntInc(10 bits, 1 cycles).asDSPNode(s"", 1 cycles, 1 ns)
+  val incGen = BinaryNode(sintAdd , "inGen" , 10 bits, 0 cycles , 1 ns)
   val foldingSet = Seq(Seq(inc0, inc1), Seq(inc2, inc3))
 
   def dfg = {
@@ -22,6 +28,7 @@ object simpleFolding {
     dfg.addExp(inc0 >=> 1 >=> inc1)
     dfg.addExp(inc1 >=> 1 >=> inc2)
     dfg.addExp(inc2 >=> 1 >=> inc3)
+    cnodes.zip(incs).foreach{ case(cnd , inc) => dfg.addPath(cnd >> 0 >> inc)}
     dfg.setOutput(inc3)
     dfg
   }
@@ -31,10 +38,8 @@ object implementingDFGs {
   //
   def nestedDFG: DFGGraph[SInt] = {
 
-    val add = (a: SInt, b: SInt) => a + b
-    val mult = (a: SInt, b: SInt) => a * b
-    val addNode = BinaryNode(add, "add")
-    val multNode = BinaryNode(mult, "mult")
+    val addNode = BinaryNode(sintAdd, "add")
+    val multNode = BinaryNode(sintMult, "mult")
 
     val butterfly = DFGGraph[SInt]("butterfly")
     val Seq(add0, add1) = (0 until 2).map(i => addNode.copy(s"add$i"))
@@ -77,10 +82,10 @@ object chap2 {
 
 object chap5 {
 
-  val add = SIntAdder("add", 10 bits, 0 cycles, 1 ns)
-  val add_inner_delay = SIntAdder("add0", 10 bits, 8 cycles, 1 ns)
-  val cmult = SIntCMult("cmult", 2, 10 bits, 0 cycles, 1 ns)
-
+  val add = BinaryNode(sintAdd , "add", 10 bits, 0 cycles, 1 ns)
+  val add_inner_delay = BinaryNode(sintAdd , "add0", 10 bits, 8 cycles, 1 ns)
+  val cmult = BinaryNode(sintMult, "cmult", 10 bits, 0 cycles, 1 ns)
+  val cnode = ConstantNode[SInt , Int]("cnode" , 2 , 10 bits)
   def fig5_2 = {
     val dfg = DFGGraph[SInt]("fig5.2")
     dfg.addVertex(add)
@@ -88,6 +93,7 @@ object chap5 {
     dfg.setInput(add)
     dfg.setOutput(add)
     dfg.addPath(add >> 9 >> cmult >> add)
+    dfg.addPath(cnode >> 0 >> cmult)
     dfg
   }
 
@@ -102,22 +108,26 @@ object chap5 {
   }
 
   def fig5_10 = {
-    val x = sintKeep.asDSPNode("x", 0 cycles, 1 ns)
-    val Seq(a, b, c) = Seq("a", "b", "c").map(name => sIntCMult(2, 10 bits, 0 cycles).asDSPNode(name, 0 cycles, 1 ns))
-    val Seq(d, e) = Seq("d", "e").map(name => sIntAdder(10 bits, 0 cycles).asDSPNode(name, 0 cycles, 1 ns))
+    val x = BinaryNode(sintMult , "x", 10 bits , 0 cycles, 1 ns)
+    val xcnode = ConstantNode[SInt ,Int]("xcnode" , 1 , 10 bits)
+    val Seq(a, b, c) = Seq("a", "b", "c").map(name => BinaryNode(sintMult, name , 10 bits, 0 cycles , 1 ns))
+    val cnode = ConstantNode[SInt , Int]("cnode" , 2 , 10 bits)
+    val Seq(d, e) = Seq("d", "e").map(name => BinaryNode(sintAdd , name , 10 bits , 0 cycles , 1 ns))
     printlnGreen("using fig 5.10")
     val dfg = DFGGraph[SInt]("fig5.10")
     dfg.addPath(x >> c >> 2 >> d >> 4 >> e)
     dfg.addPath(x >> b >> d)
     dfg.addPath(x >> a >> e)
+    Seq(cnode , cnode , cnode).zip(Seq(a , b , c)).foreach{ case(cnode , mnode) => dfg.addPath(cnode >> 0 >> mnode)}
     dfg.setInput(x)
+    dfg.addPath(xcnode >> 0 >> x)
     dfg.setOutput(e)
     dfg
   }
 
   def fig5_12 = {
-    val zero = SIntConst("sint_0", 0, 10 bits)
-    val add = SIntAdderC("add", 10 bits, 0 cycles, 1 ns)
+    val zero = ConstantNode[SInt , Int]("zero", 0, 10 bits)
+    val add = AdderC(sintAddC , "add", Seq(10 bits , 1 bits), 0 cycles, 1 ns)
 
     val dfg = DFGGraph[SInt]("fig5.12")
     dfg.addVertex(add)
@@ -126,13 +136,8 @@ object chap5 {
     dfg.setInput(add, 1)
     dfg.setOutput(add, outOrder = 0)
 
-    val zero2add = DefaultDelay[SInt](Seq(Schedule(0, 4)), outOrder = 0, inOrder = 2)
-    val out2add = DefaultDelay[SInt](Seq(Schedule(1, 4), Schedule(2, 4), Schedule(3, 4)), outOrder = 1, inOrder = 2)
-
-    dfg.addEdge(add, add, out2add)
-    dfg.setEdgeWeight(out2add, 1)
-    dfg.addEdge(zero, add, zero2add)
-    dfg.setEdgeWeight(zero2add, 0)
+    dfg.addEdge(zero(0), add(2), 0 ,Seq(Schedule(0, 4)))
+    dfg.addEdge(add(1), add(2), 1 , Seq(Schedule(1, 4), Schedule(2, 4), Schedule(3, 4)))
 
     dfg
   }
@@ -140,9 +145,11 @@ object chap5 {
 
 object chap6 {
 
-  val adds = (0 until 4).map(i => SIntAdder(s"add$i", 10 bits, 0 cycles, 1 ns))
+  val adds = (0 until 4).map(i => BinaryNode(sintAdd , s"add$i", 10 bits, 0 cycles, 1 ns))
   val Seq(add0, add1, add2, add3) = adds
-  val cmults = (0 until 4).map(i => SIntCMult(s"cmult_$i", 2, 10 bits, 1 cycles, 2 ns))
+  // val cmults = (0 until 4).map(i => BinaryNode(sintMult, s"cmult_$i" , 10 bits, 1 cycles, 2 ns))
+  val cmults = (0 until 4).map(i => BinaryNode(sintMult, s"cmult_$i" , 10 bits, 0 cycles, 2 ns))
+  val cnode = ConstantNode[SInt , Int](s"cnode" , 2 , 10 bits)
   val Seq(cmult0, cmult1, cmult2, cmult3) = cmults
 
   val foldingSet = Seq(
@@ -166,6 +173,7 @@ object chap6 {
       add0 >=> 1 >=> cmult2,
       add0 >=> 2 >=> cmult3)
     exps.foreach(dfg.addExp(_))
+      cmults.foreach(mnode => dfg.addPath(cnode >> 0 >> mnode))
     dfg.setOutput(add1)
     dfg
   }
@@ -200,7 +208,9 @@ object paper1992OnFolding {
 
   /*  -----------------------------------fig6_a_example3------------------------------------*/
 
-  val cmuls = (0 until 4).map(i => SIntCMult(s"cmult_$i", 2 * i + 1, 10 bits, 2 cycles, 1 ns))
+  //val cmuls = (0 until 4).map(i => BinaryNode(sintMult, s"cmult_$i" , 10 bits, 2 cycles, 1 ns))
+  val cmuls = (0 until 4).map(i => BinaryNode(sintMult, s"cmult_$i" , 10 bits))
+  val fig6_a_cnode = ConstantNode[SInt , Int]("cnode" , 5 , 10 bits)
   val Seq(cmul0, cmul1, cmul2, cmul3) = cmuls
 
 
@@ -209,6 +219,7 @@ object paper1992OnFolding {
     cmuls.foreach(dfg.addVertex(_))
     dfg.addPath(cmul0 >> 0 >> cmul1 >> 1 >> cmul2 >> 2 >> cmul3)
     dfg.setInput(cmul0)
+    cmuls.foreach( cmul => dfg.addPath(fig6_a_cnode >> 0 >> cmul))
     dfg.setOutput(cmul3)
     dfg
   }
@@ -222,8 +233,10 @@ object paper1992OnFolding {
   /*  -----------------------------------fig8_a_example6------------------------------------*/
 
 
-  val cmults = (0 until 5).map(i => SIntCMult(s"cmult_$i", i + 1, 10 bits, 0 cycles, 2 ns))
+  val cmults = (0 until 5).map(i => BinaryNode(sintMult, s"cmult_${i + 1}", 10 bits, 0 cycles, 2 ns))
   val Seq(cmult0, cmult1, cmult2, cmult3, cmult4) = cmults
+  val fig8_a_cnodes = (0 until 5).map(i => ConstantNode[SInt , Int](s"fig8_a_cnode_${i + 1}", i + 1 , 10 bits))
+
 
   def fig8_a = {
     val dfg = DFGGraph[SInt]("paper1992fig8_a")
@@ -233,6 +246,7 @@ object paper1992OnFolding {
     dfg.addPath(cmult0 >> cmult4)
     dfg.setInput(cmult0)
     dfg.setOutput(cmult4)
+    fig8_a_cnodes.zip(cmults).foreach{ case(cnode , mnode) => dfg.addPath(cnode >> 0 >> mnode)}
     dfg
   }
 
@@ -241,12 +255,14 @@ object paper1992OnFolding {
 
   /*  -----------------------------------fig9_a_example7------------------------------------*/
 
-  val fig9Nodes = (0 until 5).map(i => SIntCMulAdder(s"ma${i + 1}", i % 3 + 1, 10 bits, 0 cycles, 1 ns))
+  val fig9Nodes = (0 until 5).map(i => TrinaryNode(sintMultAdd , s"ma${i + 1}", 10 bits, 0 cycles, 1 ns))
+  val fig9CNodes = (0 until 5).map(i => ConstantNode[SInt , Int](s"fig9cnode_${i + 1}" , i % 3 + 1 , 10 bits))
   val Seq(ma1, ma2, ma3, ma4, ma5) = fig9Nodes
-  val zero = SIntConst(s"zero", 0, 10 bits)
-  val constantNodes = (0 until 5).map(i => SIntConst(s"a_$i", i + 2, 10 bits))
+  val zero = ConstantNode[SInt , Int]("zero" , 0 , 10 bits)
+  val constantNodes = (0 until 5).map(i => ConstantNode[SInt , Int](s"constantnode_${i + 1}", i + 2, 10 bits))
 
-  val sKeeps = (0 until 5).map(i => SIntCMult(s"skeep_$i", 1, 10 bits, 0 cycles, 0 ns))
+  val sKeeps = (0 until 5).map(i => BinaryNode(sintMult, s"skeep_${i + 1} ", 10 bits, 0 cycles, 0 ns))
+  val fig9_a_cnode = ConstantNode[SInt , Int]("fig9_a_cnode" , 1 , 10 bits)
   val Seq(sk0, sk1, sk2, sk3, sk4) = sKeeps
 
   def fig9_a: DFGGraph[SInt] = {
@@ -257,7 +273,9 @@ object paper1992OnFolding {
     dfg.setOutput(ma5, 0, s"y_n")
 
     fig9Nodes.foreach(node => dfg.addEdge(x_n(0), node(0), 0))
+    fig9CNodes.zip(fig9Nodes).foreach{ case(cnode , manode) => dfg.addPath(cnode >> 0 >> manode)}
     dfg.addPath(zero >> ma1 >> 1 >> ma2 >> 1 >> ma3 >> 1 >> ma4 >> 1 >> ma5)
+    // sKeeps.foreach(keepnode => dfg.addPath(fig9_a_cnode >> 0 >> keepnode))
 
     dfg
   }
@@ -266,10 +284,11 @@ object paper1992OnFolding {
     Seq(ma1, ma2, ma3),
     Seq(ma4, ma5, null))
 
-  /*  -----------------------------------fig10_a_example8------------------------------------*/
+  /*  -----------------------------------fig10_a_example8and10------------------------------------*/
 
-  val fig10Nodes = (0 until 4).map(i => SIntCMult(s"A${i + 1}", i + 1, 10 bits, 0 cycles, 1 ns))
+  val fig10Nodes = (0 until 4).map(i => BinaryNode(sintMult, s"A${i + 1}", 10 bits, 0 cycles, 1 ns))
   val Seq(a1, a2, a3, a4) = fig10Nodes
+  val fig10CNodes = (0 until 4).map(i => ConstantNode[SInt , Int](s"fig10cnode${i + 1}", i + 1 , 10 bits))
   val foldingSet = Seq(Seq(a1, a2, a3, a4))
 
   def fig10 = {
@@ -279,17 +298,20 @@ object paper1992OnFolding {
     val x_1 = fig10a.setInput(a1, 0, s"x_1", Seq(Schedule(0, 2)))
     val x_2 = fig10a.setInput(a1, 0, s"x_2", Seq(Schedule(1, 2)))
     fig10a.addPath(a1 >> 1 >> a2 >> 1 >> a3)
-    fig10a.addEdge(a1, a4, 2, Seq(Schedule(1, 3)))
-    fig10a.addEdge(a3, a4, 1, Seq(Schedule(0, 3), Schedule(2, 3)))
+    fig10a.addEdge(a1, a4, 0 , 0 ,2, Seq(Schedule(1, 3)))
+    fig10a.addEdge(a3, a4, 0, 0 , 1 ,Seq(Schedule(0, 3), Schedule(2, 3)))
+    fig10CNodes.foreach(fig10a.addVertex(_))
+    fig10CNodes.zip(fig10Nodes).foreach{ case(cnode , node) => fig10a.addEdge(cnode , node , 0 , 1 , 0)}
     fig10a.setOutput(a4)
 
     val fig10c = fig10a.clone().asInstanceOf[DFGGraph[SInt]]
     fig10c.setEdgeWeight(fig10c.getEdge(a1, a2), 0)
     fig10c.setEdgeWeight(fig10c.getEdge(a2, a3), 0)
+    fig10CNodes.zip(fig10Nodes).foreach{ case(cnode , node) => fig10c.setEdgeWeight(fig10c.getEdge(cnode , node) , 0)}
     fig10c.removeEdge(fig10c.getEdge(a1, a4))
     fig10c.removeEdge(fig10c.getEdge(a3, a4))
-    fig10c.addEdge(a1, a4, 0, Seq(Schedule(2, 3)))
-    fig10c.addEdge(a3, a4, 1, Seq(Schedule(0, 3), Schedule(1, 3)))
+    fig10c.addEdge(a1, a4, 0 , 0 ,0, Seq(Schedule(2, 3)))
+    fig10c.addEdge(a3, a4, 0 , 0 ,1, Seq(Schedule(0, 3), Schedule(1, 3)))
 
     (fig10a, fig10c, foldingSet)
   }
@@ -301,14 +323,12 @@ object paper1992OnFolding {
   def foldingSet10_a_example8and10 = fig10._3
 
 
-  /*  -----------------------------------fig10_c_example10------------------------------------*/
-
-
   /*  -----------------------------------fig12_a_example11------------------------------------*/
 
 
-  val fig12Ms = (0 until 4).map(i => SIntCMult(s"M${i + 1}", i + 1, 10 bits, 0 cycles, 1 ns))
-  val fig12As = (0 until 4).map(i => SIntAdder(s"A${i + 1}", 10 bits, 0 cycles, 1 ns))
+  val fig12Ms = (0 until 4).map(i => BinaryNode(sintMult, s"M${i + 1}", 10 bits, 0 cycles, 1 ns))
+  val fig12Cnodes = (0 until 4).map(i => ConstantNode[SInt , Int](s"fig12cnode${i + 1}", i + 1 , 10 bits))
+  val fig12As = (0 until 4).map(i => BinaryNode(sintAdd , s"A${i + 1}", 10 bits, 0 cycles, 1 ns))
   val Seq(a_1, a_2, a_3, a_4) = fig12As
   val Seq(m1, m2, m3, m4) = fig12Ms
 
@@ -324,15 +344,18 @@ object paper1992OnFolding {
     dfg.addPath(a_1 >> 1 >> m2 >> a_4 >> a_2)
     dfg.addPath(a_1 >> 2 >> m3 >> a_3)
     dfg.addPath(a_1 >> 2 >> m4 >> a_4)
+    fig12Cnodes.zip(fig12Ms).foreach{ case(cnode , mnode) => dfg.addPath(cnode >> 0 >> mnode)}
     dfg
   }
 
   /*  -----------------------------------fig13_a_example12------------------------------------*/
-
   // add two inputs and one output to fig13_a
-  val cMuls = (0 until 2).map(i => SIntCMult(s"cmult_$i", i + 1, 10 bits, 2 cycles, 1 ns))
+  // val cMuls = (0 until 2).map(i => BinaryNode(sintMult, s"cmult_$i", 10 bits, 2 cycles, 1 ns))
+  val cMuls = (0 until 2).map(i => BinaryNode(sintMult, s"cmult_$i", 10 bits, 0 cycles, 1 ns))
   val Seq(cMul0, cMul1) = cMuls
-  val sAdds = (0 until 2).map(i => SIntAdder(s"cadder_$i", 10 bits, 1 cycles, 1 ns))
+  val fig13_a_cnodes = (0 until 2).map(i => ConstantNode[SInt , Int](s"cnode${i + 1}", i + 1 , 10 bits))
+  // val sAdds = (0 until 2).map(i => SIntAdder(s"cadder_$i", 10 bits, 1 cycles, 1 ns))
+  val sAdds = (0 until 2).map(i => BinaryNode(sintAdd , s"cadder_$i", 10 bits, 0 cycles, 1 ns))
   val Seq(sAdd0, sAdd1) = sAdds
 
   def fig13_a = {
@@ -343,6 +366,7 @@ object paper1992OnFolding {
     dfg.setInput(sAdd0, 1, s"input_0")
     dfg.setInput(sAdd1, 1, s"input_1")
     dfg.setOutput(cMul1, 0, s"output_0")
+    fig13_a_cnodes.zip(cMuls).foreach{ case(cnode , mnode) => dfg.addPath(cnode >> 0 >> mnode)}
     dfg
   }
 
@@ -350,7 +374,7 @@ object paper1992OnFolding {
 
   /*  -----------------------------------fig14_a_example13------------------------------------*/
 
-  val fig14ACs = (0 until 3).map(i => SIntAdderC(s"A${i + 1}", 10 bits, 0 cycles, 1 ns))
+  val fig14ACs = (0 until 3).map(i => AdderC(sintAddC , s"A${i + 1}", Seq(10 bits , 1 bits), 0 cycles, 1 ns))
   val Seq(ac1, ac2, ac3) = fig14ACs
 
   def fig14_a: DFGGraph[SInt] = {
