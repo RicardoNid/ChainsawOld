@@ -116,3 +116,23 @@ object TrinaryNode {
   def apply[T](op: (T, T, T) => T, name: String, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): TrinaryNode[T] =
     new TrinaryNode(op, width, name, delay, exeTime)
 }
+
+/** Butterfly hardware takes two input and generate two output, they're heavily used as building blocks of more complicated DFG
+ */
+case class ButterflyHardware[T](op: (T, T) => (T, T), width: BitCount = -1 bits)
+  extends DSPHardware[T](impl =
+    (dataIns: Seq[T], _: GlobalCount) => {
+      val ret = op(dataIns(0), dataIns(1))
+      Seq(ret._1, ret._2)
+    },
+    inDegree = 2, outWidths = Seq(width, width))
+
+class ButterflyNode[T](op: (T, T) => (T, T), width: BitCount = -1 bits, name: String, delay: CyclesCount, exeTime: TimeNumber)
+  extends GeneralNode[T](ButterflyHardware(op, width), name, delay, exeTime) with Foldable[T] {
+  override def copy(newName: String): ButterflyNode[T] = new ButterflyNode(op, width, newName, delay, exeTime)
+}
+
+object ButterflyNode {
+  def apply[T](op: (T, T) => (T, T), name: String, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): ButterflyNode[T] =
+    new ButterflyNode(op, width, name, delay, exeTime)
+}

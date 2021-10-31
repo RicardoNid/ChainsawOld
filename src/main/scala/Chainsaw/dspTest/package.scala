@@ -155,11 +155,15 @@ package object dspTest {
       clockDomain.forkStimulus(2)
       dutResult ++= flowPeekPoke(dut, testCases, dataIn, dataOut, latency)
 
-      logger.info(s"testing result:" +
-        s"\nyours : ${dutResult.mkString(" ")}" +
-        s"\ngolden: ${golden.mkString(" ")}")
-      assert(dutResult.size == golden.size)
-      assert(dutResult.zip(golden).forall { case (a, b) => a == b })
+      if (golden != null) {
+        val printSize = (dutResult ++ golden).map(_.toString.size).max
+        logger.info(s"testing result:" +
+          s"\nyours : ${dutResult.map(_.toString.padTo(printSize, ' ')).mkString(" ")}" +
+          s"\ngolden: ${golden.map(_.toString.padTo(printSize, ' ')).mkString(" ")}")
+
+        val difference = dutResult.diff(golden)
+        assert(difference.isEmpty, difference.mkString(" "))
+      }
     }
     dutResult
   }

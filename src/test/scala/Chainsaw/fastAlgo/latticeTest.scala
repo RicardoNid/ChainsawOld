@@ -1,24 +1,16 @@
 package Chainsaw.fastAlgo
 
-import Chainsaw.DSPRand
+import Chainsaw.{DSPRand, _}
 import Chainsaw.fastAlgo.lattice._
-import cc.redberry.rings
 import cc.redberry.rings.scaladsl._
 import cc.redberry.rings.scaladsl.syntax._
 import org.scalatest.flatspec.AnyFlatSpec
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
 
 class latticeTest extends AnyFlatSpec {
 
   val p = 3329 // 3329 = 13 * 256 + 1
-  val n = 256
+  val k = 13
+  val n = 256 // is not the "256" above, the 256 above is 1 << 8, they're the same by coincident
   implicit val polyRing = UnivariateRingZp64(p, "x")
   implicit val cfRing = polyRing.cfRing
 
@@ -52,20 +44,26 @@ class latticeTest extends AnyFlatSpec {
       evens.zip(odds).flatMap { case (even, odd) => Seq(even, odd) } // "riffle shuffle"
     }
 
-    logger.info(s"\n${ret0.mkString(" ")}\n${ret1.mkString(" ")}")
+    logger.debug(s"decomposition result: \n${ret0.mkString(" ")}\n${ret1.mkString(" ")}")
     assert(ret0.diff(ret1).isEmpty)
     ret0
   }
 
   val f, g = getTestCase(n)
   val a, b = getTestCase(n / 2)
+  val smallA, smallB = getTestCase(8) // for debugging
+
+  val aAndBs = (0 until 50).map(_ => Seq(DSPRand.nextInt(3328), DSPRand.nextInt(3328)))
   val cs = (0 until 100).map(_ => DSPRand.nextInt(3328 * 3328))
-  "the algo to accelerate polynomial multiplication on ideal lattice" should "have a correct decomposition" in verifyDecomposition(f, g, 256)
+  "the algo" should "make sure 256-point polyMult can be implemented by four 128-point polyMults" in verifyDecomposition(f, g, 256)
 
-  it should "be transformed by NTT correctly" in assert(a.diff(INTT(NTT(a))).isEmpty)
-  it should "be implemented as cyclic convolution correctly" in assert(CCByNTT(a, b).diff(cyclicConvolution(a, b)).isEmpty)
-  it should "be implemented as negative wrapped convolution correctly" in assert(NWCByNTT(a, b).diff(NWC(a, b)).isEmpty)
-
-  it should "implements K2RED algo correctly" in assert(cs.forall(c => (K2RED(c, 3329) % 3329) == (13 * 13 * c) % 3329))
+  it should "make sure K2RED = k^2 * c % p" in assert(cs.forall(c => cfRing(K2RED(c, p)) == cfRing(13 * 13 * c)))
+  it should "make sure MULT-K2RED = (k^2 * a * b) % p" in assert(aAndBs.forall(aAndB => cfRing(K2RED(aAndB(0) * aAndB(1), 3329)) == cfRing(K2Mult(aAndB(0), aAndB(1)))))
+  it should "make sure KNTT = NTT" in assert(NTT(a).diff(KNTT(a)).isEmpty)
+  it should "make sure NTT-INTT are inverse of each other" in assert(a.diff(INTT(NTT(a))).isEmpty)
+  it should "make sure fast NTT is still NTT" in assert(NTT(a).sorted.diff(fastNTT(a).sorted).isEmpty) // only require them to be the same as sets, as the order is different
+  it should "make sure fast NTT-INTT are inverse of each other" in assert(a.diff(fastNTT(fastINTT(a))).isEmpty)
+  it should "make sure CCByNTT is still cyclic convolution" in assert(CCByNTT(a, b).diff(cyclicConvolution(a, b)).isEmpty)
+  it should "make sure NWCByNTT is still negative wrapped convolution correctly" in assert(NWCByNTT(a, b).diff(NWC(a, b)).isEmpty)
 
 }

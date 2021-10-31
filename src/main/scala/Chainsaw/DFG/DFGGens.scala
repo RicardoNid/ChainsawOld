@@ -15,11 +15,19 @@ object FirType extends Enumeration {
   val STATIC, DYNAMIC = Value
 }
 
+object FFTArch extends Enumeration {
+  type FFTArch = Value
+  val DIT, DIF = Value
+}
+
 import Chainsaw.DFG.FirArch._
 import Chainsaw.DFG.FirType._
+import Chainsaw.DFG.FFTArch._
 
 object DFGGens {
 
+  /** Generic method to generate an abstract FIR DFG
+   */
   def fir[THard <: Data, TSoft](add: BinaryNode[THard], mult: BinaryNode[THard],
                                 firArch: FirArch,
                                 coeffs: Seq[TSoft], coeffWidth: BitCount, parallelism: Int = 1)
@@ -48,7 +56,7 @@ object DFGGens {
         (mults.head +: adds.init).zip(adds).foreach { case (prev, next) => dfg.addEdge(prev(0), next(1), 1) }
       case SYSTOLIC =>
         mults.zip(consts.reverse).foreach { case (mult, coeff) => dfg.addEdge(coeff(0), mult(0), 0) }
-        mults.zipWithIndex.foreach { case (mult, i) => dfg.addEdge(input(0), mult(1), 2*i) }
+        mults.zipWithIndex.foreach { case (mult, i) => dfg.addEdge(input(0), mult(1), 2 * i) }
         mults.tail.zip(adds).foreach { case (mult, add) => dfg.addEdge(mult(0), add(0), 0) }
         (mults.head +: adds.init).zip(adds).foreach { case (prev, next) => dfg.addEdge(prev(0), next(1), 1) }
     }
@@ -69,11 +77,13 @@ object DFGGens {
     ret
   }
 
-  // multAdd do A * B + C, A is the coefficient
+
+  /** Specific implementation of FIR DFG in real field (\R), using MAC module like DSP slice
+   */
   def firDSP[THard <: Data, TSoft](multAdd: TrinaryNode[THard],
-                                firArch: FirArch,
-                                coeffs: Seq[TSoft], coeffWidth: BitCount, parallelism: Int = 1)
-                               (implicit converter: (TSoft, BitCount) => THard): DFGGraph[THard] = {
+                                   firArch: FirArch,
+                                   coeffs: Seq[TSoft], coeffWidth: BitCount, parallelism: Int = 1)
+                                  (implicit converter: (TSoft, BitCount) => THard): DFGGraph[THard] = {
 
     val dfg = DFGGraph[THard]("fir graph")
     val size = coeffs.size
@@ -112,6 +122,27 @@ object DFGGens {
     ret
   }
 
+
+  /** Generic method to generate an abstract radix-2 FFT DFG, this method use a "butterfly core" as its building block
+   * @param butterfly: the implementation of the butterfly core
+   * @param size: size of the FFT DFG, should be a power of 2
+   * @param fftArch: architecture of fft, could be DIT or DIF
+   * @param coeffGen: a generator to generate the twiddle factor w^ik^ on the specific field
+   * @param coeffWidth: bit width of the coefficients
+   * @param parallelism: determining the parallelism of the design, compared to the fully-pipelined version
+   * @example parallelism = 3 -> unfold 3; parallelism = -3 -> fold 3
+   */
+  def radix2fft[THard <: Data, TSoft](butterfly: ButterflyNode[THard], size:Int,
+                                      fftArch: FFTArch,
+                                      coeffGen: Int => TSoft, coeffWidth: BitCount, parallelism: Int = 1)
+                                     (implicit converter: (TSoft, BitCount) => THard): DFGGraph[THard] = {
+    require(isPow2(size))
+    val dfg = DFGGraph[THard]("fft graph")
+
+    // build the graph layer-by-layer
+    dfg
+
+  }
 
   def main(args: Array[String]): Unit = {
 
