@@ -34,7 +34,7 @@ class DFGGensTest extends AnyFlatSpec {
   }
 
   def testFIR(arch: FirArch, useDSP: Boolean) =
-    doFlowPeekPokeTest(dut(arch, useDSP, 1), s"testFir${arch}${if (useDSP) "_dsp" else ""}", testCase, golden.map(_.toInt))
+    doFlowPeekPokeTest(s"testFir${arch}${if (useDSP) "_dsp" else ""}", dut(arch, useDSP, 1), testCase, golden.map(_.toInt))
 
   "fir structure" should "be correct as direct fir" in testFIR(DIRECT, false)
   it should "be correct as transpose fir" in testFIR(TRANSPOSE, false)
@@ -61,13 +61,13 @@ class DFGGensTest extends AnyFlatSpec {
     val trellisM = Refs.poly2trellisM(conv802_11.ms.map(_ + 1), conv802_11.codeGens)
     val golden: Array[Int] = Refs.convenc(testCase.map(_.toInt).toArray, trellisM)
 
-    doFlowPeekPokeTest(new Component with DSPTestable[Vec[Bits], Vec[Bits]] {
-      val dataIn: Flow[Vec[Bits]] = slave Flow Vec(Bits(1 bits), 1)
-      val dataOut: Flow[Vec[Bits]] = master Flow Vec(Bits(), 2)
-      val latency = 0
-      dataOut.valid := Delay(dataIn.valid, latency, init = False)
-      dataOut.payload(0) := convDirect(BigInt("171", 8).toString(2).reverse.padTo(7, '0').map(_.asDigit)).impl(Seq(dataIn.payload).head).head
-      dataOut.payload(1) := convDirect(BigInt("133", 8).toString(2).reverse.padTo(7, '0').map(_.asDigit)).impl(Seq(dataIn.payload).head).head
-    }, "testConv", testCase.grouped(1).toSeq, golden)
+    doFlowPeekPokeTest("testConv", new Component with DSPTestable[Vec[Bits], Vec[Bits]] {
+          val dataIn: Flow[Vec[Bits]] = slave Flow Vec(Bits(1 bits), 1)
+          val dataOut: Flow[Vec[Bits]] = master Flow Vec(Bits(), 2)
+          val latency = 0
+          dataOut.valid := Delay(dataIn.valid, latency, init = False)
+          dataOut.payload(0) := convDirect(BigInt("171", 8).toString(2).reverse.padTo(7, '0').map(_.asDigit)).impl(Seq(dataIn.payload).head).head
+          dataOut.payload(1) := convDirect(BigInt("133", 8).toString(2).reverse.padTo(7, '0').map(_.asDigit)).impl(Seq(dataIn.payload).head).head
+        }, testCase.grouped(1).toSeq, golden)
   }
 }

@@ -5,6 +5,7 @@ import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
 import Chainsaw._
+import Chainsaw.DFG._
 import Chainsaw.matlabIO._
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -142,7 +143,7 @@ package object dspTest {
   }
 
   def doFlowPeekPokeTest[Do, Di, Ti <: Data, To <: Data]
-  (dut: => Component with DSPTestable[Ti, To], name: String, testCases: Seq[Di], golden: Seq[Do]): ArrayBuffer[Do] = {
+  (name: String, dut: => Component with DSPTestable[Ti, To], testCases: Seq[Di], golden: Seq[Do]): ArrayBuffer[Do] = {
 
     val logger: Logger = LoggerFactory.getLogger(s"dsptest-${name}")
 
@@ -167,6 +168,7 @@ package object dspTest {
     }
     dutResult
   }
+
 
 
   implicit class DataCarrierUtil[T <: Data](dc: DataCarrier[T]) {

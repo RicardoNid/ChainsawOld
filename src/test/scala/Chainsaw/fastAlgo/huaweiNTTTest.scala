@@ -1,38 +1,81 @@
 package Chainsaw.fastAlgo
 
 import Chainsaw._
-import Chainsaw.dspTest.doFlowPeekPokeTest
-import org.scalatest.flatspec.AnyFlatSpec
+import Chainsaw.dspTest._
 import cc.redberry.rings
-import rings.poly.PolynomialMethods._
-import rings.scaladsl._
-import syntax._
+import cc.redberry.rings.scaladsl._
+import org.scalatest.flatspec.AnyFlatSpec
+import spinal.core._
+import spinal.lib._
 
+import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
+import scala.language.postfixOps
 
 class huaweiNTTTest extends AnyFlatSpec {
 
-  val cfRing = Zp(3329)
+  val p = 3329
+  implicit val polyRing = UnivariateRingZp64(p, "x")
+  implicit val cfRing = polyRing.cfRing
+
+  val k2 = 13 * 13
+  val k2Inverse = cfRing.pow(k2, -1)
+
+  import Chainsaw.DFG._
+  // TODO: test method should support int/long as a replacement of bigint
+
+  val testProducts: Seq[BigInt] = (0 until 10000).map(_ => BigInt(DSPRand.nextInt((p - 1) * (p - 1) + 1))) // 10000-point random test
+  val testProductsExhaustive: Seq[BigInt] = (0 to (p - 1) * (p - 1)).map(BigInt(_))
+  val testPairs: Seq[Seq[BigInt]] = (0 until 10000).map(_ => BigInt(DSPRand.nextInt(p))).grouped(2).toSeq
 
   "K2RED" should "pass the random test" in {
-    val testCases = (0 until 100 * 100).map(_ => BigInt(DSPRand.nextInt(4095 * 4095))) // 10000-point random test
-    doFlowPeekPokeTest(K2REDHard(), "testK2RED", testCases, testCases.map(c => lattice.K2RED(c.toInt, 3329)))
+    val golden = testProducts.map(c => lattice.K2RED(c.toInt, 3329))
+    doFlowPeekPokeTest("testK2RED", K2REDHard(), testProducts, golden)
   }
 
-  it should "pass the exhaustive test" in {
-    val testCases = (0 until 4095 * 4095).map(BigInt(_)) // exhaustive test
-    doFlowPeekPokeTest(K2REDHard(), "testK2RED", testCases, testCases.map(c => lattice.K2RED(c.toInt, 3329)))
+  "KMultMod" should "pass the random test" in {
+    val golden = testPairs.map(vec => (vec(0) * vec(1) * k2) % 3329).map(cfRing(_))
+    testDSPNode(huaweiNTT.kMultModNode, Seq(12 bits, 12 bits), testPairs, golden)
   }
 
-  it should "synth correctly" in VivadoSynth(K2REDHard()) // 75LUT + 31FF
-
-  "KMultMod" should "pass the random test" in{
-    val testCases = (0 until 100 * 100).map(_ => BigInt(DSPRand.nextInt(4095))).grouped(2).toSeq // 5000-pair random test
-    val golden = testCases.map(vec => (vec(0) * vec(1) * 13 * 13) % 3329).map(cfRing(_))
-    val dutResults = doFlowPeekPokeTest(KMultModHard(), "testKMultMod", testCases, null).asInstanceOf[ArrayBuffer[BigInt]].map(cfRing(_))
-    assert(dutResults.diff(golden).isEmpty) // they're the same on the cfRing
+  "KAddMod" should "pass the random test" in {
+    val golden = testPairs.map(pair => cfRing(pair(0) + pair(1)))
+    testDSPNode(BinaryNode(huaweiNTT.kAddMod, "kAddMod", delay = 1 cycles), Seq(12 bits, 12 bits), testPairs, golden)
   }
 
-  it should "synth correctly" in VivadoSynth(KMultModHard(), name = "kMultMod") // 75LUT + 31FF + 1DSP / 238 LUT + 44 FF
+  "KSubMod" should "pass the random test" in {
+    val golden = testPairs.map(pair => cfRing(pair(0) - pair(1)))
+    testDSPNode(BinaryNode(huaweiNTT.kSubMod, "kSubMod", delay = 1 cycles), Seq(12 bits, 12 bits), testPairs, golden)
+  }
+
+  "CTBF" should "pass the random test" in {
+    val omega = DSPRand.nextInt(3329)
+    val golden = testPairs.map { vec =>
+      val (u, v) = (vec(0), vec(1))
+      val vw = cfRing(k2 * v * omega)
+      (cfRing(u + vw), cfRing(u - vw))
+    }.flatMap(pair => Seq(pair._1, pair._2))
+
+    val dutResults = doFlowPeekPokeTest("testCTBF", CTBFHard(omega), testPairs, golden).asInstanceOf[ArrayBuffer[BigInt]].map(cfRing(_))
+    assert(dutResults.forall(value => value >= 0 && value < p))
+  }
+
+  "GSBF" should "pass the random test" in {
+    val omega = DSPRand.nextInt(3329)
+    val golden = testPairs.map { vec =>
+      val (u, v) = (vec(0), vec(1))
+      (cfRing(u + v), cfRing(k2 * (u - v) * omega))
+    }.flatMap(pair => Seq(pair._1, pair._2))
+
+    val dutResults = doFlowPeekPokeTest("testGSBF", GSBFHard(omega), testPairs, golden).asInstanceOf[ArrayBuffer[BigInt]].map(cfRing(_))
+    assert(dutResults.forall(value => value >= 0 && value < p))
+  }
+
+  "all these operators" should "synth correctly" in {
+//    VivadoSynth(K2REDHard(), name = "kRED")
+    synthDSPNode(huaweiNTT.kMultModNode, Seq(12 bits, 12 bits))
+//    VivadoSynth(CTBFHard(omega = DSPRand.nextInt(3329)), name = "ctbf")
+//    VivadoSynth(GSBFHard(omega = DSPRand.nextInt(3329)), name = "gsbf")
+  }
 
 }

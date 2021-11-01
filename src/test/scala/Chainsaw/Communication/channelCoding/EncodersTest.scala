@@ -16,7 +16,7 @@ class EncodersTest extends AnyFlatSpec {
     val trellisM = Refs.poly2trellisM(convConfig.ms.map(_ + 1), convConfig.codeGens)
     val golden: Array[Int] = Refs.convenc(testCase.map(_.toInt).toArray, trellisM)
     val testCases = testCase.grouped(n).toSeq
-    doFlowPeekPokeTest(dut(convConfig), name, testCases, golden)
+    doFlowPeekPokeTest(name, dut(convConfig), testCases, golden)
   }
 
   def synthConvEncoder(dut: ConvConfig => Component, convConfig: ConvConfig): VivadoReport = VivadoSynth(dut(convConfig))

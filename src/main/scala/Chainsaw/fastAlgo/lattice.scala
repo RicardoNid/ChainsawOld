@@ -60,11 +60,12 @@ object lattice {
 
   def INTT(coeffs: Seq[Long])(implicit cfRing: CfRing) = NTT(coeffs, true)
 
+  def ctButterfly(u: Long, v: Long, omega: Long)(implicit cfRing: CfRing) = (cfRing(u + omega * v), cfRing(u - omega * v)) // backward
+
+  def gsButterfly(u: Long, v: Long, omega: Long)(implicit cfRing: CfRing) = (cfRing(u + v), cfRing((u - v) * omega)) // forward
+
+
   def fastNTT(coeffs: Seq[Long], inverse: Boolean = false)(implicit cfRing: CfRing): Seq[Long] = {
-
-    def ctButterfly(u: Long, v: Long, omega: Long) = (cfRing(u + omega * v), cfRing(u - omega * v)) // backward
-
-    def gsButterfly(u: Long, v: Long, omega: Long) = (cfRing(u + v), cfRing((u - v) * omega)) // forward
 
     val N: Int = coeffs.size
     require(isPow2(coeffs.size))
@@ -99,7 +100,7 @@ object lattice {
       }
     }
 
-    val ret = if(!inverse) buildRecursively(coeffs) else buildRecursively(coeffs).map(value => cfRing(value * inverseN))
+    val ret = if (!inverse) buildRecursively(coeffs) else buildRecursively(coeffs).map(value => cfRing(value * inverseN))
     val inverseString = if (inverse) "inverse" else ""
     logger.debug(s"$inverseString fast NTT:\nN:$N, N^-1:$inverseN, omega:$omega\ninput:  ${coeffs.mkString(" ")}\nresult: ${ret.mkString(" ")}")
     ret
@@ -189,6 +190,9 @@ object lattice {
     require(ring(cPrimel) == ring(cPrime % factor))
     require(cPrimeh * factor + cPrimel == cPrime)
 
-    if (cPrime2 >= 0) cPrime2 else cPrime2 + q
+    //    if (cPrime2 - q >= 0) cPrime2 - q
+    //    else if (cPrime2 < 0) cPrime2 + q
+    //    else cPrime2
+    (cPrime2 + q) % q // correction
   }
 }

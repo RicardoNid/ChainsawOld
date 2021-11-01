@@ -57,13 +57,15 @@ class latticeTest extends AnyFlatSpec {
   val cs = (0 until 100).map(_ => DSPRand.nextInt(3328 * 3328))
   "the algo" should "make sure 256-point polyMult can be implemented by four 128-point polyMults" in verifyDecomposition(f, g, 256)
 
-  it should "make sure K2RED = k^2 * c % p" in assert(cs.forall(c => cfRing(K2RED(c, p)) == cfRing(13 * 13 * c)))
-  it should "make sure MULT-K2RED = (k^2 * a * b) % p" in assert(aAndBs.forall(aAndB => cfRing(K2RED(aAndB(0) * aAndB(1), 3329)) == cfRing(K2Mult(aAndB(0), aAndB(1)))))
-  it should "make sure KNTT = NTT" in assert(NTT(a).diff(KNTT(a)).isEmpty)
-  it should "make sure NTT-INTT are inverse of each other" in assert(a.diff(INTT(NTT(a))).isEmpty)
-  it should "make sure fast NTT is still NTT" in assert(NTT(a).sorted.diff(fastNTT(a).sorted).isEmpty) // only require them to be the same as sets, as the order is different
-  it should "make sure fast NTT-INTT are inverse of each other" in assert(a.diff(fastNTT(fastINTT(a))).isEmpty)
-  it should "make sure CCByNTT is still cyclic convolution" in assert(CCByNTT(a, b).diff(cyclicConvolution(a, b)).isEmpty)
-  it should "make sure NWCByNTT is still negative wrapped convolution correctly" in assert(NWCByNTT(a, b).diff(NWC(a, b)).isEmpty)
+  it should "make sure that K2RED = k^2 * c % p" in assert(cs.forall(c => cfRing(K2RED(c, p)) == cfRing(13 * 13 * c)))
+  it should "make sure that MULT-K2RED = (k^2 * a * b) % p" in assert(aAndBs.forall(aAndB => cfRing(K2RED(aAndB(0) * aAndB(1), 3329)) == cfRing(K2Mult(aAndB(0), aAndB(1)))))
+  it should "make sure that KNTT = NTT" in assert(NTT(a).diff(KNTT(a)).isEmpty)
+  it should "make sure that KNTT = NTT at a different size" in assert(NTT(smallA).diff(KNTT(smallA)).isEmpty)
+  it should "make sure that NTT-INTT are inverse of each other" in assert(a.diff(INTT(NTT(a))).isEmpty)
+  it should "make sure that fast NTT is still NTT" in assert(NTT(a).sorted.diff(fastNTT(a).sorted).isEmpty) // only require them to be the same as sets, as the order is different
+  it should "make sure that fast NTT is still NTT at a different size" in assert(NTT(smallA).sorted.diff(fastNTT(smallA).sorted).isEmpty) // only require them to be the same as sets, as the order is different
+  it should "make sure that fast NTT-INTT are inverse of each other" in assert(a.diff(fastNTT(fastINTT(a))).isEmpty)
+  it should "make sure that CCByNTT is still cyclic convolution" in assert(CCByNTT(a, b).diff(cyclicConvolution(a, b)).isEmpty)
+  it should "make sure that NWCByNTT is still negative wrapped convolution correctly" in assert(NWCByNTT(a, b).diff(NWC(a, b)).isEmpty)
 
 }
