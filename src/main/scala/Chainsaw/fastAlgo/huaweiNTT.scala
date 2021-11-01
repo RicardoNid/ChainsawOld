@@ -76,12 +76,15 @@ object huaweiNTT {
 
   /** kred(k^-2^v * k^-2^w) -> k^-2vw^
    */
-  def CTButterfly(u: UInt, v: UInt, omega: Int) = { // implement
-    val vw = kMultMod(v, U(omega, 12 bits)) // TODO: optimization?
+  def CTButterfly(u: UInt, v: UInt, omega: UInt): (UInt, UInt) = { // implement
+    val vw = kMultMod(v, omega) // TODO: optimization?
     val uDelayed = Delay(u, 3)
     vw.setName("vw")
     (kAddMod(uDelayed, vw), kSubMod(uDelayed, vw))
   }
+
+  def CTBF(u: UInt, v: UInt, omega: Int): (UInt, UInt) = CTButterfly(u,v,U(omega, 12 bits))
+
 
   def GSButterfly(u: UInt, v: UInt, omega: Int) = {
     (Delay(kAddMod(u, v), 3), kMultMod(kSubMod(u, v), U(omega, 12 bits)))
@@ -107,7 +110,7 @@ case class CTBFHard(omega: Int) extends Component with DSPTestable[Vec[UInt], Ve
   override val latency: Int = 4
 
   dataOut.valid := Delay(dataIn.valid, latency, init = False)
-  val ret = huaweiNTT.CTButterfly(dataIn.payload(0), dataIn.payload(1), omega)
+  val ret = huaweiNTT.CTBF(dataIn.payload(0), dataIn.payload(1), omega)
   dataOut.payload := Vec(ret._1, ret._2)
 }
 

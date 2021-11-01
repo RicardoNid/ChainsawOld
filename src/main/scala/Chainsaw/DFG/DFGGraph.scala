@@ -192,7 +192,10 @@ class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[
 
   override def toString: String =
     s"-----graph:$name-----\n" +
-      s"nodes:\n${vertexSeq.mkString(" ")}\n" +
+      s"inputs:\n${inputNodes.mkString(" ")}\n" +
+      s"outputs:\n${outputNodes.mkString(" ")}\n" +
+      s"constants:\n${constantNodes.mkString(" ")}\n" +
+      s"nodes:\n${vertexSeq.filterNot(node => node.isIO || node.isInstanceOf[ConstantNode[T]]).mkString(" ")}\n" +
       s"edges:\n${edgeSeq.map(edge => s"${edge.symbol} $edge").mkString("\n")}\n" +
       s"loops:\n${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}\n" +
       s"------end------\n"

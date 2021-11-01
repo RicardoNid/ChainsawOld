@@ -48,7 +48,6 @@ object lattice {
     val inverseN: Long = cfRing.pow(N, -1)
     val omega: Long = getOmega(cfRing, N)
 
-
     val ret = (0 until N).map { k =>
       if (!inverse) cfRing(coeffs.zipWithIndex.map { case (value, i) => value * cfRing.pow(omega, i * k) }.sum)
       else cfRing(coeffs.zipWithIndex.map { case (value, i) => value * cfRing.pow(omega, -i * k) }.sum * inverseN)

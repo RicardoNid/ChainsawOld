@@ -8,6 +8,9 @@ object Operators {
     def asDSPNode(name: String, delay: CyclesCount, exeTime: TimeNumber): GeneralNode[T] = GeneralNode(hardware, name, delay, exeTime)
   }
 
+  // software operators
+
+
   // logical operators
   val and: (Bits, Bits) => Bits = (a: Bits, b: Bits) => a & b
   val or: (Bits, Bits) => Bits = (a: Bits, b: Bits) => a | b
