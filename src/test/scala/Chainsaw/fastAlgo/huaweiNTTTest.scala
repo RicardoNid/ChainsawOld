@@ -7,6 +7,7 @@ import cc.redberry.rings.scaladsl._
 import org.scalatest.flatspec.AnyFlatSpec
 import spinal.core._
 import spinal.lib._
+import Chainsaw.crypto._
 
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
@@ -29,12 +30,12 @@ class huaweiNTTTest extends AnyFlatSpec {
   val testPairs: Seq[Seq[BigInt]] = (0 until 10000).map(_ => BigInt(DSPRand.nextInt(p))).grouped(2).toSeq
 
   "K2RED" should "pass the random test" in {
-    val golden = testProducts.map(c => lattice.K2RED(c.toInt, 3329))
+    val golden = testProducts.map(c => crypto.ModularReduction.K2RED(c.toInt, cfRing))
     doFlowPeekPokeTest("testK2RED", K2REDHard(), testProducts, golden)
   }
 
   "KMultMod" should "pass the random test" in {
-    val golden = testPairs.map(vec => (vec(0) * vec(1) * k2) % 3329).map(cfRing(_))
+    val golden = testPairs.map(vec => (vec(0) * vec(1) * k2) % p).map(cfRing(_))
     testDSPNode(huaweiNTT.kMultModNode, Seq(12 bits, 12 bits), testPairs, golden)
   }
 
@@ -49,7 +50,7 @@ class huaweiNTTTest extends AnyFlatSpec {
   }
 
   "CTBF" should "pass the random test" in {
-    val omega = DSPRand.nextInt(3329)
+    val omega = DSPRand.nextInt(p)
     val golden = testPairs.map { vec =>
       val (u, v) = (vec(0), vec(1))
       val vw = cfRing(k2 * v * omega)
@@ -57,25 +58,25 @@ class huaweiNTTTest extends AnyFlatSpec {
     }.flatMap(pair => Seq(pair._1, pair._2))
 
     val dutResults = doFlowPeekPokeTest("testCTBF", CTBFHard(omega), testPairs, golden).asInstanceOf[ArrayBuffer[BigInt]].map(cfRing(_))
-    assert(dutResults.forall(value => value >= 0 && value < p))
+    assert(dutResults.forall(cfRing.isCorrect))
   }
 
   "GSBF" should "pass the random test" in {
-    val omega = DSPRand.nextInt(3329)
+    val omega = DSPRand.nextInt(p)
     val golden = testPairs.map { vec =>
       val (u, v) = (vec(0), vec(1))
       (cfRing(u + v), cfRing(k2 * (u - v) * omega))
     }.flatMap(pair => Seq(pair._1, pair._2))
 
     val dutResults = doFlowPeekPokeTest("testGSBF", GSBFHard(omega), testPairs, golden).asInstanceOf[ArrayBuffer[BigInt]].map(cfRing(_))
-    assert(dutResults.forall(value => value >= 0 && value < p))
+    assert(dutResults.forall(cfRing.isCorrect))
   }
 
   "all these operators" should "synth correctly" in {
 //    VivadoSynth(K2REDHard(), name = "kRED")
     synthDSPNode(huaweiNTT.kMultModNode, Seq(12 bits, 12 bits))
-//    VivadoSynth(CTBFHard(omega = DSPRand.nextInt(3329)), name = "ctbf")
-//    VivadoSynth(GSBFHard(omega = DSPRand.nextInt(3329)), name = "gsbf")
+//    VivadoSynth(CTBFHard(omega = DSPRand.nextInt(p)), name = "ctbf")
+//    VivadoSynth(GSBFHard(omega = DSPRand.nextInt(p)), name = "gsbf")
   }
 
 }

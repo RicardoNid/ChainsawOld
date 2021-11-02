@@ -1,4 +1,4 @@
-package Chainsaw.Crypto.RSA
+package Chainsaw.crypto.RSA
 
 import spinal.core._
 

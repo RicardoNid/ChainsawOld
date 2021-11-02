@@ -1,10 +1,18 @@
 package Chainsaw.fastAlgo
 
 import Chainsaw.dspTest._
+import cc.redberry.rings.scaladsl.UnivariateRingZp64
 import spinal.core._
 import spinal.lib._
 
+/**
+ *
+ */
 object huaweiNTT {
+
+  val p = 3329 // 3329 = 13 * 256 + 1
+  implicit val polyRing = UnivariateRingZp64(p, "x")
+  implicit val cfRing = polyRing.cfRing
 
   def kred(c: IntegerRange) = {
     val cl = c % 256

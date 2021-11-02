@@ -1,4 +1,4 @@
-package Chainsaw.Crypto.RSA
+package Chainsaw.crypto.RSA
 
 import Chainsaw._
 import cc.redberry.rings.scaladsl._

@@ -1,4 +1,4 @@
-package Chainsaw.Crypto
+package Chainsaw.crypto
 
 import cc.redberry.rings.primes._
 import cc.redberry.rings._

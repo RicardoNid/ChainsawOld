@@ -131,7 +131,7 @@ object DFGGens {
 
   /** Generic method to generate an abstract radix-2 FFT DFG, this method use a "butterfly core" as its building block
    *
-   * @param butterfly   : the implementation of the butterfly core
+   * @param ctButterfly : the implementation of the butterfly core
    * @param size        : size of the FFT DFG, should be a power of 2
    * @param fftArch     : architecture of fft, could be DIT or DIF
    * @param coeffGen    : a generator to generate the twiddle factor w^ik^ on the specific field
@@ -139,8 +139,8 @@ object DFGGens {
    * @param parallelism : determining the parallelism of the design, compared to the fully-pipelined version
    * @example parallelism = 3 -> unfold 3; parallelism = -3 -> fold 3
    */
-  def radix2fft[THard, TSoft](butterfly: ButterflyNode[THard], size: Int,
-                              fftArch: FFTArch,
+  def radix2fft[THard, TSoft](ctButterfly: ButterflyNode[THard], gsButterfly: ButterflyNode[THard],
+                              size: Int, fftArch: FFTArch, inverse: Boolean = false,
                               coeffGen: Int => TSoft, coeffWidth: BitCount, parallelism: Int = 1)
                              (implicit converter: (TSoft, BitCount) => THard): DFGGraph[THard] = {
     require(isPow2(size))
@@ -148,11 +148,20 @@ object DFGGens {
 
     val inputs = (0 until size).map(i => dfg.addInput(s"input$i"))
 
-    val butterflies = Seq.tabulate(log2Up(size), size / 2)((stage, index) => butterfly.copy(s"butterfly${stage}_$index"))
-    dfg.addVertices(butterflies.flatten: _*)
-
-    val consts = (0 until size / 2).map(i => ConstantNode[THard, TSoft](s"omega^$i", coeffGen(i), coeffWidth)) // coefficients
+    val consts = (0 until size / 2).map { i =>
+      val index = if (inverse) -i else i
+      logger.debug(s"coeff dfg ${coeffGen(index)}")
+      ConstantNode[THard, TSoft](s"omega_$index", coeffGen(index), coeffWidth) // coefficients
+    }
     dfg.addVertices(consts: _*)
+
+    val butterflies = Seq.tabulate(log2Up(size), size / 2) { (stage, index) =>
+      fftArch match {
+        case DIT => ctButterfly.copy(s"butterfly${stage}_$index")
+        case DIF => gsButterfly.copy(s"butterfly${stage}_$index")
+      }
+    }
+    dfg.addVertices(butterflies.flatten: _*)
 
     val N = size
 
@@ -164,13 +173,14 @@ object DFGGens {
         val coeff = consts(step * i) // constant node
         val butterfly = butterflies(stage)(count * dataIns.size / 2 + i)
 
-        logger.info(s"connecting ${butterfly.name}")
+        logger.debug(s"connecting ${butterfly.name}")
         dfg.addEdge(u, butterfly(0), 0)
         dfg.addEdge(v, butterfly(1), 0)
         dfg.addEdge(coeff, butterfly(2), 0)
 
         (butterfly(0), butterfly(1))
       }
+
       val ret = temp.map(_._1) ++ temp.map(_._2)
       logger.debug(s"output from stage: ${ret.mkString(" ")}")
       ret
@@ -183,7 +193,7 @@ object DFGGens {
           val temp = buildStage(dataIns, stage, count)
           val (up, down) = temp.splitAt(dataIns.size / 2)
           buildRecursively(up, stage + 1, count * 2) ++ buildRecursively(down, stage + 1, count * 2 + 1)
-        } else {
+        } else { // fftArch == DIT
           val (up, down) = dataIns.splitAt(dataIns.size / 2)
           val temp = buildRecursively(up, stage - 1, count * 2) ++ buildRecursively(down, stage - 1, count * 2 + 1)
           buildStage(temp, stage, count)
@@ -191,36 +201,13 @@ object DFGGens {
       }
     }
 
-    buildRecursively(inputs.map(DSPNodeWithOrder(_, 0)), 0, 0)
-    butterflies.last.foreach { butterfly =>
-      dfg.setOutput(butterfly, 0)
-      dfg.setOutput(butterfly, 1)
+    val ret = fftArch match {
+      case DIT => buildRecursively(inputs.map(DSPNodeWithOrder(_, 0)), log2Up(size) - 1, 0)
+      case DIF => buildRecursively(inputs.map(DSPNodeWithOrder(_, 0)), 0, 0)
     }
 
-    println(dfg)
+    ret.foreach(port => dfg.setOutput(port.node, port.order))
+    logger.debug(s"butterfly dfg:\n$dfg")
     dfg
-  }
-
-  def main(args: Array[String]): Unit = {
-
-    val p = 3329 // 3329 = 13 * 256 + 1
-    val k = 13
-    val n = 256 // is not the "256" above, the 256 above is 1 << 8, they're the same by coincident
-    implicit val polyRing = UnivariateRingZp64(p, "x")
-    implicit val cfRing = polyRing.cfRing
-
-    val butterflyNode = ButterflyNode(fastAlgo.lattice.gsButterfly, "gsButterfly")
-
-    val omega  = fastAlgo.lattice.getOmega(cfRing, 8)
-    println(s"omega: $omega")
-    val coeffGen = (index: Int) => cfRing.pow(omega, index)
-
-    implicit def converter(a: Long, width: BitCount) = a
-
-    val fft8 = radix2fft(butterflyNode, 8, DIF, coeffGen, -1 bits, 1)
-    val nttImpl = new DFGImplSoft[Long](fft8)(0).implForwarding
-    val testCase = (0 until 8).map(_ => DSPRand.nextInt(p).toLong)
-    println(nttImpl(testCase).mkString(" "))
-    println(fastAlgo.lattice.fastNTT(testCase).mkString(" "))
   }
 }

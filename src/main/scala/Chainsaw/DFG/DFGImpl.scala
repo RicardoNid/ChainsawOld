@@ -5,6 +5,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 import spinal.lib._
 
+import java.util.Date
 import scala.collection.mutable
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
@@ -92,7 +93,11 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
     outputNodes.flatMap(signalMap(_))
   }
 
-  def impl: Seq[T] => Seq[T] = if (dfg.isRecursive) implRecursive else implForwarding
+  def impl: Seq[T] => Seq[T] = {
+    val ret = if (dfg.isRecursive) implRecursive else implForwarding
+    logger.info(s"finish DFG implementation") // this
+    ret
+  }
 
   def implAsComponent(inputWidths: Seq[BitCount] = Seq.fill(dfg.inputNodes.size)(10 bits)): Unit = {
     GenRTL(new Component {

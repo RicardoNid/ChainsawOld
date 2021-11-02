@@ -1,4 +1,4 @@
-package Chainsaw.Crypto
+package Chainsaw.crypto
 
 import collection.JavaConversions._
 

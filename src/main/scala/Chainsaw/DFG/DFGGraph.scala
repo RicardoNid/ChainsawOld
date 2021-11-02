@@ -13,11 +13,6 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable
 import scala.language.postfixOps
 
-/** Main class of DFG model
- *
- * @tparam T
- * learn more: [[]]
- */
 class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
 
   implicit def currentDFG: DFGGraph[T] = this
@@ -160,7 +155,7 @@ class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[
    */
   def globalLcm: Int = edgeSeq.flatMap(_.schedules).map(_.period).sorted.reverse.reduce(lcm)
 
-  def delayPaths: Seq[GraphPath[DSPNode[T], DSPEdge[T]]] = {
+  def delayPaths: Seq[GraphPath[DSPNode[T], DSPEdge[T]]] = { // need optimization! this is a big bottleneck!
     val algo = new alg.shortestpath.BellmanFordShortestPath(this)
     Seq.tabulate(inputNodes.size, outputNodes.size)((i, j) => algo.getPath(inputNodes(i), outputNodes(j))).flatten
   }
@@ -190,15 +185,25 @@ class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[
 
   def folded(foldingSet: Seq[Seq[DSPNode[T] with Foldable[T]]]): DFGGraph[T] = new Folding(this, foldingSet).folded
 
-  override def toString: String =
+  override def toString: String = {
+
+    val inputEdges = edgeSeq.filter(edge => edge.source.isInput || edge.source.isInstanceOf[ConstantNode[T]])
+    val outputEdges = edgeSeq.filter(edge => edge.target.isOutput)
+    val otherEdges = edgeSeq.diff(inputEdges).diff(outputEdges)
+
+
     s"-----graph:$name-----\n" +
       s"inputs:\n${inputNodes.mkString(" ")}\n" +
       s"outputs:\n${outputNodes.mkString(" ")}\n" +
       s"constants:\n${constantNodes.mkString(" ")}\n" +
       s"nodes:\n${vertexSeq.filterNot(node => node.isIO || node.isInstanceOf[ConstantNode[T]]).mkString(" ")}\n" +
-      s"edges:\n${edgeSeq.map(edge => s"${edge.symbol} $edge").mkString("\n")}\n" +
+      s"edges:\n" +
+      s"input edges:\n${inputEdges.map(edge => s"${edge.symbol} $edge").mkString("\n")}\n" +
+      s"inner edges:\n${otherEdges.map(edge => s"${edge.symbol} $edge").mkString("\n")}\n" +
+      s"output edges:\n${outputEdges.map(edge => s"${edge.symbol} $edge").mkString("\n")}\n" +
       s"loops:\n${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}\n" +
       s"------end------\n"
+  }
 
   /** Besides nodes and edges, we clone the weights
    */
@@ -209,8 +214,8 @@ class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[
   }
 
   // TODO: consider carefully on these properties
-  def asNode[THard <: Data](name: String)(implicit holderProvider: BitCount => THard): GeneralNode[THard] = {
-    require(isForwarding && isHomogeneous)
+  def asNode[THard <: Data](name: String, graphLatency: CyclesCount = latency cycles)(implicit holderProvider: BitCount => THard): GeneralNode[THard] = {
+    require(isForwarding)
     GeneralNode[THard](
       DSPHardware(
         impl = (dataIns: Seq[THard], _: GlobalCount) => impl[THard](dataIns), // FIXME: this won't provide the counter of outer graph, is that legal?
@@ -218,7 +223,7 @@ class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[
         outWidths = Seq.fill(outputNodes.size)(-1 bits) // FIXME: what if we use subgraph in
       ),
       name,
-      latency cycles,
+      graphLatency,
       0.0 ns // FIXME: this could be difficult to define
     )
   }

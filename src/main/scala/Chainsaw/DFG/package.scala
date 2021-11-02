@@ -85,8 +85,9 @@ package object DFG {
 
   implicit def defaultOrder[T](node: DSPNode[T]): DSPNodeWithOrder[T] = DSPNodeWithOrder(node, 0)
 
-  def testDSPNode[THard <: Data, TSoft](node: DSPNode[THard], inputWidths: Seq[BitCount], testCases: Seq[TSoft], golden: Seq[TSoft])
-                                       (implicit holderProvider: BitCount => THard) = {
+  // TODO: better type inference
+  def testDSPNode[THard <: Data, Si, So](node: DSPNode[THard], inputWidths: Seq[BitCount], testCases: Seq[Si], golden: Seq[So])
+                                    (implicit holderProvider: BitCount => THard): Seq[Si] = {
     doFlowPeekPokeTest(node.name, new Component with DSPTestable[Vec[THard], Vec[THard]] {
       override val dataIn: Flow[Vec[THard]] = slave Flow Vec(inputWidths.map(holderProvider(_)))
       override val dataOut: Flow[Vec[THard]] = master Flow Vec(node.hardware.outWidths.map(holderProvider(_)))
@@ -95,9 +96,10 @@ package object DFG {
       dataOut.valid := Delay(dataIn.valid, latency, init = False)
       dataOut.payload := Vec(node.hardware.impl(dataIn.payload, GlobalCount(U(0))))
 
-    }, testCases, golden)
+    }, testCases, golden).asInstanceOf[Seq[Si]]
   }
 
+  // TODO: better type inference
   def synthDSPNode[THard <: Data](node: DSPNode[THard], inputWidths: Seq[BitCount])
                                  (implicit holderProvider: BitCount => THard) = {
     VivadoSynth(new Component with DSPTestable[Vec[THard], Vec[THard]] {
