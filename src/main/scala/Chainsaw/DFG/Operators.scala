@@ -29,7 +29,9 @@ object Operators {
 
   // operators mapped to Xilinx DSP slice
   def sintMACDSP(delay: Int): (SInt, SInt, SInt) => SInt = (a: SInt, b: SInt, c: SInt) => {
-    val ret = if (delay == 0) a * b + c else RegNext(a * b) + c
+    val prod = RegNext(a * b)
+    prod.init(0)
+    val ret = if (delay == 0) a * b + c else prod + c
     ret.addAttribute("use_dsp", "yes")
     ret
   }

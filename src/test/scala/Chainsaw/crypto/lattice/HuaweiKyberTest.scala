@@ -1,9 +1,9 @@
 package Chainsaw.crypto.lattice
 
+import Chainsaw.DFG.FFTArch._
 import Chainsaw.crypto.FastAlgos.{CCByNTT, NWCByNTT}
 import Chainsaw.crypto.lattice.Kyber.KNTT
 import Chainsaw.crypto._
-import Chainsaw.crypto.lattice.HuaweiKyber.gsButterflyNode
 import Chainsaw.{DSPRand, crypto, logger}
 import cc.redberry.rings.scaladsl.{Ring, UnivariateRingZp64}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -71,7 +71,7 @@ class HuaweiKyberTest extends AnyFlatSpec {
   val opWidth: BitCount = 12 bits
 
   import Chainsaw.DFG._
-  import HuaweiKyber.{ctButterflyNode, kAddMod, kMultModNode, kSubMod}
+  import HuaweiKyber._
   // TODO: test method should support int/long as a replacement of bigint
   // TODO: exhaustive test of KRED
 
@@ -122,4 +122,34 @@ class HuaweiKyberTest extends AnyFlatSpec {
     synthDSPNode(gsButterflyNode, Seq.fill(3)(opWidth))
   }
 
+  val testCount = 10
+
+  val nttTestCase: Seq[Seq[Long]] = Seq.tabulate(testCount, N)((_, _) => DSPRand.nextInt(p).toLong)
+  val knttTestCase: Seq[Seq[BigInt]] = nttTestCase.flatten.map(value => BigInt(cfRing(value * k2Inverse))).grouped(N).toSeq
+
+  val nttGolden: Seq[Seq[Long]] = nttTestCase.map(NTT)
+  val inttGolden: Seq[Seq[Long]] = nttTestCase.map(seq => INTT(nttAlgo.bitReverse(seq))) // the input is bit-reversed
+
+  val knttGolden: Seq[Seq[BigInt]] = nttGolden.flatten.map(value => BigInt(cfRing(value * k2Inverse))).grouped(N).toSeq
+  val kinttGolden: Seq[Seq[BigInt]] = inttGolden.flatten.map(value => BigInt(cfRing(value * k2Inverse * N))).grouped(N).toSeq
+
+  "the KNTT hardware" should "pass the random test" in {
+
+    testDSPNode[UInt, Seq[BigInt], BigInt](
+      nttDFG.asNode("ntt", log2Up(N) * 5 cycles), Seq.fill(N)(12 bits),
+      knttTestCase,
+      knttGolden.flatten)
+  }
+
+  it should "synth correctly" in synthDSPNode[UInt](nttDFG.asNode("ntt", log2Up(N) * 5 cycles), Seq.fill(N)(12 bits))
+
+  implicit def long2UInt: (Long, BitCount) => UInt = (value: Long, _: BitCount) => U(value, 12 bits) // TODO:
+
+  "the IKNTT hardware" should "pass the random test" in {
+
+    testDSPNode[UInt, Seq[BigInt], BigInt](
+      inttDFG.asNode("intt", log2Up(N) * 5 cycles), Seq.fill(N)(12 bits),
+      knttTestCase,
+      kinttGolden.flatten)
+  }
 }
