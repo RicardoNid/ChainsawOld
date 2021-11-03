@@ -19,7 +19,7 @@ object Operators {
   // sint operators
   val sintAdd: (SInt, SInt) => SInt = (a: SInt, b: SInt) => a + b
   val sintMult: (SInt, SInt) => SInt = (a: SInt, b: SInt) => a * b
-  val sintMultAdd: (SInt, SInt, SInt) => SInt = (a: SInt, b: SInt, c: SInt) => (a * b).resized + c
+  val sintMultAdd: (SInt, SInt, SInt) => SInt = (a: SInt, b: SInt, c: SInt) => ((a * b) + c).resized
 
   // bit/digit level operators
   val sintAddC: (SInt, SInt, SInt) => Seq[SInt] = (a: SInt, b: SInt, c: SInt) => {
@@ -43,14 +43,14 @@ object Operators {
   )
 
   // adder with carry
-  class AdderC[THard <: Data](op: (THard, THard, THard) => Seq[THard], width: Seq[BitCount] = Seq(-1 bits), name: String, delay: CyclesCount, exeTime: TimeNumber)
+  class AdderC[THard <: Data](op: (THard, THard, THard) => Seq[THard], name: String, width: Seq[BitCount], delay: CyclesCount, exeTime: TimeNumber)
     extends GeneralNode[THard](DSPHardware((dataIns: Seq[THard], _: GlobalCount) => op(dataIns(0), dataIns(1), dataIns(2)), 3, width), name, delay, exeTime) with Foldable[THard] {
     require(width.size == 2)
 
-    override def copy(newName: String): AdderC[THard] = new AdderC(op, width, newName, delay, exeTime)
+    override def copy(newName: String): AdderC[THard] = new AdderC(op, newName, width, delay, exeTime)
   }
 
   object AdderC {
-    def apply[THard <: Data](op: (THard, THard, THard) => Seq[THard], name: String, width: Seq[BitCount], delay: CyclesCount, exeTime: TimeNumber): AdderC[THard] = new AdderC(op, width, name, delay, exeTime)
+    def apply[THard <: Data](op: (THard, THard, THard) => Seq[THard], name: String, width: Seq[BitCount] = Seq(-1 bits, -1 bits), delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): AdderC[THard] = new AdderC(op, name, width, delay, exeTime)
   }
 }
