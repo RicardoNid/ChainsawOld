@@ -2,15 +2,12 @@ package Chainsaw.DFG
 
 import Chainsaw._
 import spinal.core._
-
-import cc.redberry.rings
-
-import rings.poly.PolynomialMethods._
-import rings.scaladsl._
-import syntax._
+import spinal.lib._
 
 import scala.language.postfixOps
+import scala.math.abs
 
+// Architecutre selections
 object FirArch extends Enumeration {
   type FirArch = Value
   val DIRECT, TRANSPOSE, SYSTOLIC = Value
@@ -26,101 +23,54 @@ object FFTArch extends Enumeration {
   val DIT, DIF = Value
 }
 
-import Chainsaw.DFG.FirArch._
-import Chainsaw.DFG.FirType._
 import Chainsaw.DFG.FFTArch._
+import Chainsaw.DFG.FirArch._
 
-object DFGGens {
+// TODO: more functions and transformations on FIR, e.g:
+//    multiphase decomposition
+//    MIMO(for example, for convenc)
+// TODO: move the parallelism implementation outside of the DFG
 
-  /** Generic method to generate an abstract FIR DFG
-   */
-  def fir[THard <: Data, TSoft](add: BinaryNode[THard], mult: BinaryNode[THard],
-                                firArch: FirArch,
-                                coeffs: Seq[TSoft], coeffWidth: BitCount, parallelism: Int = 1)
-                               (implicit converter: (TSoft, BitCount) => THard): DFGGraph[THard] = {
-
-    val dfg = DFGGraph[THard]("fir graph")
-    val size = coeffs.size
-
-    val mults = (0 until size).map(i => mult.copy(s"${mult.name}_$i"))
-    val adds = (0 until size - 1).map(i => add.copy(s"${add.name}_$i"))
-    val consts = coeffs.zipWithIndex.map { case (soft, i) => ConstantNode[THard, TSoft](s"const_$i", soft, coeffWidth) }
-    (mults ++ adds ++ consts).foreach(dfg.addVertices(_))
-    val input = dfg.addInput("input")
-
-    // allocate the coeff to mults, this is the same for all architectures
-    firArch match {
-      case DIRECT =>
-        mults.zip(consts.reverse).foreach { case (mult, coeff) => dfg.addEdge(coeff(0), mult(0), 0) }
-        mults.zipWithIndex.foreach { case (mult, i) => dfg.addEdge(input(0), mult(1), i) }
-        mults.tail.zip(adds).foreach { case (mult, add) => dfg.addEdge(mult(0), add(0), 0) }
-        (mults.head +: adds.init).zip(adds).foreach { case (prev, next) => dfg.addEdge(prev(0), next(1), 0) }
-      case TRANSPOSE =>
-        mults.zip(consts).foreach { case (mult, coeff) => dfg.addEdge(coeff(0), mult(0), 0) }
-        mults.foreach(mult => dfg.addEdge(input(0), mult(1), 0))
-        mults.tail.zip(adds).foreach { case (mult, add) => dfg.addEdge(mult(0), add(0), 0) }
-        (mults.head +: adds.init).zip(adds).foreach { case (prev, next) => dfg.addEdge(prev(0), next(1), 1) }
-      case SYSTOLIC =>
-        mults.zip(consts.reverse).foreach { case (mult, coeff) => dfg.addEdge(coeff(0), mult(0), 0) }
-        mults.zipWithIndex.foreach { case (mult, i) => dfg.addEdge(input(0), mult(1), 2 * i) }
-        mults.tail.zip(adds).foreach { case (mult, add) => dfg.addEdge(mult(0), add(0), 0) }
-        (mults.head +: adds.init).zip(adds).foreach { case (prev, next) => dfg.addEdge(prev(0), next(1), 1) }
-    }
-    dfg.setOutput(adds.last)
-
-    // folding/unfolding according to the pattern
-    val ret = if (parallelism == 1) dfg
-    else if (parallelism > 1) new Unfolding(dfg, parallelism).unfolded
-    else {
-      val foldingFactor = -parallelism
-      val multGroups = mults.grouped(-parallelism).toSeq.map(_.padTo(foldingFactor, null))
-      val addGroups = adds.grouped(-parallelism).toSeq.map(_.padTo(foldingFactor, null))
-      val foldingSet = multGroups ++ addGroups
-      DFGTestUtil.verifyFolding(dfg.asInstanceOf[DFGGraph[SInt]], foldingSet.asInstanceOf[Seq[Seq[BinaryNode[SInt]]]])
-      new Folding(dfg, foldingSet).folded
-    }
-    logger.debug(s"fir dfg:\n$ret")
-    ret
-  }
-
-
-  /** Specific implementation of FIR DFG in real field (\R), using MAC module like DSP slice
-   */
-  def firDSP[THard <: Data, TSoft](multAdd: TrinaryNode[THard],
+class FIRGen[THard <: Data, TSoft](mac: TrinaryNode[THard],
                                    firArch: FirArch,
-                                   coeffs: Seq[TSoft], coeffWidth: BitCount, parallelism: Int = 1)
-                                  (implicit converter: (TSoft, BitCount) => THard): DFGGraph[THard] = {
+                                   coeffs: Seq[TSoft], coeffWidth: BitCount, parallelism: Int)
+                                  (implicit converter: (TSoft, BitCount) => THard) extends DFGGen[THard] {
 
-    val dfg = DFGGraph[THard]("fir graph")
+  def getGraph: DFGGraph[THard] = {
+    val dfg = DFGGraph[THard](s"${firArch}_fir_using_${mac.name}")
     val size = coeffs.size
 
-    val multAdds = (0 until size).map(i => multAdd.copy(s"${multAdd.name}_$i"))
+    // adding nodes to the graph
+    val macs = (0 until size).map(i => mac.copy(s"${mac.name}_$i"))
     val consts = coeffs.zipWithIndex.map { case (soft, i) => ConstantNode[THard, TSoft](s"const_$i", soft, coeffWidth) }
     val zero = ConstantNode[THard, TSoft](s"zero", 0.asInstanceOf[TSoft], coeffWidth) // TODO: not generic
-    (multAdds ++ consts :+ zero).foreach(dfg.addVertices(_))
+    (macs ++ consts :+ zero).foreach(dfg.addVertices(_))
     val input = dfg.addInput("input")
 
-    // allocate the coeff to mults, this is the same for all architectures
-    firArch match {
-      case DIRECT =>
-        multAdds.zip(consts.reverse).foreach { case (multAdd, coeff) => dfg.addEdge(coeff(0), multAdd(0), 0) } // A
-        multAdds.zipWithIndex.foreach { case (mult, i) => dfg.addEdge(input(0), mult(1), i) } // B
-        multAdds.init.zip(multAdds.tail).foreach { case (prev, next) => dfg.addEdge(prev(0), next(2), 0) } // C
-        dfg.addEdge(zero(0), multAdds.head(2), 0)
-      case TRANSPOSE =>
-        multAdds.zip(consts).foreach { case (multAdd, coeff) => dfg.addEdge(coeff(0), multAdd(0), 0) } // A
-        multAdds.zipWithIndex.foreach { case (mult, i) => dfg.addEdge(input(0), mult(1), 0) } // B
-        multAdds.init.zip(multAdds.tail).foreach { case (prev, next) => dfg.addEdge(prev(0), next(2), 1) } // C
-        dfg.addEdge(zero(0), multAdds.head(2), 1)
+    /** build the fir graph
+     */
+    def buildFir(a: Int, b: Int): Unit = {
+      val coeffs = if (firArch == TRANSPOSE) consts else consts.reverse
+      macs.zip(coeffs).foreach { case (multAdd, coeff) => dfg.addEdge(coeff(0), multAdd(0), 0) } // mac port 0, allocate coefficients to mac units
+      macs.zipWithIndex.foreach { case (mult, i) => dfg.addEdge(input(0), mult(1), a * i) } // mac port 1, connecting the input delay line to mac units
+      // mac port 2, connecting macs, the first mac unit takes a zero
+      macs.init.zip(macs.tail).foreach { case (prev, next) => dfg.addEdge(prev(0), next(2), b) }
+      dfg.addEdge(zero(0), macs.head(2), b)
     }
-    dfg.setOutput(multAdds.last)
+
+    firArch match {
+      case DIRECT => buildFir(1, 0)
+      case TRANSPOSE => buildFir(0, 1)
+      case SYSTOLIC => buildFir(2, 1)
+    }
+    dfg.setOutput(macs.last)
 
     // folding/unfolding according to the pattern
     val ret = if (parallelism == 1) dfg
     else if (parallelism > 1) new Unfolding(dfg, parallelism).unfolded
     else {
       val foldingFactor = -parallelism
-      val multAddGroups = multAdds.grouped(-parallelism).toSeq.map(_.padTo(foldingFactor, null))
+      val multAddGroups = macs.grouped(-parallelism).toSeq.map(_.padTo(foldingFactor, null))
       DFGTestUtil.verifyFolding(dfg.asInstanceOf[DFGGraph[SInt]], multAddGroups.asInstanceOf[Seq[Seq[TrinaryNode[SInt]]]])
       new Folding(dfg, multAddGroups).folded
     }
@@ -128,22 +78,63 @@ object DFGGens {
     ret
   }
 
+  def latency: Int = (if (firArch == SYSTOLIC) coeffs.size - 1 else 0) + mac.delay
 
-  /** Generic method to generate an abstract radix-2 FFT DFG, this method use a "butterfly core" as its building block
+  def getGraphAsNode(implicit holderProvider: BitCount => THard): DSPNode[THard] = {
+    val graph = getGraph
+    graph.asNode[THard](graph.name, graphLatency = latency cycles)
+  }
+}
+
+object FIRGen {
+  /** generic method to generate an abstract FIR DFG
    *
-   * @param ctButterfly : the implementation of the butterfly core
-   * @param size        : size of the FFT DFG, should be a power of 2
-   * @param fftArch     : architecture of fft, could be DIT or DIF
-   * @param coeffGen    : a generator to generate the twiddle factor w^ik^ on the specific field
-   * @param coeffWidth  : bit width of the coefficients
-   * @param parallelism : determining the parallelism of the design, compared to the fully-pipelined version
-   * @example parallelism = 3 -> unfold 3; parallelism = -3 -> fold 3
+   * @param mac abstract multiply-add node
    */
-  def radix2fft[THard, TSoft](ctButterfly: ButterflyNode[THard], gsButterfly: ButterflyNode[THard],
-                              size: Int, fftArch: FFTArch, inverse: Boolean = false,
-                              coeffGen: Int => TSoft, coeffWidth: BitCount, parallelism: Int = 1)
-                             (implicit converter: (TSoft, BitCount) => THard): DFGGraph[THard] = {
+  def apply[THard <: Data, TSoft](mac: TrinaryNode[THard], firArch: FirArch,
+                                  coeffs: Seq[TSoft], coeffWidth: BitCount, parallelism: Int)
+                                 (implicit converter: (TSoft, BitCount) => THard): FIRGen[THard, TSoft] =
+    new FIRGen(mac, firArch, coeffs, coeffWidth, parallelism)(converter)
+
+  /** using add & mult, rather than a MAC as building blocks to implement FIR
+   *
+   * @param add  commutative adder node(2->1)
+   * @param mult multiplier node, port0 for coeff, port1 for data(2->1)
+   *
+   *             using add and mult, we can build a multAddNode as the building block of our design
+   */
+  def apply[THard <: Data, TSoft](add: BinaryNode[THard], mult: BinaryNode[THard], firArch: FirArch,
+                                  coeffs: Seq[TSoft], coeffWidth: BitCount, parallelism: Int)
+                                 (implicit converter: (TSoft, BitCount) => THard): FIRGen[THard, TSoft] = {
+    // building mac by add & mult
+    val multAddOp = (a: THard, b: THard, c: THard) => {
+      val prod = mult.hardware.impl(Seq(a, b), null).head
+      val sum = add.hardware.impl(Seq(Delay(c, mult.delay), prod), null).head
+      sum
+    }
+    val mac = TrinaryNode(multAddOp, s"${add.name}_${mult.name}", width = add.hardware.outWidths.head, delay = (add.delay + mult.delay) cycles)
+    new FIRGen(mac, firArch, coeffs, coeffWidth, parallelism)(converter)
+  }
+}
+
+// TODO: cannot infer TSoft from the coeffGen, why?
+/** Generic method to generate an abstract radix-2 FFT DFG, this method use a "butterfly core" as its building block
+ *
+ * @param ctButterfly : the implementation of the butterfly core
+ * @param size        : size of the FFT DFG, should be a power of 2
+ * @param fftArch     : architecture of fft, could be DIT or DIF
+ * @param coeffGen    : a generator to generate the twiddle factor w^ik^ on the specific field
+ * @param coeffWidth  : bit width of the coefficients
+ * @param parallelism : determining the parallelism of the design, compared to the fully-pipelined version
+ * @example parallelism = 3 -> unfold 3; parallelism = -3 -> fold 3
+ */
+class ButterflyGen[THard, TSoft](ctButterfly: ButterflyNode[THard], gsButterfly: ButterflyNode[THard],
+                                 size: Int, fftArch: FFTArch, inverse: Boolean = false,
+                                 coeffGen: Int => TSoft, coeffWidth: BitCount, parallelism: Int = 1)
+                                (implicit converter: (TSoft, BitCount) => THard) extends DFGGen[THard] {
+  def getGraph: DFGGraph[THard] = {
     require(isPow2(size))
+    require(gsButterfly.delay == ctButterfly.delay)
     val dfg = DFGGraph[THard]("fft graph")
 
     val inputs = (0 until size).map(i => dfg.addInput(s"input$i"))
@@ -151,7 +142,8 @@ object DFGGens {
     val consts = (0 until size / 2).map { i =>
       val index = if (inverse) -i else i
       logger.debug(s"coeff dfg ${coeffGen(index)}")
-      ConstantNode[THard, TSoft](s"omega_$index", coeffGen(index), coeffWidth) // coefficients
+      // we us the absolute value of index as "^" or "-" are not allowed in verilator
+      ConstantNode[THard, TSoft](s"omega_${abs(index)}", coeffGen(index), coeffWidth) // coefficients
     }
     dfg.addVertices(consts: _*)
 
@@ -210,4 +202,18 @@ object DFGGens {
     logger.debug(s"butterfly dfg:\n$dfg")
     dfg
   }
+
+  override def latency: Int = log2Up(size) * gsButterfly.delay
+
+  // FIXME: as we want butterfly to support "software" evaluation, we didn't bound THard <: Data, thus, DFGGraph.asNode cannot be invoke
+  override def getGraphAsNode(implicit holderProvider: BitCount => THard): DSPNode[THard] = null
+}
+
+object ButterflyGen {
+  def apply[THard, TSoft](ctButterfly: ButterflyNode[THard], gsButterfly: ButterflyNode[THard],
+                          size: Int, fftArch: FFTArch, inverse: Boolean,
+                          coeffGen: Int => TSoft, coeffWidth: BitCount,
+                          parallelism: Int)
+                         (implicit converter: (TSoft, BitCount) => THard): ButterflyGen[THard, TSoft] =
+    new ButterflyGen(ctButterfly, gsButterfly, size, fftArch, inverse, coeffGen, coeffWidth, parallelism)(converter)
 }

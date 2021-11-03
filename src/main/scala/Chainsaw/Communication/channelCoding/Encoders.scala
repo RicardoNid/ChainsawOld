@@ -33,7 +33,7 @@ object Encoders {
 
     val and: BinaryNode[Bits] = BinaryNode(Operators.and, "and")
     val xor: BinaryNode[Bits] = BinaryNode(Operators.xor, "xor")
-    def convDirect(coeffs: Seq[Int]): DFGGraph[Bits] = DFGGens.fir(xor, and, DIRECT, coeffs, 1 bits)
+    def convDirect(coeffs: Seq[Int]): DFGGraph[Bits] = FIRGen(xor, and, DIRECT, coeffs, 1 bits, 1).getGraph
 
     val convMatrix = Seq.tabulate(n,k) {(i, j) =>
       val gen = binaryCodeGens(i)(j).reverse.map(_.asDigit)

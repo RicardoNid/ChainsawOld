@@ -1,9 +1,9 @@
 package Chainsaw.crypto.lattice
 
+import Chainsaw.DFG.FFTArch._
 import Chainsaw.DFG._
 import Chainsaw.crypto._
 import Chainsaw.fastAlgo.IntegerRange
-import cc.redberry.rings
 import cc.redberry.rings.scaladsl._
 import spinal.core._
 import spinal.lib._
@@ -58,16 +58,12 @@ object HuaweiKyber {
     // step 1
     require(dataIn.getBitsWidth == 24)
     val cl = dataIn(7 downto 0)
-    cl.setName("cl", weak = true)
     val ch = dataIn(23 downto 8)
-    ch.setName("ch", weak = true)
     val cPrime = RegNext((13 * cl).intoSInt -^ ch.intoSInt) // 16 + 1 bits TODO: implement this by shift-add?
     cPrime.setName("cPrime", weak = true)
     // step 2
     val cPrimel = cPrime(7 downto 0).asUInt
-    cPrimel.setName("cPrimel", weak = true)
     val cPrimeh = cPrime(16 downto 8)
-    cPrimeh.setName("cPrimeh", weak = true)
     val CPrime2 = RegNext((13 * cPrimel).intoSInt - cPrimeh) // 12 + 1 bits
 
     val ret = UInt(12 bits)
@@ -76,6 +72,11 @@ object HuaweiKyber {
     when(CPrime2 < 0)(ret := higher.asUInt.resized)
       .elsewhen(lower >= 0)(ret := lower.asUInt.resized)
       .otherwise(ret := CPrime2.asUInt.resized)
+
+    // for wavefile debugging
+    Seq(cl, ch, cPrime, cPrimel, cPrimel, CPrime2)
+      .zip(Seq("cl", "ch", "cPrime", "cPrimel", "cPrimel", "CPrime2"))
+      .foreach{ case (signal, str) => signal.setName(str, weak = true)}
 
     RegNext(ret)
   }
@@ -118,16 +119,27 @@ object HuaweiKyber {
 
   def CTBF(u: UInt, v: UInt, omega: Int): (UInt, UInt) = CTButterfly(u,v,U(omega, 12 bits))
 
-
   def GSButterfly(u: UInt, v: UInt, omega: UInt): (UInt, UInt) = {
     (Delay(kAddMod(u, v), 4), kMultMod(kSubMod(u, v), Delay(omega, 1)))
   }
 
   def GSBF(u: UInt, v: UInt, omega: Int): (UInt, UInt) = GSButterfly(u,v,U(omega, 12 bits))
 
-  // nodes, so we can use them in DFG
+  // encapsulate the hardware impl as DFG nodes
   val kMultModNode: BinaryNode[UInt] = BinaryNode(kMultMod, "kMultMod", delay = 4 cycles)
   val ctButterflyNode: ButterflyNode[UInt] = ButterflyNode(CTButterfly, "ctButterfly", delay = 5 cycles)
   val gsButterflyNode: ButterflyNode[UInt] = ButterflyNode(GSButterfly, "gsButterfly", delay = 5 cycles)
 
+  // parameters for constructing the NTT DFG
+  val N = 128
+  val omega: Long = cfRing.getNthRoot(N)
+  val k2Inverse: Long = cfRing.inverseOf(k2)
+  val NInverse: Long = cfRing.inverseOf(N)
+  val coeffGen: Int => Long = (index: Int) => cfRing(cfRing.pow(omega, index) * k2Inverse)
+
+  implicit def long2UInt: (Long, BitCount) => UInt = (value: Long, _: BitCount) => U(value, 12 bits) // TODO:
+  // hardware impl of fastNTT by a butterfly network
+  val nttDFG: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, N, DIF, inverse = false, coeffGen, 12 bits, 1).getGraph
+  // we use DIT here to process a bit-reversed sequence as we won't reorder the result of NTT
+  val inttDFG: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, N, DIT, inverse = true, coeffGen, 12 bits, 1).getGraph
 }
