@@ -77,7 +77,7 @@ class DFGGensTest extends AnyFlatSpec {
     val and = BinaryNode(Operators.and, "and")
     val xor = BinaryNode(Operators.xor, "xor")
 
-    import Communication.channelCoding._
+    import comm.channelCoding._
     val convencTestCase = (0 until 100).map(_ => DSPRand.nextBigInt(1))
     val conv802_11: ConvConfig = ConvConfig(Array(171, 133), radix = 8)
     val trellisM = Refs.poly2trellisM(conv802_11.ms.map(_ + 1), conv802_11.codeGens)

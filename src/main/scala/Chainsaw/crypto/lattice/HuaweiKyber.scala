@@ -2,8 +2,8 @@ package Chainsaw.crypto.lattice
 
 import Chainsaw.DFG.FFTArch._
 import Chainsaw.DFG._
+import Chainsaw.IntegerRange
 import Chainsaw.crypto._
-import Chainsaw.fastAlgo.IntegerRange
 import cc.redberry.rings.scaladsl._
 import spinal.core._
 import spinal.lib._

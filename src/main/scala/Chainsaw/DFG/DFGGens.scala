@@ -30,7 +30,6 @@ import Chainsaw.DFG.FirArch._
 //    multiphase decomposition
 //    MIMO(for example, for convenc)
 // TODO: move the parallelism implementation outside of the DFG
-
 class FIRGen[THard <: Data, TSoft](mac: TrinaryNode[THard],
                                    firArch: FirArch,
                                    coeffs: Seq[TSoft], coeffWidth: BitCount, parallelism: Int)
@@ -216,4 +215,55 @@ object ButterflyGen {
                           parallelism: Int)
                          (implicit converter: (TSoft, BitCount) => THard): ButterflyGen[THard, TSoft] =
     new ButterflyGen(ctButterfly, gsButterfly, size, fftArch, inverse, coeffGen, coeffWidth, parallelism)(converter)
+}
+
+// LQX: implement this
+class BinaryTreeGen[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
+  override def getGraph: DFGGraph[T] = {
+    val dfg = DFGGraph[T](s"binaryTree_using_${binaryNode.name}")
+
+    dfg
+  }
+
+  override def latency: Int = 0
+
+  override def getGraphAsNode(implicit holderProvider: BitCount => T): DSPNode[T] = null
+}
+
+// LQX: implement this, after the implementation, an example of corresponding adder and its test should be implemented in "comparith package"
+/** hybrid BrentKung/KoggeStone parallel prefix graph
+ *
+ * @see ''COMPUTER ARITHMETIC: Algorithms and Hardware Designs, Behrooz Parhami'', chapter 6.5
+ * @see [[https://en.wikipedia.org/wiki/Brent%E2%80%93Kung_adder]]
+ * @see [[https://en.wikipedia.org/wiki/Kogge%E2%80%93Stone_adder]]
+ */
+class BKKSTreeGen[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
+  override def getGraph: DFGGraph[T] = {
+    val dfg = DFGGraph[T](s"bkksTree_using_${binaryNode.name}")
+
+    dfg
+  }
+
+  override def latency: Int = 0
+
+  override def getGraphAsNode(implicit holderProvider: BitCount => T): DSPNode[T] = null
+}
+
+// LQX: implement this, the node is not binary, try to fix it
+/** Wallace/Dadda tree graph whose building blocks are 3-2 compressors and inputs are "bit"s, rather than words
+ *
+ * @see ''COMPUTER ARITHMETIC: Algorithms and Hardware Designs, Behrooz Parhami'', chapter 8.3
+ * @see [[https://en.wikipedia.org/wiki/Brent%E2%80%93Kung_adder]]
+ * @see [[https://en.wikipedia.org/wiki/Kogge%E2%80%93Stone_adder]]
+ */
+class WallaceTree[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
+  override def getGraph: DFGGraph[T] = {
+    val dfg = DFGGraph[T](s"bkksTree_using_${binaryNode.name}")
+
+    dfg
+  }
+
+  override def latency: Int = 0
+
+  override def getGraphAsNode(implicit holderProvider: BitCount => T): DSPNode[T] = null
 }
