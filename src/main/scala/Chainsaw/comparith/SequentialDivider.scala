@@ -1,4 +1,4 @@
-package Chainsaw.ComputerArithmetic
+package Chainsaw.comparith
 
 class SequentialDivider {
 

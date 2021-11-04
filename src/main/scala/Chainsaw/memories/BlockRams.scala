@@ -1,4 +1,4 @@
-package Chainsaw.Memories
+package Chainsaw.memories
 
 import spinal.core._
 import spinal.lib.slave
@@ -24,6 +24,7 @@ case class BlockRam(dataWidth: Int, addressWidth: Int) extends Component {
     ioA.preAssign()
     ioB.preAssign()
   }
+
 }
 
 object XILINX_BRAM18E2 {

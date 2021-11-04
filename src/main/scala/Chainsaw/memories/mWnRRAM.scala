@@ -1,4 +1,4 @@
-package Chainsaw.Memories
+package Chainsaw.memories
 
 import Chainsaw._
 import spinal.core._
@@ -10,9 +10,15 @@ object mWnRMode extends Enumeration {
   val PURELOGIC, REPLICATION, MULTIPUMPING = Value
 }
 
-import Chainsaw.Memories.RamPortType._
-import Chainsaw.Memories.mWnRMode._
+import Chainsaw.memories.RamPortType._
+import Chainsaw.memories.mWnRMode._
 
+/**
+ * @see ''Efficient Multi-Ported Memories for FPGAs'' [[https://dl.acm.org/doi/10.1145/1723112.1723122]]
+ * @param m
+ * @param n
+ * @param mode
+ */
 case class mWnRRAM(m: Int, n: Int, mode: mWnRMode) extends Component {
 
   val stageNum = m + n

@@ -253,8 +253,8 @@ class BKKSTreeGen[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
 /** Wallace/Dadda tree graph whose building blocks are 3-2 compressors and inputs are "bit"s, rather than words
  *
  * @see ''COMPUTER ARITHMETIC: Algorithms and Hardware Designs, Behrooz Parhami'', chapter 8.3
- * @see [[https://en.wikipedia.org/wiki/Brent%E2%80%93Kung_adder]]
- * @see [[https://en.wikipedia.org/wiki/Kogge%E2%80%93Stone_adder]]
+ * @see [[https://en.wikipedia.org/wiki/Wallace_tree]]
+ * @see [[https://en.wikipedia.org/wiki/Dadda_multiplier]]
  */
 class WallaceTree[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
   override def getGraph: DFGGraph[T] = {

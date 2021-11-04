@@ -1,4 +1,4 @@
-package Chainsaw.ComputerArithmetic
+package Chainsaw.comparith
 
 import Chainsaw._
 import org.scalatest.funsuite.AnyFunSuite

@@ -1,16 +1,18 @@
-package Chainsaw.crypto
+package Chainsaw.examples
 
-import collection.JavaConversions._
+import java.security.SecureRandom
+import java.util.Base64
+import javax.crypto.KeyGenerator
 
-object AESGCM {
+
+/** shows the style of javax.crypto & java.security
+ *
+ */
+object AESExample {
   val plainText = "This is a plain text which need to be encrypted by Java AES 256 GCM Encryption Algorithm"
   val AES_KEY_SIZE = 256
   val GCM_IV_LENGTH = 12 // bytes
   val GCM_TAG_LENGTH = 16 // bytes
-
-  import javax.crypto.KeyGenerator
-  import java.security.SecureRandom
-  import java.util.Base64
 
   @throws[Exception]
   def main(args: Array[String]): Unit = {
@@ -29,10 +31,8 @@ object AESGCM {
     System.out.println("DeCrypted Text : " + decryptedText)
   }
 
-  import javax.crypto.Cipher
-  import javax.crypto.SecretKey
-  import javax.crypto.spec.GCMParameterSpec
-  import javax.crypto.spec.SecretKeySpec
+  import javax.crypto.{Cipher, SecretKey}
+  import javax.crypto.spec.{GCMParameterSpec, SecretKeySpec}
 
   @throws[Exception]
   def encrypt(plaintext: Array[Byte], key: SecretKey, IV: Array[Byte]) = { // Get Cipher Instance
@@ -47,11 +47,6 @@ object AESGCM {
     val cipherText = cipher.doFinal(plaintext)
     cipherText
   }
-
-  import javax.crypto.Cipher
-  import javax.crypto.SecretKey
-  import javax.crypto.spec.GCMParameterSpec
-  import javax.crypto.spec.SecretKeySpec
 
   @throws[Exception]
   def decrypt(cipherText: Array[Byte], key: SecretKey, IV: Array[Byte]) = { // Get Cipher Instance

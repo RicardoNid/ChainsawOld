@@ -1,4 +1,4 @@
-package Chainsaw.Memories
+package Chainsaw.memories
 
 import Chainsaw._
 import org.scalatest.funsuite.AnyFunSuite

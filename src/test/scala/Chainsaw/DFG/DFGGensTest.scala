@@ -33,7 +33,6 @@ class DFGGensTest extends AnyFlatSpec {
   // operators for fir test
   val add: BinaryNode[SInt] = BinaryNode(sintAdd, "add")
   val mult: BinaryNode[SInt] = BinaryNode(sintMult, "mult")
-
   def multAdd(delay: Int): TrinaryNode[SInt] = TrinaryNode(sintMACDSP(delay), "multAdd", delay = delay cycles)
 
   def dspMAC: TrinaryNode[SInt] = TrinaryNode(sintMACDSP(1), "multAdd", delay = 1 cycles)

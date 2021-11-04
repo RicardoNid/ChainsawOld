@@ -1,4 +1,4 @@
-package Chainsaw.ComputerArithmetic
+package Chainsaw.comparith
 
 import spinal.core._
 import spinal.core.sim._

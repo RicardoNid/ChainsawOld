@@ -1,6 +1,6 @@
-package Chainsaw.ComputerArithmetic
+package Chainsaw.comparith
 
-import Chainsaw.ComputerArithmetic.AdderType.RCA
+import Chainsaw.comparith.AdderType.RCA
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._

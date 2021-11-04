@@ -1,4 +1,4 @@
-package Chainsaw.Memories
+package Chainsaw.memories
 
 import spinal.core._
 import spinal.core.sim._
