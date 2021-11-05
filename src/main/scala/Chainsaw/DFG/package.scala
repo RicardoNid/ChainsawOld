@@ -3,6 +3,7 @@ package Chainsaw
 import Chainsaw.dspTest._
 import spinal.core._
 import spinal.lib._
+import xilinx.VivadoReport
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
@@ -102,10 +103,10 @@ package object DFG {
   implicit def defaultOrder[T](node: DSPNode[T]): DSPNodeWithOrder[T] = DSPNodeWithOrder(node, 0)
 
   //  sim and synth utils of DFGGraph and Nodes
-  /**
+  /** wrap a DSPNode as a component
    * @param node dut node
    * @param inputWidths as impl is used, this is necessary
-   * @param forTiming when set, extra registers applied on the input/output port, leading to a more accurate timing result
+   * @param forTiming when set, extra registers are applied on the input/output ports for more accurate timing statistics
    * @param holderProvider as impl is used, this is necessary
    * @return a component which can be tested and synthesized
    */
@@ -127,37 +128,23 @@ package object DFG {
     }
   }
 
-  // TODO: better type inference
+  /** test a DSPNode as a data-driven DUT, defined by the input/output
+   * @param initLength cycles for initialization, corresponding results would be dropped
+   */
   def testDSPNode[THard <: Data, Si, So](node: DSPNode[THard], inputWidths: Seq[BitCount], testCases: Seq[Si], golden: Seq[So], initLength: Int = 0)
-                                        (implicit holderProvider: BitCount => THard): Seq[Si] = {
-    doFlowPeekPokeTest(node.name, new Component with DSPTestable[Vec[THard], Vec[THard]] {
-      override val dataIn: Flow[Vec[THard]] = slave Flow Vec(inputWidths.map(holderProvider(_)))
-      override val dataOut: Flow[Vec[THard]] = master Flow Vec(node.hardware.outWidths.map(holderProvider(_)))
-      override val latency: Int = node.delay
+                                        (implicit holderProvider: BitCount => THard): Seq[Si] =
+    doFlowPeekPokeTest(node.name, wrappedNode(node, inputWidths), testCases, golden, initLength).asInstanceOf[Seq[Si]]
 
-      dataOut.valid := Delay(dataIn.valid, latency, init = False)
-      dataOut.payload := Vec(node.hardware.impl(dataIn.payload, GlobalCount(U(0))))
+  /** synthesis a DSPNode using Vivado
+   */
+  def synthDSPNode[THard <: Data](node: DSPNode[THard], inputWidths: Seq[BitCount], forTiming: Boolean = false)
+                                 (implicit holderProvider: BitCount => THard): VivadoReport =
+    VivadoSynth(wrappedNode(node, inputWidths, forTiming), name = node.name)
 
-    }, testCases, golden, initLength).asInstanceOf[Seq[Si]]
-  }
-
-  // TODO: better type inference
-  def synthDSPNode[THard <: Data](node: DSPNode[THard], inputWidths: Seq[BitCount])
-                                 (implicit holderProvider: BitCount => THard) = {
-    VivadoSynth(new Component with DSPTestable[Vec[THard], Vec[THard]] {
-      override val dataIn: Flow[Vec[THard]] = slave Flow Vec(inputWidths.map(holderProvider(_)))
-      override val dataOut: Flow[Vec[THard]] = master Flow Vec(node.hardware.outWidths.map(holderProvider(_)))
-      override val latency: Int = node.delay
-
-      dataOut.valid := Delay(dataIn.valid, latency, init = False)
-      dataOut.payload := Vec(node.hardware.impl(dataIn.payload, GlobalCount(U(0))))
-
-    }, name = node.name)
-  }
-
+  /** implement(synth, place and route) a DSPNode using Vivado
+   */
   def implDSPNode[THard <: Data](node: DSPNode[THard], inputWidths: Seq[BitCount], forTiming: Boolean = false)
-                                (implicit holderProvider: BitCount => THard) = {
+                                (implicit holderProvider: BitCount => THard): VivadoReport =
     VivadoImpl(wrappedNode(node, inputWidths, forTiming), name = node.name)
-  }
 
 }

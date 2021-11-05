@@ -18,9 +18,10 @@ class EncodersTest extends AnyFlatSpec {
   def verifyConvEncoder(name: String, dut: ConvConfig => Component with DSPTestable[Vec[Bits], Vec[Bits]], convConfig: ConvConfig, testCase: Seq[BigInt]): Unit = {
     import convConfig._
     val trellisM = Refs.poly2trellisM(convConfig.ms.map(_ + 1), convConfig.codeGens)
-    val golden: Array[Int] = Refs.convenc(testCase.map(_.toInt).toArray, trellisM)
-    val testCases = testCase.grouped(n).toSeq
-    doFlowPeekPokeTest(name, dut(convConfig), testCases, golden)
+    val constLen = convConfig.ms.max + 1
+    val testCases = (Seq.fill(n * constLen)(BigInt(0)) ++ testCase).grouped(n).toSeq
+    val golden: Array[Int] = Refs.convenc(testCases.flatten.map(_.toInt).toArray, trellisM)
+    doFlowPeekPokeTest(name, dut(convConfig), testCases, golden, initLength = constLen)
   }
 
   def synthConvEncoder(dut: ConvConfig => Component, convConfig: ConvConfig): VivadoReport = VivadoSynth(dut(convConfig))

@@ -139,6 +139,7 @@ case class R2HSIFFT(N: Int = 256, dataType: HardType[SFix], coeffType: HardType[
 
   val ret = Vec(fig2R(dataStack, 1))
   val dataOut = master Flow Vec(HardType(ret.head), N)
+  dataOut.payload.foreach(_.raw.simPublic()) // FIXME: necessary, but why?
   dataOut.payload := ret
   def latency = LatencyAnalysis(dataIn.payload.head.real.raw, dataOut.payload.head.raw)
   dataOut.valid := Delay(dataIn.valid, latency, init = False)

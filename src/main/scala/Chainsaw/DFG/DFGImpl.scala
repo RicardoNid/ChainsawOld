@@ -13,7 +13,7 @@ import scala.util.{Failure, Success, Try}
 class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = false)(implicit val holderProvider: BitCount => T) {
 
   val logger: Logger = LoggerFactory.getLogger(s"implementing procedure")
-  logger.info(s"start DFG implementing procedure, dataReset = ${dataReset}")
+  logger.info(s"implementing dfg ${dfg.name}, dataReset = ${dataReset}")
 
   implicit def currentDFG: DFGGraph[T] = dfg
 
@@ -98,7 +98,6 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = false)(implicit 
 
   def impl : Seq[T] => Seq[T] = {
     val ret = if (dfg.isRecursive) implRecursive else implForwarding
-    logger.info(s"finish DFG implementation") // this
     ret
   }
 
