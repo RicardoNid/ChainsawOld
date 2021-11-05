@@ -151,7 +151,7 @@ package object DFG {
   }
 
   // TODO: better type inference
-  def testDSPNode[THard <: Data, Si, So](node: DSPNode[THard], inputWidths: Seq[BitCount], testCases: Seq[Si], golden: Seq[So])
+  def testDSPNode[THard <: Data, Si, So](node: DSPNode[THard], inputWidths: Seq[BitCount], testCases: Seq[Si], golden: Seq[So], initLength:Int = 0)
                                         (implicit holderProvider: BitCount => THard): Seq[Si] = {
     doFlowPeekPokeTest(node.name, new Component with DSPTestable[Vec[THard], Vec[THard]] {
       override val dataIn: Flow[Vec[THard]] = slave Flow Vec(inputWidths.map(holderProvider(_)))
@@ -161,7 +161,7 @@ package object DFG {
       dataOut.valid := Delay(dataIn.valid, latency, init = False)
       dataOut.payload := Vec(node.hardware.impl(dataIn.payload, GlobalCount(U(0))))
 
-    }, testCases, golden).asInstanceOf[Seq[Si]]
+    }, testCases, golden, initLength).asInstanceOf[Seq[Si]]
   }
 
   // TODO: better type inference

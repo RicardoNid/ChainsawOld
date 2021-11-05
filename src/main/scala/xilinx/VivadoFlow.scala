@@ -121,7 +121,7 @@ class VivadoFlow[T <: Component](
         script += s"write_checkpoint ${topModuleName}_after_place.dcp\n"
         script += "route_design\n"
         script += s"write_checkpoint ${topModuleName}_after_route.dcp\n"
-        script += s"write_bitstream -force ${topModuleName}.bit\n"
+        //        script += s"write_bitstream -force ${topModuleName}.bit\n"
         taskName = "impl"
       }
     }

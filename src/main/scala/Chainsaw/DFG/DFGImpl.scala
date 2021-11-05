@@ -10,7 +10,7 @@ import scala.collection.mutable
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
-class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount => T) {
+class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = false)(implicit val holderProvider: BitCount => T) {
 
   val logger: Logger = LoggerFactory.getLogger(s"implementing procedure")
 
@@ -34,7 +34,8 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
       //      val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.hardware(signalMap(edge.source), edge.weight.toInt).apply(edge.outOrder))
       val dataCandidates: Seq[T] = dataInsOnePort.map { edge =>
         val dataIn = signalMap(edge.source)(edge.outOrder)
-        Delay(dataIn, edge.weight.toInt, init = dataIn.getZero)
+        if (dataReset) Delay(dataIn, edge.weight.toInt, init = dataIn.getZero)
+        else Delay(dataIn, edge.weight.toInt)
       }
       val schedulesOnePort: Seq[Seq[Schedule]] = dataInsOnePort.map(_.schedules)
       val mux = DFGMUX[T](schedulesOnePort)
@@ -93,7 +94,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
     outputNodes.flatMap(signalMap(_))
   }
 
-  def impl: Seq[T] => Seq[T] = {
+  def impl : Seq[T] => Seq[T] = {
     val ret = if (dfg.isRecursive) implRecursive else implForwarding
     logger.info(s"finish DFG implementation") // this
     ret
@@ -107,7 +108,4 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T])(implicit val holderProvider: BitCount
       dataOut.valid := Delay(dataIn.valid, dfg.latency, init = False)
     })
   }
-
-
-
 }

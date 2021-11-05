@@ -170,8 +170,8 @@ class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[
 
   def criticalPathLength: Double = new CriticalPathAlgo(this).criticalPathLength
 
-  def impl[THard <: Data](dataIns: Seq[THard])(implicit holderProvider: BitCount => THard): Seq[THard] =
-    new DFGImpl(this.asInstanceOf[DFGGraph[THard]])(holderProvider).impl(dataIns)
+  def impl[THard <: Data](dataIns: Seq[THard], dataReset: Boolean = false)(implicit holderProvider: BitCount => THard): Seq[THard] =
+    new DFGImpl(this.asInstanceOf[DFGGraph[THard]], dataReset)(holderProvider).impl(dataIns)
 
   // feasibilityConstraintGraph
   def fcg: ConstraintGraph[T] = {

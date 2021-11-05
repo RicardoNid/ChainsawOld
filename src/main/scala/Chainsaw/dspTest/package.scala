@@ -143,9 +143,10 @@ package object dspTest {
   }
 
   def doFlowPeekPokeTest[Do, Di, Ti <: Data, To <: Data]
-  (name: String, dut: => Component with DSPTestable[Ti, To], testCases: Seq[Di], golden: Seq[Do]): ArrayBuffer[Do] = {
+  (name: String, dut: => Component with DSPTestable[Ti, To], testCases: Seq[Di], golden: Seq[Do], initLength:Int = 0): ArrayBuffer[Do] = {
 
     val logger: Logger = LoggerFactory.getLogger(s"dsptest-${name}")
+    val innerGolden = golden.drop(initLength)
 
     val dutResult = ArrayBuffer[Do]()
     SimConfig.withWave
@@ -154,15 +155,15 @@ package object dspTest {
 
       import dut.{clockDomain, dataIn, dataOut, latency}
       clockDomain.forkStimulus(2)
-      dutResult ++= flowPeekPoke(dut, testCases, dataIn, dataOut, latency)
+      dutResult ++= flowPeekPoke(dut, testCases, dataIn, dataOut, latency).drop(initLength)
 
-      if (golden != null) {
-        val printSize = (dutResult ++ golden).map(_.toString.size).max
+      if (innerGolden != null) {
+        val printSize = (dutResult ++ innerGolden).map(_.toString.size).max
         logger.info(s"testing result:" +
           s"\nyours : ${dutResult.map(_.toString.padTo(printSize, ' ')).mkString(" ")}" +
-          s"\ngolden: ${golden.map(_.toString.padTo(printSize, ' ')).mkString(" ")}")
+          s"\ngolden: ${innerGolden.map(_.toString.padTo(printSize, ' ')).mkString(" ")}")
 
-        val difference = dutResult.diff(golden)
+        val difference = dutResult.diff(innerGolden)
         assert(difference.isEmpty, difference.mkString(" "))
       }
     }
