@@ -43,8 +43,7 @@ class DFGGraphTest extends AnyFlatSpec {
   }
 
   "the folding algorithm" should "fold correctly on chap6 fig6_3" in verifyFolding(chap6.fig6_3, chap6.foldingSet, "chap6_fig6_3")
-  val dfgalgo = simpleFolding.dfg
-  it should "fold correctly on simple graph" in verifyFolding(dfgalgo._1, dfgalgo._2)
+  it should "fold correctly on simple graph" in verifyFolding(simpleFolding.dfg, simpleFolding.foldingSet)
   it should "fold correctly on paper1992 fig6_a(example3)" in verifyFolding(paper1992OnFolding.fig6_a, paper1992OnFolding.foldingSet_example3)
   it should "fold correctly on paper1992 fig6_a(example4)" in verifyFolding(paper1992OnFolding.fig6_a, paper1992OnFolding.foldingSet_example4)
 

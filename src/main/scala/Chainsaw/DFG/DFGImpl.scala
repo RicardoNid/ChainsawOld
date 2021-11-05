@@ -54,6 +54,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = false)(implicit 
   // implement a recursive graph
   def implRecursive: Seq[T] => Seq[T] = (dataIns: Seq[T]) => {
     logger.info("implementing DFG by algo for recursive DFG")
+    require(inputNodes.size == dataIns.size, "input size mismatch")
     val signalMap: Map[DSPNode[T], Seq[T]] = vertexSeq.map { node => // a map to connect nodes with their outputs(placeholder)
       node -> node.hardware.outWidths.map(i => if (i.value == -1) holderProvider(-1 bits) else holderProvider(i))
     }.toMap
