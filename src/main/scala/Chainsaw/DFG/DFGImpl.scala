@@ -42,7 +42,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = false)(implicit 
       val mux = DFGMUX[T](schedulesOnePort)
       val succeed = Try(mux.impl(dataCandidates, globalLcm))
       succeed match {
-        case Failure(exception) => logger.error(s"MUX impl failed on:\n${dataInsOnePort.map(_.symbol).mkString(" ")}")
+        case Failure(exception) => logger.error(s"MUX impl failed on:\n${dataInsOnePort.map(_.symbol).mkString("|")}")
           mux.impl(dataCandidates, globalLcm)
         case Success(value) => value
       }

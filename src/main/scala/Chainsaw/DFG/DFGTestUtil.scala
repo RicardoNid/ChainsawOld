@@ -66,7 +66,7 @@ object DFGTestUtil {
         .compile(new Component {
           val dataIn = slave Flow Vec(elementType, dfg.inputNodes.size)
           val dataOut = master Flow Vec(elementType, dfg.outputNodes.size)
-          dataOut.payload := Vec(dfg.impl(dataIn.payload)).resized
+          dataOut.payload := Vec(dfg.impl(dataIn.payload, dataReset = true)).resized
           dataOut.valid := Delay(dataIn.valid, latencies, init = False)
         }).doSim { dut =>
         import dut.{clockDomain, dataIn, dataOut}
