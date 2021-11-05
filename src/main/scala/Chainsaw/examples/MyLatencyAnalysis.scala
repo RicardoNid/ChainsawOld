@@ -1,7 +1,8 @@
-package Chainsaw
+package Chainsaw.examples
 
-import spinal.core._
-import spinal.core.internals._
+import Chainsaw.printlnGreen
+import spinal.core.internals.{BaseNode, Expression}
+import spinal.core.{BaseType, Component, GlobalData, Mem, MemReadAsync, MemReadSync, MemReadWrite, MemWrite, SpinalError}
 
 import scala.collection.mutable.ArrayBuffer
 

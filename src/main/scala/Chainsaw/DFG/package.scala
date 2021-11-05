@@ -84,14 +84,14 @@ package object DFG {
   }
 
   implicit class BinaryNodeWithConst[T](dfg: DFGGraph[T])(implicit converter: (Int, BitCount) => T) {
-    def genConstBinaryNode(node:BinaryNode[T], constant: Int, width: BitCount = 10 bits, order: Int = 0): Unit = {
-        val cnode = ConstantNode[T, Int](s"constnode${constant}", constant, width)
+    def genConstBinaryNode(node: BinaryNode[T], constant: Int, width: BitCount = 10 bits, order: Int = 0): Unit = {
+      val cnode = ConstantNode[T, Int](s"constnode${constant}", constant, width)
 
-        Seq(cnode, node).foreach(dfg.addVertex(_))
-        dfg.addEdge(cnode(0), node(order), 0)
+      Seq(cnode, node).foreach(dfg.addVertex(_))
+      dfg.addEdge(cnode(0), node(order), 0)
     }
 
-    def genConstTrinaryNode(node:TrinaryNode[T], constant: Int, width: BitCount = 10 bits, order: Int = 0): Unit = {
+    def genConstTrinaryNode(node: TrinaryNode[T], constant: Int, width: BitCount = 10 bits, order: Int = 0): Unit = {
       val cnode = ConstantNode[T, Int](s"constnode${constant}", constant, width)
       Seq(cnode, node).foreach(dfg.addVertex(_))
       dfg.addEdge(cnode(0), node(order), 0)
@@ -101,13 +101,22 @@ package object DFG {
 
   implicit def defaultOrder[T](node: DSPNode[T]): DSPNodeWithOrder[T] = DSPNodeWithOrder(node, 0)
 
-  def wrappedNode[THard <: Data, Si, So](node: DSPNode[THard], inputWidths: Seq[BitCount], forTiming: Boolean = false)
-                                        (implicit holderProvider: BitCount => THard) = {
+  //  sim and synth utils of DFGGraph and Nodes
+  /**
+   * @param node dut node
+   * @param inputWidths as impl is used, this is necessary
+   * @param forTiming when set, extra registers applied on the input/output port, leading to a more accurate timing result
+   * @param holderProvider as impl is used, this is necessary
+   * @return a component which can be tested and synthesized
+   */
+  def wrappedNode[THard <: Data](node: DSPNode[THard], inputWidths: Seq[BitCount],
+                                         forTiming: Boolean = false)
+                                        (implicit holderProvider: BitCount => THard):
+  Component with DSPTestable[Vec[THard], Vec[THard]] = {
     new Component with DSPTestable[Vec[THard], Vec[THard]] {
       override val dataIn: Flow[Vec[THard]] = slave Flow Vec(inputWidths.map(holderProvider(_)))
       override val dataOut: Flow[Vec[THard]] = master Flow Vec(node.hardware.outWidths.map(holderProvider(_)))
       override val latency: Int = node.delay
-
       if (forTiming) {
         dataOut.valid := Delay(dataIn.valid, latency + 2, init = False)
         dataOut.payload := RegNext(Vec(node.hardware.impl(RegNext(dataIn.payload), GlobalCount(U(0)))))
@@ -115,7 +124,6 @@ package object DFG {
         dataOut.valid := Delay(dataIn.valid, latency, init = False)
         dataOut.payload := Vec(node.hardware.impl(dataIn.payload, GlobalCount(U(0))))
       }
-
     }
   }
 

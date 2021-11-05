@@ -1,6 +1,6 @@
 package Chainsaw.tobeTransplanted
 
-import Chainsaw._
+import Chainsaw.{comparith, _}
 import spinal.core._
 
 // TODO: add the implementation by MAG algo
@@ -29,7 +29,7 @@ class SCM(input: Real, constant: Int, scmArch: SCMArch) extends ImplicitArea[Rea
 
     case SCMArch.CSD =>
       // optimal CSD code, reverse it for a ascending shift value
-      val encoded = Coding.optimalCSD(constant).reverse
+      val encoded = comparith.CSD.optimalCSD(constant).reverse
       val signeds = encoded.filter(_ != '0').map {
         case '1' => input
         case '9' => -input

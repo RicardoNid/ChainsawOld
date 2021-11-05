@@ -1,4 +1,5 @@
 import Chainsaw.matlabIO._
+import org.scalatest.Tag
 import spinal.core._
 import spinal.core.internals.BaseNode
 import spinal.core.sim._
@@ -450,4 +451,7 @@ package object Chainsaw extends RealFactory {
   }
 
   def lcm(a: Int, b: Int) = a * b / gcd(a, b)
+
+  object DFGTest extends Tag("DFGTest")
 }
+

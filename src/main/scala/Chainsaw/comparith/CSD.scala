@@ -1,14 +1,16 @@
-package Chainsaw
+package Chainsaw.comparith
+
+import Chainsaw.DSPRand
 
 import scala.annotation.tailrec
 import scala.math.pow
 
-object Coding {
+object CSD {
   /** Optimal canonic signed digit encoding
    *
    * @return string of coded bits, MSB -> LSB, 9 stands for -1
    * @see [[https://www.notion.so/Classical-CSD-Coding-Optimal-CSD-Coding-46f4f962bae14086ac1c9946023f1157 Chainsaw CSD Coding]]
-   * @see DSP with FPGA, algo 2.4
+   * @see ''DSP with FPGA'', algo 2.4
    */
   def optimalCSD(num: Int): String = {
     val raw = num.toBinaryString.reverse + "0" // LSB -> MSB with 0 padded

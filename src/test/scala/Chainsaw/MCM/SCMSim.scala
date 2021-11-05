@@ -1,7 +1,7 @@
 package Chainsaw.MCM
 
 import Chainsaw.tobeTransplanted.SCMArch._
-import Chainsaw._
+import Chainsaw.{comparith, _}
 import Chainsaw.tobeTransplanted.{SCM, SCMArch}
 import spinal.core._
 import spinal.core.sim._
@@ -50,7 +50,7 @@ object SCMSim {
       for (_ <- 0 until 100) dut.insertTestCase(dut.input.randomValue())
       val report = dut.simDone()
       val mode = scmArch match {
-        case CSD => "CSD"
+        case SCMArch.CSD => "CSD"
         case SCMArch.MAG => "MAG"
         case MULT => "MULT"
       }

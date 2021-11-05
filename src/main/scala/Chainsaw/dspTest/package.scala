@@ -143,19 +143,24 @@ package object dspTest {
   }
 
   def doFlowPeekPokeTest[Do, Di, Ti <: Data, To <: Data]
-  (name: String, dut: => Component with DSPTestable[Ti, To], testCases: Seq[Di], golden: Seq[Do], initLength:Int = 0): ArrayBuffer[Do] = {
+  (name: String, dut: => Component with DSPTestable[Ti, To], testCases: Seq[Di], golden: Seq[Do], initLength: Int = 0): ArrayBuffer[Do] = {
 
     val logger: Logger = LoggerFactory.getLogger(s"dsptest-${name}")
-    val innerGolden = golden.drop(initLength)
 
     val dutResult = ArrayBuffer[Do]()
     SimConfig.withWave
       .workspaceName(name)
       .compile(dut).doSim { dut =>
 
+      val outputSize = dut.dataOut.payload match {
+        case vec: Vec[_] => vec.size
+        case _ => 1
+      }
+      val innerGolden = golden.drop(initLength * outputSize)
+
       import dut.{clockDomain, dataIn, dataOut, latency}
       clockDomain.forkStimulus(2)
-      dutResult ++= flowPeekPoke(dut, testCases, dataIn, dataOut, latency).drop(initLength)
+      dutResult ++= flowPeekPoke(dut, testCases, dataIn, dataOut, latency).drop(initLength * outputSize)
 
       if (innerGolden != null) {
         val printSize = (dutResult ++ innerGolden).map(_.toString.size).max
@@ -169,7 +174,6 @@ package object dspTest {
     }
     dutResult
   }
-
 
 
   implicit class DataCarrierUtil[T <: Data](dc: DataCarrier[T]) {

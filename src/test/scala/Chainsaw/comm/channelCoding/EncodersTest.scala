@@ -6,6 +6,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 import xilinx.VivadoReport
+import org.scalatest.Tag
+
 
 class EncodersTest extends AnyFlatSpec {
 

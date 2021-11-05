@@ -38,7 +38,7 @@ case class CordicConfig(algebricMode: AlgebraicMode, rotationMode: RotationMode,
 
 
 class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfig)
-  extends ImplicitArea[(SFix, SFix, SFix)] with DSPDesign with Testable {
+  extends ImplicitArea[(SFix, SFix, SFix)] with Testable {
 
   import cordicConfig._
 

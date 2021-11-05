@@ -34,8 +34,11 @@ libraryDependencies ++= Seq(
 libraryDependencies += "org.scalanlp" %% "breeze" % "1.0"
 
 //libraryDependencies += "org.scalatest" % "scalatest_2.10" % "1.9.1" % "test"
+
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.9"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.9"
+//libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.10"
+//libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.10" % "test"
 
 libraryDependencies += "cc.redberry" %% "rings.scaladsl" % "2.5.7"
 
@@ -74,5 +77,6 @@ libraryDependencies += "ai.djl.pytorch"%"pytorch-native-auto"% "1.8.1"
 libraryDependencies += "com.github.dwickern" %% "scala-nameof" % "3.0.0" % "provided"
 
 libraryDependencies += "org.typelevel" %% "spire" % "0.17.0-M1"
+
 
 
