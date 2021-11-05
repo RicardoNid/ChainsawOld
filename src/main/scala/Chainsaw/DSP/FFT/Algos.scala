@@ -32,7 +32,7 @@ object Algos extends App {
         val N2 = input.size / N1
 
         import DSP.interleave.Algos._
-        val input2D = matIntrlv1D2D(input, N1, N2) // permutation 0
+        val input2D = matIntrlv(input, N1, N2).grouped(N1).toSeq // permutation 0
         //        printlnGreen("after inter0")
         //        println(input2D.map(_.mkString(" ")).mkString("\n"))
         val afterBlock = input2D.map(block) // N2 blocks, length = N1
@@ -42,10 +42,10 @@ object Algos extends App {
         val afterParallel = twiddle(afterBlock)
         //        printlnGreen("before inter1")
         //        println(afterParallel.map(_.mkString(" ")).mkString("\n"))
-        val input2DForRecursion = matIntrlv2D2D(afterParallel, N2, N1) // permutation 1(transpose)
+        val input2DForRecursion = transpose(afterParallel) // permutation 1(transpose)
         val afterRecursion = input2DForRecursion.map(recursiveBuild(_, factors.tail))
         //        println(afterRecursion.map(_.mkString(" ")).mkString("\n"))
-        val ret = matIntrlv2D1D(afterRecursion, N1, N2) // permutation 2
+        val ret = matIntrlv(afterRecursion.flatten, N1, N2) // permutation 2
         ret
       }
     }

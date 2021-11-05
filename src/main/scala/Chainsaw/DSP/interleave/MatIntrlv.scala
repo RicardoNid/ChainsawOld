@@ -22,6 +22,10 @@ import spinal.lib._
  * @param pFOut data number per cycle of output, determines the throughput
  */
 
+// XDH: basically, this implementation is the same as [[https://ieeexplore.ieee.org/document/6732285]], though I proposed it all by myself
+// XDH: you should refactor this ans MatintrlvCore according to the paper formally, and test it
+// this should be a important component of your general permutation module
+
 // TODO: implement reset/initialization logic
 // TODO: implement coloring algo
 case class MatIntrlv[T <: Data](row: Int, col: Int, pFIn: Int, pFOut: Int, dataType: HardType[T]) extends Component {

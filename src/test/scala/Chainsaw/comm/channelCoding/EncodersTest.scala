@@ -9,6 +9,8 @@ import xilinx.VivadoReport
 
 class EncodersTest extends AnyFlatSpec {
 
+  val doSynths = false
+
   val logger: Logger = LoggerFactory.getLogger("testing encoders")
 
   def verifyConvEncoder(name: String, dut: ConvConfig => Component with DSPTestable[Vec[Bits], Vec[Bits]], convConfig: ConvConfig, testCase: Seq[BigInt]): Unit = {
@@ -34,11 +36,12 @@ class EncodersTest extends AnyFlatSpec {
   it should "work on SIMO mode(802.11) while using DFG" in verifyConvEncoder("SIMO_convencDFG_example", DFGEncoder, conv802_11, testCases)
   it should "work on MIMO mode(matlab example) while using DFG" in verifyConvEncoder("MIMO_convencDFG_example", DFGEncoder, convMatlab, testCases)
 
-  it should "be implemented efficiently" in {
-    val impls = Seq(basicEncoder, DFGEncoder)
-    val configs = Seq(conv802_11, convMatlab)
-    val reports = Seq.tabulate(2,2)((i,j) => synthConvEncoder(impls(i), configs(j))).flatten
-    println(reports.mkString("\n"))
+  if (doSynths) {
+    it should "be implemented efficiently" in {
+      val impls = Seq(basicEncoder, DFGEncoder)
+      val configs = Seq(conv802_11, convMatlab)
+      val reports = Seq.tabulate(2, 2)((i, j) => synthConvEncoder(impls(i), configs(j))).flatten
+      println(reports.mkString("\n"))
+    }
   }
-
 }

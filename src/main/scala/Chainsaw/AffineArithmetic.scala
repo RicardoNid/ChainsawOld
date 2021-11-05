@@ -9,7 +9,7 @@ import java.util.function.Supplier
 
 /** Static methods of affine arithmetic
  *
- * @see [[https://www.notion.so/Self-Validated-Numerical-Methods-and-Applications-30f49c20328848798c0309a32d870d65 Self-Validated Numerical Methods and Applications]]
+ * @see ''Self-Validated Numerical Methods and Applications'' [[https://nonchalant-frill-fc5.notion.site/Self-Validated-Numerical-Methods-and-Applications-03e87c21f41c47db9ee1d0e86e22e998]]
  */
 object AffineArithmetic {
 

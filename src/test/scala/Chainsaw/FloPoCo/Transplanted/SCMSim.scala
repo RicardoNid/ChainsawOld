@@ -1,5 +1,6 @@
 package Chainsaw.FloPoCo.Transplanted
 
+import Chainsaw.tobeTransplanted.FloPoCoSCM
 import Chainsaw.{Real, _}
 import org.scalatest.funsuite.AnyFunSuite
 import spinal.core._
@@ -9,7 +10,7 @@ import scala.math.abs
 
 class SCMDUT(lower: Double, upper: Double, constant: Int) extends DSPDUTTiming[Real, Real] {
   override val input: Real = in(Real(lower, upper, 0.1))
-  val scm = new SCM(input, constant)
+  val scm = new FloPoCoSCM(input, constant)
   override val output: Real = out(scm.implicitValue)
   override val timing: TimingInfo = scm.getTimingInfo
 }
@@ -30,7 +31,7 @@ class SCMSim(lower: Double, upper: Double, constant: Int) extends SCMDUT(lower, 
     s"testCase: $testCase, golden: $refResult, yours: $dutResult"
 }
 
-class testSCM extends AnyFunSuite {
+class testFloPoCoSCM extends AnyFunSuite {
   def randomSim(lower: Double, upper: Double, constant: Int, traversal: Boolean = false): Unit = {
     val dut = SimConfig.withWave.compile(new SCMSim(lower, upper, constant))
     dut.doSim { dut =>

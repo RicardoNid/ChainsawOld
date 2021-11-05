@@ -116,7 +116,63 @@ object FIRGen {
   }
 }
 
+class TIFIRGen[THard <: Data, TSoft](mac: TrinaryNode[THard],
+                                     firArch: FirArch,
+                                     coeffs: Seq[TSoft], coeffWidth: BitCount, parallelism: Int)
+                                    (implicit converter: (TSoft, BitCount) => THard) extends DFGGen[THard] {
+
+  def getGraph: DFGGraph[THard] = {
+    val dfg = DFGGraph[THard](s"${firArch}_fir_using_${mac.name}")
+    val size = coeffs.size
+
+    // adding nodes to the graph
+    val macs = (0 until size).map(i => mac.copy(s"${mac.name}_$i"))
+    val consts = coeffs.zipWithIndex.map { case (soft, i) => ConstantNode[THard, TSoft](s"const_$i", soft, coeffWidth) }
+    val zero = ConstantNode[THard, TSoft](s"zero", 0.asInstanceOf[TSoft], coeffWidth) // TODO: not generic
+    (macs ++ consts :+ zero).foreach(dfg.addVertices(_))
+    val input = dfg.addInput("input")
+
+    /** build the fir graph
+     */
+    def buildFir(a: Int, b: Int): Unit = {
+      val coeffs = if (firArch == TRANSPOSE) consts else consts.reverse
+      macs.zip(coeffs).foreach { case (multAdd, coeff) => dfg.addEdge(coeff(0), multAdd(0), 0) } // mac port 0, allocate coefficients to mac units
+      macs.zipWithIndex.foreach { case (mult, i) => dfg.addEdge(input(0), mult(1), a * i) } // mac port 1, connecting the input delay line to mac units
+      // mac port 2, connecting macs, the first mac unit takes a zero
+      macs.init.zip(macs.tail).foreach { case (prev, next) => dfg.addEdge(prev(0), next(2), b) }
+      dfg.addEdge(zero(0), macs.head(2), b)
+    }
+
+    firArch match {
+      case DIRECT => buildFir(1, 0)
+      case TRANSPOSE => buildFir(0, 1)
+      case SYSTOLIC => buildFir(2, 1)
+    }
+    dfg.setOutput(macs.last)
+
+    // folding/unfolding according to the pattern
+    val ret = if (parallelism == 1) dfg
+    else if (parallelism > 1) new Unfolding(dfg, parallelism).unfolded
+    else {
+      val foldingFactor = -parallelism
+      val multAddGroups = macs.grouped(-parallelism).toSeq.map(_.padTo(foldingFactor, null))
+      DFGTestUtil.verifyFolding(dfg.asInstanceOf[DFGGraph[SInt]], multAddGroups.asInstanceOf[Seq[Seq[TrinaryNode[SInt]]]])
+      new Folding(dfg, multAddGroups).folded
+    }
+    logger.debug(s"fir dfg:\n$ret")
+    ret
+  }
+
+  def latency: Int = (if (firArch == SYSTOLIC) coeffs.size - 1 else 0) + mac.delay
+
+  def getGraphAsNode(implicit holderProvider: BitCount => THard): DSPNode[THard] = {
+    val graph = getGraph
+    graph.asNode[THard](graph.name, graphLatency = latency cycles)
+  }
+}
+
 // TODO: cannot infer TSoft from the coeffGen, why?
+
 /** Generic method to generate an abstract radix-2 FFT DFG, this method use a "butterfly core" as its building block
  *
  * @param ctButterfly : the implementation of the butterfly core
@@ -231,11 +287,13 @@ class BinaryTreeGen[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
 }
 
 // LQX: implement this, after the implementation, an example of corresponding adder and its test should be implemented in "comparith package"
+
 /** hybrid BrentKung/KoggeStone parallel prefix graph
  *
  * @see ''COMPUTER ARITHMETIC: Algorithms and Hardware Designs, Behrooz Parhami'', chapter 6.5
  * @see [[https://en.wikipedia.org/wiki/Brent%E2%80%93Kung_adder]]
  * @see [[https://en.wikipedia.org/wiki/Kogge%E2%80%93Stone_adder]]
+ * @see my implementation [[DFG.BKKSTree]]
  */
 class BKKSTreeGen[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
   override def getGraph: DFGGraph[T] = {
@@ -256,9 +314,23 @@ class BKKSTreeGen[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
  * @see [[https://en.wikipedia.org/wiki/Wallace_tree]]
  * @see [[https://en.wikipedia.org/wiki/Dadda_multiplier]]
  */
-class WallaceTree[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
+class WallaceTreeGen[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
   override def getGraph: DFGGraph[T] = {
     val dfg = DFGGraph[T](s"bkksTree_using_${binaryNode.name}")
+
+    dfg
+  }
+
+  override def latency: Int = 0
+
+  override def getGraphAsNode(implicit holderProvider: BitCount => T): DSPNode[T] = null
+}
+
+// LQX: implement this by transplanting implementations from MCM and Architectures
+// generally speaking, this method should be able to generate a minimized adder graph according to a given integer
+class AdderTree[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
+  override def getGraph: DFGGraph[T] = {
+    val dfg = DFGGraph[T](s"adderTree")
 
     dfg
   }

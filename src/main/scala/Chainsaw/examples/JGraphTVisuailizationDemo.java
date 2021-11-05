@@ -1,6 +1,6 @@
 package Chainsaw.examples;
 
-import Chainsaw.Architectures.BinarySFG;
+import Chainsaw.tobeTransplanted.BinarySFG;
 import com.mxgraph.layout.*;
 import com.mxgraph.swing.*;
 import org.jgrapht.*;

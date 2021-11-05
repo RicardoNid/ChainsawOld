@@ -1,7 +1,8 @@
 package Chainsaw.MCM
 
-import Chainsaw.MCM.SCMArch._
+import Chainsaw.tobeTransplanted.SCMArch._
 import Chainsaw._
+import Chainsaw.tobeTransplanted.{SCM, SCMArch}
 import spinal.core._
 import spinal.core.sim._
 
@@ -60,7 +61,7 @@ object SCMSim {
 
   def main(args: Array[String]): Unit = {
     ChainsawDebug = true
-    import AOperations.getPOF
+    import Chainsaw.tobeTransplanted.AOperations.getPOF
     (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.CSD))
     (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.MAG))
     (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.MULT))

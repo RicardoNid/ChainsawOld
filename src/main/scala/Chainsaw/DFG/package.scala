@@ -84,24 +84,24 @@ package object DFG {
   }
 
   implicit class BinaryNodeWithConst[T](dfg: DFGGraph[T])(implicit converter: (Int, BitCount) => T) {
-    def addConstBinaryNode(number: Int, constexpre: Int => Int, op: (T, T) => T, opname: String = "opnode", widthC: BitCount = -1 bits, delayC: CyclesCount = 0 cycles , exeTimeC: TimeNumber = 1 ns,  order: Int = 0):Seq[BinaryNode[T]] = {
-        val opnodes = (0 until number).map{i => BinaryNode(op, s"${opname}${i + 1}", widthC, delayC, exeTimeC)}
-        if((0 until number).map(constexpre(_)).distinct.size == 1) {
-          val cnode = ConstantNode[T , Int](s"cnode0", constexpre(0), widthC)
-          (opnodes :+ cnode).foreach(dfg.addVertex(_))
-          opnodes.foreach(opnode => dfg.addEdge(cnode(0), opnode(order), 0))
-          opnodes
-        }
-        else {
-          val cnodes = (0 until number).map{i => ConstantNode[T , Int](s"cnode${i + 1}", constexpre(i), widthC)}
-          (cnodes ++ opnodes).foreach(dfg.addVertex(_))
-          cnodes.zip(opnodes).foreach{ case(cnode, opnode) => dfg.addEdge(cnode(0), opnode(order), 0)}
-          opnodes
-        }
+    def addConstBinaryNode(number: Int, constexpre: Int => Int, op: (T, T) => T, opname: String = "opnode", widthC: BitCount = -1 bits, delayC: CyclesCount = 0 cycles, exeTimeC: TimeNumber = 1 ns, order: Int = 0): Seq[BinaryNode[T]] = {
+      val opnodes = (0 until number).map { i => BinaryNode(op, s"${opname}${i + 1}", widthC, delayC, exeTimeC) }
+      if ((0 until number).map(constexpre(_)).distinct.size == 1) {
+        val cnode = ConstantNode[T, Int](s"cnode0", constexpre(0), widthC)
+        (opnodes :+ cnode).foreach(dfg.addVertex(_))
+        opnodes.foreach(opnode => dfg.addEdge(cnode(0), opnode(order), 0))
+        opnodes
+      }
+      else {
+        val cnodes = (0 until number).map { i => ConstantNode[T, Int](s"cnode${i + 1}", constexpre(i), widthC) }
+        (cnodes ++ opnodes).foreach(dfg.addVertex(_))
+        cnodes.zip(opnodes).foreach { case (cnode, opnode) => dfg.addEdge(cnode(0), opnode(order), 0) }
+        opnodes
+      }
     }
 
-    def addBinaryNodes(ops: Seq[((T, T) => T, Int)], names: Seq[String], widths: BitCount = -1 bits, delays: CyclesCount = 0 cycles, exeTimes: TimeNumber = 1 ns):Seq[Seq[BinaryNode[T]]] = {
-      val result = ops.zip(names).map{ case(op, name) =>
+    def addBinaryNodes(ops: Seq[((T, T) => T, Int)], names: Seq[String], widths: BitCount = -1 bits, delays: CyclesCount = 0 cycles, exeTimes: TimeNumber = 1 ns): Seq[Seq[BinaryNode[T]]] = {
+      val result = ops.zip(names).map { case (op, name) =>
         val opnodes = (0 until op._2).map(i => BinaryNode(op._1, s"${name}${i + 1}", widths, delays, exeTimes))
         opnodes.foreach(dfg.addVertex(_))
         opnodes.toSeq
@@ -109,24 +109,24 @@ package object DFG {
       result
     }
 
-    def addConstTrinaryNode(number: Int, constexpre: Int => Int, op: (T, T, T) => T, opname: String = "opnode", widthC: BitCount = -1 bits, delayC: CyclesCount = 0 cycles , exeTimeC: TimeNumber = 1 ns,  order: Int = 0):Seq[TrinaryNode[T]] = {
-      val opnodes = (0 until number).map{i => TrinaryNode(op, s"${opname}${i + 1}", widthC, delayC, exeTimeC)}
-      if((0 until number).map(constexpre(_)).distinct.size == 1) {
-        val cnode = ConstantNode[T , Int](s"cnode0", constexpre(0), widthC)
+    def addConstTrinaryNode(number: Int, constexpre: Int => Int, op: (T, T, T) => T, opname: String = "opnode", widthC: BitCount = -1 bits, delayC: CyclesCount = 0 cycles, exeTimeC: TimeNumber = 1 ns, order: Int = 0): Seq[TrinaryNode[T]] = {
+      val opnodes = (0 until number).map { i => TrinaryNode(op, s"${opname}${i + 1}", widthC, delayC, exeTimeC) }
+      if ((0 until number).map(constexpre(_)).distinct.size == 1) {
+        val cnode = ConstantNode[T, Int](s"cnode0", constexpre(0), widthC)
         (opnodes :+ cnode).foreach(dfg.addVertex(_))
         opnodes.foreach(opnode => dfg.addEdge(cnode(0), opnode(order), 0))
         opnodes
       }
       else {
-        val cnodes = (0 until number).map{i => ConstantNode[T , Int](s"cnode${i + 1}", constexpre(i), widthC)}
+        val cnodes = (0 until number).map { i => ConstantNode[T, Int](s"cnode${i + 1}", constexpre(i), widthC) }
         (cnodes ++ opnodes).foreach(dfg.addVertex(_))
-        cnodes.zip(opnodes).foreach{ case(cnode, opnode) => dfg.addEdge(cnode(0), opnode(order), 0)}
+        cnodes.zip(opnodes).foreach { case (cnode, opnode) => dfg.addEdge(cnode(0), opnode(order), 0) }
         opnodes
       }
     }
 
-    def addTrinaryNodes(ops: Seq[((T, T, T) => T, Int)], names: Seq[String], widths: BitCount = -1 bits, delays: CyclesCount = 0 cycles, exeTimes: TimeNumber = 1 ns):Seq[Seq[TrinaryNode[T]]] = {
-      val result = ops.zip(names).map{ case(op, name) =>
+    def addTrinaryNodes(ops: Seq[((T, T, T) => T, Int)], names: Seq[String], widths: BitCount = -1 bits, delays: CyclesCount = 0 cycles, exeTimes: TimeNumber = 1 ns): Seq[Seq[TrinaryNode[T]]] = {
+      val result = ops.zip(names).map { case (op, name) =>
         val opnodes = (0 until op._2).map(i => TrinaryNode(op._1, s"${name}${i + 1}", widths, delays, exeTimes))
         opnodes.foreach(dfg.addVertex(_))
         opnodes
@@ -137,9 +137,22 @@ package object DFG {
 
   implicit def defaultOrder[T](node: DSPNode[T]): DSPNodeWithOrder[T] = DSPNodeWithOrder(node, 0)
 
+  def wrappedNode[THard <: Data, Si, So](node: DSPNode[THard], inputWidths: Seq[BitCount])
+                                        (implicit holderProvider: BitCount => THard) = {
+    new Component with DSPTestable[Vec[THard], Vec[THard]] {
+      override val dataIn: Flow[Vec[THard]] = slave Flow Vec(inputWidths.map(holderProvider(_)))
+      override val dataOut: Flow[Vec[THard]] = master Flow Vec(node.hardware.outWidths.map(holderProvider(_)))
+      override val latency: Int = node.delay
+
+      dataOut.valid := Delay(dataIn.valid, latency, init = False)
+      dataOut.payload := Vec(node.hardware.impl(dataIn.payload, GlobalCount(U(0))))
+
+    }
+  }
+
   // TODO: better type inference
   def testDSPNode[THard <: Data, Si, So](node: DSPNode[THard], inputWidths: Seq[BitCount], testCases: Seq[Si], golden: Seq[So])
-                                    (implicit holderProvider: BitCount => THard): Seq[Si] = {
+                                        (implicit holderProvider: BitCount => THard): Seq[Si] = {
     doFlowPeekPokeTest(node.name, new Component with DSPTestable[Vec[THard], Vec[THard]] {
       override val dataIn: Flow[Vec[THard]] = slave Flow Vec(inputWidths.map(holderProvider(_)))
       override val dataOut: Flow[Vec[THard]] = master Flow Vec(node.hardware.outWidths.map(holderProvider(_)))
@@ -163,6 +176,11 @@ package object DFG {
       dataOut.payload := Vec(node.hardware.impl(dataIn.payload, GlobalCount(U(0))))
 
     }, name = node.name)
+  }
+
+  def implDSPNode[THard <: Data](node: DSPNode[THard], inputWidths: Seq[BitCount])
+                                (implicit holderProvider: BitCount => THard) = {
+    VivadoImpl(wrappedNode(node, inputWidths), name = node.name)
   }
 
 }

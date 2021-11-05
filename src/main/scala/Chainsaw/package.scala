@@ -398,8 +398,8 @@ package object Chainsaw extends RealFactory {
     report
   }
 
-  def VivadoSynth[T <: Component](source: String): Unit = {
-    val report = VivadoFlow(design = Chainsaw.examples.ZyboDesign0(), "temp", s"$synthWorkspace/temp", designPath = source).doit()
+  def VivadoSynth[T <: Component](sourcePath: String): Unit = {
+    val report = VivadoFlow(design = Chainsaw.examples.ZyboDesign0(), "temp", s"$synthWorkspace/temp", designPath = sourcePath).doit()
     report.printArea()
     report.printFMax()
   }

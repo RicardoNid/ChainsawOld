@@ -1,7 +1,7 @@
 package Chainsaw.crypto.lattice
 
 import Chainsaw.DFG.FFTArch._
-import Chainsaw.crypto.FastAlgos.{CCByNTT, NWCByNTT}
+import Chainsaw.crypto.FastAlgos.{CCByNTT, NWCByNTT, p2pMult}
 import Chainsaw.crypto.lattice.Kyber.KNTT
 import Chainsaw.crypto._
 import Chainsaw.{DSPRand, crypto, logger}
@@ -12,6 +12,8 @@ import spinal.core._
 import scala.language.postfixOps
 
 class HuaweiKyberTest extends AnyFlatSpec {
+
+  val doSynths = false
 
   // huawei configurations p = 3329, polySize = 256
   val p = 3329 // 3329 = 13 * 256 + 1
@@ -116,10 +118,12 @@ class HuaweiKyberTest extends AnyFlatSpec {
     result.map(_.toLong).forall(cfRing.isCorrect)
   }
 
-  "all these operators" should "synth correctly" in {
-    synthDSPNode(kMultModNode, Seq(opWidth, opWidth))
-    synthDSPNode(ctButterflyNode, Seq.fill(3)(opWidth))
-    synthDSPNode(gsButterflyNode, Seq.fill(3)(opWidth))
+  if (doSynths) {
+    "all these operators" should "synth correctly" in {
+      synthDSPNode(kMultModNode, Seq(opWidth, opWidth))
+      synthDSPNode(ctButterflyNode, Seq.fill(3)(opWidth))
+      synthDSPNode(gsButterflyNode, Seq.fill(3)(opWidth))
+    }
   }
 
   val testCount = 10
@@ -141,7 +145,7 @@ class HuaweiKyberTest extends AnyFlatSpec {
       knttGolden.flatten)
   }
 
-  it should "synth correctly" in synthDSPNode[UInt](nttDFG.asNode("ntt", log2Up(N) * 5 cycles), Seq.fill(N)(12 bits))
+  if (doSynths) it should "synth correctly" in synthDSPNode[UInt](nttDFG.asNode("ntt", log2Up(N) * 5 cycles), Seq.fill(N)(12 bits))
 
   implicit def long2UInt: (Long, BitCount) => UInt = (value: Long, _: BitCount) => U(value, 12 bits) // TODO:
 

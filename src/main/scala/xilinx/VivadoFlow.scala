@@ -19,7 +19,7 @@ class VivadoFlow[T <: Component](
                                   vivadoTask: VivadoTask,
                                   force: Boolean = false,
                                   xdcPath: String = "",
-                                  designPath:String = "",
+                                  designPath: String = "",
                                   constraint: VivadoConstraint = VivadoConstraint() // no constraint by default
                                 ) {
 
@@ -28,7 +28,8 @@ class VivadoFlow[T <: Component](
 
   /**
    * Execute cmd command on host
-   * @param cmd: The cmd command to execute
+   *
+   * @param cmd : The cmd command to execute
    */
   private def doCmd(cmd: String): Unit = {
     println(cmd)
@@ -40,7 +41,8 @@ class VivadoFlow[T <: Component](
 
   /**
    * Execute cmd command on host at given path
-   * @param cmd The cmd command to execute
+   *
+   * @param cmd  The cmd command to execute
    * @param path Specifying the execution path
    */
   private def doCmd(cmd: String, path: String): Unit = { // do cmd at the workSpace
@@ -53,8 +55,9 @@ class VivadoFlow[T <: Component](
 
   /**
    * write content in dedicated file
+   *
    * @param fileName name of the file
-   * @param content content to be write
+   * @param content  content to be write
    */
   private def writeFile(fileName: String, content: String) = {
     val tcl = new java.io.FileWriter(Paths.get(workspacePath, fileName).toFile)
@@ -79,15 +82,15 @@ class VivadoFlow[T <: Component](
    * {{{    report_utilization}}}
    * {{{    report_timing}}}
    * {{{    write_checkpoint xxx.dcp}}}
+   *
    * @param vivadoConfig you can specify your Vivado Configurations at src/main/scala/Xilinx/package.scala
-   * @param rtlSources path of your RTL source codes
-
+   * @param rtlSources   path of your RTL source codes
    * @return tcl script
    */
   def getScript(vivadoConfig: VivadoConfig, rtlSources: mutable.LinkedHashSet[String]) = {
     var script = ""
 
-    if(designPath.isEmpty) rtlSources.map(_.replace(workspacePath + "/", "")).foreach { path =>
+    if (designPath.isEmpty) rtlSources.map(_.replace(workspacePath + "/", "")).foreach { path =>
       println(designPath)
       if (path.endsWith(".sv")) script += s"read_verilog -sv $path \n"
       else if (path.endsWith(".v")) script += s"read_verilog $path \n"
@@ -115,7 +118,9 @@ class VivadoFlow[T <: Component](
         script += s"synth_design -part ${vivadoConfig.devicePart} -top ${topModuleName}\n"
         script += "opt_design\n"
         script += "place_design\n"
+        script += s"write_checkpoint ${topModuleName}_after_place.dcp\n"
         script += "route_design\n"
+        script += s"write_checkpoint ${topModuleName}_after_route.dcp\n"
         script += s"write_bitstream -force ${topModuleName}.bit\n"
         taskName = "impl"
       }
@@ -129,6 +134,7 @@ class VivadoFlow[T <: Component](
 
   /**
    * generate XDC constraints content for Vivado Flow
+   *
    * @return XDC constraints
    */
   def getXdc = {
@@ -148,8 +154,8 @@ class VivadoFlow[T <: Component](
       FileUtils.deleteDirectory(workspacePathFile)
     }
 
-//    workspacePathFile.mkdir()    // this may lead to bug
-    Process(s"mkdir -p $workspacePath") !      // create directory in this way instead
+    //    workspacePathFile.mkdir()    // this may lead to bug
+    Process(s"mkdir -p $workspacePath") ! // create directory in this way instead
 
     // generate systemverilog
     val spinalReport = SpinalConfig(targetDirectory = workspacePath).generateSystemVerilog(design.setDefinitionName(topModuleName))
@@ -176,9 +182,4 @@ object VivadoFlow {
                              xdcPath: String = "",
                              designPath: String = ""
                            ) = new VivadoFlow(design, topModuleName, workspacePath, vivadoConfig, vivadoTask, force, xdcPath, designPath)
-
-  def main(args: Array[String]): Unit = {
-    import Chainsaw._
-    VivadoSynth("/home/ltr/IdeaProjects/Chainsaw/src/main/scala/Chainsaw/temp.sv")
-  }
 }

@@ -16,8 +16,8 @@ class MatIntrlvCoreTest extends AnyFunSuite {
       SimConfig.withWave.compile(new MatIntrlvCore(row, col, dataType)).doSim { dut =>
 
         val testData0, testData1 = Seq.tabulate(row, col)((_, _) => DSPRand.nextInt(1 << dataWidth))
-        val transposed0 = Algos.matIntrlv2D2D(testData0, row, col)
-        val transposed1 = Algos.matIntrlv2D2D(testData1, row, col)
+        val transposed0 = Algos.transpose(testData0)
+        val transposed1 = Algos.transpose(testData1)
 
         import dut._
         def doRead() = {
