@@ -5,14 +5,6 @@ import Chainsaw.DFG._
 import Chainsaw._
 import Chainsaw.matlabIO.eng
 import spinal.core._
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
 
 import scala.language.postfixOps
 
@@ -30,13 +22,13 @@ object FIR {
       RegNext(coeff * data) + partialSum
     val macNode = TrinaryNode(mac, "mac", delay = 1 cycles)
 
-    //    val mac = (coeff: SInt, data: SInt, partialSum: SInt) => (coeff * data) + partialSum
-    //    val macNode = TrinaryNode(mac, "mac", delay = 0 cycles)
+//    val mac = (coeff: SInt, data: SInt, partialSum: SInt) => (coeff * data) + partialSum
+//    val macNode = TrinaryNode(mac, "mac", delay = 0 cycles)
 
     val firDFG = FIRGen[SInt, Int](macNode, TRANSPOSE, coeffs, 18 bits, 1)
 
     //    synthDSPNode[SInt](firDFG.getGraphAsNode, Seq(27 bits))
-    testDSPNode[SInt, Seq[BigInt], Int](firDFG.getGraphAsNode, Seq(27 bits), firTestCase.map(Seq(_)), firGolden)
-//    implDSPNode[SInt](firDFG.getGraphAsNode, Seq(27 bits))
+    testDSPNode[SInt, Seq[BigInt], Int](firDFG.getGraphAsNode(), Seq(27 bits), firTestCase.map(Seq(_)), firGolden, initLength = size)
+    implDSPNode[SInt](firDFG.getGraphAsNode(), Seq(27 bits))
   }
 }

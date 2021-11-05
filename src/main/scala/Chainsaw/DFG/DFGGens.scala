@@ -79,9 +79,9 @@ class FIRGen[THard <: Data, TSoft](mac: TrinaryNode[THard],
 
   def latency: Int = (if (firArch == SYSTOLIC) coeffs.size - 1 else 0) + mac.delay
 
-  def getGraphAsNode(implicit holderProvider: BitCount => THard): DSPNode[THard] = {
+  def getGraphAsNode(dataReset:Boolean = false)(implicit holderProvider: BitCount => THard): DSPNode[THard] = {
     val graph = getGraph
-    graph.asNode[THard](graph.name, graphLatency = latency cycles)
+    graph.asNode[THard](graph.name, graphLatency = latency cycles, dataReset)
   }
 }
 
@@ -165,9 +165,9 @@ class TIFIRGen[THard <: Data, TSoft](mac: TrinaryNode[THard],
 
   def latency: Int = (if (firArch == SYSTOLIC) coeffs.size - 1 else 0) + mac.delay
 
-  def getGraphAsNode(implicit holderProvider: BitCount => THard): DSPNode[THard] = {
+  def getGraphAsNode(dataReset:Boolean = false)(implicit holderProvider: BitCount => THard): DSPNode[THard] = {
     val graph = getGraph
-    graph.asNode[THard](graph.name, graphLatency = latency cycles)
+    graph.asNode[THard](graph.name, graphLatency = latency cycles, dataReset)
   }
 }
 
@@ -261,7 +261,7 @@ class ButterflyGen[THard, TSoft](ctButterfly: ButterflyNode[THard], gsButterfly:
   override def latency: Int = log2Up(size) * gsButterfly.delay
 
   // FIXME: as we want butterfly to support "software" evaluation, we didn't bound THard <: Data, thus, DFGGraph.asNode cannot be invoke
-  override def getGraphAsNode(implicit holderProvider: BitCount => THard): DSPNode[THard] = null
+  override def getGraphAsNode(dataReset:Boolean = false)(implicit holderProvider: BitCount => THard): DSPNode[THard] = null
 }
 
 object ButterflyGen {
@@ -283,7 +283,7 @@ class BinaryTreeGen[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
 
   override def latency: Int = 0
 
-  override def getGraphAsNode(implicit holderProvider: BitCount => T): DSPNode[T] = null
+  override def getGraphAsNode(dataReset:Boolean = false)(implicit holderProvider: BitCount => T): DSPNode[T] = null
 }
 
 // LQX: implement this, after the implementation, an example of corresponding adder and its test should be implemented in "comparith package"
@@ -304,7 +304,7 @@ class BKKSTreeGen[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
 
   override def latency: Int = 0
 
-  override def getGraphAsNode(implicit holderProvider: BitCount => T): DSPNode[T] = null
+  override def getGraphAsNode(dataReset:Boolean = false)(implicit holderProvider: BitCount => T): DSPNode[T] = null
 }
 
 // LQX: implement this, the node is not binary, try to fix it
@@ -323,7 +323,7 @@ class WallaceTreeGen[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] 
 
   override def latency: Int = 0
 
-  override def getGraphAsNode(implicit holderProvider: BitCount => T): DSPNode[T] = null
+  override def getGraphAsNode(dataReset:Boolean = false)(implicit holderProvider: BitCount => T): DSPNode[T] = null
 }
 
 // LQX: implement this by transplanting implementations from MCM and Architectures
@@ -337,5 +337,5 @@ class AdderTree[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
 
   override def latency: Int = 0
 
-  override def getGraphAsNode(implicit holderProvider: BitCount => T): DSPNode[T] = null
+  override def getGraphAsNode(dataReset:Boolean = false)(implicit holderProvider: BitCount => T): DSPNode[T] = null
 }

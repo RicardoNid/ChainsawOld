@@ -43,8 +43,8 @@ class DFGGensTest extends AnyFlatSpec {
   val firGolden: Array[Double] = eng.feval("filter", firCoeffs.reverse.map(_.toDouble).toArray, Array(1), firTestCase.map(_.toDouble).toArray).asInstanceOf[Array[Double]]
 
   def firDUT(arch: FirArch, useDSP: Boolean): DSPNode[SInt] =
-    if (useDSP) FIRGen(dspMAC, arch, firCoeffs, 18 bits, 1).getGraphAsNode
-    else FIRGen(add, mult, arch, firCoeffs, 18 bits, 1).getGraphAsNode
+    if (useDSP) FIRGen(dspMAC, arch, firCoeffs, 18 bits, 1).getGraphAsNode()
+    else FIRGen(add, mult, arch, firCoeffs, 18 bits, 1).getGraphAsNode()
 
   def testFIR(arch: FirArch, useDSP: Boolean): Seq[Seq[BigInt]] =
     testDSPNode[SInt, Seq[BigInt], Int](firDUT(arch, useDSP), Seq(18 bits), firTestCase.map(Seq(_)), firGolden.map(_.toInt))

@@ -13,6 +13,7 @@ import scala.util.{Failure, Success, Try}
 class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = false)(implicit val holderProvider: BitCount => T) {
 
   val logger: Logger = LoggerFactory.getLogger(s"implementing procedure")
+  logger.info(s"start DFG implementing procedure, dataReset = ${dataReset}")
 
   implicit def currentDFG: DFGGraph[T] = dfg
 

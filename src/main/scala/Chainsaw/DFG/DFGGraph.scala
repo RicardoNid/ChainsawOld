@@ -214,11 +214,11 @@ class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[
   }
 
   // TODO: consider carefully on these properties
-  def asNode[THard <: Data](name: String, graphLatency: CyclesCount = latency cycles)(implicit holderProvider: BitCount => THard): GeneralNode[THard] = {
+  def asNode[THard <: Data](name: String, graphLatency: CyclesCount = latency cycles, dataReset:Boolean = false)(implicit holderProvider: BitCount => THard): GeneralNode[THard] = {
     require(isForwarding)
     GeneralNode[THard](
       DSPHardware(
-        impl = (dataIns: Seq[THard], _: GlobalCount) => impl[THard](dataIns), // FIXME: this won't provide the counter of outer graph, is that legal?
+        impl = (dataIns: Seq[THard], _: GlobalCount) => impl[THard](dataIns, dataReset), // FIXME: this won't provide the counter of outer graph, is that legal?
         inDegree = inputNodes.size,
         outWidths = Seq.fill(outputNodes.size)(-1 bits) // FIXME: what if we use subgraph in
       ),
