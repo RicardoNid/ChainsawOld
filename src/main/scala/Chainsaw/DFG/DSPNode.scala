@@ -20,6 +20,21 @@ trait DSPNode[T] {
   def copy(newName: String): DSPNode[T]
 
   override def toString: String = name
+
+  // classification of nodes
+  def isConstant: Boolean = this.isInstanceOf[ConstantNode[T]]
+
+  def isInput: Boolean = this.isInstanceOf[InputNode[T]]
+
+  def isOutput: Boolean = this.isInstanceOf[OutputNode[T]]
+
+  /** inner nodes will be implemented as concrete hardware, while I/O and constant nodes will not be
+   */
+  def isInner: Boolean = !isOutput && !isInput && !isConstant
+
+  def isOuter: Boolean = !isInner
+
+  def apply(order: Int): DSPNodeWithOrder[T] = DSPNodeWithOrder(this, order)
 }
 
 /** Providing basic constructors
@@ -82,13 +97,30 @@ class ConstantNode[T](implp: DSPHardware[T], namep: String) extends DSPNode[T] {
 }
 
 object ConstantNode {
-  def apply[T](implp: DSPHardware[T], namep: String): ConstantNode[T] = new ConstantNode(implp, namep)
+  def apply[T](impl: DSPHardware[T], name: String): ConstantNode[T] = new ConstantNode(impl, name)
 
   def apply[THard, TSoft](name: String, constant: TSoft, width: BitCount)(implicit converter: (TSoft, BitCount) => THard): ConstantNode[THard] = {
     val hardware = DSPHardware(
       impl = (_: Seq[THard], _: GlobalCount) => Seq(converter(constant, width)),
       inDegree = 1, outWidths = Seq(width))
     ConstantNode(hardware, name)
+  }
+
+  def apply[THard <: Data, TSoft](hardType: HardType[THard], constant: TSoft)
+                                 (implicit converter: (TSoft, BitCount) => THard): ConstantNode[THard] = {
+    val width = hardType.getBitsWidth bits
+    val hardware = DSPHardware(
+      impl = (_: Seq[THard], _: GlobalCount) => Seq(converter(constant, width)),
+      inDegree = 0, outWidths = Seq(width))
+    ConstantNode(hardware, s"constant_$constant")
+  }
+
+  /** when the user has defined a converter to specify a width
+   * @param converter a soft -> hard converter who decide the width by itself
+   */
+  def apply[THard <: Data, TSoft](hardType: HardType[THard], constant: TSoft)
+                                 (implicit converter: TSoft => THard): ConstantNode[THard] = {
+    apply(hardType, constant)((constant:TSoft, _:BitCount) => converter(constant)) // invoke the previously defined one
   }
 }
 

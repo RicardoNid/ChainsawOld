@@ -7,21 +7,30 @@ import xilinx.VivadoReport
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
-import scala.language.postfixOps
+import scala.language.{implicitConversions, postfixOps}
 
 // something new
 
 package object DFG {
 
-  implicit val sintProvider = (width: BitCount) => if (width.value >= 1) SInt(width) else SInt()
-  implicit val uintProvider = (width: BitCount) => if (width.value >= 1) UInt(width) else UInt()
-  implicit val bitsProvider = (width: BitCount) => if (width.value >= 1) Bits(width) else Bits()
-  implicit val complexProvider = (width: BitCount) => ComplexNumber(1, width.value - 2) // FIXME: we use 1 bit in integral part now
+  // holder providers, serving impl methods
+  implicit val sintProvider: BitCount => SInt = (width: BitCount) => if (width.value >= 1) SInt(width) else SInt()
+  implicit val uintProvider: BitCount => UInt = (width: BitCount) => if (width.value >= 1) UInt(width) else UInt()
+  implicit val bitsProvider: BitCount => Bits = (width: BitCount) => if (width.value >= 1) Bits(width) else Bits()
+  implicit val complexProvider: BitCount => ComplexNumber = (width: BitCount) => ComplexNumber(1, width.value - 2) // FIXME: we use 1 bit in integral part now
 
+  // soft -> hard converters, serving literal-related methods
   implicit val sintConverter: (Int, BitCount) => SInt = (value: Int, width: BitCount) => S(value, width)
   implicit val uintConverter: (Int, BitCount) => UInt = (value: Int, width: BitCount) => U(value, width)
   implicit val bitsConverter: (Int, BitCount) => Bits = (value: Int, width: BitCount) => B(value, width)
 
+
+  // graph utils for constructing DFG
+  implicit class graphUtils[T](dfg: DFGGraph[T]) {
+
+  }
+
+  // node utils for constructing DFG
   implicit class nodeUtils[T](node: DSPNode[T]) {
     def >=>(delay: Double) = DSPAssignment(node, delay, node)
 
@@ -29,22 +38,9 @@ package object DFG {
 
     def >>(that: DSPNode[T]) = DSPPath(ArrayBuffer(node, that), ArrayBuffer(0))
 
-    def -(that: DSPNode[T]) = DSPConstraint(node, that, 0)
-
-    // classification of nodes
-    def isConstant: Boolean = node.isInstanceOf[ConstantNode[T]]
-
-    def isInput: Boolean = node.isInstanceOf[InputNode[T]]
-
-    def isOutput: Boolean = node.isInstanceOf[OutputNode[T]]
-
-    /** inner nodes will be implemented as concrete hardware, while I/O and constant nodes will not be
+    /** to form an inequality that a - b <= 0
      */
-    def isInner: Boolean = !isOutput && !isInput && !isConstant
-
-    def isOuter: Boolean = !isInner
-
-    def apply(order: Int): DSPNodeWithOrder[T] = DSPNodeWithOrder(node, order)
+    def -(that: DSPNode[T]): DSPConstraint[T] = DSPConstraint(node, that, 0)
 
     /** extend a virtual node from a output port of current node
      *
@@ -57,22 +53,28 @@ package object DFG {
     def >=>(delays: Seq[Double]) = DSPAssignment(nodes, delays, nodes.head)
   }
 
+  /** edge properties in a specific DFG
+   */
   implicit class EdgeProperties[T](edge: DSPEdge[T])(implicit dfg: DFGGraph[T]) {
-    def target = dfg.getEdgeTarget(edge)
 
-    def source = dfg.getEdgeSource(edge)
+    def target: DSPNode[T] = dfg.getEdgeTarget(edge)
 
-    def weight = dfg.getEdgeWeight(edge)
+    def source: DSPNode[T] = dfg.getEdgeSource(edge)
 
-    def weightWithSource = (edge.weight + edge.source.delay).toInt
+    // weight-related properties
+    /** we keep it a Double here as sometimes, DFG will be used/cloned for other purpose(such as critical path calculation)
+     */
+    def weight: Double = dfg.getEdgeWeight(edge)
+
+    /** delay on the edge
+     */
+    def delay = weight.toInt
+
+    /** the actual delay through the edge, useful in DFG transformations
+     */
+    def weightWithSource: Int = (edge.weight + edge.source.delay).toInt
 
     def symbol = s"$source(${edge.outOrder}) -> ${edge.weightWithSource} -> $target(${edge.inOrder})"
-
-    def hasNoMux = edge.schedules.size == 1 && edge.schedules.head == Schedule(0, 1)
-
-    /** Get a new edge with different schedules
-     */
-    def withSchedules(schedules: Seq[Schedule]) = DefaultDelay[T](schedules, edge.outOrder, edge.inOrder)
   }
 
   implicit class NodeProperties[T](node: DSPNode[T])(implicit dfg: DFGGraph[T]) {
@@ -91,13 +93,13 @@ package object DFG {
     def genConstBinaryNode(node: BinaryNode[T], constant: Int, width: BitCount = 10 bits, order: Int = 0): Unit = {
       val cnode = ConstantNode[T, Int](s"constnode${constant}", constant, width)
 
-      Seq(cnode, node).foreach(dfg.addVertex(_))
+      Seq(cnode, node).foreach(dfg.addVertex)
       dfg.addEdge(cnode(0), node(order), 0)
     }
 
     def genConstTrinaryNode(node: TrinaryNode[T], constant: Int, width: BitCount = 10 bits, order: Int = 0): Unit = {
       val cnode = ConstantNode[T, Int](s"constnode${constant}", constant, width)
-      Seq(cnode, node).foreach(dfg.addVertex(_))
+      Seq(cnode, node).foreach(dfg.addVertex)
       dfg.addEdge(cnode(0), node(order), 0)
     }
 
@@ -106,16 +108,18 @@ package object DFG {
   implicit def defaultOrder[T](node: DSPNode[T]): DSPNodeWithOrder[T] = DSPNodeWithOrder(node, 0)
 
   //  sim and synth utils of DFGGraph and Nodes
+
   /** wrap a DSPNode as a component
-   * @param node dut node
-   * @param inputWidths as impl is used, this is necessary
-   * @param forTiming when set, extra registers are applied on the input/output ports for more accurate timing statistics
+   *
+   * @param node           dut node
+   * @param inputWidths    as impl is used, this is necessary
+   * @param forTiming      when set, extra registers are applied on the input/output ports for more accurate timing statistics
    * @param holderProvider as impl is used, this is necessary
    * @return a component which can be tested and synthesized
    */
   def wrappedNode[THard <: Data](node: DSPNode[THard], inputWidths: Seq[BitCount],
-                                         forTiming: Boolean = false)
-                                        (implicit holderProvider: BitCount => THard):
+                                 forTiming: Boolean = false)
+                                (implicit holderProvider: BitCount => THard):
   Component with DSPTestable[Vec[THard], Vec[THard]] = {
     new Component with DSPTestable[Vec[THard], Vec[THard]] {
       override val dataIn: Flow[Vec[THard]] = slave Flow Vec(inputWidths.map(holderProvider(_)))
@@ -132,6 +136,7 @@ package object DFG {
   }
 
   /** test a DSPNode as a data-driven DUT, defined by the input/output
+   *
    * @param initLength cycles for initialization, corresponding results would be dropped
    */
   def testDSPNode[THard <: Data, Si, So](node: DSPNode[THard], inputWidths: Seq[BitCount], testCases: Seq[Si], golden: Seq[So], initLength: Int = 0)

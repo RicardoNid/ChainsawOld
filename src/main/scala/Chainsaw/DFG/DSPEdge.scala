@@ -1,13 +1,16 @@
 package Chainsaw.DFG
 
-import spinal.core._
-import spinal.lib._
-
 abstract class DSPEdge[T] {
   val name: String
   val schedules: Seq[Schedule]
   val inOrder: Int
   val outOrder: Int
+
+  def hasNoMux: Boolean = this.schedules.equals(NoMUX())
+
+  /** Get a new edge with different schedules
+   */
+  def changeSchedules(schedules: Seq[Schedule]): DefaultDelay[T] = DefaultDelay[T](schedules, this.outOrder, this.inOrder)
 }
 
 class DefaultDelay[T](namep: String, schedulesp: Seq[Schedule], outOrderp: Int, inOrderp: Int) extends DSPEdge[T] {
