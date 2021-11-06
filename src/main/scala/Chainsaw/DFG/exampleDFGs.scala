@@ -26,8 +26,10 @@ object simpleFolding {
 
   def dfg: DFGGraph[SInt] = {
     printlnGreen("using simple graph for folding")
-    val dfg = DFGGraph[SInt]("simpleFolding")
-    incs.zipWithIndex.foreach { case (inc, id) => dfg.genConstBinaryNode(inc, id + 1) }
+    implicit val dfg = DFGGraph[SInt]("simpleFolding")
+
+    dfg.addVertices(incs: _*)
+    incs.zipWithIndex.foreach { case (inc, i) => inc.addConstantDriver(i + 1, 10 bits, 0) }
 
     dfg.setInput(incs(0), 1)
     dfg.addPath(incs(0) >> 1 >> incs(1) >> 1 >> incs(2) >> 1 >> incs(3))

@@ -97,30 +97,18 @@ class ConstantNode[T](implp: DSPHardware[T], namep: String) extends DSPNode[T] {
 }
 
 object ConstantNode {
-  def apply[T](impl: DSPHardware[T], name: String): ConstantNode[T] = new ConstantNode(impl, name)
+  def apply[T](name: String, impl: DSPHardware[T]): ConstantNode[T] = new ConstantNode(impl, name)
 
   def apply[THard, TSoft](name: String, constant: TSoft, width: BitCount)(implicit converter: (TSoft, BitCount) => THard): ConstantNode[THard] = {
     val hardware = DSPHardware(
       impl = (_: Seq[THard], _: GlobalCount) => Seq(converter(constant, width)),
-      inDegree = 1, outWidths = Seq(width))
-    ConstantNode(hardware, name)
-  }
-
-  def apply[THard <: Data, TSoft](hardType: HardType[THard], constant: TSoft)
-                                 (implicit converter: (TSoft, BitCount) => THard): ConstantNode[THard] = {
-    val width = hardType.getBitsWidth bits
-    val hardware = DSPHardware(
-      impl = (_: Seq[THard], _: GlobalCount) => Seq(converter(constant, width)),
       inDegree = 0, outWidths = Seq(width))
-    ConstantNode(hardware, s"constant_$constant")
+    ConstantNode(s"constant_$constant", hardware)
   }
 
-  /** when the user has defined a converter to specify a width
-   * @param converter a soft -> hard converter who decide the width by itself
-   */
-  def apply[THard <: Data, TSoft](hardType: HardType[THard], constant: TSoft)
-                                 (implicit converter: TSoft => THard): ConstantNode[THard] = {
-    apply(hardType, constant)((constant:TSoft, _:BitCount) => converter(constant)) // invoke the previously defined one
+  def apply[THard <: Data, TSoft](name:String, hardType: HardType[THard], constant: TSoft)
+                                 (implicit converter: (TSoft, BitCount) => THard): ConstantNode[THard] = {
+    apply(name, constant, width = hardType.getBitsWidth bits)
   }
 }
 

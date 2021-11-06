@@ -62,6 +62,7 @@ package object DFG {
     def source: DSPNode[T] = dfg.getEdgeSource(edge)
 
     // weight-related properties
+
     /** we keep it a Double here as sometimes, DFG will be used/cloned for other purpose(such as critical path calculation)
      */
     def weight: Double = dfg.getEdgeWeight(edge)
@@ -79,6 +80,7 @@ package object DFG {
 
   implicit class NodeProperties[T](node: DSPNode[T])(implicit dfg: DFGGraph[T]) {
 
+    // properties
     def outgoingEdges = dfg.outgoingEdgesOf(node).toSeq
 
     def incomingEdges = dfg.incomingEdgesOf(node).toSeq
@@ -87,12 +89,17 @@ package object DFG {
 
     def targets = outgoingEdges.map(_.target)
 
+    def addConstantDriver[TSoft](constant: TSoft, width: BitCount, order:Int = 0)(implicit converter: (TSoft, BitCount) => T) = {
+      val constantNode = ConstantNode(s"constant_$constant", constant, width)
+      dfg.addVertex(constantNode)
+      dfg.addEdge(constantNode(0), node(order), 0)
+    }
+
   }
 
   implicit class BinaryNodeWithConst[T](dfg: DFGGraph[T])(implicit converter: (Int, BitCount) => T) {
     def genConstBinaryNode(node: BinaryNode[T], constant: Int, width: BitCount = 10 bits, order: Int = 0): Unit = {
       val cnode = ConstantNode[T, Int](s"constnode${constant}", constant, width)
-
       Seq(cnode, node).foreach(dfg.addVertex)
       dfg.addEdge(cnode(0), node(order), 0)
     }
