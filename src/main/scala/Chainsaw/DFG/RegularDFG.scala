@@ -82,45 +82,43 @@ class RegularDFG[T](name:String) extends DFGGraph[T](name) {
       )
 
       val indexDiff = directionMap(edgeDirection)
-      println(s"$edgeDirection, ${indexDiff._1}, ${indexDiff._2}, $InOut, $withInput, $withOutput")    // testing print
+      println(s"$edgeDirection, ${indexDiff._1}, ${indexDiff._2}, $InOut, $withInput, $withOutput\n")    // testing print
 
       val cellRowRange = (0 until row).toList    // range: [0, 1, ..., row-1]
       val cellColRange = (0 until col).toList    // range: [0, 1, ..., col-1]
-      println(s"row: $cellRowRange")
-      println(s"col: $cellColRange")
+//      println(s"row: $cellRowRange")
+//      println(s"col: $cellColRange")
 
       for (r <- -1 to row) {        // wider range: [-1, 0, 1, ..., row]
         for (c <- -1 to col) {      // wider range: [-1, 0, 1, ..., col]
 //          println(s"here ($r, $c)")
-          // adding inner edges
-          if (cellRowRange.contains(r) && cellColRange.contains(c)
-            && cellRowRange.contains(r + indexDiff._1) && cellColRange.contains(c + indexDiff._2)) {
+          var currInRange: Boolean = cellRowRange.contains(r) && cellColRange.contains(c)                                  // current node is in range
+          var nextInRange: Boolean = cellRowRange.contains(r + indexDiff._1) && cellColRange.contains(c + indexDiff._2)    // next node is in range
+
+          if (currInRange && nextInRange) {
+            // current node in range and next node in range, use both current node and next node to add inner edges
             InOut match {
-              case IN => this.addEdge(nodes(r + indexDiff._1)(c + indexDiff._2), nodes(r)(c), outOrder, inOrder, 1)
-              case OUT => this.addEdge(nodes(r)(c), nodes(r + indexDiff._1)(c + indexDiff._2), outOrder, inOrder, 1)
+              case IN => this.addEdge(nodes(r + indexDiff._1)(c + indexDiff._2), nodes(r)(c), outOrder, inOrder, 1)  // next node -> curr node
+              case OUT => this.addEdge(nodes(r)(c), nodes(r + indexDiff._1)(c + indexDiff._2), outOrder, inOrder, 1)  // curr node -> next node
               case _ => logger.error("Wrong InOut type")
             }
-          }
-          // current node not in range but next node in range, use next node to link to do withInput or do withOutput
-          else if ((!cellRowRange.contains(r) || !cellColRange.contains(c))
-            && cellRowRange.contains(r + indexDiff._1) && cellColRange.contains(c + indexDiff._2)) {
-//            println(s"next (${r+indexDiff._1}, ${c+indexDiff._2})")    // use next
+          } else if (!currInRange && nextInRange) {
+            // current node not in range but next node in range, use next node to do withInput or do withOutput
             InOut match {
               case IN => if (withOutput) { println(s"next (${r+indexDiff._1}, ${c+indexDiff._2}) for Output")
                 this.setOutput(nodes(r+indexDiff._1)(c+indexDiff._2), outOrder, s"output_${edgeDirection}_${r+indexDiff._1}_${c+indexDiff._2}", Seq(Schedule(0, 1)))}
               case OUT => if (withInput) { println(s"next (${r+indexDiff._1}, ${c+indexDiff._2}) for Input")
                 this.setInput(nodes(r+indexDiff._1)(c+indexDiff._2), inOrder, s"input_${edgeDirection}_${r+indexDiff._1}_${c+indexDiff._2}", Seq(Schedule(0, 1)))}
+              case _ => logger.error("Wrong InOut type")
             }
-          }
-          // current node in range but next node not in range, use current node to link to do withInput or do withOutput
-          else if ((!cellRowRange.contains(r + indexDiff._1) || !cellColRange.contains(c + indexDiff._2))
-            && cellRowRange.contains(r) && cellColRange.contains(c)) {
-//            println(s"curr ($r, $c)")    // use curr
+          } else if (currInRange && !nextInRange) {
+            // current node in range but next node not in range, use current node to do withInput or do withOutput
             InOut match {
               case IN => if (withInput) { println(s"curr ($r, $c) for Input")
                 this.setInput(nodes(r)(c), inOrder, s"input_${edgeDirection}_${r}_${c}", Seq(Schedule(0, 1)))}
               case OUT => if (withOutput) { println(s"curr ($r, $c) for Output")
                 this.setOutput(nodes(r)(c), outOrder, s"output_${edgeDirection}_${r}_${c}", Seq(Schedule(0, 1)))}
+              case _ => logger.error("Wrong InOut type")
             }
           }
         }  // for col
@@ -134,6 +132,7 @@ class RegularDFG[T](name:String) extends DFGGraph[T](name) {
 //    val addingAllEdgeChain_UP0 = addAllEdgeChain(UP, IN,1,1,1,true,false)
 //    val addingAllEdgeChain_UP1 = addAllEdgeChain(UP, IN,2,2,1,true,true)
 
+    println()
     println(this)  // print all Nodes and Edges
 
   }
