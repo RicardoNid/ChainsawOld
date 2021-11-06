@@ -82,7 +82,7 @@ class RegularDFG[T <: Data](name:String) extends DFGGraph[T](name) {
       )
 
       val indexDiff = directionMap(edgeDirection)
-      println(s"$edgeDirection, ${indexDiff._1}, ${indexDiff._2}, $InOut, $withInput, $withOutput\n")    // testing print
+      println(s"\nedgeDirection = $edgeDirection, (${indexDiff._1}, ${indexDiff._2}), InOut = $InOut, withInput = $withInput, withOutput = $withOutput\n")    // testing print
 
       val cellRowRange = (0 until row).toList    // range: [0, 1, ..., row-1]
       val cellColRange = (0 until col).toList    // range: [0, 1, ..., col-1]
@@ -134,6 +134,31 @@ class RegularDFG[T <: Data](name:String) extends DFGGraph[T](name) {
 
     println()
     println(this)  // print all Nodes and Edges
+
+
+    // Visualization
+    // see: https://jgrapht.org/guide/UserOverview#:~:text=to%20i%3A%0Anull-,Graph%20Serialization%20and%20Export/Import,-The%20default%20graph
+    import org.jgrapht.graph.DefaultEdge
+    import java.util.LinkedHashMap
+    import java.io.StringWriter
+    import java.io.Writer
+    import java.util.function._
+    import scala.compat.java8.FunctionConverters._
+
+    val exporter = new DOTExporter[DSPNode[T], DSPEdge[T]]()
+    val attrFunction = (v: DSPNode[T]) => {
+      def foo(v: DSPNode[T]) = {
+        val map = new LinkedHashMap[String, org.jgrapht.nio.Attribute]
+        map.put("label", DefaultAttribute.createAttribute(v.toString))
+        println(map)
+        map
+      }
+      foo(v)
+    }
+    exporter.setVertexAttributeProvider(attrFunction.asJava)
+//    val writer = new StringWriter()
+//    exporter.exportGraph(this, writer)
+//    System.out.println(writer.toString)
 
   }
 }
