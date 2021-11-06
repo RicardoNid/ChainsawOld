@@ -7,6 +7,7 @@ import xilinx.VivadoReport
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
+import scala.language.postfixOps
 
 // something new
 
@@ -30,23 +31,25 @@ package object DFG {
 
     def -(that: DSPNode[T]) = DSPConstraint(node, that, 0)
 
-    /** Pointing out whether a node is I/O or not, this is necessary as I/O are treated differently is most algos
-     *
-     * Caution: constant nodes are also inputs
+    // classification of nodes
+    def isConstant: Boolean = node.isInstanceOf[ConstantNode[T]]
+
+    def isInput: Boolean = node.isInstanceOf[InputNode[T]]
+
+    def isOutput: Boolean = node.isInstanceOf[OutputNode[T]]
+
+    /** inner nodes will be implemented as concrete hardware, while I/O and constant nodes will not be
      */
-    def isIO = node.isInstanceOf[InputNode[T]] || node.isInstanceOf[ConstantNode[T]] || node.isInstanceOf[OutputNode[T]]
+    def isInner: Boolean = !isOutput && !isInput && !isConstant
 
-    def isInput = node.isInstanceOf[InputNode[T]] || node.isInstanceOf[ConstantNode[T]]
+    def isOuter: Boolean = !isInner
 
-    def isOutput = node.isInstanceOf[OutputNode[T]]
+    def apply(order: Int): DSPNodeWithOrder[T] = DSPNodeWithOrder(node, order)
 
-    def apply(order: Int) = DSPNodeWithOrder(node, order)
-
-    /** Extend a virtual node from a output port of current node
+    /** extend a virtual node from a output port of current node
      *
-     * @param order
      */
-    def extendVirtual(order: Int) = GeneralNode[T](s"${node}_v", 0 cycles, 0 ns, node.hardware.outWidths(order))
+    def extendVirtual(order: Int): GeneralNode[T] = GeneralNode[T](s"${node}_v", 0 cycles, 0 ns, node.hardware.outWidths(order))
 
   }
 

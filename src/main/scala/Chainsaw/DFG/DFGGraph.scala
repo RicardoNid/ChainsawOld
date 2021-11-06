@@ -19,6 +19,7 @@ class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[
 
   val logger: Logger = LoggerFactory.getLogger("editing DFG")
 
+  // we deprecate vertex/edgeSet and use Seq instead, as sets may lose their orders through collection methods
   @deprecated override def vertexSet(): util.Set[DSPNode[T]] = super.vertexSet()
 
   @deprecated override def edgeSet(): util.Set[DSPEdge[T]] = super.edgeSet()
@@ -27,19 +28,22 @@ class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[
 
   def edgeSeq: Seq[DSPEdge[T]] = super.edgeSet().toSeq
 
-  def inputNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isInstanceOf[InputNode[T]])
+  // special nodes and their traversing methods
+  def inputNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isInput)
 
-  def outputNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isInstanceOf[OutputNode[T]])
+  def outputNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isOutput)
 
-  def constantNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isInstanceOf[ConstantNode[T]])
+  def constantNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isConstant)
+
+  def innerNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isInner)
 
   def foreachVertex(body: DSPNode[T] => Unit): Unit = vertexSeq.foreach(body)
 
-  def foreachInnerVertex(body: DSPNode[T] => Unit): Unit = vertexSeq.filterNot(_.isIO).foreach(body)
+  def foreachInnerVertex(body: DSPNode[T] => Unit): Unit = innerNodes.foreach(body)
 
   def foreachEdge(body: DSPEdge[T] => Unit): Unit = edgeSeq.foreach(body)
 
-  def foreachInnerEdge(body: DSPEdge[T] => Unit): Unit = edgeSeq.filterNot(edge => edge.source.isIO || edge.target.isIO).foreach(body)
+  def foreachInnerEdge(body: DSPEdge[T] => Unit): Unit = edgeSeq.filter(edge => edge.source.isInner && edge.target.isInner).foreach(body)
 
   def sourcesOf(node: DSPNode[T]): mutable.Set[DSPNode[T]] = incomingEdgesOf(node).map(_.source)
 
@@ -196,7 +200,7 @@ class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[
       s"inputs:\n${inputNodes.mkString(" ")}\n" +
       s"outputs:\n${outputNodes.mkString(" ")}\n" +
       s"constants:\n${constantNodes.mkString(" ")}\n" +
-      s"nodes:\n${vertexSeq.filterNot(node => node.isIO || node.isInstanceOf[ConstantNode[T]]).mkString(" ")}\n" +
+      s"inner nodes:\n${innerNodes.mkString(" ")}\n" +
       s"edges:\n" +
       s"input edges:\n${inputEdges.map(edge => s"${edge.symbol} $edge").mkString("\n")}\n" +
       s"inner edges:\n${otherEdges.map(edge => s"${edge.symbol} $edge").mkString("\n")}\n" +
@@ -214,7 +218,7 @@ class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[
   }
 
   // TODO: consider carefully on these properties
-  def asNode[THard <: Data](name: String, graphLatency: CyclesCount = latency cycles, dataReset:Boolean = false)(implicit holderProvider: BitCount => THard): GeneralNode[THard] = {
+  def asNode[THard <: Data](name: String, graphLatency: CyclesCount = latency cycles, dataReset: Boolean = false)(implicit holderProvider: BitCount => THard): GeneralNode[THard] = {
     require(isForwarding)
     GeneralNode[THard](
       DSPHardware(

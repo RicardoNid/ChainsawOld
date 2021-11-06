@@ -5,7 +5,6 @@ import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 import spinal.lib._
 
-import java.util.Date
 import scala.collection.mutable
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}

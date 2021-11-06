@@ -29,10 +29,10 @@ class Folding[T](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with Foldable[
   def foldedDelay(edge: DSPEdge[T])(implicit dfg: DFGGraph[T]): Int = {
     val U = edge.source
     val V = edge.target
-    val u = if (U.isIO) foldingOrderOf(V) else foldingOrderOf(U) // input follows its target
-    val v = if (V.isIO) foldingOrderOf(U) else foldingOrderOf(V) // output follows its source
+    val u = if (U.isOuter) foldingOrderOf(V) else foldingOrderOf(U) // input follows its target
+    val v = if (V.isOuter) foldingOrderOf(U) else foldingOrderOf(V) // output follows its source
     val w = edge.weightWithSource
-    val Pu = if (U.isIO) 0 else deviceOf(U).delay
+    val Pu = if (U.isOuter) 0 else deviceOf(U).delay
     logger.debug(s"calculating delay: $N * $w - $Pu + $v - $u = ${N * w - Pu + v - u}")
     N * w - Pu + v - u
   }
@@ -68,9 +68,9 @@ class Folding[T](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with Foldable[
     retimedDFG.foreachEdge { edge =>
       val V = edge.target
       val U = edge.source
-      val Hu = if (U.isIO) U else deviceOf(U)
-      val Hv = if (V.isIO) V else deviceOf(V)
-      val v = if (V.isIO) foldingOrderOf(edge.source) else foldingOrderOf(V)
+      val Hu = if (U.isOuter) U else deviceOf(U)
+      val Hv = if (V.isOuter) V else deviceOf(V)
+      val v = if (V.isOuter) foldingOrderOf(edge.source) else foldingOrderOf(V)
       val foldedDelay = this.foldedDelay(edge)
       val foldedSchedules = edge.schedules.map { schedule => // new delay
         val newPeriod = schedule.period * N
