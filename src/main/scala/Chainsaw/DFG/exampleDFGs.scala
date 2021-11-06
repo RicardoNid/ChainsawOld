@@ -77,7 +77,7 @@ object implementingDFGs {
 
 object chap2 {
   def fig2_2 = {
-    val Seq(n1, n2, n3, n4, n5, n6) = Seq(1, 1, 1, 2, 2, 2).zipWithIndex.map { case (exe, i) => GeneralNode[SInt](s"node${i + 1}", 0 cycles, exe sec) }
+    val Seq(n1, n2, n3, n4, n5, n6) = Seq(1, 1, 1, 2, 2, 2).zipWithIndex.map { case (exe, i) => DeviceNode[SInt](s"node${i + 1}", 0 cycles, exe sec) }
     val dfg = DFGGraph[SInt]("fig2.2")
 
     dfg.addPath(n1 >> 2 >> n4 >> n2 >> n1)
@@ -377,7 +377,7 @@ object paper1992OnFolding {
 
 object chap4 {
   def fig4_3 = {
-    val Seq(r1, r2, r3, r4) = (0 until 4).map(i => VoidNode[SInt](s"const$i"))
+    val Seq(r1, r2, r3, r4) = (0 until 4).map(i => VirtualNode[SInt](s"const$i"))
     val cg = ConstraintGraph[SInt]
     cg.addConstraint(r1 - r2 <= 0)
     cg.addConstraint(r3 - r1 <= 5)

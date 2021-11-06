@@ -183,7 +183,7 @@ class TIFIRGen[THard <: Data, TSoft](mac: TrinaryNode[THard],
  * @param parallelism : determining the parallelism of the design, compared to the fully-pipelined version
  * @example parallelism = 3 -> unfold 3; parallelism = -3 -> fold 3
  */
-class ButterflyGen[THard, TSoft](ctButterfly: ButterflyNode[THard], gsButterfly: ButterflyNode[THard],
+class ButterflyGen[THard <: Data, TSoft](ctButterfly: ButterflyNode[THard], gsButterfly: ButterflyNode[THard],
                                  size: Int, fftArch: FFTArch, inverse: Boolean = false,
                                  coeffGen: Int => TSoft, coeffWidth: BitCount, parallelism: Int = 1)
                                 (implicit converter: (TSoft, BitCount) => THard) extends DFGGen[THard] {
@@ -265,7 +265,7 @@ class ButterflyGen[THard, TSoft](ctButterfly: ButterflyNode[THard], gsButterfly:
 }
 
 object ButterflyGen {
-  def apply[THard, TSoft](ctButterfly: ButterflyNode[THard], gsButterfly: ButterflyNode[THard],
+  def apply[THard <: Data, TSoft](ctButterfly: ButterflyNode[THard], gsButterfly: ButterflyNode[THard],
                           size: Int, fftArch: FFTArch, inverse: Boolean,
                           coeffGen: Int => TSoft, coeffWidth: BitCount,
                           parallelism: Int)
@@ -274,7 +274,7 @@ object ButterflyGen {
 }
 
 // LQX: implement this
-class BinaryTreeGen[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
+class BinaryTreeGen[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
   override def getGraph: DFGGraph[T] = {
     val dfg = DFGGraph[T](s"binaryTree_using_${binaryNode.name}")
 
@@ -295,7 +295,7 @@ class BinaryTreeGen[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
  * @see [[https://en.wikipedia.org/wiki/Kogge%E2%80%93Stone_adder]]
  * @see my implementation [[DFG.BKKSTree]]
  */
-class BKKSTreeGen[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
+class BKKSTreeGen[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
   override def getGraph: DFGGraph[T] = {
     val dfg = DFGGraph[T](s"bkksTree_using_${binaryNode.name}")
 
@@ -314,7 +314,7 @@ class BKKSTreeGen[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
  * @see [[https://en.wikipedia.org/wiki/Wallace_tree]]
  * @see [[https://en.wikipedia.org/wiki/Dadda_multiplier]]
  */
-class WallaceTreeGen[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
+class WallaceTreeGen[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
   override def getGraph: DFGGraph[T] = {
     val dfg = DFGGraph[T](s"bkksTree_using_${binaryNode.name}")
 
@@ -328,7 +328,7 @@ class WallaceTreeGen[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] 
 
 // LQX: implement this by transplanting implementations from MCM and Architectures
 // generally speaking, this method should be able to generate a minimized adder graph according to a given integer
-class AdderTree[T](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
+class AdderTree[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
   override def getGraph: DFGGraph[T] = {
     val dfg = DFGGraph[T](s"adderTree")
 

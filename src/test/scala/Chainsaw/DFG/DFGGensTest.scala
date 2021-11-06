@@ -30,6 +30,7 @@ class DFGGensTest extends AnyFlatSpec {
   // operators for fir test
   val add: BinaryNode[SInt] = BinaryNode(sintAdd, "add")
   val mult: BinaryNode[SInt] = BinaryNode(sintMult, "mult")
+
   def multAdd(delay: Int): TrinaryNode[SInt] = TrinaryNode(sintMACDSP(delay), "multAdd", delay = delay cycles)
 
   def dspMAC: TrinaryNode[SInt] = TrinaryNode(sintMACDSP(1), "multAdd", delay = 1 cycles)
@@ -112,38 +113,40 @@ class DFGGensTest extends AnyFlatSpec {
 
   behavior of "radix-2 fft DFG(butterfly) as ntt"
 
-  import crypto._
-  import crypto.lattice.HuaweiKyber._ // using parameters of CRYSTALS-KYBER
+  // this is deprecated as we change our mind and do not allow DFG tobe implemented as software
 
-  val N = 128
-  val nttAlgo: NTT = crypto.NTT(cfRing, N)
-
-  // using software(functions) as node to build a software DFG
-  val gsbf: ButterflyNode[Long] = ButterflyNode(nttAlgo.gsButterfly, "gsButterfly")
-  val ctbf: ButterflyNode[Long] = ButterflyNode(nttAlgo.ctButterfly, "ctButterfly")
-  val bitReverse: Seq[Long] => Seq[Long] = nttAlgo.bitReverse
-
-  val omega: Long = cfRing.getNthRoot(N)
-  val inverseN: Long = cfRing.pow(N, -1)
-  val coeffGen: Int => Long = (index: Int) => cfRing.pow(omega, index)
-  val nttTestCase: Seq[Long] = (0 until N).map(_ => DSPRand.nextInt(p).toLong)
-  val nttGolden: Seq[Long] = nttAlgo.NTT(nttTestCase)
-
-  implicit def converter(value: Long, width: BitCount): Long = value
-
-  "fft structure" should "be correct as NTT software" in {
-    val nttDFG = ButterflyGen[Long, Long](ctbf, gsbf, N, DIF, inverse = false, coeffGen, -1 bits, 1).getGraph
-    val nttImpl = new DFGImplSoft[Long](nttDFG)(0).implForwarding
-    val nttYours = nttImpl(nttTestCase)
-    logger.info(s"DFG    result:\n${nttYours.sorted.mkString(" ")}")
-    logger.info(s"golden result:\n${nttGolden.sorted.mkString(" ")}")
-    assert(nttYours.diff(nttGolden).isEmpty)
-  }
-
-  it should "be correct as INTT software" in {
-    val inttDFG = ButterflyGen[Long, Long](ctbf, gsbf, N, DIT, inverse = true, coeffGen, -1 bits, 1).getGraph
-    val inttImpl = new DFGImplSoft[Long](inttDFG)(0).implForwarding
-    val yours = inttImpl(bitReverse(nttGolden)).map(value => cfRing(value * inverseN))
-    assert(yours.diff(nttTestCase).isEmpty)
-  }
+  //  import crypto._
+  //  import crypto.lattice.HuaweiKyber._ // using parameters of CRYSTALS-KYBER
+  //
+  //  val N = 128
+  //  val nttAlgo: NTT = crypto.NTT(cfRing, N)
+  //
+  //  // using software(functions) as node to build a software DFG
+  //  val gsbf: ButterflyNode[Long] = ButterflyNode(nttAlgo.gsButterfly, "gsButterfly")
+  //  val ctbf: ButterflyNode[Long] = ButterflyNode(nttAlgo.ctButterfly, "ctButterfly")
+  //  val bitReverse: Seq[Long] => Seq[Long] = nttAlgo.bitReverse
+  //
+  //  val omega: Long = cfRing.getNthRoot(N)
+  //  val inverseN: Long = cfRing.pow(N, -1)
+  //  val coeffGen: Int => Long = (index: Int) => cfRing.pow(omega, index)
+  //  val nttTestCase: Seq[Long] = (0 until N).map(_ => DSPRand.nextInt(p).toLong)
+  //  val nttGolden: Seq[Long] = nttAlgo.NTT(nttTestCase)
+  //
+  //  implicit def converter(value: Long, width: BitCount): Long = value
+  //
+  //  "fft structure" should "be correct as NTT software" in {
+  //    val nttDFG = ButterflyGen[Long, Long](ctbf, gsbf, N, DIF, inverse = false, coeffGen, -1 bits, 1).getGraph
+  //    val nttImpl = new DFGImplSoft[Long](nttDFG)(0).implForwarding
+  //    val nttYours = nttImpl(nttTestCase)
+  //    logger.info(s"DFG    result:\n${nttYours.sorted.mkString(" ")}")
+  //    logger.info(s"golden result:\n${nttGolden.sorted.mkString(" ")}")
+  //    assert(nttYours.diff(nttGolden).isEmpty)
+  //  }
+  //
+  //  it should "be correct as INTT software" in {
+  //    val inttDFG = ButterflyGen[Long, Long](ctbf, gsbf, N, DIT, inverse = true, coeffGen, -1 bits, 1).getGraph
+  //    val inttImpl = new DFGImplSoft[Long](inttDFG)(0).implForwarding
+  //    val yours = inttImpl(bitReverse(nttGolden)).map(value => cfRing(value * inverseN))
+  //    assert(yours.diff(nttTestCase).isEmpty)
+  //  }
 }

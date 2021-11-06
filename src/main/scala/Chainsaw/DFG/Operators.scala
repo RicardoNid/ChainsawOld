@@ -5,7 +5,7 @@ import spinal.core._
 object Operators {
 
   implicit class hardware2Node[T <: Data](hardware: DSPHardware[T]) {
-    def asDSPNode(name: String, delay: CyclesCount, exeTime: TimeNumber): GeneralNode[T] = GeneralNode(hardware, name, delay, exeTime)
+    def asDSPNode(name: String, delay: CyclesCount, exeTime: TimeNumber): DeviceNode[T] = DeviceNode(hardware, name, delay, exeTime)
   }
 
   // software operators
@@ -38,21 +38,23 @@ object Operators {
 
   /** An operator which acts as a passthrough, whether it is of hardware or software
    */
-  def passThrough[T](width: BitCount = -1 bits): DSPHardware[T] = DSPHardware(
+  def passThrough[T <: Data](width: BitCount = -1 bits): DSPHardware[T] = DSPHardware(
     impl = (dataIns: Seq[T], _: GlobalCount) => dataIns,
     inDegree = 1,
     outWidths = Seq(width)
   )
 
+  // ??? nonsense
   // adder with carry
   class AdderC[THard <: Data](op: (THard, THard, THard) => Seq[THard], name: String, width: Seq[BitCount], delay: CyclesCount, exeTime: TimeNumber)
-    extends GeneralNode[THard](DSPHardware((dataIns: Seq[THard], _: GlobalCount) => op(dataIns(0), dataIns(1), dataIns(2)), 3, width), name, delay, exeTime) with Foldable[THard] {
+    extends DeviceNode[THard](DSPHardware((dataIns: Seq[THard], _: GlobalCount) => op(dataIns(0), dataIns(1), dataIns(2)), 3, width), name, delay, exeTime) with Foldable[THard] {
     require(width.size == 2)
 
     override def copy(newName: String): AdderC[THard] = new AdderC(op, newName, width, delay, exeTime)
   }
 
   object AdderC {
-    def apply[THard <: Data](op: (THard, THard, THard) => Seq[THard], name: String, width: Seq[BitCount] = Seq(-1 bits, -1 bits), delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): AdderC[THard] = new AdderC(op, name, width, delay, exeTime)
+    def apply[THard <: Data](op: (THard, THard, THard) => Seq[THard], name: String, width: Seq[BitCount] = Seq(-1 bits, -1 bits), delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): AdderC[THard] =
+      new AdderC(op, name, width, delay, exeTime)
   }
 }

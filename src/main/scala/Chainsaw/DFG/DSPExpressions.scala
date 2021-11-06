@@ -21,10 +21,10 @@ import scala.collection.mutable.ArrayBuffer
 /** A linear transformation on latency, x => scale * x + shift
  */
 case class LatencyTrans(scale: Int, shift: Int) {
-  def trans(original: Int) =  scale * original + shift
+  def trans(original: Int) = scale * original + shift
 }
 
-case class DSPAssignment[T](sources: Seq[DSPNode[T]], delays: Seq[Double], var target: DSPNode[T]) {
+case class DSPAssignment[T <: Data](sources: Seq[DSPNode[T]], delays: Seq[Double], var target: DSPNode[T]) {
   def >=>(that: DSPNode[T]) = {
     target = that
     this
@@ -32,14 +32,14 @@ case class DSPAssignment[T](sources: Seq[DSPNode[T]], delays: Seq[Double], var t
 }
 
 object DSPAssignment {
-  def apply[T](sources: DSPNode[T], delay: Double, target: DSPNode[T]): DSPAssignment[T] = new DSPAssignment(Seq(sources), Seq(delay), target)
+  def apply[T <: Data](sources: DSPNode[T], delay: Double, target: DSPNode[T]): DSPAssignment[T] = new DSPAssignment(Seq(sources), Seq(delay), target)
 }
 
 /** A path containing interleaving nodes and edge
  *
  * @example a >> 1 >> b >> 2 >> c, a >> b equals a >> 0 >> b
  */
-case class DSPPath[T](nodes: ArrayBuffer[DSPNode[T]], delays: ArrayBuffer[Double]) {
+case class DSPPath[T <: Data](nodes: ArrayBuffer[DSPNode[T]], delays: ArrayBuffer[Double]) {
 
   def >>(that: DSPNode[T]) = {
     nodes += that
@@ -53,8 +53,8 @@ case class DSPPath[T](nodes: ArrayBuffer[DSPNode[T]], delays: ArrayBuffer[Double
   }
 }
 
-case class DSPConstraint[T](target: DSPNode[T], source: DSPNode[T], value: Int) {
+case class DSPConstraint[T <: Data](target: DSPNode[T], source: DSPNode[T], value: Int) {
   def <=(value: Int) = DSPConstraint(target, source, value = value)
 }
 
-case class DSPNodeWithOrder[T](node: DSPNode[T], order: Int)
+case class DSPNodeWithOrder[T <: Data](node: DSPNode[T], order: Int)

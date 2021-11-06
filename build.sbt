@@ -79,4 +79,5 @@ libraryDependencies += "com.github.dwickern" %% "scala-nameof" % "3.0.0" % "prov
 libraryDependencies += "org.typelevel" %% "spire" % "0.17.0-M1"
 
 
-
+// https://mvnrepository.com/artifact/org.scala-lang.modules/scala-java8-compat
+libraryDependencies += "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"

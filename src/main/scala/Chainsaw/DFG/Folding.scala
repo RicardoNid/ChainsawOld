@@ -1,9 +1,11 @@
 package Chainsaw.DFG
 
 import org.slf4j.LoggerFactory
+import spinal.core.Data
+
 import scala.math.floor
 
-class Folding[T](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with Foldable[T]]]) extends Transform {
+class Folding[T <: Data](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with Foldable[T]]]) extends Transform {
   val logger = LoggerFactory.getLogger("folding procedure")
 
   // preparing context for folding

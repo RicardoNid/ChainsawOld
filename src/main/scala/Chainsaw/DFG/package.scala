@@ -13,6 +13,9 @@ import scala.language.{implicitConversions, postfixOps}
 
 package object DFG {
 
+  //
+  //  implicit def toConstantNode[T <: Data](constant: T) = ConstantNode(s"constant_$constant", constant)
+
   // holder providers, serving impl methods
   implicit val sintProvider: BitCount => SInt = (width: BitCount) => if (width.value >= 1) SInt(width) else SInt()
   implicit val uintProvider: BitCount => UInt = (width: BitCount) => if (width.value >= 1) UInt(width) else UInt()
@@ -26,12 +29,12 @@ package object DFG {
 
 
   // graph utils for constructing DFG
-  implicit class graphUtils[T](dfg: DFGGraph[T]) {
+  implicit class graphUtils[T <: Data](dfg: DFGGraph[T]) {
 
   }
 
   // node utils for constructing DFG
-  implicit class nodeUtils[T](node: DSPNode[T]) {
+  implicit class nodeUtils[T <: Data](node: DSPNode[T]) {
     def >=>(delay: Double) = DSPAssignment(node, delay, node)
 
     def >>(delay: Double) = DSPPath(ArrayBuffer(node), ArrayBuffer(delay))
@@ -45,17 +48,17 @@ package object DFG {
     /** extend a virtual node from a output port of current node
      *
      */
-    def extendVirtual(order: Int): GeneralNode[T] = GeneralNode[T](s"${node}_v", 0 cycles, 0 ns, node.hardware.outWidths(order))
+    def extendVirtual(order: Int): VirtualNode[T] = VirtualNode[T](s"${node}_v", node.hardware.outWidths(order))
 
   }
 
-  implicit class nodesUtils[T](nodes: Seq[DSPNode[T]]) {
+  implicit class nodesUtils[T <: Data](nodes: Seq[DSPNode[T]]) {
     def >=>(delays: Seq[Double]) = DSPAssignment(nodes, delays, nodes.head)
   }
 
   /** edge properties in a specific DFG
    */
-  implicit class EdgeProperties[T](edge: DSPEdge[T])(implicit dfg: DFGGraph[T]) {
+  implicit class EdgeProperties[T <: Data](edge: DSPEdge[T])(implicit dfg: DFGGraph[T]) {
 
     def target: DSPNode[T] = dfg.getEdgeTarget(edge)
 
@@ -69,7 +72,7 @@ package object DFG {
 
     /** delay on the edge
      */
-    def delay = weight.toInt
+    def delay: Int = weight.toInt
 
     /** the actual delay through the edge, useful in DFG transformations
      */
@@ -78,7 +81,7 @@ package object DFG {
     def symbol = s"$source(${edge.outOrder}) -> ${edge.weightWithSource} -> $target(${edge.inOrder})"
   }
 
-  implicit class NodeProperties[T](node: DSPNode[T])(implicit dfg: DFGGraph[T]) {
+  implicit class NodeProperties[T <: Data](node: DSPNode[T])(implicit dfg: DFGGraph[T]) {
 
     // properties
     def outgoingEdges = dfg.outgoingEdgesOf(node).toSeq
@@ -89,7 +92,7 @@ package object DFG {
 
     def targets = outgoingEdges.map(_.target)
 
-    def addConstantDriver[TSoft](constant: TSoft, width: BitCount, order:Int = 0)(implicit converter: (TSoft, BitCount) => T) = {
+    def addConstantDriver[TSoft](constant: TSoft, width: BitCount, order: Int = 0)(implicit converter: (TSoft, BitCount) => T) = {
       val constantNode = ConstantNode(s"constant_$constant", constant, width)
       dfg.addVertex(constantNode)
       dfg.addEdge(constantNode(0), node(order), 0)
@@ -97,7 +100,7 @@ package object DFG {
 
   }
 
-  implicit class BinaryNodeWithConst[T](dfg: DFGGraph[T])(implicit converter: (Int, BitCount) => T) {
+  implicit class BinaryNodeWithConst[T <: Data](dfg: DFGGraph[T])(implicit converter: (Int, BitCount) => T) {
     def genConstBinaryNode(node: BinaryNode[T], constant: Int, width: BitCount = 10 bits, order: Int = 0): Unit = {
       val cnode = ConstantNode[T, Int](s"constnode${constant}", constant, width)
       Seq(cnode, node).foreach(dfg.addVertex)
@@ -112,7 +115,7 @@ package object DFG {
 
   }
 
-  implicit def defaultOrder[T](node: DSPNode[T]): DSPNodeWithOrder[T] = DSPNodeWithOrder(node, 0)
+  implicit def defaultOrder[T <: Data](node: DSPNode[T]): DSPNodeWithOrder[T] = DSPNodeWithOrder(node, 0)
 
   //  sim and synth utils of DFGGraph and Nodes
 

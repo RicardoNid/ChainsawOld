@@ -1,8 +1,16 @@
 package Chainsaw.DFG
 
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.lib.fsm._
+
+import Chainsaw._
+import Chainsaw.matlabIO._
+import Chainsaw.dspTest._
 import org.slf4j.LoggerFactory
 
-class Retiming[T](val dfg: DFGGraph[T], solution: Map[DSPNode[T], Int]) extends Transform {
+class Retiming[T <: Data](val dfg: DFGGraph[T], solution: Map[DSPNode[T], Int]) extends Transform {
 
   val logger = LoggerFactory.getLogger("retiming procedure")
 

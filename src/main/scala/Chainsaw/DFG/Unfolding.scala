@@ -1,10 +1,10 @@
 package Chainsaw.DFG
 
-import Chainsaw._
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.LoggerFactory
+import spinal.core._
 
 // TODO: when inner delay = 3, edge delay = 1, N = 2, we need a pre-retiming
-class Unfolding[T](dfg: DFGGraph[T], unfoldingFactor: Int) extends Transform {
+class Unfolding[T <: Data](dfg: DFGGraph[T], unfoldingFactor: Int) extends Transform {
 
   val logger = LoggerFactory.getLogger("unfolding procedure")
 
@@ -26,6 +26,7 @@ class Unfolding[T](dfg: DFGGraph[T], unfoldingFactor: Int) extends Transform {
         preprocessedDFG.removeEdge(edge) // replace the original MUX
       }
     }
+    logger.debug(s"preprocessedDFG\n$preprocessedDFG")
     preprocessedDFG
   }
 
@@ -64,6 +65,7 @@ class Unfolding[T](dfg: DFGGraph[T], unfoldingFactor: Int) extends Transform {
         }
       }
     }
+    logger.debug(s"unfoldedDFG\n$unfoldedDFG")
     unfoldedDFG
   }
 

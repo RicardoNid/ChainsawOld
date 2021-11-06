@@ -9,7 +9,7 @@ import scala.collection.mutable.ArrayBuffer
 
 /** Create Gd from dfg
  */
-class CriticalPathAlgo[T](dfg: DFGGraph[T]) {
+class CriticalPathAlgo[T <: Data](dfg: DFGGraph[T]) {
 
   // building the CriticalPathGraph for following functions
   val graph = dfg.clone().asInstanceOf[DFGGraph[T]]
@@ -21,7 +21,7 @@ class CriticalPathAlgo[T](dfg: DFGGraph[T]) {
         val delays = edges.map(dfg.getEdgeWeight).map(_.toInt)
         val length = delays.max
         if (length > 0) {
-          val temps: Seq[GeneralNode[T]] = (0 until length).map(i => VoidNode[T](s"${vertex.name}.${outputPort}_delay${i + 1}"))
+          val temps: Seq[VirtualNode[T]] = (0 until length).map(i => VirtualNode[T](s"${vertex.name}.${outputPort}_delay${i + 1}"))
           val starts = vertex +: temps.init
           val ends = temps
           starts.zip(ends).foreach { case (start, end) => graph.addPath(start >> 1 >> end) }

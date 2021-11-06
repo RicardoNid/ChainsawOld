@@ -31,7 +31,7 @@ import EdgeDirection._
 case class RegularEdge(direction: EdgeDirection, outOrder: Int, inOrder: Int, delay: Double)
 //case class RegularEdge(edgeDirection: Value, InOut: Value, outOrder: Int, inOrder: Int, delay: Int, withInput: Boolean, withOutput: Boolean)
 
-class RegularDFG[T](name:String) extends DFGGraph[T](name) {
+class RegularDFG[T <: Data](name:String) extends DFGGraph[T](name) {
 
   // TODO: 2D Irregular shape Systolic Array (not rectangle)
   // 2D Regular Systolic Array

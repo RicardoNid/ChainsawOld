@@ -13,7 +13,7 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable
 import scala.language.postfixOps
 
-class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
+class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
 
   implicit def currentDFG: DFGGraph[T] = this
 
@@ -197,15 +197,15 @@ class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[
 
 
     s"-----graph:$name-----\n" +
-      s"inputs:\n${inputNodes.mkString(" ")}\n" +
-      s"outputs:\n${outputNodes.mkString(" ")}\n" +
-      s"constants:\n${constantNodes.mkString(" ")}\n" +
-      s"inner nodes:\n${innerNodes.mkString(" ")}\n" +
+      s"inputs:\n\t${inputNodes.mkString(" ")}\n" +
+      s"outputs:\n\t${outputNodes.mkString(" ")}\n" +
+      s"constants:\n\t${constantNodes.mkString(" ")}\n" +
+      s"inner nodes:\n\t${innerNodes.mkString(" ")}\n" +
       s"edges:\n" +
-      s"input edges:\n${inputEdges.map(edge => s"${edge.symbol} $edge").mkString("\n")}\n" +
-      s"inner edges:\n${otherEdges.map(edge => s"${edge.symbol} $edge").mkString("\n")}\n" +
-      s"output edges:\n${outputEdges.map(edge => s"${edge.symbol} $edge").mkString("\n")}\n" +
-      s"loops:\n${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}\n" +
+      s"input edges:\n\t${inputEdges.map(edge => s"${edge.symbol} $edge").mkString("\n\t")}\n" +
+      s"inner edges:\n\t${otherEdges.map(edge => s"${edge.symbol} $edge").mkString("\n\t")}\n" +
+      s"output edges:\n\t${outputEdges.map(edge => s"${edge.symbol} $edge").mkString("\n\t")}\n" +
+      s"loops:\n\t${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}\n" +
       s"------end------\n"
   }
 
@@ -218,9 +218,9 @@ class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[
   }
 
   // TODO: consider carefully on these properties
-  def asNode[THard <: Data](name: String, graphLatency: CyclesCount = latency cycles, dataReset: Boolean = false)(implicit holderProvider: BitCount => THard): GeneralNode[THard] = {
+  def asNode[THard <: Data](name: String, graphLatency: CyclesCount = latency cycles, dataReset: Boolean = false)(implicit holderProvider: BitCount => THard): DeviceNode[THard] = {
     require(isForwarding)
-    GeneralNode[THard](
+    DeviceNode[THard](
       DSPHardware(
         impl = (dataIns: Seq[THard], _: GlobalCount) => impl[THard](dataIns, dataReset), // FIXME: this won't provide the counter of outer graph, is that legal?
         inDegree = inputNodes.size,
@@ -234,5 +234,5 @@ class DFGGraph[T](val name: String) extends DirectedWeightedPseudograph[DSPNode[
 }
 
 object DFGGraph {
-  def apply[T](name: String): DFGGraph[T] = new DFGGraph(name)
+  def apply[T <: Data](name: String): DFGGraph[T] = new DFGGraph(name)
 }
