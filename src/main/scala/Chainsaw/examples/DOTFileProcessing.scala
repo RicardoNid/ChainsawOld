@@ -8,30 +8,23 @@ class DOTFileProcessing {
   /** Regularize DOT by adding ranks
    * @param DOTContent DOT content to be regularize
    */
-  def DOTGraphRanking(DOTContent:String): String = {
-
-    // TODO: make it adjustable
-    // just for testing
-    val rank0 =
+  def DOTGraphRanking(DOTContent:String, rankList:List[String]): String = {
+    val ranking = rankList.map(s => "    " + s + ";\n").reduceLeft((s1,s2) => s1+s2)
+    def rankStructure(ranking:String):String = {
       s"""  {
          |    rank=same;
-         |    a0;
-         |    a1;
-         |    a2
-         |  }""".stripMargin
-
-    val rank1 =
-      s"""  {
-         |    rank=same;
-         |    b0;
-         |    b1;
-         |    b2
-         |  }""".stripMargin
-
-    DOTContent.replace("digraph G {", s"digraph G {\n$rank0\n\n$rank1\n")
+         |$ranking  }""".stripMargin
+    }
+    val rank = rankStructure(ranking)
+    DOTContent.replace("digraph G {", s"digraph G {\n$rank\n")
   }
 
-  def addRankDir(DOTContent:String, GlobalRankdir:String = "TB"): String = {
+  /** Add Global Rank Dir
+   * @param DOTContent DOT content to be regularize
+   * @param GlobalRankdir one of "LR", "RL", "TB", "BT"
+   * @return
+   */
+  def addGlobRankDir(DOTContent:String, GlobalRankdir:String = "TB"): String = {
     var GRdir = s"TB"
     GlobalRankdir match {
       case "LR" => GRdir = s"  rankdir = LR;\n"
@@ -71,9 +64,10 @@ object DOTFileProcessing {
     val dotProcess = new DOTFileProcessing
     // TODO: STEP1: Styling
     // STEP2 : Group Ranking
-    val strRanked = dotProcess.DOTGraphRanking(str)
+    val a = dotProcess.DOTGraphRanking(str, List("a0", "a1", "a2"))
+    val b = dotProcess.DOTGraphRanking(a, List("b0", "b1", "b2"))
     // STEP3 : Setting GlobalRankDir
-    val strRankDir = dotProcess.addRankDir(strRanked, "LR")    // add rankdir lastly
+    val strRankDir = dotProcess.addGlobRankDir(b, "LR")    // add rankdir lastly
     println(strRankDir)
   }
 }
