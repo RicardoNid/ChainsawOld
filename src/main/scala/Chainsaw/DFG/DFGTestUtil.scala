@@ -19,14 +19,14 @@ object DFGTestUtil {
    * @param speedUp     the throughput of transformed DFG, 3 for *3, -3 for 1/3
    * @param delay       extra delay on latency, latency' = latency / speedUp + delayed
    */
-  def verifyFunctionalConsistency(original: DFGGraph[SInt], transformed: DFGGraph[SInt],
-                                  elementType: HardType[SInt], speedUp: Int, latencyTransformations: Seq[LatencyTrans], testLength: Int = 50,
-                                  name: String = null) = {
+  def verifyFunctionalConsistency[T <: Data](original: DFGGraph[T], transformed: DFGGraph[T],
+                                             elementType: HardType[T], speedUp: Int, latencyTransformations: Seq[LatencyTrans], testLength: Int = 50,
+                                             name: String = null)(implicit holderProvider: BitCount => T): Unit = {
 
     val logger = LoggerFactory.getLogger("FunctionalConsistencyLogger")
 
     // requirement on the input/output size
-    val scaleFactor = if(speedUp > 1) speedUp else 1
+    val scaleFactor = if (speedUp > 1) speedUp else 1
     require(transformed.inputNodes.size == original.inputNodes.size * scaleFactor &&
       transformed.outputNodes.size == original.outputNodes.size * scaleFactor,
       "speed up factor doesn't match the port number")
@@ -57,7 +57,7 @@ object DFGTestUtil {
      * @param outputRecord
      * @param testCases
      */
-    def testDFG(dfg: DFGGraph[SInt], latencies: Int, speedUp: Int,
+    def testDFG(dfg: DFGGraph[T], latencies: Int, speedUp: Int,
                 inputRecord: ArrayBuffer[BigInt], outputRecord: ArrayBuffer[BigInt],
                 testCases: ArrayBuffer[BigInt] = null) = {
       SimConfig.withWave
@@ -74,7 +74,12 @@ object DFGTestUtil {
         val inputSchedule = dfg.inputNodes.head.outgoingEdges.head.schedules.head
 
         dataIn.halt() // TODO: halt should also set zero on the payload
-        dataIn.payload.foreach(_ #= 0)
+        // TEMP: simplify the initialization
+        dataIn.payload.foreach(signal => signal match {
+          case uint: UInt => uint #= 0
+          case sint: SInt => sint #= 0
+        })
+        //        dataIn.payload.randomize()
         // FIXME: solve sampling problem by
         dataIn.setMonitor(inputRecord, "input")
         clockDomain.forkStimulus(2)
@@ -126,17 +131,19 @@ object DFGTestUtil {
     assert(originalResults.zip(transFormedResults).forall { case (ori, trans) => ori == trans }) // FIXME: verify the unaligned part
   }
 
-  def verifyFolding(original: DFGGraph[SInt], foldingSets: Seq[Seq[DSPNode[SInt] with Foldable[SInt]]], name: String = null) = {
+  def verifyFolding[T <: Data](original: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T] with Foldable[T]]], elementType: HardType[T], name: String = null)
+                              (implicit holderProvider: BitCount => T) = {
     val algo = new Folding(original, foldingSets)
     val foldedDFG = algo.folded
     val N = foldingSets.head.size
-    verifyFunctionalConsistency(original, foldedDFG, HardType(SInt(10 bits)), -N, algo.latencyTransformations, name = name) // TODO: customized width
+    verifyFunctionalConsistency(original, foldedDFG, elementType, -N, algo.latencyTransformations, name = name) // TODO: customized width
   }
 
-  def verifyUnfolding(original: DFGGraph[SInt], unfoldingFactor: Int, name: String = null) = {
+  def verifyUnfolding[T <: Data](original: DFGGraph[T], unfoldingFactor: Int, elementType: HardType[T], name: String = null)
+                                (implicit holderProvider: BitCount => T) = {
     val algo = new Unfolding(original, unfoldingFactor)
     val unfoldedDFG = algo.unfolded
-    verifyFunctionalConsistency(original, unfoldedDFG, HardType(SInt(10 bits)), unfoldingFactor, algo.latencyTransformations, name = name)
+    verifyFunctionalConsistency(original, unfoldedDFG, elementType, unfoldingFactor, algo.latencyTransformations, name = name)
   }
 
 }

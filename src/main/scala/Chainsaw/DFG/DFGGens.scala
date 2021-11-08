@@ -70,7 +70,6 @@ class FIRGen[THard <: Data, TSoft](mac: TrinaryNode[THard],
     else {
       val foldingFactor = -parallelism
       val multAddGroups = macs.grouped(-parallelism).toSeq.map(_.padTo(foldingFactor, null))
-      DFGTestUtil.verifyFolding(dfg.asInstanceOf[DFGGraph[SInt]], multAddGroups.asInstanceOf[Seq[Seq[TrinaryNode[SInt]]]])
       new Folding(dfg, multAddGroups).folded
     }
     logger.debug(s"fir dfg:\n$ret")
@@ -206,7 +205,9 @@ class ButterflyGen[THard <: Data, TSoft](ctButterfly: ButterflyNode[THard], gsBu
     else {
       val foldingFactor = -parallelism
       val butterflyGroups: Seq[Seq[ButterflyNode[THard]]] = butterflies.map(col => col.grouped(foldingFactor).toSeq).flatten
-      DFGTestUtil.verifyFolding(dfg.asInstanceOf[DFGGraph[SInt]], butterflyGroups.asInstanceOf[Seq[Seq[ButterflyNode[SInt]]]])
+
+      DFGTestUtil.verifyFolding(dfg.asInstanceOf[DFGGraph[UInt]], butterflyGroups.asInstanceOf[Seq[Seq[DSPNode[UInt] with Foldable[UInt]]]], HardType(UInt(12 bits)))// TODO: this is temp
+
       new Folding(dfg, butterflyGroups).folded
     }
 
