@@ -128,6 +128,11 @@ class HuaweiKyberTest extends AnyFlatSpec {
 
   val testCount = 10
 
+  // hardware impl of fastNTT by a butterfly network
+  val nttDFG: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, N, DIF, inverse = false, coeffGen, 12 bits, 1).getGraph
+  // we use DIT here to process a bit-reversed sequence as we won't reorder the result of NTT
+  val inttDFG: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, N, DIT, inverse = true, coeffGen, 12 bits, 1).getGraph
+
   val nttTestCase: Seq[Seq[Long]] = Seq.tabulate(testCount, N)((_, _) => DSPRand.nextInt(p).toLong)
   val knttTestCase: Seq[Seq[BigInt]] = nttTestCase.flatten.map(value => BigInt(cfRing(value * k2Inverse))).grouped(N).toSeq
 

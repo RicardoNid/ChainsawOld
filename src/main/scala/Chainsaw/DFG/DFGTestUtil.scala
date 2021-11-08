@@ -62,14 +62,12 @@ object DFGTestUtil {
                 inputRecord: ArrayBuffer[BigInt], outputRecord: ArrayBuffer[BigInt],
                 testCases: ArrayBuffer[BigInt] = null) = {
 
-      //      testDSPNode(dfg.asNode("temp", latencies cycles,dataReset = true))
-
       SimConfig.withWave
         .workspaceName(name)
         .compile(new Component {
           val dataIn = slave Flow Vec(elementType, dfg.inputNodes.size)
           val dataOut = master Flow Vec(elementType, dfg.outputNodes.size)
-          dataOut.payload := Vec(dfg.impl(dataIn.payload, dataReset = true)).resized
+          dataOut.payload := Vec(dfg.impl(dataIn.payload, dataReset = false)).resized
           dataOut.valid := Delay(dataIn.valid, latency, init = False)
         }).doSim { dut =>
         import dut.{clockDomain, dataIn, dataOut}

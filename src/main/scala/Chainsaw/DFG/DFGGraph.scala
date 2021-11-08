@@ -153,7 +153,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def isForwarding: Boolean = !isRecursive
 
-  def delayAmount: Double = vertexSeq.map(node => (node.outgoingEdges.map(_.weight) :+ 0.0).max).sum
+  def delayAmount: Int = vertexSeq.map(node => (node.outgoingEdges.map(_.weight) :+ 0.0).max).sum.toInt
 
   /** The least common multiple of all muxes in this DFG
    */

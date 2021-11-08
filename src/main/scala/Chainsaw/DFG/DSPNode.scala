@@ -4,10 +4,18 @@ import spinal.core._
 
 import scala.language.postfixOps
 
-class DSPHardware[T](val impl: (Seq[T], GlobalCount) => Seq[T], val inDegree: Int, val outWidths: Seq[BitCount] = Seq(-1 bit))
+class DSPHardware[T <: Data](val impl: (Seq[T], GlobalCount) => Seq[T], val inDegree: Int, val outWidths: Seq[BitCount] = Seq(-1 bit)) {
+
+  def asComponent(implicit holderProvider: BitCount => T) = () => new Component with NodeComponent[T] {
+    override val dataIn: Vec[T] = in Vec(holderProvider(-1 bits), inDegree)
+    override val dataOut: Vec[T] = out Vec(holderProvider(-1 bits), outWidths.size)
+    dataOut := Vec(impl(dataIn, GlobalCount(U(0))))
+  }
+
+}
 
 object DSPHardware {
-  def apply[T](impl: (Seq[T], GlobalCount) => Seq[T], inDegree: Int, outWidths: Seq[BitCount]): DSPHardware[T] = new DSPHardware(impl, inDegree, outWidths)
+  def apply[T <: Data](impl: (Seq[T], GlobalCount) => Seq[T], inDegree: Int, outWidths: Seq[BitCount]): DSPHardware[T] = new DSPHardware(impl, inDegree, outWidths)
 }
 
 class DSPNode[T <: Data](implp: DSPHardware[T], namep: String, delayp: CyclesCount, exeTimep: TimeNumber) {

@@ -26,3 +26,8 @@ trait DFGGen[T <: Data] {
 
   def getGraphAsNode(dataReset: Boolean = false)(implicit holderProvider: BitCount => T): DSPNode[T]
 }
+
+trait NodeComponent[T <: Data] {
+  val dataIn: Vec[T]
+  val dataOut: Vec[T]
+}

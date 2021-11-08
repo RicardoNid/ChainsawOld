@@ -12,14 +12,15 @@ import scala.collection.mutable.ArrayBuffer
  */
 class CriticalPathAlgo[T <: Data](dfg: DFGGraph[T]) {
 
-  val graph: DFGGraph[T] = dfg.clone().asInstanceOf[DFGGraph[T]]
+  implicit val graph: DFGGraph[T] = dfg.clone().asInstanceOf[DFGGraph[T]]
   // step1: expose delays
   graph.foreachVertex { vertex =>
-    val edgeGroups = dfg.outgoingEdgesOf(vertex).toSeq.groupBy(_.outOrder).toSeq.sortBy(_._1)
+    val edgeGroups: Seq[(Int, Seq[DSPEdge[T]])] = vertex.outgoingEdges // for all the outgoing edges from a node
+      .groupBy(_.outOrder).toSeq // group by output port, an element is portIndex -> edges from this port
     edgeGroups.foreach { case (outputPort, edges) =>
       if (edges.nonEmpty) {
-        val delays = edges.map(dfg.getEdgeWeight).map(_.toInt)
-        val length = delays.max
+        val delays = edges.map(_.delay)
+        val length = delays.max // registers needed
         if (length > 0) {
           val temps: Seq[VirtualNode[T]] = (0 until length).map(i => VirtualNode[T](s"${vertex.name}.${outputPort}_delay${i + 1}"))
           val starts = vertex +: temps.init

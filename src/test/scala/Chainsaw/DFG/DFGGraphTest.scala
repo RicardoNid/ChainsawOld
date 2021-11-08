@@ -31,13 +31,13 @@ class DFGGraphTest extends AnyFlatSpec {
     println(dfg.edgeSeq.mkString(" "))
   }
 
-  it should "work on MIMO DFG" in {
-    GenRTL(new Component {
-      val dataIns: Vec[ComplexNumber] = in(Vec(ComplexNumber(1, -6), 4))
-      val dataOuts: Vec[ComplexNumber] = out(Vec(ComplexNumber(1, -6), 4))
-      dataOuts := Vec(MIMO.fft4.impl(dataIns))
-    })
-  }
+  //  it should "work on MIMO DFG" in {
+  //    GenRTL(new Component {
+  //      val dataIns: Vec[ComplexNumber] = in(Vec(ComplexNumber(1, -6), 4))
+  //      val dataOuts: Vec[ComplexNumber] = out(Vec(ComplexNumber(1, -6), 4))
+  //      dataOuts := Vec(MIMO.fft4.impl(dataIns))
+  //    })
+  //  }
 
   it should "work on nested DFG" in {
     println(new DFGImpl(implementingDFGs.nestedDFG).implAsComponent())

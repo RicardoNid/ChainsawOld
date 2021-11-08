@@ -19,7 +19,7 @@ object Operators {
   // sint operators
   val sintAdd: (SInt, SInt) => SInt = (a: SInt, b: SInt) => a + b
   val sintMult: (SInt, SInt) => SInt = (a: SInt, b: SInt) => a * b
-  val sintMultAdd: (SInt, SInt, SInt) => SInt = (a: SInt, b: SInt, c: SInt) => ((a * b) + c).resized
+  val sintMultAdd: (SInt, SInt, SInt) => SInt = (a: SInt, b: SInt, c: SInt) => ((a * b) + c)
 
   // bit/digit level operators
   val sintAddC: (SInt, SInt, SInt) => Seq[SInt] = (a: SInt, b: SInt, c: SInt) => {

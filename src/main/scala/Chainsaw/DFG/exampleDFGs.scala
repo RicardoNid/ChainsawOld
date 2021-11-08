@@ -238,7 +238,7 @@ object paper1992OnFolding {
   def fig8_a = {
     val dfg_8_a = DFGGraph[SInt]("paper1992fig8_a")
     cmults_8_a.zipWithIndex.foreach { case (cm, id) => dfg_8_a.genConstBinaryNode(cm, id + 1) }
-    dfg_8_a.genConstTrinaryNode(multadd, 5)
+    //    dfg_8_a.genConstTrinaryNode(multadd, 5) // LQX: this is awful
     dfg_8_a.addPath(cmults_8_a(0) >> 1 >> cmults_8_a(1) >> 1 >> cmults_8_a(2) >> 2 >> multadd) // A1 >> A2 >> A3 >> B
     dfg_8_a.addPath(cmults_8_a(0) >> cmults_8_a(3) >> multadd) // A1 >> A4 >> B
     dfg_8_a.addPath(cmults_8_a(0) >> multadd) // A1 >> B

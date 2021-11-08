@@ -2,7 +2,7 @@ package Chainsaw.crypto.lattice
 
 import Chainsaw.DFG.FFTArch._
 import Chainsaw.DFG._
-import Chainsaw.IntegerRange
+import Chainsaw.{GenRTL, IntegerRange, printlnGreen}
 import Chainsaw.crypto._
 import cc.redberry.rings.scaladsl._
 import spinal.core._
@@ -58,15 +58,15 @@ object HuaweiKyber {
    */
   def k2RED(dataIn: UInt) = {
     // step 1
-    require(dataIn.getBitsWidth == 24)
+    //    require(dataIn.getBitsWidth == 24)
     val cl = dataIn(7 downto 0)
     val ch = dataIn(23 downto 8)
-    val cPrime: SInt = RegNext((13 * cl).intoSInt -^ ch.intoSInt, init = S(0)) // 16 + 1 bits TODO: implement this by shift-add?
+    val cPrime: SInt = RegNext((13 * cl).intoSInt -^ ch.intoSInt) // 16 + 1 bits TODO: implement this by shift-add?
     cPrime.setName("cPrime", weak = true)
     // step 2
     val cPrimel = cPrime(7 downto 0).asUInt
     val cPrimeh = cPrime(16 downto 8)
-    val CPrime2: SInt = RegNext((13 * cPrimel).intoSInt - cPrimeh, init = S(0)) // 12 + 1 bits
+    val CPrime2: SInt = RegNext((13 * cPrimel).intoSInt - cPrimeh) // 12 + 1 bits
 
     val ret = UInt(12 bits)
     // do correction
@@ -80,24 +80,24 @@ object HuaweiKyber {
       .zip(Seq("cl", "ch", "cPrime", "cPrimel", "cPrimel", "CPrime2"))
       .foreach { case (signal, str) => signal.setName(str, weak = true) }
 
-    RegNext(ret, init = U(0))
+    RegNext(ret)
   }
 
   /** multiplication + K2RED
    */
   def kMultMod(a: UInt, b: UInt): UInt = {
-    val prod = a * b
+    val prod = (a * b).resize(24 bits)
     prod.addAttribute("use_dsp", "no")
-    k2RED(RegNext(prod, init = U(0)))
+    k2RED(RegNext(prod))
   }
 
   /** modular addition(with correction)
    */
   def kAddMod(a: UInt, b: UInt): UInt = {
     val (aS, bS) = (a.intoSInt, b.intoSInt)
-    val sum = aS +^ bS
+    val sum = aS.resize(12 bits) +^ bS.resize(12 bits)
     val corrected = sum - p
-    RegNext(Mux(corrected >= 0, corrected, sum).asUInt.resize(12 bits), init = U(0))
+    RegNext(Mux(corrected >= 0, corrected, sum).asUInt.resize(12 bits))
   }
 
   /** modular subtraction(with correction)
@@ -106,7 +106,7 @@ object HuaweiKyber {
     val (aS, bS) = (a.intoSInt, b.intoSInt)
     val diff = aS - bS
     val corrected = diff + p
-    RegNext(Mux(diff >= 0, diff, corrected).asUInt.resize(12 bits), init = U(0))
+    RegNext(Mux(diff >= 0, diff, corrected).asUInt.resize(12 bits))
   }
 
   // TODO: find the minimum correction in ct/gs butterfly
@@ -115,7 +115,7 @@ object HuaweiKyber {
    */
   def CTButterfly(u: UInt, v: UInt, omega: UInt): (UInt, UInt) = { // implement
     val vw = kMultMod(v, omega)
-    val uDelayed = Delay(u, 4)
+    val uDelayed = Delay(u.resize(24 bits), 4)
     vw.setName("vw", weak = true)
     (kAddMod(uDelayed, vw), kSubMod(uDelayed, vw))
   }
@@ -123,15 +123,15 @@ object HuaweiKyber {
   def CTBF(u: UInt, v: UInt, omega: Int): (UInt, UInt) = CTButterfly(u, v, U(omega, 12 bits))
 
   def GSButterfly(u: UInt, v: UInt, omega: UInt): (UInt, UInt) = {
-    (Delay(kAddMod(u, v), 4), kMultMod(kSubMod(u, v), Delay(omega, 1)))
+    (Delay(kAddMod(u, v).resize(12 bits), 4), kMultMod(kSubMod(u, v).resize(12 bits), Delay(omega.resize(12 bits), 1)))
   }
 
   def GSBF(u: UInt, v: UInt, omega: Int): (UInt, UInt) = GSButterfly(u, v, U(omega, 12 bits))
 
   // encapsulate the hardware impl as DFG nodes
   val kMultModNode: BinaryNode[UInt] = BinaryNode(kMultMod, "kMultMod", delay = 4 cycles)
-  val ctButterflyNode: ButterflyNode[UInt] = ButterflyNode(CTButterfly, "ctButterfly", delay = 5 cycles)
-  val gsButterflyNode: ButterflyNode[UInt] = ButterflyNode(GSButterfly, "gsButterfly", delay = 5 cycles)
+  val ctButterflyNode: ButterflyNode[UInt] = ButterflyNode(CTButterfly, "ctButterfly", delay = 5 cycles, width = 12 bits)
+  val gsButterflyNode: ButterflyNode[UInt] = ButterflyNode(GSButterfly, "gsButterfly", delay = 5 cycles, width = 12 bits)
 
   // parameters for constructing the NTT DFG
   val N = 128
@@ -139,18 +139,22 @@ object HuaweiKyber {
   val k2Inverse: Long = cfRing.inverseOf(k2)
   val NInverse: Long = cfRing.inverseOf(N)
   val coeffGen: Int => Long = (index: Int) => cfRing(cfRing.pow(omega, index) * k2Inverse)
-
-  implicit def long2UInt: (Long, BitCount) => UInt = (value: Long, _: BitCount) => U(value, 12 bits) // TODO:
-
-  // hardware impl of fastNTT by a butterfly network
-  val nttDFG: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, N, DIF, inverse = false, coeffGen, 12 bits, 1).getGraph
-  // we use DIT here to process a bit-reversed sequence as we won't reorder the result of NTT
-  val inttDFG: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, N, DIT, inverse = true, coeffGen, 12 bits, 1).getGraph
 }
 
 object runKyber {
   def main(args: Array[String]): Unit = {
-    import HuaweiKyber.{ctButterflyNode, gsButterflyNode, coeffGen, long2UInt}
+    import HuaweiKyber.{ctButterflyNode, gsButterflyNode, coeffGen}
+    implicit def long2UInt: (Long, BitCount) => UInt = (value: Long, _: BitCount) => U(value, 12 bits) // TODO:
+
     val nttDFG_folded_8: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, -8).getGraph
+    genDSPNode(nttDFG_folded_8.asNode("ntt128_folded_8", 0 cycles), Seq.fill(128)(12 bits))
+
+    //    GenRTL(new Component with NodeComponent[UInt] {
+    //      override val dataIn: Vec[UInt] = in Vec(UInt(12 bits), 3)
+    //      override val dataOut: Vec[UInt] = out Vec(UInt(12 bits), 2)
+    //      val core = ctButterflyNode.hardware.asComponent(uintProvider)()
+    //      core.dataIn := dataIn
+    //      dataOut := core.dataOut
+    //    })
   }
 }
