@@ -7,12 +7,12 @@ import spinal.core._
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
 
-/** Create Gd from dfg
+/**
+ * @see ''VLSI Digital Signal Processing Systems: Design and Implementation'' Chap2.4.2, the graph G_d
  */
 class CriticalPathAlgo[T <: Data](dfg: DFGGraph[T]) {
 
-  // building the CriticalPathGraph for following functions
-  val graph = dfg.clone().asInstanceOf[DFGGraph[T]]
+  val graph: DFGGraph[T] = dfg.clone().asInstanceOf[DFGGraph[T]]
   // step1: expose delays
   graph.foreachVertex { vertex =>
     val edgeGroups = dfg.outgoingEdgesOf(vertex).toSeq.groupBy(_.outOrder).toSeq.sortBy(_._1)

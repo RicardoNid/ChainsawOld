@@ -84,15 +84,19 @@ package object DFG {
   implicit class NodeProperties[T <: Data](node: DSPNode[T])(implicit dfg: DFGGraph[T]) {
 
     // properties
-    def outgoingEdges = dfg.outgoingEdgesOf(node).toSeq
+    def outgoingEdges: Seq[DSPEdge[T]] = dfg.outgoingEdgesOf(node).toSeq
 
-    def incomingEdges = dfg.incomingEdgesOf(node).toSeq
+    def incomingEdges: Seq[DSPEdge[T]] = dfg.incomingEdgesOf(node).toSeq
 
-    def sources = incomingEdges.map(_.source)
+    def sources: Seq[DSPNode[T]] = incomingEdges.map(_.source)
 
-    def targets = outgoingEdges.map(_.target)
+    def targets: Seq[DSPNode[T]] = outgoingEdges.map(_.target)
 
-    def addConstantDriver[TSoft](constant: TSoft, width: BitCount, order: Int = 0)(implicit converter: (TSoft, BitCount) => T) = {
+    // actions
+    def addVertex() = dfg.addVertex(node)
+
+    def addConstantDriver[TSoft](constant: TSoft, width: BitCount, order: Int = 0)
+                                (implicit converter: (TSoft, BitCount) => T): Unit = {
       val constantNode = ConstantNode(s"constant_$constant", constant, width)
       dfg.addVertex(constantNode)
       dfg.addEdge(constantNode(0), node(order), 0)

@@ -18,7 +18,6 @@ object DFGTestUtil {
    * @param transformed DFG after transformation
    * @param speedUp     the throughput of transformed DFG, 3 for *3, -3 for 1/3
    * @param delay       extra delay on latency, latency' = latency / speedUp + delayed
-   * @tparam SInt
    */
   def verifyFunctionalConsistency(original: DFGGraph[SInt], transformed: DFGGraph[SInt],
                                   elementType: HardType[SInt], speedUp: Int, latencyTransformations: Seq[LatencyTrans], testLength: Int = 50,

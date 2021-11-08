@@ -102,8 +102,16 @@ object ConstantNode {
 
   def apply[THard <: Data, TSoft](name: String, hardType: HardType[THard], constant: TSoft)
                                  (implicit converter: (TSoft, BitCount) => THard): ConstantNode[THard] = {
-    apply(name, constant, width = hardType.getBitsWidth bits)
+    apply(name, constant, width = hardType.getBitsWidth bits) // FIXME: getBitsWidth is not available outside a Component
   }
+
+  // TODO: this should be the constructor of ConstantNode
+  def apply[T <: Data](namep: String, constant: T): ConstantNode[T] = new ConstantNode(namep, implp =
+    DSPHardware(
+      impl = (_: Seq[T], _: GlobalCount) => Seq(constant),
+      inDegree = 0,
+      outWidths = Seq(-1 bits)
+    ))
 }
 
 // common nodes which we can build from the op directly

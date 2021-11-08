@@ -23,6 +23,7 @@ object HuaweiKyber {
   // we have the corresponding software algos distributed in Chainsaw.crypto
 
   /** derive the range of k^2^ reduction from an input range
+   *
    * @param c input range
    * @return range of direct result of k^2^ reduction
    */
@@ -76,7 +77,7 @@ object HuaweiKyber {
     // for wavefile debugging
     Seq(cl, ch, cPrime, cPrimel, cPrimel, CPrime2)
       .zip(Seq("cl", "ch", "cPrime", "cPrimel", "cPrimel", "CPrime2"))
-      .foreach{ case (signal, str) => signal.setName(str, weak = true)}
+      .foreach { case (signal, str) => signal.setName(str, weak = true) }
 
     RegNext(ret)
   }
@@ -108,6 +109,7 @@ object HuaweiKyber {
   }
 
   // TODO: find the minimum correction in ct/gs butterfly
+
   /** kred(k^-2^v * k^-2^w) -> k^-2vw^
    */
   def CTButterfly(u: UInt, v: UInt, omega: UInt): (UInt, UInt) = { // implement
@@ -117,13 +119,13 @@ object HuaweiKyber {
     (kAddMod(uDelayed, vw), kSubMod(uDelayed, vw))
   }
 
-  def CTBF(u: UInt, v: UInt, omega: Int): (UInt, UInt) = CTButterfly(u,v,U(omega, 12 bits))
+  def CTBF(u: UInt, v: UInt, omega: Int): (UInt, UInt) = CTButterfly(u, v, U(omega, 12 bits))
 
   def GSButterfly(u: UInt, v: UInt, omega: UInt): (UInt, UInt) = {
     (Delay(kAddMod(u, v), 4), kMultMod(kSubMod(u, v), Delay(omega, 1)))
   }
 
-  def GSBF(u: UInt, v: UInt, omega: Int): (UInt, UInt) = GSButterfly(u,v,U(omega, 12 bits))
+  def GSBF(u: UInt, v: UInt, omega: Int): (UInt, UInt) = GSButterfly(u, v, U(omega, 12 bits))
 
   // encapsulate the hardware impl as DFG nodes
   val kMultModNode: BinaryNode[UInt] = BinaryNode(kMultMod, "kMultMod", delay = 4 cycles)
@@ -138,8 +140,16 @@ object HuaweiKyber {
   val coeffGen: Int => Long = (index: Int) => cfRing(cfRing.pow(omega, index) * k2Inverse)
 
   implicit def long2UInt: (Long, BitCount) => UInt = (value: Long, _: BitCount) => U(value, 12 bits) // TODO:
+
   // hardware impl of fastNTT by a butterfly network
   val nttDFG: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, N, DIF, inverse = false, coeffGen, 12 bits, 1).getGraph
   // we use DIT here to process a bit-reversed sequence as we won't reorder the result of NTT
   val inttDFG: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, N, DIT, inverse = true, coeffGen, 12 bits, 1).getGraph
+}
+
+object runKyber {
+  def main(args: Array[String]): Unit = {
+    import HuaweiKyber.{ctButterflyNode, gsButterflyNode, coeffGen, long2UInt}
+    val nttDFG_folded_8: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 16, DIF, inverse = false, coeffGen, 12 bits, -8).getGraph
+  }
 }

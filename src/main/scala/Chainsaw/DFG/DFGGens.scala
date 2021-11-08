@@ -116,63 +116,7 @@ object FIRGen {
   }
 }
 
-class TIFIRGen[THard <: Data, TSoft](mac: TrinaryNode[THard],
-                                     firArch: FirArch,
-                                     coeffs: Seq[TSoft], coeffWidth: BitCount, parallelism: Int)
-                                    (implicit converter: (TSoft, BitCount) => THard) extends DFGGen[THard] {
-
-  def getGraph: DFGGraph[THard] = {
-    val dfg = DFGGraph[THard](s"${firArch}_fir_using_${mac.name}")
-    val size = coeffs.size
-
-    // adding nodes to the graph
-    val macs = (0 until size).map(i => mac.copy(s"${mac.name}_$i"))
-    val consts = coeffs.zipWithIndex.map { case (soft, i) => ConstantNode[THard, TSoft](s"const_$i", soft, coeffWidth) }
-    val zero = ConstantNode[THard, TSoft](s"zero", 0.asInstanceOf[TSoft], coeffWidth) // TODO: not generic
-    (macs ++ consts :+ zero).foreach(dfg.addVertices(_))
-    val input = dfg.addInput("input")
-
-    /** build the fir graph
-     */
-    def buildFir(a: Int, b: Int): Unit = {
-      val coeffs = if (firArch == TRANSPOSE) consts else consts.reverse
-      macs.zip(coeffs).foreach { case (multAdd, coeff) => dfg.addEdge(coeff(0), multAdd(0), 0) } // mac port 0, allocate coefficients to mac units
-      macs.zipWithIndex.foreach { case (mult, i) => dfg.addEdge(input(0), mult(1), a * i) } // mac port 1, connecting the input delay line to mac units
-      // mac port 2, connecting macs, the first mac unit takes a zero
-      macs.init.zip(macs.tail).foreach { case (prev, next) => dfg.addEdge(prev(0), next(2), b) }
-      dfg.addEdge(zero(0), macs.head(2), b)
-    }
-
-    firArch match {
-      case DIRECT => buildFir(1, 0)
-      case TRANSPOSE => buildFir(0, 1)
-      case SYSTOLIC => buildFir(2, 1)
-    }
-    dfg.setOutput(macs.last)
-
-    // folding/unfolding according to the pattern
-    val ret = if (parallelism == 1) dfg
-    else if (parallelism > 1) new Unfolding(dfg, parallelism).unfolded
-    else {
-      val foldingFactor = -parallelism
-      val multAddGroups = macs.grouped(-parallelism).toSeq.map(_.padTo(foldingFactor, null))
-      DFGTestUtil.verifyFolding(dfg.asInstanceOf[DFGGraph[SInt]], multAddGroups.asInstanceOf[Seq[Seq[TrinaryNode[SInt]]]])
-      new Folding(dfg, multAddGroups).folded
-    }
-    logger.debug(s"fir dfg:\n$ret")
-    ret
-  }
-
-  def latency: Int = (if (firArch == SYSTOLIC) coeffs.size - 1 else 0) + mac.delay
-
-  def getGraphAsNode(dataReset:Boolean = false)(implicit holderProvider: BitCount => THard): DSPNode[THard] = {
-    val graph = getGraph
-    graph.asNode[THard](graph.name, graphLatency = latency cycles, dataReset)
-  }
-}
-
 // TODO: cannot infer TSoft from the coeffGen, why?
-
 /** Generic method to generate an abstract radix-2 FFT DFG, this method use a "butterfly core" as its building block
  *
  * @param ctButterfly : the implementation of the butterfly core
@@ -187,16 +131,18 @@ class ButterflyGen[THard <: Data, TSoft](ctButterfly: ButterflyNode[THard], gsBu
                                  size: Int, fftArch: FFTArch, inverse: Boolean = false,
                                  coeffGen: Int => TSoft, coeffWidth: BitCount, parallelism: Int = 1)
                                 (implicit converter: (TSoft, BitCount) => THard) extends DFGGen[THard] {
+
   def getGraph: DFGGraph[THard] = {
+    logger.info(s"start generating butterfly graph of size $size")
     require(isPow2(size))
     require(gsButterfly.delay == ctButterfly.delay)
-    val dfg = DFGGraph[THard]("fft graph")
+    val dfg = DFGGraph[THard]("butterfly graph")
 
     val inputs = (0 until size).map(i => dfg.addInput(s"input$i"))
 
+    logger.debug(s"coeffs in dfg ${(0 until size / 2).map(i => coeffGen(if (inverse) -i else i)).mkString(" ")}")
     val consts = (0 until size / 2).map { i =>
       val index = if (inverse) -i else i
-      logger.debug(s"coeff dfg ${coeffGen(index)}")
       // we us the absolute value of index as "^" or "-" are not allowed in verilator
       ConstantNode[THard, TSoft](s"omega_${abs(index)}", coeffGen(index), coeffWidth) // coefficients
     }
@@ -254,6 +200,16 @@ class ButterflyGen[THard <: Data, TSoft](ctButterfly: ButterflyNode[THard], gsBu
     }
 
     ret.foreach(port => dfg.setOutput(port.node, port.order))
+
+    val adjustedRet = if (parallelism == 1) dfg
+    else if (parallelism > 1) new Unfolding(dfg, parallelism).unfolded
+    else {
+      val foldingFactor = -parallelism
+      val butterflyGroups: Seq[Seq[ButterflyNode[THard]]] = butterflies.map(col => col.grouped(foldingFactor).toSeq).flatten
+      DFGTestUtil.verifyFolding(dfg.asInstanceOf[DFGGraph[SInt]], butterflyGroups.asInstanceOf[Seq[Seq[ButterflyNode[SInt]]]])
+      new Folding(dfg, butterflyGroups).folded
+    }
+
     logger.debug(s"butterfly dfg:\n$dfg")
     dfg
   }

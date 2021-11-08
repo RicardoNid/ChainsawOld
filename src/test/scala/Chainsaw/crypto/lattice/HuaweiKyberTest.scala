@@ -156,4 +156,5 @@ class HuaweiKyberTest extends AnyFlatSpec {
       knttTestCase,
       kinttGolden.flatten)
   }
+
 }
