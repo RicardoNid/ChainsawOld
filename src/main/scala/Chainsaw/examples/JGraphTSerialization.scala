@@ -1,27 +1,17 @@
 package Chainsaw.examples
 
-import org.jgrapht._
 import org.jgrapht.graph._
-import org.jgrapht.nio._
 import org.jgrapht.nio.dot._
-import org.jgrapht.traverse._
-import java.io._
+
 import java.net._
-import java.util._
-
-import org.jgrapht._
-import org.jgrapht.graph._
-import org.jgrapht.graph.builder._
-import org.jgrapht.nio._
-import org.jgrapht.nio.dot._
-import org.jgrapht.traverse._
-import org.jgrapht.generate._
-
-import java.util.function._
+import scala.collection.JavaConversions._
 import scala.compat.java8.FunctionConverters._
 
-import scala.collection.JavaConversions._
-
+/**
+ * this example is from [[]] originally written in Java
+ * to convert java <-> scala functions
+ * @see [[]]
+ */
 object HelloJGraphT {
   def main(args: Array[String]): Unit = {
     val hrefGraph = new DefaultDirectedGraph[URI, DefaultEdge](classOf[DefaultEdge])
@@ -44,16 +34,15 @@ object HelloJGraphT {
     val start = hrefGraph.vertexSet().toSeq.filter(uri => uri.getHost().equals("www.jgrapht.org")).head
 
     import org.jgrapht.graph.DefaultEdge
+
     import java.io.StringWriter
-    import java.io.Writer
 
     val exporter = new DOTExporter[URI, DefaultEdge]()
     val vertexIdProvider = (uri:URI) => uri.getHost.replace('.', '_')
+    // to convert scala function -> java function
     exporter.setVertexIdProvider(vertexIdProvider.asJava)
     val writer = new StringWriter()
     exporter.exportGraph(hrefGraph, writer)
     println(writer.toString)
-
-
   }
 }
