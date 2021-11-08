@@ -1,24 +1,11 @@
 package Chainsaw.DFG
 
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
-import Chainsaw._
-import Chainsaw.{logger, _}
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
-
-import org.jgrapht._
-import org.jgrapht.graph._
-import org.jgrapht.graph.builder._
 import org.jgrapht.nio._
 import org.jgrapht.nio.dot._
-import org.jgrapht.traverse._
-import org.jgrapht.generate._
+import spinal.core._
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 object EdgeDirection extends Enumeration {
   type EdgeDirection = Value
@@ -26,7 +13,7 @@ object EdgeDirection extends Enumeration {
   val IN, OUT = Value    // Edge InOut Direction
 }
 
-import EdgeDirection._
+import Chainsaw.DFG.EdgeDirection._
 
 case class RegularEdge(direction: EdgeDirection, outOrder: Int, inOrder: Int, delay: Double)
 //case class RegularEdge(edgeDirection: Value, InOut: Value, outOrder: Int, inOrder: Int, delay: Int, withInput: Boolean, withOutput: Boolean)
@@ -138,17 +125,12 @@ class RegularDFG[T <: Data](name:String) extends DFGGraph[T](name) {
 
     // Visualization
     // see: https://jgrapht.org/guide/UserOverview#:~:text=to%20i%3A%0Anull-,Graph%20Serialization%20and%20Export/Import,-The%20default%20graph
-    import org.jgrapht.graph.DefaultEdge
-    import java.util.LinkedHashMap
-    import java.io.StringWriter
-    import java.io.Writer
-    import java.util.function._
     import scala.compat.java8.FunctionConverters._
 
     val exporter = new DOTExporter[DSPNode[T], DSPEdge[T]]()
     val attrFunction = (v: DSPNode[T]) => {
       def foo(v: DSPNode[T]) = {
-        val map = new LinkedHashMap[String, org.jgrapht.nio.Attribute]
+        val map = mutable.Map[String, org.jgrapht.nio.Attribute]().asJava
         map.put("label", DefaultAttribute.createAttribute(v.toString))
         println(map)
         map
