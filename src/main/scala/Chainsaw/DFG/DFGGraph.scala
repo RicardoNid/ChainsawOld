@@ -178,8 +178,8 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def criticalPathLength: Double = new CriticalPathAlgo(this).criticalPathLength
 
-  def impl[THard <: Data](dataIns: Seq[THard], dataReset: Boolean = false)(implicit holderProvider: BitCount => THard): Seq[THard] =
-    new DFGImpl(this.asInstanceOf[DFGGraph[THard]], dataReset)(holderProvider).impl(dataIns)
+  def impl(dataIns: Seq[T], dataReset: Boolean = false)(implicit holderProvider: BitCount => T): Seq[T] =
+    new DFGImpl(this, dataReset)(holderProvider).impl(dataIns)
 
   // feasibilityConstraintGraph
   def fcg: ConstraintGraph[T] = {
@@ -226,7 +226,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     require(isForwarding)
     DeviceNode[T](
       DSPHardware(
-        impl = (dataIns: Seq[T], _: GlobalCount) => impl[T](dataIns, dataReset), // FIXME: this won't provide the counter of outer graph, is that legal?
+        impl = (dataIns: Seq[T], _: GlobalCount) => impl(dataIns, dataReset), // FIXME: this won't provide the counter of outer graph, is that legal?
         inDegree = inputNodes.size,
         outWidths = Seq.fill(outputNodes.size)(-1 bits) // FIXME: what if we use subgraph in
       ),

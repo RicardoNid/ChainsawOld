@@ -38,26 +38,34 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = false)(implicit 
     GlobalCount(globalCounter.value)
   }
 
-  def implVertex(target: DSPNode[T], signalMap: mutable.Map[DSPNode[T], Seq[T]])(implicit globalCount: GlobalCount): Seq[T] = {
+  def implVertex(target: DSPNode[T], signalMap: mutable.Map[DSPNode[T], Seq[T]], delayMap: mutable.Map[DSPNode[T], Seq[Vec[T]]])(implicit globalCount: GlobalCount): Seq[T] = {
 
-    val dataIns: Seq[Seq[DSPEdge[T]]] = target.incomingEdges.groupBy(_.inOrder).toSeq.sortBy(_._1).map(_._2)
-    val dataInsOnPorts = dataIns.zipWithIndex.map { case (dataInsOnePort, i) => // combine dataIns at the same port by a mux
-      //      val dataCandidates: Seq[T] = dataInsOnePort.map(edge => edge.hardware(signalMap(edge.source), edge.weight.toInt).apply(edge.outOrder))
-      val dataCandidates: Seq[T] = dataInsOnePort.map { edge =>
-        val dataIn = signalMap(edge.source)(edge.outOrder)
-        if (dataReset) Delay(dataIn, edge.weight.toInt, init = dataIn.getZero)
-        else Delay(dataIn, edge.weight.toInt)
+    val dataIns: Seq[(Int, Seq[DSPEdge[T]])] = target.incomingEdges // group all incoming edges by input port
+      .groupBy(_.inOrder).toSeq
+
+    val dataInsOnPorts: Seq[T] = // implement dataIns on different ports
+      dataIns.map { case (portNumber, edgesOnePort) => // combine dataIns at the same port by a mux
+        val dataCandidates: Seq[T] = edgesOnePort.map { edge => // take the delayed version of these dataIns
+          if (dfg.isForwarding) {
+            if (edge.delay == 0) signalMap(edge.source)(edge.outOrder)
+            else delayMap(edge.source)(edge.outOrder)(edge.delay)
+          }
+          else {
+            val dataIn = signalMap(edge.source)(edge.outOrder)
+            if (dataReset) Delay(dataIn, edge.weight.toInt, init = dataIn.getZero)
+            else Delay(dataIn, edge.weight.toInt)
+          }
+        }
+        // implement the MUX
+        val schedulesOnePort: Seq[Seq[Schedule]] = edgesOnePort.map(_.schedules)
+        val mux = DFGMUX[T](schedulesOnePort)
+        val succeed = Try(mux.impl(dataCandidates, globalLcm))
+        succeed match {
+          case Failure(exception) => logger.error(s"MUX impl failed on:\n${edgesOnePort.map(_.symbol).mkString("|")}")
+            mux.impl(dataCandidates, globalLcm)
+          case Success(value) => value
+        }
       }
-      val schedulesOnePort: Seq[Seq[Schedule]] = dataInsOnePort.map(_.schedules)
-      val mux = DFGMUX[T](schedulesOnePort)
-      val succeed = Try(mux.impl(dataCandidates, globalLcm))
-      succeed match {
-        case Failure(exception) => logger.error(s"MUX impl failed on:\n${dataInsOnePort.map(_.symbol).mkString("|")}")
-          mux.impl(dataCandidates, globalLcm)
-        case Success(value) => value
-      }
-    }
-    //        target.hardware.impl(dataInsOnPorts, globalCount)
     // implement target using dataIns from different ports
     if (target.isInner && dfg.isForwarding) {
       logger.debug(s"implementing $target using submodule, inputWidths = ${dataInsOnPorts.map(_.getBitsWidth).mkString(" ")}")
@@ -66,32 +74,26 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = false)(implicit 
       nodeComponent.dataOut
     }
     else target.hardware.impl(dataInsOnPorts, globalCount)
-
-//    if (target.isInstanceOf[VirtualNode[T]]) {
-//      val drivingEdge = target.incomingEdges.head
-//      val sourceSignal = signalMap(target.sources.head).head
-//      Seq(if (dataReset) Delay(sourceSignal, drivingEdge.delay, init = sourceSignal.getZero)
-//      else Delay(sourceSignal, drivingEdge.delay))
-//    }
-//    else {
-//
-//    }
   }
 
   // implement a recursive graph
   def implRecursive: Seq[T] => Seq[T] = (dataIns: Seq[T]) => {
     logger.info("implementing DFG by algo for recursive DFG")
     require(inputNodes.size == dataIns.size, "input size mismatch")
+
     val signalMap: mutable.Map[DSPNode[T], Seq[T]] = mutable.Map(vertexSeq.map { node => // a map to connect nodes with their outputs(placeholder)
       if (node.hardware.outWidths.exists(_.value == -1)) logger.warn(s"node $node has undetermined width ${node.hardware.outWidths.mkString(" ")} in a recursive DFG")
       node -> node.hardware.outWidths.map(i => if (i.value == -1) holderProvider(-1 bits) else holderProvider(i))
     }: _*)
 
+    val delayMap = mutable.Map[DSPNode[T], Seq[Vec[T]]]()
+
     implicit val globalCount: GlobalCount = initGlobalCount()
 
     inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap(node).head := bits }
     vertexSeq.diff(inputNodes).foreach { target =>
-      val rets = implVertex(target, signalMap)
+      val rets = implVertex(target, signalMap, delayMap)
+
       val placeholders = signalMap(target)
       placeholders.zip(rets).foreach { case (placeholder, ret) => placeholder := ret.resized }
       if (placeholders.size == 1) placeholders.head.setName(target.name, weak = true) // name these signals
@@ -104,6 +106,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = false)(implicit 
     logger.info("implementing DFG by algo for forwarding DFG")
     require(inputNodes.size == dataIns.size, "input size mismatch")
     val signalMap = mutable.Map[DSPNode[T], Seq[T]]()
+    val delayMap = mutable.Map[DSPNode[T], Seq[Vec[T]]]()
     implicit val globalCount: GlobalCount = initGlobalCount()
     inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap += node -> Seq(bits) }
 
@@ -115,8 +118,22 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = false)(implicit 
 
     while (nextStageNodes.nonEmpty) {
       nextStageNodes.foreach { target =>
-        val rets = implVertex(target, signalMap)
+
+        logger.debug(s"delays ${delayMap.mkString(" ")}")
+
+        val rets: Seq[T] = implVertex(target, signalMap, delayMap)
         signalMap += target -> rets
+
+        delayMap += target -> rets.zipWithIndex.map { case (signal, outOrder) =>
+          val edges = target.outgoingEdges.filter(_.outOrder == outOrder)
+          if (edges.nonEmpty) {
+            val delayMax = edges.map(_.delay).max
+            if (dataReset) History(signal, 0 to delayMax, init = signal.getZero) else History(signal, 0 to delayMax)
+          } else {
+            Vec(holderProvider(-1 bits))
+          }
+        }
+
         if (target.hardware.outWidths.size == 1) rets.head.setName(target.name, weak = true)
         else rets.zipWithIndex.foreach { case (ret, i) => ret.setName(s"${target}_$i", weak = true) }
       }

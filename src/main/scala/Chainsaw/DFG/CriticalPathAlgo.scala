@@ -11,8 +11,8 @@ import scala.collection.mutable.ArrayBuffer
  * @see ''VLSI Digital Signal Processing Systems: Design and Implementation'' Chap2.4.2, the graph G_d
  */
 class CriticalPathAlgo[T <: Data](dfg: DFGGraph[T]) {
-
-  implicit val graph: DFGGraph[T] = dfg.clone().asInstanceOf[DFGGraph[T]]
+  implicit val currentDFG = dfg
+  val graph: DFGGraph[T] = dfg.clone().asInstanceOf[DFGGraph[T]]
   // step1: expose delays
   graph.foreachVertex { vertex =>
     val edgeGroups: Seq[(Int, Seq[DSPEdge[T]])] = vertex.outgoingEdges // for all the outgoing edges from a node

@@ -83,10 +83,11 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with F
       foldedDFG.addEdge(Hu(edge.outOrder), Hv(edge.inOrder), foldedDelay, foldedSchedules)
     }
     logger.debug(s"folded dfg:\n$foldedDFG")
-    logger.info(s"${foldedDFG.delayAmount} regs in the folded DFG")
+    logger.info(s"${foldedDFG.delayAmount} buffer regs in the folded DFG")
 
     val outputRetiming = foldedDFG.outputNodes.map(node => node -> (N - foldedDFG.incomingEdgesOf(node).toSeq.head.schedules.head.time - 1)).toMap
     logger.debug(s"retiming output of folded dfg:\n${outputRetiming.mkString(" ")}")
+    logger.info(s"${outputRetiming.values.sum} output regs in the folded DFG")
     foldedDFG.retimed(outputRetiming)
 
     //    foldedDFG

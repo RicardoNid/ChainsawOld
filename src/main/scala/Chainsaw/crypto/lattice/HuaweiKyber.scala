@@ -147,14 +147,10 @@ object runKyber {
     implicit def long2UInt: (Long, BitCount) => UInt = (value: Long, _: BitCount) => U(value, 12 bits) // TODO:
 
     val nttDFG_folded_8: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, -8).getGraph
-    genDSPNode(nttDFG_folded_8.asNode("ntt128_folded_8", 0 cycles), Seq.fill(128)(12 bits))
+    val nttDFG = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, 1).getGraph
 
-    //    GenRTL(new Component with NodeComponent[UInt] {
-    //      override val dataIn: Vec[UInt] = in Vec(UInt(12 bits), 3)
-    //      override val dataOut: Vec[UInt] = out Vec(UInt(12 bits), 2)
-    //      val core = ctButterflyNode.hardware.asComponent(uintProvider)()
-    //      core.dataIn := dataIn
-    //      dataOut := core.dataOut
-    //    })
+//    genDSPNode(nttDFG_folded_8.asNode("ntt128_folded_8", 0 cycles), Seq.fill(128)(12 bits))
+    synthDSPNode(nttDFG.asNode("ntt128_folded_8", 0 cycles), Seq.fill(128)(12 bits))
+    synthDSPNode(nttDFG_folded_8.asNode("ntt128", 0 cycles), Seq.fill(128)(12 bits))
   }
 }
