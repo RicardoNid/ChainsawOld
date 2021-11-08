@@ -62,7 +62,7 @@ object implementingDFGs {
     println(butterfly)
 
     val whole = DFGGraph[SInt]("simpleNested")
-    val butterflyNodes = (0 until 2).map(i => butterfly.asNode[SInt](s"b${i + 1}"))
+    val butterflyNodes = (0 until 2).map(i => butterfly.asNode(s"b${i + 1}"))
 
     whole.addVertices(butterflyNodes: _*)
     whole.addEdge(butterflyNodes(0)(0), butterflyNodes(1)(0), 1)

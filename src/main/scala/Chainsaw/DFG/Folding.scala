@@ -3,13 +3,14 @@ package Chainsaw.DFG
 import org.slf4j.LoggerFactory
 import spinal.core.Data
 
-import scala.math.floor
+import scala.collection.JavaConversions._
+import scala.math.{floor, log}
 
 class Folding[T <: Data](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with Foldable[T]]]) extends Transform {
   val logger = LoggerFactory.getLogger("folding procedure")
 
   // preparing context for folding
-  val N = foldingSet.head.length
+  val N = foldingSet.head.length // folding factor
   require(foldingSet.forall(_.size == N), "folding set should have the same folding factor on each node")
   // map node -> folding order of the node
   val foldingOrderOf: Map[DSPNode[T], Int] = foldingSet.flatMap { set => set.zipWithIndex.filterNot(_._1 == null) map { case (node, i) => node -> i } }.toMap
@@ -82,7 +83,12 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with F
       foldedDFG.addEdge(Hu(edge.outOrder), Hv(edge.inOrder), foldedDelay, foldedSchedules)
     }
     logger.debug(s"folded dfg:\n$foldedDFG")
-    foldedDFG
+
+    val outputRetiming = foldedDFG.outputNodes.map(node => node -> (N - foldedDFG.incomingEdgesOf(node).toSeq.head.schedules.head.time - 1)).toMap
+    logger.debug(s"retiming output of folded dfg:\n${outputRetiming.mkString(" ")}")
+    foldedDFG.retimed(outputRetiming)
+
+    //    foldedDFG
   }
 
   override def latencyTransformations: Seq[LatencyTrans] = {

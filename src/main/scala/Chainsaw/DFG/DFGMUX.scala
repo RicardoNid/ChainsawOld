@@ -36,7 +36,8 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
     if (dataIns.size == 1 && schedules.head.head == Schedule(0, 1)) dataIns.head
     else {
       val multiple = globalLcm / localLcm
-      val ret = holderProvider(-1 bits)
+      val retWidth = dataIns.map(_.getBitsWidth).max bits
+      val ret = holderProvider(retWidth)
       switch(globalCount.value) {
         schedules.zip(dataIns).foreach { case (schedulesOneSource, bits) =>
           val occupationsOneSource = schedulesOneSource.flatMap(occupationOf)
@@ -45,8 +46,9 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
           logger.debug(s"implementing MUX, ${occupationsOneSource.mkString(" ")} / $localLcm")
         }
 
-        //        if (!isFull || !isPow2(globalLcm)) default(ret.assignDontCare()) // FIXME: this should work, why?
-        if (!isFull || !isPow2(globalLcm)) default(ret assignFromBits B(0, dataIns.map(_.getBitsWidth).max bits))
+        if (!isFull || !isPow2(globalLcm)) default(ret.assignDontCare()) // FIXME: this should work, why?
+        //        if (!isFull || !isPow2(globalLcm)) default(ret assignFromBits B(0, retWidth))
+        //        if (!isFull || !isPow2(globalLcm)) default(ret := dataIns.head.resized)
       }
       ret
     }

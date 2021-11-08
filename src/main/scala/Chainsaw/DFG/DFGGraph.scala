@@ -157,7 +157,11 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   /** The least common multiple of all muxes in this DFG
    */
-  def globalLcm: Int = edgeSeq.flatMap(_.schedules).map(_.period).sorted.reverse.reduce(lcm)
+  def globalLcm: Int = {
+    val periods = edgeSeq.flatMap(_.schedules).map(_.period).distinct.sorted.reverse
+    logger.debug(s"periods of MUX in $name:\n${periods.mkString(" ")}")
+    periods.reduce(lcm)
+  }
 
   def delayPaths: Seq[GraphPath[DSPNode[T], DSPEdge[T]]] = { // need optimization! this is a big bottleneck!
     val algo = new alg.shortestpath.BellmanFordShortestPath(this)
@@ -218,11 +222,11 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   }
 
   // TODO: consider carefully on these properties
-  def asNode[THard <: Data](name: String, graphLatency: CyclesCount = latency cycles, dataReset: Boolean = false)(implicit holderProvider: BitCount => THard): DeviceNode[THard] = {
+  def asNode(name: String, graphLatency: CyclesCount = latency cycles, dataReset: Boolean = false)(implicit holderProvider: BitCount => T): DeviceNode[T] = {
     require(isForwarding)
-    DeviceNode[THard](
+    DeviceNode[T](
       DSPHardware(
-        impl = (dataIns: Seq[THard], _: GlobalCount) => impl[THard](dataIns, dataReset), // FIXME: this won't provide the counter of outer graph, is that legal?
+        impl = (dataIns: Seq[T], _: GlobalCount) => impl[T](dataIns, dataReset), // FIXME: this won't provide the counter of outer graph, is that legal?
         inDegree = inputNodes.size,
         outWidths = Seq.fill(outputNodes.size)(-1 bits) // FIXME: what if we use subgraph in
       ),

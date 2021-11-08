@@ -50,6 +50,12 @@ package object DFG {
      */
     def extendVirtual(order: Int): VirtualNode[T] = VirtualNode[T](s"${node}_v", node.hardware.outWidths(order))
 
+//    def asComponent = new Component with DSPTestable[Vec[T], Vec[T]] {
+//      override val dataIn: Vec[T] = slave Flow Vec(inputWidths.map(holderProvider(_)))
+//      override val dataOut: Vec[T] = master Flow Vec(node.hardware.outWidths.map(holderProvider(_)))
+//      override val latency: Int = node.delay
+//      dataOut.payload := Vec(node.hardware.impl(dataIn.payload, GlobalCount(U(0))))
+//    }
   }
 
   implicit class nodesUtils[T <: Data](nodes: Seq[DSPNode[T]]) {

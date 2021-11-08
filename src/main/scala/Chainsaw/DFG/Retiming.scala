@@ -1,15 +1,15 @@
 package Chainsaw.DFG
 
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
 import org.slf4j.LoggerFactory
+import spinal.core._
 
+import scala.tools.nsc.interpreter.StdReplTags.u
+
+/**
+ * @param dfg
+ * @param solution a map of DSPNode -> its retiming value, it doesn't have to contain all the nodes
+ * @tparam T
+ */
 class Retiming[T <: Data](val dfg: DFGGraph[T], solution: Map[DSPNode[T], Int]) extends Transform {
 
   val logger = LoggerFactory.getLogger("retiming procedure")
@@ -19,13 +19,14 @@ class Retiming[T <: Data](val dfg: DFGGraph[T], solution: Map[DSPNode[T], Int]) 
     val r = solution
     implicit val retimedDFG = dfg.clone().asInstanceOf[DFGGraph[T]]
     retimedDFG.foreachEdge { edge =>
-      val (u, v) = (edge.source, edge.target)
-      if (solution.contains(u) && solution.contains(v)) {
-        retimedDFG.setEdgeWeight(edge, edge.weight + r(v) - r(u))
-        // MUX transformation: new time = time + r(v)
-        retimedDFG.setEdgeSchedules(edge, edge.schedules.map(schedule =>
-          Schedule((schedule.time + r(v)) % schedule.period , schedule.period)))
-      }
+      // regard nodes not in the solution as 0(static)
+      val ru = solution.getOrElse(edge.source, 0)
+      val rv = solution.getOrElse(edge.target, 0)
+      // delay transformation: new delay = delay + r(v) - r(u)
+      retimedDFG.setEdgeWeight(edge, edge.weight + rv - ru)
+      // MUX transformation: new time = (time + r(v) % period)
+      retimedDFG.setEdgeSchedules(edge, edge.schedules.map(schedule =>
+        Schedule((schedule.time + rv) % schedule.period, schedule.period)))
     }
     retimedDFG
   }

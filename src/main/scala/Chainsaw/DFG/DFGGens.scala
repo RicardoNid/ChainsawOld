@@ -80,7 +80,7 @@ class FIRGen[THard <: Data, TSoft](mac: TrinaryNode[THard],
 
   def getGraphAsNode(dataReset:Boolean = false)(implicit holderProvider: BitCount => THard): DSPNode[THard] = {
     val graph = getGraph
-    graph.asNode[THard](graph.name, graphLatency = latency cycles, dataReset)
+    graph.asNode(graph.name, graphLatency = latency cycles, dataReset)
   }
 }
 
@@ -206,7 +206,10 @@ class ButterflyGen[THard <: Data, TSoft](ctButterfly: ButterflyNode[THard], gsBu
       val foldingFactor = -parallelism
       val butterflyGroups: Seq[Seq[ButterflyNode[THard]]] = butterflies.map(col => col.grouped(foldingFactor).toSeq).flatten
 
-      DFGTestUtil.verifyFolding(dfg.asInstanceOf[DFGGraph[UInt]], butterflyGroups.asInstanceOf[Seq[Seq[DSPNode[UInt] with Foldable[UInt]]]], HardType(UInt(12 bits)))// TODO: this is temp
+      DFGTestUtil.verifyFolding(dfg.asInstanceOf[DFGGraph[UInt]],
+        butterflyGroups.asInstanceOf[Seq[Seq[DSPNode[UInt] with Foldable[UInt]]]],
+        HardType(UInt(12 bits)),
+        basicLatency = latency)// TODO: this is temp
 
       new Folding(dfg, butterflyGroups).folded
     }

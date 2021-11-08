@@ -12,6 +12,7 @@ import scala.language.postfixOps
 
 object HuaweiKyber {
 
+  // TEMP: RegNext should have no init value
   // huawei configurations p = p, polySize = 256
   val p = 3329 // p = 13 * 256 + 1
   val k = 13
@@ -60,12 +61,12 @@ object HuaweiKyber {
     require(dataIn.getBitsWidth == 24)
     val cl = dataIn(7 downto 0)
     val ch = dataIn(23 downto 8)
-    val cPrime = RegNext((13 * cl).intoSInt -^ ch.intoSInt) // 16 + 1 bits TODO: implement this by shift-add?
+    val cPrime: SInt = RegNext((13 * cl).intoSInt -^ ch.intoSInt, init = S(0)) // 16 + 1 bits TODO: implement this by shift-add?
     cPrime.setName("cPrime", weak = true)
     // step 2
     val cPrimel = cPrime(7 downto 0).asUInt
     val cPrimeh = cPrime(16 downto 8)
-    val CPrime2 = RegNext((13 * cPrimel).intoSInt - cPrimeh) // 12 + 1 bits
+    val CPrime2: SInt = RegNext((13 * cPrimel).intoSInt - cPrimeh, init = S(0)) // 12 + 1 bits
 
     val ret = UInt(12 bits)
     // do correction
@@ -79,7 +80,7 @@ object HuaweiKyber {
       .zip(Seq("cl", "ch", "cPrime", "cPrimel", "cPrimel", "CPrime2"))
       .foreach { case (signal, str) => signal.setName(str, weak = true) }
 
-    RegNext(ret)
+    RegNext(ret, init = U(0))
   }
 
   /** multiplication + K2RED
@@ -87,7 +88,7 @@ object HuaweiKyber {
   def kMultMod(a: UInt, b: UInt): UInt = {
     val prod = a * b
     prod.addAttribute("use_dsp", "no")
-    k2RED(RegNext(prod))
+    k2RED(RegNext(prod, init = U(0)))
   }
 
   /** modular addition(with correction)
@@ -96,7 +97,7 @@ object HuaweiKyber {
     val (aS, bS) = (a.intoSInt, b.intoSInt)
     val sum = aS +^ bS
     val corrected = sum - p
-    RegNext(Mux(corrected >= 0, corrected, sum).asUInt.resize(12 bits))
+    RegNext(Mux(corrected >= 0, corrected, sum).asUInt.resize(12 bits), init = U(0))
   }
 
   /** modular subtraction(with correction)
@@ -105,7 +106,7 @@ object HuaweiKyber {
     val (aS, bS) = (a.intoSInt, b.intoSInt)
     val diff = aS - bS
     val corrected = diff + p
-    RegNext(Mux(diff >= 0, diff, corrected).asUInt.resize(12 bits))
+    RegNext(Mux(diff >= 0, diff, corrected).asUInt.resize(12 bits), init = U(0))
   }
 
   // TODO: find the minimum correction in ct/gs butterfly
@@ -150,6 +151,6 @@ object HuaweiKyber {
 object runKyber {
   def main(args: Array[String]): Unit = {
     import HuaweiKyber.{ctButterflyNode, gsButterflyNode, coeffGen, long2UInt}
-    val nttDFG_folded_8: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 16, DIF, inverse = false, coeffGen, 12 bits, -8).getGraph
+    val nttDFG_folded_8: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, -8).getGraph
   }
 }
