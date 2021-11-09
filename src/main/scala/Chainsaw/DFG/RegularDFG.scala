@@ -4,8 +4,7 @@ import org.jgrapht.nio._
 import org.jgrapht.nio.dot._
 import spinal.core._
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
+
 
 object EdgeDirection extends Enumeration {
   type EdgeDirection = Value
@@ -32,6 +31,9 @@ class RegularDFG[T <: Data](name:String) extends DFGGraph[T](name) {
     println(nodes.map(_.mkString(" ")).mkString("\n"))
     nodes.flatten.foreach(addVertex)
 
+    // used for graphviz displaying
+    var inoutNodeAttrSeq = collection.mutable.Map[String, List[Int]]()
+
 //    val directionMap = Map(
 //      LEFT -> (-1, 0), RIGHT -> (1, 0), UP -> (0, -1), DOWN -> (0, 1),
 //      UPLEFT -> (-1, -1), UPRIGHT -> (1, -1), DOWNLEFT -> (-1, 1), DOWNRIGHT -> (1, 1))
@@ -44,9 +46,6 @@ class RegularDFG[T <: Data](name:String) extends DFGGraph[T](name) {
 //
 //      }
 //    }
-
-    val directionMap = Map(LEFT -> (-1, 0), RIGHT -> (1, 0), UP -> (0, -1), DOWN -> (0, 1),
-      UPLEFT -> (-1, -1), UPRIGHT -> (1, -1), DOWNLEFT -> (-1, 1), DOWNRIGHT -> (1, 1))
 
 
     /** Chain all Edges in that given direction
@@ -92,19 +91,31 @@ class RegularDFG[T <: Data](name:String) extends DFGGraph[T](name) {
           } else if (!currInRange && nextInRange) {
             // current node not in range but next node in range, use next node to do withInput or do withOutput
             InOut match {
-              case IN => if (withOutput) { println(s"next (${r+indexDiff._1}, ${c+indexDiff._2}) for Output")
-                this.setOutput(nodes(r+indexDiff._1)(c+indexDiff._2), outOrder, s"output_${edgeDirection}_${r+indexDiff._1}_${c+indexDiff._2}", Seq(Schedule(0, 1)))}
-              case OUT => if (withInput) { println(s"next (${r+indexDiff._1}, ${c+indexDiff._2}) for Input")
-                this.setInput(nodes(r+indexDiff._1)(c+indexDiff._2), inOrder, s"input_${edgeDirection}_${r+indexDiff._1}_${c+indexDiff._2}", Seq(Schedule(0, 1)))}
+              case IN => if (withOutput) {
+                println(s"next (${r+indexDiff._1}, ${c+indexDiff._2}) for Output")
+                this.setOutput(nodes(r+indexDiff._1)(c+indexDiff._2), outOrder, s"output_${edgeDirection}_${r+indexDiff._1}_${c+indexDiff._2}($outOrder)", Seq(Schedule(0, 1)))
+                inoutNodeAttrSeq += (s"output_${edgeDirection}_${r+indexDiff._1}_${c+indexDiff._2}($outOrder)" -> List(r+indexDiff._1, c+indexDiff._2, outOrder, indexDiff._1, indexDiff._2))
+              }
+              case OUT => if (withInput) {
+                println(s"next (${r+indexDiff._1}, ${c+indexDiff._2}) for Input")
+                this.setInput(nodes(r+indexDiff._1)(c+indexDiff._2), inOrder, s"input_${edgeDirection}_${r+indexDiff._1}_${c+indexDiff._2}($inOrder)", Seq(Schedule(0, 1)))
+                inoutNodeAttrSeq += (s"input_${edgeDirection}_${r+indexDiff._1}_${c+indexDiff._2}($inOrder)" -> List(r+indexDiff._1, c+indexDiff._2, inOrder, indexDiff._1, indexDiff._2))
+              }
               case _ => logger.error("Wrong InOut type")
             }
           } else if (currInRange && !nextInRange) {
             // current node in range but next node not in range, use current node to do withInput or do withOutput
             InOut match {
-              case IN => if (withInput) { println(s"curr ($r, $c) for Input")
-                this.setInput(nodes(r)(c), inOrder, s"input_${edgeDirection}_${r}_${c}", Seq(Schedule(0, 1)))}
-              case OUT => if (withOutput) { println(s"curr ($r, $c) for Output")
-                this.setOutput(nodes(r)(c), outOrder, s"output_${edgeDirection}_${r}_${c}", Seq(Schedule(0, 1)))}
+              case IN => if (withInput) {
+                println(s"curr ($r, $c) for Input")
+                this.setInput(nodes(r)(c), inOrder, s"input_${edgeDirection}_${r}_${c}($inOrder)", Seq(Schedule(0, 1)))
+                inoutNodeAttrSeq += (s"input_${edgeDirection}_${r}_${c}($inOrder)" -> List(r, c, inOrder, indexDiff._1, indexDiff._2))
+              }
+              case OUT => if (withOutput) {
+                println(s"curr ($r, $c) for Output")
+                this.setOutput(nodes(r)(c), outOrder, s"output_${edgeDirection}_${r}_${c}($outOrder)", Seq(Schedule(0, 1)))
+                inoutNodeAttrSeq += (s"output_${edgeDirection}_${r}_${c}($outOrder)" -> List(r, c, outOrder, indexDiff._1, indexDiff._2))
+              }
               case _ => logger.error("Wrong InOut type")
             }
           }
@@ -114,9 +125,9 @@ class RegularDFG[T <: Data](name:String) extends DFGGraph[T](name) {
 
     // testing
     // TODO: Clean this
-//    val addingAllEdgeChain_UPLEFT0 = addAllEdgeChain(UPLEFT, OUT,0,0,1,true,false)
+//    val addingAllEdgeChain_UPLEFT0 = addAllEdgeChain(UPLEFT, IN,0,0,1,true,false)
     val addingAllEdgeChain_UPLEFT0 = addAllEdgeChain(UPRIGHT, IN,0,0,1,true,true)
-//    val addingAllEdgeChain_UP0 = addAllEdgeChain(UP, IN,1,1,1,true,false)
+    val addingAllEdgeChain_UP0 = addAllEdgeChain(UP, IN,1,1,1,true,true)
 //    val addingAllEdgeChain_UP1 = addAllEdgeChain(UP, IN,2,2,1,true,true)
 
     println()
@@ -124,23 +135,69 @@ class RegularDFG[T <: Data](name:String) extends DFGGraph[T](name) {
 
 
     // Visualization
+    // use this website https://edotor.net/ and choose engine "neato" to view the graph online
     // see: https://jgrapht.org/guide/UserOverview#:~:text=to%20i%3A%0Anull-,Graph%20Serialization%20and%20Export/Import,-The%20default%20graph
+    // TODO: Fix double inoutput in the same direction
     import scala.compat.java8.FunctionConverters._
+    import scala.collection.mutable
+    import scala.collection.JavaConverters._
+    import java.io.StringWriter
+
+    println(inoutNodeAttrSeq.mkString("\n"))
+//    println(inoutNodeAttrSeq("input_UP_0_3(1)"))
+
+    def shapeAttr(label:String):String = {
+      var shape = ""
+      if (label.startsWith("input")) {shape = "rect"}
+      else if (label.startsWith("output")) {shape = "rect"}
+      else {shape = "doubleoctagon"}
+      shape
+    }
+
+    def colorAttr(label:String):String = {
+      var color = ""
+      if (label.startsWith("input")) {color = "#228B22"}
+      else if (label.startsWith("output")) {color = "#800000"}
+      else {color = ""}
+      color
+    }
+
+
+    def posAttr(label:String):String = {
+      var pos = ""
+      if (label.startsWith("input") || label.startsWith("output")) {
+        var inoutList = inoutNodeAttrSeq(label)
+        var (x, y, order, index1, index2) = (inoutList(0), inoutList(1), inoutList(2), inoutList(3), inoutList(4))
+        if (label.startsWith("input")) {
+          pos = (index2 * (2) + y * 4).toString + "," + (index1 * (-2) + x * (-4)).toString + "!"
+        } else if (label.startsWith("output")) {
+          pos = (index2 * (-2) + y * 4).toString + "," + (index1 * (2) + x * (-4)).toString + "!"
+        }
+      } else {
+        var posNum = label.split("_").takeRight(2)    // original position: (i, j)
+        pos = (posNum(1).toInt * 4).toString + "," + (posNum(0).toInt * (-4)).toString + "!"
+      }
+      pos
+    }
+
 
     val exporter = new DOTExporter[DSPNode[T], DSPEdge[T]]()
-    val attrFunction = (v: DSPNode[T]) => {
-      def foo(v: DSPNode[T]) = {
-        val map = mutable.Map[String, org.jgrapht.nio.Attribute]().asJava
-        map.put("label", DefaultAttribute.createAttribute(v.toString))
-        println(map)
-        map
-      }
-      foo(v)
+    def dotAttr(v: DSPNode[T]) = {
+      val map = mutable.Map[String, org.jgrapht.nio.Attribute]().asJava
+      map.put("label", DefaultAttribute.createAttribute(v.toString))
+      map.put("shape", DefaultAttribute.createAttribute(shapeAttr(v.toString)))
+      map.put("color", DefaultAttribute.createAttribute(colorAttr(v.toString)))
+      map.put("pos", DefaultAttribute.createAttribute(posAttr(v.toString)))
+      println(map)
+      map
     }
+    val attrFunction = (v: DSPNode[T]) => {dotAttr(v)}
     exporter.setVertexAttributeProvider(attrFunction.asJava)
-//    val writer = new StringWriter()
-//    exporter.exportGraph(this, writer)
-//    System.out.println(writer.toString)
+
+    val writer = new StringWriter()
+    exporter.exportGraph(this, writer)
+    println("\nDOT:\n")
+    System.out.println(writer.toString)
 
   }
 }
