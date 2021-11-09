@@ -47,23 +47,22 @@ object implementingDFGs {
   val adds: Seq[BinaryNode[SInt]] = Seq.tabulate(2)(i => BinaryNode(sintAdd, s"add${i + 1}"))
   val mults: Seq[BinaryNode[SInt]] = Seq.tabulate(2)(i => BinaryNode(sintMult, s"mult${i + 1}"))
 
+  val butterfly = DFGGraph[SInt]("butterfly")
+  adds.foreach(butterfly.addVertex(_))
+
+  val ins = (0 until 2).map(i => butterfly.addInput(s"in${i + 1}"))
+  butterfly.addEdge(ins(0)(0), adds(0)(0), 0)
+  butterfly.addEdge(ins(0)(0), adds(1)(1), 0)
+  butterfly.addEdge(ins(1)(0), adds(0)(1), 0)
+  butterfly.addEdge(ins(1)(0), adds(1)(0), 0)
+  butterfly.setOutput(adds(0))
+  butterfly.setOutput(adds(1))
+
+  val butterflyNode = butterfly.asNode("butterflyNode")
+
   def nestedDFG: DFGGraph[SInt] = {
-    val butterfly = DFGGraph[SInt]("butterfly")
-    adds.foreach(butterfly.addVertex(_))
-
-    val ins = (0 until 2).map(i => butterfly.addInput(s"in${i + 1}"))
-    butterfly.addEdge(ins(0)(0), adds(0)(0), 0)
-    butterfly.addEdge(ins(0)(0), adds(1)(1), 0)
-    butterfly.addEdge(ins(1)(0), adds(0)(1), 0)
-    butterfly.addEdge(ins(1)(0), adds(1)(0), 0)
-    butterfly.setOutput(adds(0))
-    butterfly.setOutput(adds(1))
-
-    println(butterfly)
-
     val whole = DFGGraph[SInt]("simpleNested")
-    val butterflyNodes = (0 until 2).map(i => butterfly.asNode(s"b${i + 1}"))
-
+    val butterflyNodes = (0 until 2).map(i => butterflyNode.copy(s"b${i + 1}"))
     whole.addVertices(butterflyNodes: _*)
     whole.addEdge(butterflyNodes(0)(0), butterflyNodes(1)(0), 1)
     whole.addEdge(butterflyNodes(0)(1), butterflyNodes(1)(1), 1)

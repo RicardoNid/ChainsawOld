@@ -1,6 +1,7 @@
 package Chainsaw.DFG
 
 import Chainsaw._
+import jdk.jfr.Experimental
 import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 import spinal.lib._
@@ -9,19 +10,21 @@ import scala.collection.mutable
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
+
 /** providing algorithms on implementing DFG as hardware component
  *
  * @param dfg            dfg to be implemented as hardware
- * @param dataReset      when set, registers on the edge are zero-initialized
+ * @param useRegInit     when set, registers on the edge are zero-initialized
  * @param holderProvider method that generate a signal of a given width
  * @see [[DFG]] package object for default holder providers of DFG
  * @see [[examples.MultiModuleExample]] for submodule sharing mechanism
  */
-class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = true)
+@Experimental // the "submodule" mode is experimental, it improves the gen result, but may lead to width inference problem
+class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmodule: Boolean = false)
                         (implicit val holderProvider: HolderProvider[T]) {
 
   val logger: Logger = LoggerFactory.getLogger(s"implementing procedure")
-  logger.info(s"implementing dfg ${dfg.name}, with dataReset = $dataReset")
+  logger.info(s"implementing dfg ${dfg.name}, with dataReset = $useRegInit")
   logger.info(s"number of nodes: ${dfg.innerNodes.size}, number of modules: ${dfg.innerNodes.map(_.hardware).distinct.size}")
 
   implicit def referenceDFG: DFGGraph[T] = dfg
@@ -38,7 +41,10 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = true)
   val hardware2component: Map[DSPHardware[T], () => Component with NodeComponent[T]] = // a map from DSPNode to its hardware component
     dfg.innerNodes.map(_.hardware).distinct // nodes who have same hardware implementation share submodule
       .map(hardware => hardware -> hardware.asComponent).toMap
-  val componentMap: Map[DSPNode[T], () => Component with NodeComponent[T]] = dfg.innerNodes.map(node => node -> hardware2component(node.hardware)).toMap
+
+  val componentMap: Map[DSPNode[T], () => Component with NodeComponent[T]] =
+    dfg.innerNodes
+      .map(node => node -> hardware2component(node.hardware)).toMap
 
   def nameSignal(signals: Seq[T], target: DSPNode[T]): Unit = {
     if (signals.size == 1) signals.head.setName(target.name, weak = true)
@@ -82,7 +88,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = true)
           //          }
 
           val dataIn = signalMap(edge.source)(edge.outOrder) // get the data at driver's output port
-          if (dataReset) Delay(dataIn, edge.weight.toInt, init = dataIn.getZero) // get the delayed version
+          if (useRegInit) Delay(dataIn, edge.weight.toInt, init = dataIn.getZero) // get the delayed version
           else Delay(dataIn, edge.weight.toInt)
         }
 
@@ -95,17 +101,15 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = true)
         }
       }
 
-    // option: using shared submodule/anno function
-    //    if (target.isInner && dfg.isForwarding) {
-    //      logger.debug(s"implementing $target using submodule, inputWidths = ${dataInsOnPorts.map(_.getBitsWidth).mkString(" ")}")
-    //      val nodeComponent = componentMap(target)()
-    //      nodeComponent.dataIn := Vec(dataInsOnPorts)
-    //      nodeComponent.dataOut
-    //    }
-    //    else target.hardware.impl(dataInsOnPorts, globalCount)
-
     // step2: driving the node and get the output
-    target.hardware.impl(dataInsOnPorts, globalCount)
+    // option: using shared submodule/anno function
+    if (useSubmodule && componentMap.contains(target) && !isRecursive) { // when available, implement it by submodule
+      logger.debug(s"implementing $target using submodule, inputWidths = ${dataInsOnPorts.map(_.getBitsWidth).mkString(" ")}")
+      val nodeComponent = componentMap(target)()
+      nodeComponent.dataIn := Vec(dataInsOnPorts)
+      nodeComponent.dataOut
+    } // else, by anno function
+    else target.hardware.impl(dataInsOnPorts, globalCount)
   }
 
   // TODO: consider the width inference in recursive DFG seriously

@@ -12,7 +12,7 @@ import java.nio.file.{Files, Path, Paths}
 import scala.collection.mutable.ArrayBuffer
 import scala.math._
 import scala.sys.process.Process
-import scala.util.Random
+import scala.util.{Failure, Random, Success, Try}
 
 package object Chainsaw extends RealFactory {
 
@@ -20,6 +20,7 @@ package object Chainsaw extends RealFactory {
   * following methods are designed for Real type*/
 
   import org.slf4j.{LoggerFactory, Logger}
+
   val logger = LoggerFactory.getLogger("Chainsaw logger")
 
   var ChainsawNumericDebug = false
@@ -375,19 +376,21 @@ package object Chainsaw extends RealFactory {
   }
 
 
-  /*
-  * following methods are designed for doing synth/impl through command-line
-  * for these methods, the results are exported to a default dir in this project, the sub dir can be specific by name field*/
+  /**  following methods are designed for doing synth/impl through command-line
+   * for these methods, the results are exported to a default dir in this project, the sub dir can be specific by name field
+   */
   def GenRTL[T <: Component](gen: => T, print: Boolean = false, name: String = "temp") = {
     val targetDirectory = s"./elaboWorkspace/$name"
     if (!Files.exists(Paths.get("./elaboWorkspace"))) doCmd("mkdir elaboWorkspace")
     new File(targetDirectory).mkdir()
-    val report = SpinalConfig(netlistFileName = s"$name.sv", targetDirectory = targetDirectory).generateSystemVerilog(gen)
-    println(report.rtlSourcesPaths
+    val report: SpinalReport[T] = SpinalConfig(netlistFileName = s"$name.sv", targetDirectory = targetDirectory).generateSystemVerilog(gen)
+    logger.info(report.rtlSourcesPaths
       .map(Paths.get(_))
       .map(path => if (path.isAbsolute) path else path.toAbsolutePath)
       .mkString("\n"))
     if (print) println(report.getRtlString())
+    val succeed = report.unusedSignals.isEmpty // FIXME: this definition is terrible, but we use it currently
+    succeed
   }
 
   val synthWorkspace = "/home/ltr/IdeaProjects/Chainsaw/synthWorkspace"

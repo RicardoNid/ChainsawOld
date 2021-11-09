@@ -16,13 +16,18 @@ class DFGGraphTest extends AnyFlatSpec {
 
   val testHardType: HardType[SInt] = HardType(SInt(10 bits))
 
-  val textBookDUTs: Seq[DFGGraph[SInt]] = Seq(chap2.fig2_2,
+  lazy val textBookDUTs: Seq[DFGGraph[SInt]] = Seq(chap2.fig2_2,
     chap5.fig5_2, chap5.fig5_2_inner_delay, chap5.fig5_10, chap5.fig5_12,
     chap6.fig6_3, chap6.fig6_5)
 
-  val paper1992OnFoldingDUTs: Seq[DFGGraph[SInt]] = Seq(paper1992OnFolding.fig6_a, paper1992OnFolding.fig8_a, paper1992OnFolding.fig9_a,
+  lazy val paper1992OnFoldingDUTs: Seq[DFGGraph[SInt]] = Seq(paper1992OnFolding.fig6_a, paper1992OnFolding.fig8_a, paper1992OnFolding.fig9_a,
     paper1992OnFolding.fig10_a, paper1992OnFolding.fig10_c,
     paper1992OnFolding.fig12_a, paper1992OnFolding.fig13_a, paper1992OnFolding.fig14_a)
+
+  it should "work on nested DFG" in {
+    val nested = implementingDFGs.nestedDFG
+    genDFG(nested, Seq.fill(nested.inputNodes.size)(10 bits))
+  }
 
   "dfg" should "be implemented correctly" in {
     val dfg = DFGGraph[SInt]("simpleGraph")
@@ -46,11 +51,6 @@ class DFGGraphTest extends AnyFlatSpec {
   //      dataOuts := Vec(MIMO.fft4.impl(dataIns))
   //    })
   //  }
-
-  it should "work on nested DFG" in {
-    val nested = implementingDFGs.nestedDFG
-    genDFG(nested, Seq.fill(nested.inputNodes.size)(10 bits))
-  }
 
   "the folding algorithm" should "fold correctly on chap6 fig6_3" in verifyFolding(chap6.fig6_3, chap6.foldingSet, testHardType, "chap6_fig6_3")
   it should "fold correctly on simple graph" in verifyFolding(simpleFolding.dfg, simpleFolding.foldingSet, testHardType)
@@ -137,5 +137,11 @@ class DFGGraphTest extends AnyFlatSpec {
       s"\n${duts1.map(dut => s"${dut.name}: ${dut.unmergedDelayAmount} -> ${dut.merged.unmergedDelayAmount}").mkString("\n")}")
     assert(duts1.forall(_.merged.isMerged))
   }
+
+//  "DSPNode" should "have a correct inferable property" in {
+//    println(crypto.lattice.HuaweiKyber.ctButterflyNode.hardware.inferable)
+//    println(BinaryNode(Operators.sintMult, "mult").hardware.inferable)
+//    println(BinaryNode(sintMult, s"cmult", 10 bits, 0 cycles, 2 ns).hardware.inferable)
+//  }
 
 }

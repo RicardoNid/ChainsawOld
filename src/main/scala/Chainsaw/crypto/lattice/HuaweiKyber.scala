@@ -146,11 +146,13 @@ object runKyber {
     import HuaweiKyber.{ctButterflyNode, gsButterflyNode, coeffGen}
     implicit def long2UInt: (Long, BitCount) => UInt = (value: Long, _: BitCount) => U(value, 12 bits) // TODO:
 
-    val nttDFG_folded_8: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, -8).getGraph
-    val nttDFG = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, 1).getGraph
+    val nttDFG_folded_8: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 16, DIF, inverse = false, coeffGen, 12 bits, -2).getGraph
+
+    //    val nttDFG_folded_8: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, -8).getGraph
+    //    val nttDFG = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, 1).getGraph
 
     //    genDSPNode(nttDFG_folded_8.asNode("ntt128_folded_8", 0 cycles), Seq.fill(128)(12 bits))
     //    synthDSPNode(nttDFG.asNode("ntt128_folded_8", 0 cycles), Seq.fill(128)(12 bits))
-    synthDFG(nttDFG_folded_8, Seq.fill(128)(12 bits), forTiming = true)
+    //    synthDFG(nttDFG_folded_8, Seq.fill(128)(12 bits), forTiming = true)
   }
 }

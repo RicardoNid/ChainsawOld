@@ -1,13 +1,6 @@
 package Chainsaw.DFG
 
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
 import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
 import spinal.core._
 
 import scala.language.postfixOps
@@ -15,12 +8,22 @@ import scala.language.postfixOps
 class DSPHardware[T <: Data](val impl: (Seq[T], GlobalCount) => Seq[T], val inDegree: Int, val outWidths: Seq[BitCount] = Seq(-1 bit)) {
 
   def asComponent(implicit holderProvider: HolderProvider[T]) = () => new Component with NodeComponent[T] {
+    logger.info(s"implementing submodule $this")
     override val dataIn: Vec[T] = in Vec(holderProvider(-1 bits), inDegree)
     override val dataOut: Vec[T] = out Vec(holderProvider(-1 bits), outWidths.size)
     dataOut := Vec(impl(dataIn, GlobalCount(U(0))))
   }
 
-//  def inferable(implicit holderProvider: HolderProvider[T]) = GenRTL(asComponent)
+//  def inferable(implicit holderProvider: HolderProvider[T]): Boolean = {
+//    GenRTL(new Component {
+//      val core = asComponent(holderProvider)()
+//      val dataIn: Vec[T] = in Vec(holderProvider(5 bits), inDegree)
+//      val dataOut: Vec[T] = out Vec(holderProvider(-1 bits), outWidths.size)
+//
+//      core.dataIn := dataIn
+//      dataOut := core.dataOut
+//    })
+//  }
 }
 
 object DSPHardware {
