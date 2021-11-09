@@ -48,7 +48,8 @@ class DFGGraphTest extends AnyFlatSpec {
   //  }
 
   it should "work on nested DFG" in {
-    println(new DFGImpl(implementingDFGs.nestedDFG).implAsComponent())
+    val nested = implementingDFGs.nestedDFG
+    genDFG(nested, Seq.fill(nested.inputNodes.size)(10 bits))
   }
 
   "the folding algorithm" should "fold correctly on chap6 fig6_3" in verifyFolding(chap6.fig6_3, chap6.foldingSet, testHardType, "chap6_fig6_3")

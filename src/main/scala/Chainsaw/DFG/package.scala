@@ -120,9 +120,8 @@ package object DFG {
 
   implicit def defaultOrder[T <: Data](node: DSPNode[T]): DSPNodeWithOrder[T] = DSPNodeWithOrder(node, 0)
 
-  //  sim and synth utils of DFGGraph and Nodes
-
-  /** wrap a DSPNode as a component
+  // gen, sim, synth and impl utils of DFGGraph and Nodes
+  /** wrap a DSPNode as a component, this is the supportive method for all following tasks
    *
    * @param node           dut node
    * @param inputWidths    as impl is used, this is necessary
@@ -149,8 +148,15 @@ package object DFG {
     }
   }
 
-  def genDSPNode[THard <: Data](node: DSPNode[THard], inputWidths: Seq[BitCount])(implicit holderProvider: BitCount => THard) =
+  /** generate the RTL code(verilog) of a DSPNode
+   * @param node
+   * @param inputWidths input widths which drives all other widths
+   */
+  def genDSPNode[THard <: Data](node: DSPNode[THard], inputWidths: Seq[BitCount])(implicit holderProvider: BitCount => THard): Unit =
     GenRTL(wrappedNode(node, inputWidths), name = node.name)
+
+  def genDFG[THard <: Data](dfg: DFGGraph[THard], inputWidths: Seq[BitCount])(implicit holderProvider: BitCount => THard): Unit =
+    genDSPNode(dfg.asNode(dfg.name, 0 cycles), inputWidths)
 
   /** test a DSPNode as a data-driven DUT, defined by the input/output
    *
@@ -160,6 +166,11 @@ package object DFG {
                                         (implicit holderProvider: BitCount => THard): Seq[Si] =
     doFlowPeekPokeTest(node.name, wrappedNode(node, inputWidths), testCases, golden, initLength).asInstanceOf[Seq[Si]]
 
+  def testDFG[THard <: Data, Si, So](dfg: DFGGraph[THard], graphLatency: CyclesCount, inputWidths: Seq[BitCount],
+                                     testCases: Seq[Si], golden: Seq[So], initLength: Int = 0)
+                                    (implicit holderProvider: BitCount => THard): Seq[Si] =
+    testDSPNode(dfg.asNode(dfg.name, graphLatency), inputWidths, testCases, golden, initLength)
+
   /** synthesis a DSPNode using Vivado
    */
   def synthDSPNode[THard <: Data](node: DSPNode[THard], inputWidths: Seq[BitCount], forTiming: Boolean = false)
@@ -167,7 +178,7 @@ package object DFG {
     VivadoSynth(wrappedNode(node, inputWidths, forTiming), name = node.name)
 
   def synthDFG[THard <: Data](dfg: DFGGraph[THard], inputWidths: Seq[BitCount], forTiming: Boolean = false)
-                                 (implicit holderProvider: BitCount => THard): VivadoReport =
+                             (implicit holderProvider: BitCount => THard): VivadoReport =
     VivadoSynth(wrappedNode(dfg.asNode(dfg.name), inputWidths, forTiming), dfg.name)
 
   /** implement(synth, place and route) a DSPNode using Vivado
@@ -177,7 +188,7 @@ package object DFG {
     VivadoImpl(wrappedNode(node, inputWidths, forTiming), name = node.name)
 
   def implDFG[THard <: Data](dfg: DFGGraph[THard], inputWidths: Seq[BitCount], forTiming: Boolean = false)
-                             (implicit holderProvider: BitCount => THard): VivadoReport =
+                            (implicit holderProvider: BitCount => THard): VivadoReport =
     VivadoImpl(wrappedNode(dfg.asNode(dfg.name), inputWidths, forTiming), dfg.name)
 
 }

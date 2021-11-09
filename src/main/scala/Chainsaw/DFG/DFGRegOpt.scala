@@ -4,10 +4,6 @@ import spinal.core._
 
 /** providing algorithms on optimizing registers and memories
  *
- * @param dfg
- * @param dataReset
- * @param holderProvider
- * @tparam T
  */
 class DFGRegOpt[T <: Data](dfg: DFGGraph[T]) {
 

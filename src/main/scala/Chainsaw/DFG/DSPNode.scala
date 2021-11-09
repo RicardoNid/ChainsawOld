@@ -1,6 +1,14 @@
 package Chainsaw.DFG
 
 import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.lib.fsm._
+
+import Chainsaw._
+import Chainsaw.matlabIO._
+import Chainsaw.dspTest._
+import spinal.core._
 
 import scala.language.postfixOps
 
@@ -11,6 +19,8 @@ class DSPHardware[T <: Data](val impl: (Seq[T], GlobalCount) => Seq[T], val inDe
     override val dataOut: Vec[T] = out Vec(holderProvider(-1 bits), outWidths.size)
     dataOut := Vec(impl(dataIn, GlobalCount(U(0))))
   }
+
+//  def inferable(implicit holderProvider: HolderProvider[T]) = GenRTL(asComponent)
 }
 
 object DSPHardware {
