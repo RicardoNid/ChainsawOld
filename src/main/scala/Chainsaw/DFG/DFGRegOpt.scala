@@ -24,7 +24,7 @@ class DFGRegOpt[T <: Data](dfg: DFGGraph[T]) {
           val length = delays.max // registers needed
           if (length > 0) { // refactor multiple delay lines by single delay line and multiple nodes on it
             val temps: Seq[VirtualNode[T]] = // virtual nodes working as passthroughs
-              (0 until length).map(i => VirtualNode[T](s"${vertex.name}.${outputPort}_delay${i + 1}"))
+              (0 until length).map(i => VirtualNode[T](s"${vertex.name}_${outputPort}_delay${i + 1}", vertex.hardware.outWidths(outputPort)))
             // end-to-end connection
             graph.addVertices(temps: _*)
             graph.addEdge(vertex(outputPort), temps(0)(0), 1)

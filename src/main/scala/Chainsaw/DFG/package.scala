@@ -121,6 +121,7 @@ package object DFG {
   implicit def defaultOrder[T <: Data](node: DSPNode[T]): DSPNodeWithOrder[T] = DSPNodeWithOrder(node, 0)
 
   // gen, sim, synth and impl utils of DFGGraph and Nodes
+
   /** wrap a DSPNode as a component, this is the supportive method for all following tasks
    *
    * @param node           dut node
@@ -149,6 +150,7 @@ package object DFG {
   }
 
   /** generate the RTL code(verilog) of a DSPNode
+   *
    * @param node
    * @param inputWidths input widths which drives all other widths
    */

@@ -152,7 +152,10 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def isForwarding: Boolean = !isRecursive
 
-  def delayAmount: Int = vertexSeq.map(node => (node.outgoingEdges.map(_.delay) :+ 0).max).sum
+  def delayAmount: Int = vertexSeq.map { node =>
+    val edgesOnPorts: Seq[Seq[DSPEdge[T]]] = node.outgoingEdges.groupBy(_.outOrder).toSeq.map(_._2)
+    edgesOnPorts.map(_.map(_.delay).max).sum
+  }.sum
 
   def unmergedDelayAmount: Int = edgeSeq.map(_.delay).sum
 

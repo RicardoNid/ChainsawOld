@@ -13,37 +13,42 @@ import scala.util.{Failure, Success, Try}
 
 /** providing algorithms on implementing DFG as hardware component
  *
- * @param dfg            dfg to be implemented as hardware
+ * @param referenceDFG   dfg to be implemented as hardware
  * @param useRegInit     when set, registers on the edge are zero-initialized
  * @param holderProvider method that generate a signal of a given width
  * @see [[DFG]] package object for default holder providers of DFG
  * @see [[examples.MultiModuleExample]] for submodule sharing mechanism
  */
 @Experimental // the "submodule" mode is experimental, it improves the gen result, but may lead to width inference problem
-class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmodule: Boolean = false)
+class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmodule: Boolean = true)
                         (implicit val holderProvider: HolderProvider[T]) {
 
   val logger: Logger = LoggerFactory.getLogger(s"implementing procedure")
-  logger.info(s"implementing dfg ${dfg.name}, with dataReset = $useRegInit")
-  logger.info(s"number of nodes: ${dfg.innerNodes.size}, number of modules: ${dfg.innerNodes.map(_.hardware).distinct.size}")
 
-  implicit def referenceDFG: DFGGraph[T] = dfg
+  // do regs merging before
+  implicit val referenceDFG: DFGGraph[T] = if (!dfg.isMerged) dfg.merged else dfg
+
+  logger.info(
+    s"\n\timplementing dfg: ${dfg.name}, with regInit = $useRegInit, useSubmodule = $useSubmodule" +
+      s"\n\tnumber of nodes: ${dfg.innerNodes.size}, number of modules: ${dfg.innerNodes.map(_.hardware).distinct.size}" +
+      s"\n\tmerging regs: ${dfg.unmergedDelayAmount} -> ${referenceDFG.unmergedDelayAmount}"
+  )
 
   // attributes tobe used, they provide the "environment" of "synthesis"
-  val isRecursive: Boolean = dfg.isRecursive
-  val vertexSeq: Seq[DSPNode[T]] = dfg.vertexSeq
-  val globalLcm: Int = dfg.globalLcm
-  val inputNodes: Seq[DSPNode[T]] = dfg.inputNodes
-  val outputNodes: Seq[DSPNode[T]] = dfg.outputNodes
+  val isRecursive: Boolean = referenceDFG.isRecursive
+  val vertexSeq: Seq[DSPNode[T]] = referenceDFG.vertexSeq
+  val globalLcm: Int = referenceDFG.globalLcm
+  val inputNodes: Seq[DSPNode[T]] = referenceDFG.inputNodes
+  val outputNodes: Seq[DSPNode[T]] = referenceDFG.outputNodes
   val signalMap: mutable.Map[DSPNode[T], Seq[T]] = mutable.Map[DSPNode[T], Seq[T]]() // storing the output signals of implemented nodes
   val delayMap: mutable.Map[DSPNode[T], Seq[Vec[T]]] = mutable.Map[DSPNode[T], Seq[Vec[T]]]()
 
   val hardware2component: Map[DSPHardware[T], () => Component with NodeComponent[T]] = // a map from DSPNode to its hardware component
-    dfg.innerNodes.map(_.hardware).distinct // nodes who have same hardware implementation share submodule
+    referenceDFG.innerNodes.map(_.hardware).distinct // nodes who have same hardware implementation share submodule
       .map(hardware => hardware -> hardware.asComponent).toMap
 
   val componentMap: Map[DSPNode[T], () => Component with NodeComponent[T]] =
-    dfg.innerNodes
+    referenceDFG.innerNodes
       .map(node => node -> hardware2component(node.hardware)).toMap
 
   def nameSignal(signals: Seq[T], target: DSPNode[T]): Unit = {
@@ -103,7 +108,11 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
 
     // step2: driving the node and get the output
     // option: using shared submodule/anno function
-    if (useSubmodule && componentMap.contains(target) && !isRecursive) { // when available, implement it by submodule
+    if (
+      useSubmodule &&
+      !target.isInstanceOf[VirtualNode[T]] && componentMap.contains(target)
+      && !isRecursive
+    ) { // when available, implement it by submodule
       logger.debug(s"implementing $target using submodule, inputWidths = ${dataInsOnPorts.map(_.getBitsWidth).mkString(" ")}")
       val nodeComponent = componentMap(target)()
       nodeComponent.dataIn := Vec(dataInsOnPorts)
