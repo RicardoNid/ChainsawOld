@@ -7,7 +7,8 @@ import scala.language.postfixOps
 
 class DSPHardware[T <: Data](val impl: (Seq[T], GlobalCount) => Seq[T], val inDegree: Int, val outWidths: Seq[BitCount] = Seq(-1 bit)) {
 
-  def asComponent(implicit holderProvider: HolderProvider[T]) = () => new Component with NodeComponent[T] {
+  def asComponent(namep:String)(implicit holderProvider: HolderProvider[T]) = () => new Component with NodeComponent[T] {
+    setDefinitionName(namep)
     override val dataIn: Vec[T] = in Vec(holderProvider(-1 bits), inDegree)
     override val dataOut: Vec[T] = out Vec(holderProvider(-1 bits), outWidths.size)
     dataOut := Vec(impl(dataIn, GlobalCount(U(0))))
@@ -53,6 +54,7 @@ class DSPNode[T <: Data](implp: DSPHardware[T], namep: String, delayp: CyclesCou
   def isOuter: Boolean = !isInner
 
   def apply(order: Int): DSPNodeWithOrder[T] = DSPNodeWithOrder(this, order)
+
 }
 
 // TODO: better implementation of copy

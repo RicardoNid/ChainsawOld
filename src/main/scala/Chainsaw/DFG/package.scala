@@ -15,6 +15,12 @@ package object DFG {
 
   type HolderProvider[T] = BitCount => T
 
+  case class ImplPolicy(useRegInit: Boolean, useSubmodule: Boolean)
+
+  //  var globalImplPolicy: ImplPolicy = ImplPolicy(true, false) // this version is problem-free under current testbench
+
+  var globalImplPolicy: ImplPolicy = ImplPolicy(false, true) // this is the config we should take
+
   // holder providers, serving impl methods
   implicit val sintProvider: HolderProvider[SInt] = (width: BitCount) => if (width.value >= 1) SInt(width) else SInt()
   implicit val uintProvider: HolderProvider[UInt] = (width: BitCount) => if (width.value >= 1) UInt(width) else UInt()
@@ -26,7 +32,6 @@ package object DFG {
   implicit val sintConverter: (Int, BitCount) => SInt = (value: Int, width: BitCount) => S(value, width)
   implicit val uintConverter: (Int, BitCount) => UInt = (value: Int, width: BitCount) => U(value, width)
   implicit val bitsConverter: (Int, BitCount) => Bits = (value: Int, width: BitCount) => B(value, width)
-
 
   // graph utils for constructing DFG
   implicit class graphUtils[T <: Data](dfg: DFGGraph[T]) {

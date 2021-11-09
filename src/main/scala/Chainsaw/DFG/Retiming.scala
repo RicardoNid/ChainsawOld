@@ -1,23 +1,19 @@
 package Chainsaw.DFG
 
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 
-import scala.tools.nsc.interpreter.StdReplTags.u
-
-/**
- * @param dfg
+/** providing algorithms on retiming DFG
+ *
  * @param solution a map of DSPNode -> its retiming value, it doesn't have to contain all the nodes
- * @tparam T
  */
 class Retiming[T <: Data](val dfg: DFGGraph[T], solution: Map[DSPNode[T], Int]) extends Transform {
 
-  val logger = LoggerFactory.getLogger("retiming procedure")
+  val logger: Logger = LoggerFactory.getLogger("retiming procedure")
 
   lazy val retimed: DFGGraph[T] = {
-    logger.info("start retiming")
-    val r = solution
-    implicit val retimedDFG = dfg.clone().asInstanceOf[DFGGraph[T]]
+    logger.info("s\n\tstart retiming dfg[${dfg.name}]")
+    implicit val retimedDFG: DFGGraph[T] = dfg.clone().asInstanceOf[DFGGraph[T]]
     retimedDFG.foreachEdge { edge =>
       // regard nodes not in the solution as 0(static)
       val ru = solution.getOrElse(edge.source, 0)
@@ -31,5 +27,6 @@ class Retiming[T <: Data](val dfg: DFGGraph[T], solution: Map[DSPNode[T], Int]) 
     retimedDFG
   }
 
-  override def latencyTransformations: Seq[LatencyTrans] = Seq(LatencyTrans(1, solution(dfg.outputNodes.head) - solution(dfg.inputNodes.head)))
+  override def latencyTransformations: Seq[LatencyTrans] =
+    Seq(LatencyTrans(1, solution(dfg.outputNodes.head) - solution(dfg.inputNodes.head)))
 }

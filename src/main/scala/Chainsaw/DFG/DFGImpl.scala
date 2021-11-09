@@ -29,7 +29,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
   implicit val referenceDFG: DFGGraph[T] = if (!dfg.isMerged) dfg.merged else dfg
 
   logger.info(
-    s"\n\timplementing dfg: ${dfg.name}, with regInit = $useRegInit, useSubmodule = $useSubmodule" +
+    s"\n\tstart implementing DFG[${dfg.name}] , with regInit = ${globalImplPolicy.useRegInit}, useSubmodule = ${globalImplPolicy.useSubmodule}" +
       s"\n\tnumber of nodes: ${dfg.innerNodes.size}, number of modules: ${dfg.innerNodes.map(_.hardware).distinct.size}" +
       s"\n\tmerging regs: ${dfg.unmergedDelayAmount} -> ${referenceDFG.unmergedDelayAmount}"
   )
@@ -43,13 +43,13 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
   val signalMap: mutable.Map[DSPNode[T], Seq[T]] = mutable.Map[DSPNode[T], Seq[T]]() // storing the output signals of implemented nodes
   val delayMap: mutable.Map[DSPNode[T], Seq[Vec[T]]] = mutable.Map[DSPNode[T], Seq[Vec[T]]]()
 
-  val hardware2component: Map[DSPHardware[T], () => Component with NodeComponent[T]] = // a map from DSPNode to its hardware component
-    referenceDFG.innerNodes.map(_.hardware).distinct // nodes who have same hardware implementation share submodule
-      .map(hardware => hardware -> hardware.asComponent).toMap
-
-  val componentMap: Map[DSPNode[T], () => Component with NodeComponent[T]] =
-    referenceDFG.innerNodes
-      .map(node => node -> hardware2component(node.hardware)).toMap
+  val hardwareGroups: Map[DSPHardware[T], Seq[DSPNode[T]]] = dfg.innerNodes.groupBy(_.hardware) // nodes grouped by different hardware
+  // a map from DSPNode to its hardware component, making multiple nodes share a same component
+  val componentMap: Map[DSPNode[T], () => Component with NodeComponent[T]] = hardwareGroups.map { case (hardware, nodes) =>
+    val commonName: String = nodes.map(_.name).reduce(_ intersect _).filter(_.isLetterOrDigit)
+    val component = hardware.asComponent(commonName)
+    nodes.map(node => node -> component)
+  }.flatten.toMap
 
   def nameSignal(signals: Seq[T], target: DSPNode[T]): Unit = {
     if (signals.size == 1) signals.head.setName(target.name, weak = true)
@@ -93,7 +93,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
           //          }
 
           val dataIn = signalMap(edge.source)(edge.outOrder) // get the data at driver's output port
-          if (useRegInit) Delay(dataIn, edge.weight.toInt, init = dataIn.getZero) // get the delayed version
+          if (globalImplPolicy.useRegInit) Delay(dataIn, edge.weight.toInt, init = dataIn.getZero) // get the delayed version
           else Delay(dataIn, edge.weight.toInt)
         }
 
@@ -109,9 +109,9 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
     // step2: driving the node and get the output
     // option: using shared submodule/anno function
     if (
-      useSubmodule &&
-      !target.isInstanceOf[VirtualNode[T]] && componentMap.contains(target)
-      && !isRecursive
+      globalImplPolicy.useSubmodule &&
+        !target.isInstanceOf[VirtualNode[T]] && componentMap.contains(target)
+        && !isRecursive
     ) { // when available, implement it by submodule
       logger.debug(s"implementing $target using submodule, inputWidths = ${dataInsOnPorts.map(_.getBitsWidth).mkString(" ")}")
       val nodeComponent = componentMap(target)()

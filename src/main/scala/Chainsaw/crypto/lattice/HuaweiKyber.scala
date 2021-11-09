@@ -12,7 +12,6 @@ import scala.language.postfixOps
 
 object HuaweiKyber {
 
-  // TEMP: RegNext should have no init value
   // huawei configurations p = p, polySize = 256
   val p = 3329 // p = 13 * 256 + 1
   val k = 13
@@ -58,11 +57,11 @@ object HuaweiKyber {
    */
   def k2RED(dataIn: UInt) = {
     // step 1
-    //    require(dataIn.getBitsWidth == 24)
+
     val cl = dataIn(7 downto 0)
     val ch = dataIn(23 downto 8)
     val cPrime: SInt = RegNext((13 * cl).intoSInt -^ ch.intoSInt) // 16 + 1 bits TODO: implement this by shift-add?
-    cPrime.setName("cPrime", weak = true)
+
     // step 2
     val cPrimel = cPrime(7 downto 0).asUInt
     val cPrimeh = cPrime(16 downto 8)
@@ -75,10 +74,10 @@ object HuaweiKyber {
       .elsewhen(lower >= 0)(ret := lower.asUInt.resized)
       .otherwise(ret := CPrime2.asUInt.resized)
 
-    // for wavefile debugging
-    Seq(cl, ch, cPrime, cPrimel, cPrimel, CPrime2)
-      .zip(Seq("cl", "ch", "cPrime", "cPrimel", "cPrimel", "CPrime2"))
-      .foreach { case (signal, str) => signal.setName(str, weak = true) }
+    //    // for wave file debugging
+    //    Seq(cl, ch, cPrime, cPrimel, cPrimel, CPrime2)
+    //      .zip(Seq("cl", "ch", "cPrime", "cPrimel", "cPrimel", "CPrime2"))
+    //      .foreach { case (signal, str) => signal.setName(str, weak = true) }
 
     RegNext(ret)
   }
@@ -147,8 +146,12 @@ object runKyber {
     implicit def long2UInt: (Long, BitCount) => UInt = (value: Long, _: BitCount) => U(value, 12 bits) // TODO:
 
     // gen + sim + synth + impl
-    val nttDFG_folded_8: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, -8).getGraph
-    synthDFG(nttDFG_folded_8, Seq.fill(128)(12 bits), forTiming = true)
-    implDFG(nttDFG_folded_8, Seq.fill(128)(12 bits), forTiming = true)
+    globalImplPolicy = ImplPolicy(useRegInit = false, useSubmodule = true)
+
+    val nttDFG: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, 1).getGraph
+    genDFG(nttDFG, Seq.fill(128)(12 bits))
+    //    val nttDFG_folded_8: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, -8).getGraph
+    //    synthDFG(nttDFG_folded_8, Seq.fill(128)(12 bits), forTiming = false)
+    //    implDFG(nttDFG_folded_8, Seq.fill(128)(12 bits), forTiming = true)
   }
 }

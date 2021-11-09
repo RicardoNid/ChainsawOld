@@ -138,6 +138,33 @@ class DFGGraphTest extends AnyFlatSpec {
     assert(duts1.forall(_.merged.isMerged))
   }
 
+  "DFG MUX" should "be implemented correctly" in {
+    GenRTL(new Component {
+      val dataIn: Vec[Bits] = in Vec(Bits(4 bits), 3)
+      val count: UInt = in UInt (log2Up(24) bits)
+      implicit val globalCount: GlobalCount = GlobalCount(count)
+      val dataOut: Bits = out Bits (4 bits)
+
+      val mux: DFGMUX[Bits] = DFGMUX[Bits](Seq(
+        Seq(Schedule(1, 4), Schedule(2, 4)),
+        Seq(Schedule(0, 8), Schedule(4, 8)),
+        Seq(Schedule(3, 12), Schedule(7, 12), Schedule(11, 12))
+      ))
+
+      dataOut := mux.impl(dataIn, 24)
+    }, name = "complexMUX")
+
+    GenRTL(new Component {
+      val dataIn: Bits = in Bits (4 bits)
+      val count: UInt = in UInt (log2Up(24) bits)
+      implicit val globalCount: GlobalCount = GlobalCount(count)
+      val dataOut: Bits = out Bits (4 bits)
+
+      val mux: DFGMUX[Bits] = DFGMUX[Bits](Seq(Seq(Schedule(1, 1))))
+      dataOut := mux.impl(Seq(dataIn), 24)
+    })
+  }
+
 //  "DSPNode" should "have a correct inferable property" in {
 //    println(crypto.lattice.HuaweiKyber.ctButterflyNode.hardware.inferable)
 //    println(BinaryNode(Operators.sintMult, "mult").hardware.inferable)
