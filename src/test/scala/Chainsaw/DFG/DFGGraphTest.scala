@@ -125,10 +125,16 @@ class DFGGraphTest extends AnyFlatSpec {
   it should "work on fig5.12" in verifyUnfolding(chap5.fig5_12, 2, testHardType, "fig5.12")
 
   "the reg opt algorithms" should "work on multiple different graphs" in {
-    logger.info(s"testing reg merge on\n${textBookDUTs.filterNot(_.isMerged).map(_.name).mkString(" ")}")
-    assert(textBookDUTs.forall(_.merged.isMerged))
-    logger.info(s"testing reg merge on\n${paper1992OnFoldingDUTs.filterNot(_.isMerged).map(_.name).mkString(" ")}")
-    assert(paper1992OnFoldingDUTs.forall(_.merged.isMerged))
+
+    val duts0 = textBookDUTs.filterNot(_.isMerged)
+    logger.info(s"testing reg merge on\n${duts0.map(_.name).mkString(" ")}"+
+      s"\n${duts0.map(dut => s"${dut.name}: ${dut.unmergedDelayAmount} -> ${dut.merged.unmergedDelayAmount}").mkString("\n")}")
+    assert(duts0.forall(_.merged.isMerged))
+
+    val duts1 = paper1992OnFoldingDUTs.filterNot(_.isMerged)
+    logger.info(s"testing reg merge on\n${duts1.filterNot(_.isMerged).map(_.name).mkString(" ")}" +
+      s"\n${duts1.map(dut => s"${dut.name}: ${dut.unmergedDelayAmount} -> ${dut.merged.unmergedDelayAmount}").mkString("\n")}")
+    assert(duts1.forall(_.merged.isMerged))
   }
 
 }

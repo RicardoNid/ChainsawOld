@@ -24,7 +24,7 @@ trait DFGGen[T <: Data] {
 
   def latency: Int
 
-  def getGraphAsNode(dataReset: Boolean = false)(implicit holderProvider: BitCount => T): DSPNode[T]
+  def getGraphAsNode(dataReset: Boolean = false)(implicit holderProvider: HolderProvider[T]): DSPNode[T]
 }
 
 trait NodeComponent[T <: Data] {

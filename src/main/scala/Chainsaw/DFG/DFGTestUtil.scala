@@ -21,7 +21,8 @@ object DFGTestUtil {
    */
   def verifyFunctionalConsistency[T <: Data](original: DFGGraph[T], transformed: DFGGraph[T],
                                              elementType: HardType[T], speedUp: Int, latencyTransformations: Seq[LatencyTrans], testLength: Int = 50,
-                                             name: String = null, basicLatency: Int = -1)(implicit holderProvider: BitCount => T): Unit = {
+                                             name: String = null, basicLatency: Int = -1)
+                                            (implicit holderProvider: HolderProvider[T]): Unit = {
 
     val logger = LoggerFactory.getLogger("FunctionalConsistencyLogger")
 
@@ -45,7 +46,9 @@ object DFGTestUtil {
 
     logger.info(s"input at $inputSchedule, output at $outputSchedule")
 
-    val originalLatency = if (basicLatency == -1) {original.latency} else basicLatency
+    val originalLatency = if (basicLatency == -1) {
+      original.latency
+    } else basicLatency
     var transformedLatency = originalLatency
     latencyTransformations.foreach(trans => transformedLatency = trans.trans(transformedLatency))
 
@@ -135,7 +138,7 @@ object DFGTestUtil {
   }
 
   def verifyFolding[T <: Data](original: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T] with Foldable[T]]], elementType: HardType[T], name: String = null, basicLatency: Int = -1)
-                              (implicit holderProvider: BitCount => T) = {
+                              (implicit holderProvider: HolderProvider[T]) = {
     val algo = new Folding(original, foldingSets)
     val foldedDFG = algo.folded
     val N = foldingSets.head.size
@@ -143,7 +146,7 @@ object DFGTestUtil {
   }
 
   def verifyUnfolding[T <: Data](original: DFGGraph[T], unfoldingFactor: Int, elementType: HardType[T], name: String = null, basicLatency: Int = -1)
-                                (implicit holderProvider: BitCount => T) = {
+                                (implicit holderProvider: HolderProvider[T]) = {
     val algo = new Unfolding(original, unfoldingFactor)
     val unfoldedDFG = algo.unfolded
     verifyFunctionalConsistency(original, unfoldedDFG, elementType, unfoldingFactor, algo.latencyTransformations, name = name, basicLatency = basicLatency)

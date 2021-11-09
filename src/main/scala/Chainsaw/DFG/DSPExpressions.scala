@@ -35,19 +35,19 @@ object DSPAssignment {
   def apply[T <: Data](sources: DSPNode[T], delay: Double, target: DSPNode[T]): DSPAssignment[T] = new DSPAssignment(Seq(sources), Seq(delay), target)
 }
 
-/** A path containing interleaving nodes and edge
+/** a path containing interleaving nodes and edge, these nodes should be SISO, as port indices are not given
  *
  * @example a >> 1 >> b >> 2 >> c, a >> b equals a >> 0 >> b
  */
 case class DSPPath[T <: Data](nodes: ArrayBuffer[DSPNode[T]], delays: ArrayBuffer[Double]) {
 
-  def >>(that: DSPNode[T]) = {
+  def >>(that: DSPNode[T]): DSPPath[T] = {
     nodes += that
     if (nodes.size != delays.size + 1) delays += 0
     this
   }
 
-  def >>(that: Int) = {
+  def >>(that: Int): DSPPath[T] = {
     delays += that
     this
   }

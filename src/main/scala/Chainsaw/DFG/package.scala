@@ -13,14 +13,14 @@ import scala.language.{implicitConversions, postfixOps}
 
 package object DFG {
 
-  //
-  //  implicit def toConstantNode[T <: Data](constant: T) = ConstantNode(s"constant_$constant", constant)
+  type HolderProvider[T] = BitCount => T
 
   // holder providers, serving impl methods
-  implicit val sintProvider: BitCount => SInt = (width: BitCount) => if (width.value >= 1) SInt(width) else SInt()
-  implicit val uintProvider: BitCount => UInt = (width: BitCount) => if (width.value >= 1) UInt(width) else UInt()
-  implicit val bitsProvider: BitCount => Bits = (width: BitCount) => if (width.value >= 1) Bits(width) else Bits()
-  implicit val complexProvider: BitCount => ComplexNumber = (width: BitCount) => ComplexNumber(1, width.value - 2) // FIXME: we use 1 bit in integral part now
+  implicit val sintProvider: HolderProvider[SInt] = (width: BitCount) => if (width.value >= 1) SInt(width) else SInt()
+  implicit val uintProvider: HolderProvider[UInt] = (width: BitCount) => if (width.value >= 1) UInt(width) else UInt()
+  implicit val bitsProvider: HolderProvider[Bits] = (width: BitCount) => if (width.value >= 1) Bits(width) else Bits()
+
+  implicit val complexProvider: HolderProvider[ComplexNumber] = (width: BitCount) => ComplexNumber(1, width.value - 2) // FIXME: we use 1 bit in integral part now
 
   // soft -> hard converters, serving literal-related methods
   implicit val sintConverter: (Int, BitCount) => SInt = (value: Int, width: BitCount) => S(value, width)

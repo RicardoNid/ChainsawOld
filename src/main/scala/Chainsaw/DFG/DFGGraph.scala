@@ -158,7 +158,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def isMerged: Boolean = delayAmount == unmergedDelayAmount
 
-  /** The least common multiple of all muxes in this DFG
+  /** The least common multiple of all muxes in this DFG, which is the working period of this DFG
    */
   def globalLcm: Int = {
     val periods = edgeSeq.flatMap(_.schedules).map(_.period).distinct.sorted.reverse
@@ -166,7 +166,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     periods.reduce(lcm)
   }
 
-  def delayPaths: Seq[GraphPath[DSPNode[T], DSPEdge[T]]] = { // need optimization! this is a big bottleneck!
+  def delayPaths: Seq[GraphPath[DSPNode[T], DSPEdge[T]]] = { // FIXME: need optimization! this is a big bottleneck!
     val algo = new alg.shortestpath.BellmanFordShortestPath(this)
     Seq.tabulate(inputNodes.size, outputNodes.size)((i, j) => algo.getPath(inputNodes(i), outputNodes(j))).flatten
   }
@@ -181,7 +181,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def criticalPathLength: Double = new CriticalPathAlgo(this).criticalPathLength
 
-  def impl(dataIns: Seq[T], dataReset: Boolean = false)(implicit holderProvider: BitCount => T): Seq[T] =
+  def impl(dataIns: Seq[T], dataReset: Boolean = true)(implicit holderProvider: HolderProvider[T]): Seq[T] =
     new DFGImpl(this, dataReset)(holderProvider).impl(dataIns)
 
   // feasibilityConstraintGraph
@@ -227,7 +227,8 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   }
 
   // TODO: consider carefully on these properties
-  def asNode(name: String, graphLatency: CyclesCount = latency cycles, dataReset: Boolean = false)(implicit holderProvider: BitCount => T): DeviceNode[T] = {
+  def asNode(name: String, graphLatency: CyclesCount = latency cycles, dataReset: Boolean = false)
+            (implicit holderProvider: HolderProvider[T]): DeviceNode[T] = {
     require(isForwarding)
     DeviceNode[T](
       DSPHardware(

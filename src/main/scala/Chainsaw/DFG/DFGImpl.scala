@@ -15,13 +15,14 @@ import scala.util.{Failure, Success, Try}
  * @param holderProvider
  * @see [[examples.MultiModuleExample]]
  */
-class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = false)(implicit val holderProvider: BitCount => T) {
+class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = true)
+                        (implicit val holderProvider: HolderProvider[T]) {
 
   val logger: Logger = LoggerFactory.getLogger(s"implementing procedure")
   logger.info(s"implementing dfg ${dfg.name}, dataReset = $dataReset")
   logger.info(s"number of nodes: ${dfg.innerNodes.size}, number of modules: ${dfg.innerNodes.map(_.hardware).distinct.size}")
 
-  implicit def currentDFG: DFGGraph[T] = dfg
+  implicit def referenceDFG: DFGGraph[T] = dfg
 
   // attributes tobe used
   val vertexSeq: Seq[DSPNode[T]] = dfg.vertexSeq
@@ -29,7 +30,9 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = false)(implicit 
   val inputNodes: Seq[DSPNode[T]] = dfg.inputNodes
   val outputNodes: Seq[DSPNode[T]] = dfg.outputNodes
 
-  val hardware2component: Map[DSPHardware[T], () => Component with NodeComponent[T]] = dfg.innerNodes.map(_.hardware).distinct.map(hardware => hardware -> hardware.asComponent).toMap
+  val hardware2component: Map[DSPHardware[T], () => Component with NodeComponent[T]] = // a map from DSPNode to its hardware component
+    dfg.innerNodes.map(_.hardware).distinct // nodes who have same hardware implementation share submodule
+      .map(hardware => hardware -> hardware.asComponent).toMap
   val componentMap: Map[DSPNode[T], () => Component with NodeComponent[T]] = dfg.innerNodes.map(node => node -> hardware2component(node.hardware)).toMap
 
   def initGlobalCount(): GlobalCount = {
@@ -42,19 +45,26 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = false)(implicit 
 
     val dataIns: Seq[(Int, Seq[DSPEdge[T]])] = target.incomingEdges // group all incoming edges by input port
       .groupBy(_.inOrder).toSeq
+      .sortBy(_._1) // sort by the order so that "dataInsOnPorts" is in order
 
     val dataInsOnPorts: Seq[T] = // implement dataIns on different ports
       dataIns.map { case (portNumber, edgesOnePort) => // combine dataIns at the same port by a mux
         val dataCandidates: Seq[T] = edgesOnePort.map { edge => // take the delayed version of these dataIns
-          if (dfg.isForwarding) {
-            if (edge.delay == 0) signalMap(edge.source)(edge.outOrder)
-            else delayMap(edge.source)(edge.outOrder)(edge.delay)
-          }
-          else {
-            val dataIn = signalMap(edge.source)(edge.outOrder)
-            if (dataReset) Delay(dataIn, edge.weight.toInt, init = dataIn.getZero)
-            else Delay(dataIn, edge.weight.toInt)
-          }
+
+          // option: do register merging or not
+          //          if (dfg.isForwarding) {
+          //            if (edge.delay == 0) signalMap(edge.source)(edge.outOrder)
+          //            else delayMap(edge.source)(edge.outOrder)(edge.delay)
+          //          }
+          //          else {
+          //            val dataIn = signalMap(edge.source)(edge.outOrder)
+          //            if (dataReset) Delay(dataIn, edge.weight.toInt, init = dataIn.getZero)
+          //            else Delay(dataIn, edge.weight.toInt)
+          //          }
+
+          val dataIn = signalMap(edge.source)(edge.outOrder)
+          if (dataReset) Delay(dataIn, edge.weight.toInt, init = dataIn.getZero)
+          else Delay(dataIn, edge.weight.toInt)
         }
         // implement the MUX
         val schedulesOnePort: Seq[Seq[Schedule]] = edgesOnePort.map(_.schedules)
@@ -66,14 +76,17 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = false)(implicit 
           case Success(value) => value
         }
       }
-    // implement target using dataIns from different ports
-    if (target.isInner && dfg.isForwarding) {
-      logger.debug(s"implementing $target using submodule, inputWidths = ${dataInsOnPorts.map(_.getBitsWidth).mkString(" ")}")
-      val nodeComponent = componentMap(target)()
-      nodeComponent.dataIn := Vec(dataInsOnPorts)
-      nodeComponent.dataOut
-    }
-    else target.hardware.impl(dataInsOnPorts, globalCount)
+
+    // option: using shared submodule/anno function
+    //    if (target.isInner && dfg.isForwarding) {
+    //      logger.debug(s"implementing $target using submodule, inputWidths = ${dataInsOnPorts.map(_.getBitsWidth).mkString(" ")}")
+    //      val nodeComponent = componentMap(target)()
+    //      nodeComponent.dataIn := Vec(dataInsOnPorts)
+    //      nodeComponent.dataOut
+    //    }
+    //    else target.hardware.impl(dataInsOnPorts, globalCount)
+
+    target.hardware.impl(dataInsOnPorts, globalCount)
   }
 
   // implement a recursive graph
@@ -93,7 +106,6 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], dataReset: Boolean = false)(implicit 
     inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap(node).head := bits }
     vertexSeq.diff(inputNodes).foreach { target =>
       val rets = implVertex(target, signalMap, delayMap)
-
       val placeholders = signalMap(target)
       placeholders.zip(rets).foreach { case (placeholder, ret) => placeholder := ret.resized }
       if (placeholders.size == 1) placeholders.head.setName(target.name, weak = true) // name these signals

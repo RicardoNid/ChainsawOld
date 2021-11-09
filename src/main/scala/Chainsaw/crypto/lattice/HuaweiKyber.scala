@@ -95,7 +95,7 @@ object HuaweiKyber {
    */
   def kAddMod(a: UInt, b: UInt): UInt = {
     val (aS, bS) = (a.intoSInt, b.intoSInt)
-    val sum = aS.resize(12 bits) +^ bS.resize(12 bits)
+    val sum = aS.resize(13 bits) +^ bS.resize(13 bits)
     val corrected = sum - p
     RegNext(Mux(corrected >= 0, corrected, sum).asUInt.resize(12 bits))
   }

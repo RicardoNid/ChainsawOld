@@ -6,12 +6,11 @@ import scala.language.postfixOps
 
 class DSPHardware[T <: Data](val impl: (Seq[T], GlobalCount) => Seq[T], val inDegree: Int, val outWidths: Seq[BitCount] = Seq(-1 bit)) {
 
-  def asComponent(implicit holderProvider: BitCount => T) = () => new Component with NodeComponent[T] {
+  def asComponent(implicit holderProvider: HolderProvider[T]) = () => new Component with NodeComponent[T] {
     override val dataIn: Vec[T] = in Vec(holderProvider(-1 bits), inDegree)
     override val dataOut: Vec[T] = out Vec(holderProvider(-1 bits), outWidths.size)
     dataOut := Vec(impl(dataIn, GlobalCount(U(0))))
   }
-
 }
 
 object DSPHardware {

@@ -16,7 +16,7 @@ object NoMUX {
 case class GlobalCount(value: UInt)
 
 case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
-                            (implicit holderProvider: BitCount => T) {
+                            (implicit holderProvider: HolderProvider[T]) {
 
   def localLcm: Int = schedules.flatten.map(_.period).sorted.reverse.reduce(lcm)
 
