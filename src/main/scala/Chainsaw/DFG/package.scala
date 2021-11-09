@@ -145,6 +145,7 @@ package object DFG {
         dataOut.valid := Delay(dataIn.valid, latency, init = False)
         dataOut.payload := Vec(node.hardware.impl(dataIn.payload, GlobalCount(U(0))))
       }
+      setDefinitionName(node.name)
     }
   }
 
@@ -165,10 +166,18 @@ package object DFG {
                                  (implicit holderProvider: BitCount => THard): VivadoReport =
     VivadoSynth(wrappedNode(node, inputWidths, forTiming), name = node.name)
 
+  def synthDFG[THard <: Data](dfg: DFGGraph[THard], inputWidths: Seq[BitCount], forTiming: Boolean = false)
+                                 (implicit holderProvider: BitCount => THard): VivadoReport =
+    VivadoSynth(wrappedNode(dfg.asNode(dfg.name), inputWidths, forTiming), dfg.name)
+
   /** implement(synth, place and route) a DSPNode using Vivado
    */
   def implDSPNode[THard <: Data](node: DSPNode[THard], inputWidths: Seq[BitCount], forTiming: Boolean = false)
                                 (implicit holderProvider: BitCount => THard): VivadoReport =
     VivadoImpl(wrappedNode(node, inputWidths, forTiming), name = node.name)
+
+  def implDFG[THard <: Data](dfg: DFGGraph[THard], inputWidths: Seq[BitCount], forTiming: Boolean = false)
+                             (implicit holderProvider: BitCount => THard): VivadoReport =
+    VivadoImpl(wrappedNode(dfg.asNode(dfg.name), inputWidths, forTiming), dfg.name)
 
 }

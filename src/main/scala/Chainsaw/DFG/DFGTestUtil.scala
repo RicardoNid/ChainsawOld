@@ -148,5 +148,4 @@ object DFGTestUtil {
     val unfoldedDFG = algo.unfolded
     verifyFunctionalConsistency(original, unfoldedDFG, elementType, unfoldingFactor, algo.latencyTransformations, name = name, basicLatency = basicLatency)
   }
-
 }

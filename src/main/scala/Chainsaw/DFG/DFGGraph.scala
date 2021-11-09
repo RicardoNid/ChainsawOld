@@ -4,7 +4,6 @@ import Chainsaw._
 import org.jgrapht._
 import org.jgrapht.alg.cycle.CycleDetector
 import org.jgrapht.graph._
-import org.jgrapht.util.TypeUtil
 import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 
@@ -153,7 +152,11 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def isForwarding: Boolean = !isRecursive
 
-  def delayAmount: Int = vertexSeq.map(node => (node.outgoingEdges.map(_.weight) :+ 0.0).max).sum.toInt
+  def delayAmount: Int = vertexSeq.map(node => (node.outgoingEdges.map(_.delay) :+ 0).max).sum
+
+  def unmergedDelayAmount: Int = edgeSeq.map(_.delay).sum
+
+  def isMerged: Boolean = delayAmount == unmergedDelayAmount
 
   /** The least common multiple of all muxes in this DFG
    */
@@ -190,6 +193,8 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   }
 
   def retimed(solutions: Map[DSPNode[T], Int]): DFGGraph[T] = new Retiming(this, solutions).retimed
+
+  def merged: DFGGraph[T] = new DFGRegOpt(this).getRegMergedDFG
 
   def folded(foldingSet: Seq[Seq[DSPNode[T] with Foldable[T]]]): DFGGraph[T] = new Folding(this, foldingSet).folded
 

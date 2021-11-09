@@ -149,8 +149,8 @@ object runKyber {
     val nttDFG_folded_8: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, -8).getGraph
     val nttDFG = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, 1).getGraph
 
-//    genDSPNode(nttDFG_folded_8.asNode("ntt128_folded_8", 0 cycles), Seq.fill(128)(12 bits))
-    synthDSPNode(nttDFG.asNode("ntt128_folded_8", 0 cycles), Seq.fill(128)(12 bits))
-    synthDSPNode(nttDFG_folded_8.asNode("ntt128", 0 cycles), Seq.fill(128)(12 bits))
+    //    genDSPNode(nttDFG_folded_8.asNode("ntt128_folded_8", 0 cycles), Seq.fill(128)(12 bits))
+    //    synthDSPNode(nttDFG.asNode("ntt128_folded_8", 0 cycles), Seq.fill(128)(12 bits))
+    synthDFG(nttDFG_folded_8, Seq.fill(128)(12 bits), forTiming = true)
   }
 }

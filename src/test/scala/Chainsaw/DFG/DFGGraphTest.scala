@@ -14,7 +14,15 @@ class DFGGraphTest extends AnyFlatSpec {
 
   import Operators._
 
-  val testHardType = HardType(SInt(10 bits))
+  val testHardType: HardType[SInt] = HardType(SInt(10 bits))
+
+  val textBookDUTs: Seq[DFGGraph[SInt]] = Seq(chap2.fig2_2,
+    chap5.fig5_2, chap5.fig5_2_inner_delay, chap5.fig5_10, chap5.fig5_12,
+    chap6.fig6_3, chap6.fig6_5)
+
+  val paper1992OnFoldingDUTs: Seq[DFGGraph[SInt]] = Seq(paper1992OnFolding.fig6_a, paper1992OnFolding.fig8_a, paper1992OnFolding.fig9_a,
+    paper1992OnFolding.fig10_a, paper1992OnFolding.fig10_c,
+    paper1992OnFolding.fig12_a, paper1992OnFolding.fig13_a, paper1992OnFolding.fig14_a)
 
   "dfg" should "be implemented correctly" in {
     val dfg = DFGGraph[SInt]("simpleGraph")
@@ -115,5 +123,12 @@ class DFGGraphTest extends AnyFlatSpec {
   //  it should "work on fig5.2 with innder delay" in DFGTestUtil.verifyUnfolding(chap5.fig5_2_inner_delay, 2)
   it should "work on fig5.10" in verifyUnfolding(chap5.fig5_10, 3, testHardType, "fig5.10")
   it should "work on fig5.12" in verifyUnfolding(chap5.fig5_12, 2, testHardType, "fig5.12")
+
+  "the reg opt algorithms" should "work on multiple different graphs" in {
+    logger.info(s"testing reg merge on\n${textBookDUTs.filterNot(_.isMerged).map(_.name).mkString(" ")}")
+    assert(textBookDUTs.forall(_.merged.isMerged))
+    logger.info(s"testing reg merge on\n${paper1992OnFoldingDUTs.filterNot(_.isMerged).map(_.name).mkString(" ")}")
+    assert(paper1992OnFoldingDUTs.forall(_.merged.isMerged))
+  }
 
 }

@@ -135,7 +135,7 @@ class ButterflyGen[THard <: Data, TSoft](ctButterfly: ButterflyNode[THard], gsBu
     logger.info(s"start generating butterfly graph of size $size")
     require(isPow2(size))
     require(gsButterfly.delay == ctButterfly.delay)
-    val dfg = DFGGraph[THard]("butterfly graph")
+    val dfg = DFGGraph[THard]("butterfly_graph")
 
     val inputs = (0 until size).map(i => dfg.addInput(s"input$i"))
 
