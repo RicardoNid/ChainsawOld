@@ -5,7 +5,8 @@ import spinal.core._
 import spinal.lib._
 
 import scala.language.postfixOps
-import scala.math.abs
+import scala.math.{abs, pow}
+import Operators._
 
 // Architecutre selections
 object FirArch extends Enumeration {
@@ -238,6 +239,48 @@ class BinaryTreeGen[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFG
   override def getGraph: DFGGraph[T] = {
     val dfg = DFGGraph[T](s"binaryTree_using_${binaryNode.name}")
 
+    // define the interlayer op for building binaryTree
+    def interLayerOp(lastLayerNodes: Seq[BinaryNode[T]], currentLayerNodes: Seq[BinaryNode[T]], level: Int): Unit = {
+      require(lastLayerNodes.size == pow(2, level).toInt, "the number of lastlayernodes is mismatch the level")
+
+      val groupCurrentNodes = currentLayerNodes.filter(node => currentLayerNodes.indexOf(node) % 2 == 0)
+        .zipAll(currentLayerNodes.filter(node => currentLayerNodes.indexOf(node) % 2 == 1), null, null)
+      groupCurrentNodes.zip(lastLayerNodes).foreach { case ((cn1, cn2), ln) =>
+        Seq(cn1, cn2).filter(_.isInstanceOf[BinaryNode[T]]).zipWithIndex.foreach { case (cn, id) => dfg.addEdge(cn(0), ln(id), 0) }
+      }
+    }
+
+    // according to the size ; build the nodes and add it to dfg
+    val treeNodes = Seq.tabulate(size)(i => binaryNode.copy(s"${binaryNode.name}${i + 1}"))
+    treeNodes.foreach(dfg.addVertex)
+
+    // use the op above to construct graph
+    val levelCount = log2Up(size + 1) - 1
+    (0 until levelCount).foreach { level =>
+
+      // decide the layer-nodes
+      val indexCond = pow(2, level + 2).toInt - 1 >= size
+      val lastLayerNodes = treeNodes.slice(pow(2, level).toInt - 1, pow(2, level + 1).toInt - 1)
+      val currentLayerNodes = indexCond match {
+        case true => treeNodes.slice(pow(2, level + 1).toInt - 1, size)
+        case false => treeNodes.slice(pow(2, level + 1).toInt - 1, pow(2, level + 2).toInt - 1)
+      }
+
+      interLayerOp(lastLayerNodes, currentLayerNodes, level)
+      // set the IO port
+      if (level == 0) {
+        dfg.setOutput(lastLayerNodes(0), 0)
+      }
+      if (level == levelCount - 1) {
+        val paddingNodes = currentLayerNodes ++ Seq.fill(pow(2, level + 1).toInt - currentLayerNodes.size)(null)
+
+        val layerMap = lastLayerNodes.zipWithIndex.map { case (node, id) => node -> paddingNodes.slice(2 * id, 2 * id + 2) }
+        layerMap.foreach { case (ln, pns) =>
+          pns.foreach(pn => if (pn == null) dfg.setInput(ln, dfg.incomingEdgesOf(ln).size)
+          else (0 until 2).foreach(i => dfg.setInput(pn, i)))
+        }
+      }
+    }
     dfg
   }
 
@@ -246,6 +289,11 @@ class BinaryTreeGen[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFG
   override def getGraphAsNode(dataReset:Boolean = true)(implicit holderProvider: HolderProvider[T]): DSPNode[T] = null
 }
 
+object BinaryTreeGenTest extends App {
+  val node = BinaryNode(sintAdd, "testnode")
+  val dfg = new BinaryTreeGen(node, 9)
+  println(dfg.getGraph)
+}
 // LQX: implement this, after the implementation, an example of corresponding adder and its test should be implemented in "comparith package"
 
 /** hybrid BrentKung/KoggeStone parallel prefix graph
