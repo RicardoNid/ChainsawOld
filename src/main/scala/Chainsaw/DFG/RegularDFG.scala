@@ -205,7 +205,7 @@ class RegularDFG[T <: Data](name:String) extends DFGGraph[T](name) {
 object RegularDFG {
   def main(args: Array[String]): Unit = {
     val dfg = new RegularDFG[Bits]("examplRegularGraph")
-    val and: BinaryNode[Bits] = BinaryNode(Operators.and, "and")
+    val and: BinaryNode[Bits] = BinaryNode( "and", Operators.and)
     dfg.build2D(3, 4, and, Seq[RegularEdge]())
   }
 }

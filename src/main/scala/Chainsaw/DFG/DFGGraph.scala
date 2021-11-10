@@ -88,8 +88,8 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   // Add edge into basicDFG(MISO, no MUX)
   def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double, schedules: Seq[Schedule]): Unit = {
     if (!this.isInstanceOf[ConstraintGraph[T]]) {
-      if (source.hardware.outWidths.size > 1) logger.warn(s"adding edge to MIMO node $source with no specified port number")
-      if (target.hardware.inDegree > 1) logger.warn(s"adding to MIMO node $target with no specified port number")
+      if (source.outWidths.size > 1) logger.warn(s"adding edge to MIMO node $source with no specified port number")
+      if (target.inDegree > 1) logger.warn(s"adding to MIMO node $target with no specified port number")
     }
     addEdge(source, target, 0, target.incomingEdges.size, delay, schedules)
   }
@@ -110,7 +110,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
    */
   def addExp(exp: DSPAssignment[T]): Unit = {
     import exp._
-    if (sources.exists(_.hardware.outWidths.size > 1)) logger.warn(s"using addExp(which provides no port number or MUX info) on a MIMO DFG")
+    if (sources.exists(_.outWidths.size > 1)) logger.warn(s"using addExp(which provides no port number or MUX info) on a MIMO DFG")
     sources.foreach(addVertex)
     addVertex(target)
     sources.zip(delays).foreach { case (src, delay) => addEdge(src, target, delay) }
@@ -123,7 +123,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   def addPath(path: DSPPath[T]): Unit = {
     import path._
     require(nodes.size == delays.size + 1)
-    if (nodes.exists(_.hardware.outWidths.size > 1)) logger.warn(s"using addPath(which provides no port number or MUX info) on a MIMO DFG")
+    if (nodes.exists(_.outWidths.size > 1)) logger.warn(s"using addPath(which provides no port number or MUX info) on a MIMO DFG")
     nodes.foreach(addVertex)
     nodes.init.zip(nodes.tail).zip(delays).foreach { case ((src, des), delay) => addEdge(src, des, delay) }
   }
@@ -232,18 +232,17 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   }
 
   // TODO: consider carefully on these properties
+  // FIXME: this could be difficult to define
   def asNode(name: String, graphLatency: CyclesCount = latency cycles, dataReset: Boolean = false)
             (implicit holderProvider: HolderProvider[T]): DeviceNode[T] = {
     require(isForwarding)
-    DeviceNode[T](
-      DSPHardware(
-        impl = (dataIns: Seq[T], _: GlobalCount) => impl(dataIns, dataReset), // FIXME: this won't provide the counter of outer graph, is that legal?
-        inDegree = inputNodes.size,
-        outWidths = Seq.fill(outputNodes.size)(-1 bits) // FIXME: what if we use subgraph in
-      ),
-      name,
+    DeviceNode[T](name, DSPHardware(
+      impl = (dataIns: Seq[T], _: GlobalCount) => impl(dataIns, dataReset), // FIXME: this won't provide the counter of outer graph, is that legal?
+      inDegree = inputNodes.size,
+      outWidths = Seq.fill(outputNodes.size)(-1 bits), // FIXME: what if we use subgraph in
       graphLatency,
-      0.0 ns // FIXME: this could be difficult to define
+      0 sec
+    )
     )
   }
 }

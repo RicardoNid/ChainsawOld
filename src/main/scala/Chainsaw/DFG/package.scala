@@ -53,7 +53,7 @@ package object DFG {
     /** extend a virtual node from a output port of current node
      *
      */
-    def extendVirtual(order: Int): VirtualNode[T] = VirtualNode[T](s"${node}_v", node.hardware.outWidths(order))
+    def extendVirtual(order: Int): VirtualNode[T] = VirtualNode[T](s"${node}_v", node.outWidths(order))
   }
 
   implicit class nodesUtils[T <: Data](nodes: Seq[DSPNode[T]]) {
@@ -141,14 +141,14 @@ package object DFG {
   Component with DSPTestable[Vec[THard], Vec[THard]] = {
     new Component with DSPTestable[Vec[THard], Vec[THard]] {
       override val dataIn: Flow[Vec[THard]] = slave Flow Vec(inputWidths.map(holderProvider(_)))
-      override val dataOut: Flow[Vec[THard]] = master Flow Vec(node.hardware.outWidths.map(holderProvider(_)))
+      override val dataOut: Flow[Vec[THard]] = master Flow Vec(node.outWidths.map(holderProvider(_)))
       override val latency: Int = node.delay
       if (forTiming) {
         dataOut.valid := Delay(dataIn.valid, latency + 2, init = False)
-        dataOut.payload := RegNext(Vec(node.hardware.impl(RegNext(dataIn.payload), GlobalCount(U(0)))))
+        dataOut.payload := RegNext(Vec(node.impl(RegNext(dataIn.payload), GlobalCount(U(0)))))
       } else {
         dataOut.valid := Delay(dataIn.valid, latency, init = False)
-        dataOut.payload := Vec(node.hardware.impl(dataIn.payload, GlobalCount(U(0))))
+        dataOut.payload := Vec(node.impl(dataIn.payload, GlobalCount(U(0))))
       }
       setDefinitionName(node.name)
     }
@@ -197,5 +197,8 @@ package object DFG {
   def implDFG[THard <: Data](dfg: DFGGraph[THard], inputWidths: Seq[BitCount], forTiming: Boolean = false)
                             (implicit holderProvider: BitCount => THard): VivadoReport =
     VivadoImpl(wrappedNode(dfg.asNode(dfg.name), inputWidths, forTiming), dfg.name)
+
+  // tuple 2 seq, better way?
+
 
 }

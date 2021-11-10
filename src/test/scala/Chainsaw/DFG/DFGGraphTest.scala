@@ -32,7 +32,7 @@ class DFGGraphTest extends AnyFlatSpec {
   "dfg" should "be implemented correctly" in {
     val dfg = DFGGraph[SInt]("simpleGraph")
 
-    val pts = (0 until 4).map(i => BinaryNode(sintMult, s"pt$i", 10 bits, 0 cycles, 1 ns))
+    val pts = (0 until 4).map(i => BinaryNode(s"pt$i",sintMult,  10 bits, 0 cycles, 1 ns))
     val ptsCNodes = (0 until 4).map(i => ConstantNode[SInt, Int](s"ptscnode_${i + 1}", 1, 10 bits))
     val Seq(pt0, pt1, pt2, pt3) = pts
     dfg.addPath(pt0 >> 1 >> pt1 >> 1 >> pt2 >> 1 >> pt3)

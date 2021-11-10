@@ -106,7 +106,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
       nodeComponent.dataIn := Vec(dataInsOnPorts)
       nodeComponent.dataOut
     } // else, by anno function
-    else target.hardware.impl(dataInsOnPorts, globalCount)
+    else target.impl(dataInsOnPorts, globalCount)
   }
 
   // TODO: consider the width inference in recursive DFG seriously
@@ -122,9 +122,9 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
     // step2: initialize the signalMap
     if (isRecursive) { // insert placeholders into the signalMap
       vertexSeq.foreach { node =>
-        if (node.hardware.outWidths.exists(_.value == -1) && node.isInner) // nodes with undetermined width can be dangerous in recursive DFG
-          logger.warn(s"node $node has undetermined width ${node.hardware.outWidths.mkString(" ")} in a recursive DFG")
-        signalMap += (node -> node.hardware.outWidths.map(i => if (i.value == -1) holderProvider(-1 bits) else holderProvider(i)))
+        if (node.outWidths.exists(_.value == -1) && node.isInner) // nodes with undetermined width can be dangerous in recursive DFG
+          logger.warn(s"node $node has undetermined width ${node.outWidths.mkString(" ")} in a recursive DFG")
+        signalMap += (node -> node.outWidths.map(i => if (i.value == -1) holderProvider(-1 bits) else holderProvider(i)))
       }
       // implement inputs, for recursive, we "connect", for forwarding, we "create"
       inputNodes.zip(dataIns).foreach { case (node, bits) => signalMap(node).head := bits }

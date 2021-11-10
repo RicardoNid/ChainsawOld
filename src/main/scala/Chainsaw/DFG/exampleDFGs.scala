@@ -22,7 +22,7 @@ object simpleFolding {
   // val incGen = () => sIntInc(10 bits, 1 cycles).asDSPNode(s"", 1 cycles, 1 ns)
   // val incGen = BinaryNode(sintAdd , "inGen" , 10 bits, 0 cycles , 1 ns)
 
-  val incs = (0 until 4).map(i => BinaryNode(sintMult, s"cmult$i", 10 bits, 0 cycles, 2 ns))
+  val incs = (0 until 4).map(i => BinaryNode(s"cmult$i", sintMult, 10 bits, 0 cycles, 2 ns))
 
   def dfg: DFGGraph[SInt] = {
     printlnGreen("using simple graph for folding")
@@ -44,8 +44,8 @@ object simpleFolding {
 
 object implementingDFGs {
 
-  val adds: Seq[BinaryNode[SInt]] = Seq.tabulate(2)(i => BinaryNode(sintAdd, s"add${i + 1}"))
-  val mults: Seq[BinaryNode[SInt]] = Seq.tabulate(2)(i => BinaryNode(sintMult, s"mult${i + 1}"))
+  val adds: Seq[BinaryNode[SInt]] = Seq.tabulate(2)(i => BinaryNode(s"add${i + 1}", sintAdd))
+  val mults: Seq[BinaryNode[SInt]] = Seq.tabulate(2)(i => BinaryNode(s"mult${i + 1}", sintMult))
 
   val butterfly = DFGGraph[SInt]("butterfly")
   adds.foreach(butterfly.addVertex(_))
@@ -75,8 +75,9 @@ object implementingDFGs {
 }
 
 object chap2 {
+  // FIXME: this example should use exeTime, so we should provide a corresponding node interface on this
   def fig2_2 = {
-    val Seq(n1, n2, n3, n4, n5, n6) = Seq(1, 1, 1, 2, 2, 2).zipWithIndex.map { case (exe, i) => DeviceNode[SInt](Operators.passThrough(), s"node${i + 1}", 0 cycles, exe sec) }
+    val Seq(n1, n2, n3, n4, n5, n6) = Seq(1, 1, 1, 2, 2, 2).zipWithIndex.map { case (exe, i) => DeviceNode[SInt](s"node${i + 1}", Operators.passThrough()) }
     val dfg = DFGGraph[SInt]("fig2.2")
 
     dfg.addPath(n1 >> 2 >> n4 >> n2 >> n1)
@@ -88,9 +89,9 @@ object chap2 {
 
 object chap5 {
 
-  val add = BinaryNode(sintAdd, "add", 10 bits, 0 cycles, 1 ns)
-  val add_inner_delay = BinaryNode(sintAdd, "add0", 10 bits, 8 cycles, 1 ns)
-  val cmult = BinaryNode(sintMult, "cmult", 10 bits, 0 cycles, 1 ns)
+  val add = BinaryNode("add", sintAdd,  10 bits, 0 cycles, 1 ns)
+  val add_inner_delay = BinaryNode("add0",sintAdd,  10 bits, 8 cycles, 1 ns)
+  val cmult = BinaryNode("cmult",sintMult,  10 bits, 0 cycles, 1 ns)
 
   def fig5_2 = {
     val dfg_5_2 = DFGGraph[SInt]("fig5.2")
@@ -116,11 +117,11 @@ object chap5 {
   def fig5_10 = {
     val dfg_5_10 = DFGGraph[SInt]("fig5.10")
 
-    val x = BinaryNode(sintMult, "x", 10 bits, 0 cycles, 1 ns)
+    val x = BinaryNode("x",sintMult,  10 bits, 0 cycles, 1 ns)
     dfg_5_10.genConstBinaryNode(x, 1)
-    val Seq(a, b, c) = Seq("a", "b", "c").map(name => BinaryNode(sintMult, name, 10 bits, 0 cycles, 1 ns))
+    val Seq(a, b, c) = Seq("a", "b", "c").map(name => BinaryNode(name,sintMult,  10 bits, 0 cycles, 1 ns))
     Seq(a, b, c).foreach(dfg_5_10.genConstBinaryNode(_, 2))
-    val Seq(d, e) = Seq("d", "e").map(name => BinaryNode(sintAdd, name, 10 bits, 0 cycles, 1 ns))
+    val Seq(d, e) = Seq("d", "e").map(name => BinaryNode(name,sintAdd,  10 bits, 0 cycles, 1 ns))
     printlnGreen("using fig 5.10")
     dfg_5_10.addPath(x >> c >> 2 >> d >> 4 >> e)
     dfg_5_10.addPath(x >> b >> d)
@@ -132,7 +133,7 @@ object chap5 {
 
   def fig5_12 = {
     val zero = ConstantNode[SInt, Int]("zero", 0, 10 bits)
-    val add = AdderC(sintAddC, "add", Seq(10 bits, 1 bits))
+    val add = sintAddCNode(10 bits)
 
     val dfg = DFGGraph[SInt]("fig5.12")
     dfg.addVertex(add)
@@ -149,9 +150,9 @@ object chap5 {
 
 object chap6 {
 
-  val adds = (0 until 4).map(i => BinaryNode(sintAdd, s"add$i", 10 bits, 0 cycles, 1 ns))
+  val adds = (0 until 4).map(i => BinaryNode(s"add$i",sintAdd,  10 bits, 0 cycles, 1 ns))
   // val cmults = (0 until 4).map(i => BinaryNode(sintMult, s"cmult_$i" , 10 bits, 1 cycles, 2 ns))
-  val cmults = (0 until 4).map(i => BinaryNode(sintMult, s"cmult$i", 10 bits, 0 cycles, 2 ns))
+  val cmults = (0 until 4).map(i => BinaryNode(s"cmult$i",sintMult,  10 bits, 0 cycles, 2 ns))
 
   def fig6_3 = {
     val dfg_6_3 = DFGGraph[SInt]("fig6.3")
@@ -210,7 +211,7 @@ object paper1992OnFolding {
 
   /*  -----------------------------------fig6_a_example3------------------------------------*/
 
-  val cmults = (0 until 4).map(i => BinaryNode(sintMult, s"cmult$i", 10 bits))
+  val cmults = (0 until 4).map(i => BinaryNode(s"cmult$i",sintMult,  10 bits))
 
   def fig6_a = {
     val dfg_6_a = DFGGraph[SInt]("paper1992fig6_a")
@@ -231,8 +232,8 @@ object paper1992OnFolding {
 
   /*  -----------------------------------fig8_a_example6------------------------------------*/
 
-  val multadd = TrinaryNode(sintMultAdd, "multadd", 10 bits)
-  val cmults_8_a = (0 until 4).map(i => BinaryNode(sintMult, s"cmult${i + 1}", 10 bits, 0 cycles, 1 ns))
+  val multadd = TrinaryNode("multadd", sintMultAdd, 10 bits)
+  val cmults_8_a = (0 until 4).map(i => BinaryNode(s"cmult${i + 1}",sintMult,  10 bits, 0 cycles, 1 ns))
 
   def fig8_a = {
     val dfg_8_a = DFGGraph[SInt]("paper1992fig8_a")
@@ -251,7 +252,7 @@ object paper1992OnFolding {
 
   /*  -----------------------------------fig9_a_example7------------------------------------*/
 
-  val cmultadds = (0 until 5).map(i => TrinaryNode(sintMultAdd, s"cmultadd${i + 1}", 10 bits, 0 cycles, 1 ns))
+  val cmultadds = (0 until 5).map(i => TrinaryNode(s"cmultadd${i + 1}", sintMultAdd, 10 bits, 0 cycles, 1 ns))
   val zero = ConstantNode[SInt, Int]("zero", 0, 10 bits)
 
   def fig9_a: DFGGraph[SInt] = {
@@ -272,7 +273,7 @@ object paper1992OnFolding {
 
   /*  -----------------------------------fig10_a_example8and10------------------------------------*/
 
-  val cmults_10_a = (0 until 4).map(i => BinaryNode(sintMult, s"A${i + 1}", 10 bits, 0 cycles, 1 ns))
+  val cmults_10_a = (0 until 4).map(i => BinaryNode(s"A${i + 1}",sintMult,  10 bits, 0 cycles, 1 ns))
 
   def fig10 = {
     val dfg_10_a = DFGGraph[SInt]("paper1992fig10")
@@ -308,8 +309,8 @@ object paper1992OnFolding {
 
   /*  -----------------------------------fig12_a_example11------------------------------------*/
 
-  val cmults_12_a = (0 until 4).map(i => BinaryNode(sintMult, s"M${i + 1}", 10 bits, 0 cycles, 1 ns))
-  val adds_12_a = (0 until 4).map(i => BinaryNode(sintAdd, s"A${i + 1}", 10 bits, 0 cycles, 1 ns))
+  val cmults_12_a = (0 until 4).map(i => BinaryNode(s"M${i + 1}",sintMult,  10 bits, 0 cycles, 1 ns))
+  val adds_12_a = (0 until 4).map(i => BinaryNode(s"A${i + 1}",sintAdd,  10 bits, 0 cycles, 1 ns))
 
   def fig12_a = {
     val dfg_12_a = DFGGraph[SInt]("paper1992fig12_a")
@@ -330,8 +331,8 @@ object paper1992OnFolding {
   /*  -----------------------------------fig13_a_example12------------------------------------*/
 
   val dfg_13_a = DFGGraph[SInt]("paper1992fig13_a")
-  val cmults_13_a = (0 until 2).map(i => BinaryNode(sintMult, s"cmult_$i", 10 bits, 0 cycles, 1 ns))
-  val adds_13_a = (0 until 2).map(i => BinaryNode(sintAdd, s"cadder_$i", 10 bits, 0 cycles, 1 ns))
+  val cmults_13_a = (0 until 2).map(i => BinaryNode(s"cmult_$i",sintMult,  10 bits, 0 cycles, 1 ns))
+  val adds_13_a = (0 until 2).map(i => BinaryNode(s"cadder_$i",sintAdd,  10 bits, 0 cycles, 1 ns))
 
   def fig13_a = {
     val dfg_13_a = DFGGraph[SInt]("paper1992fig13_a")
@@ -348,7 +349,7 @@ object paper1992OnFolding {
 
   /*  -----------------------------------fig14_a_example13------------------------------------*/
 
-  val adderc_fig14_a = (0 until 3).map(i => AdderC(sintAddC, s"A${i + 1}", Seq(10 bits, 1 bits), 0 cycles, 1 ns))
+  val adderc_fig14_a = (0 until 3).map(i => sintAddCNode(10 bits).copy(s"adderC_$i"))
 
   def fig14_a: DFGGraph[SInt] = {
     val dfg = DFGGraph[SInt]("paper1992fig14_a")
@@ -389,35 +390,35 @@ object chap4 {
 
 object MIMO {
 
-  def fft4 = {
-
-    val butterfly = (dataIns: Seq[ComplexNumber], _: GlobalCount) => {
-      val add = dataIns(0) + dataIns(1)
-      val sub = dataIns(0) - dataIns(1)
-      Seq(add, sub)
-    }
-
-    val dfg = DFGGraph[ComplexNumber]("fft4")
-
-    import Operators._
-
-    val butterflyHardware = DSPHardware(impl = butterfly, inDegree = 2, outWidths = Seq(-1 bits, -1 bits))
-    val alphabet = Seq("a", "b", "c", "d", "e")
-    val butterflies = Seq.tabulate(2, 2)((i, j) => butterflyHardware.asDSPNode(s"butterfly_${alphabet(i)}${j}", 1 cycles, 1 ns)).flatten
-    val Seq(b0, b1, c0, c1) = butterflies
-    butterflies.foreach(dfg.addVertex)
-
-    Seq(b0, b1).foreach(butterfly => Seq(0, 1).foreach(dfg.setInput(butterfly, _)))
-
-    // new MIMO API
-    dfg.addEdge(b0(0), c0(0), 0)
-    dfg.addEdge(b0(1), c1(0), 0)
-    dfg.addEdge(b1(0), c0(1), 0)
-    dfg.addEdge(b1(1), c1(1), 0)
-
-    Seq(c0, c1).foreach(butterfly => Seq(0, 1).foreach((outOrder: Int) => dfg.setOutput(butterfly, outOrder = outOrder)))
-
-    dfg
-  }
+  //  def fft4 = {
+  //
+  //    val butterfly = (dataIns: Seq[ComplexNumber], _: GlobalCount) => {
+  //      val add = dataIns(0) + dataIns(1)
+  //      val sub = dataIns(0) - dataIns(1)
+  //      Seq(add, sub)
+  //    }
+  //
+  //    val dfg = DFGGraph[ComplexNumber]("fft4")
+  //
+  //    import Operators._
+  //
+  //    val butterflyHardware = DSPHardware(impl = butterfly, inDegree = 2, outWidths = Seq(-1 bits, -1 bits))
+  //    val alphabet = Seq("a", "b", "c", "d", "e")
+  //    val butterflies = Seq.tabulate(2, 2)((i, j) => butterflyHardware.asDSPNode(s"butterfly_${alphabet(i)}${j}", 1 cycles, 1 ns)).flatten
+  //    val Seq(b0, b1, c0, c1) = butterflies
+  //    butterflies.foreach(dfg.addVertex)
+  //
+  //    Seq(b0, b1).foreach(butterfly => Seq(0, 1).foreach(dfg.setInput(butterfly, _)))
+  //
+  //    // new MIMO API
+  //    dfg.addEdge(b0(0), c0(0), 0)
+  //    dfg.addEdge(b0(1), c1(0), 0)
+  //    dfg.addEdge(b1(0), c0(1), 0)
+  //    dfg.addEdge(b1(1), c1(1), 0)
+  //
+  //    Seq(c0, c1).foreach(butterfly => Seq(0, 1).foreach((outOrder: Int) => dfg.setOutput(butterfly, outOrder = outOrder)))
+  //
+  //    dfg
+  //  }
 
 }

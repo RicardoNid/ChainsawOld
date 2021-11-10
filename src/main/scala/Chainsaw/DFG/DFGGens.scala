@@ -79,7 +79,7 @@ class FIRGen[THard <: Data, TSoft](mac: TrinaryNode[THard],
 
   def latency: Int = (if (firArch == SYSTOLIC) coeffs.size - 1 else 0) + mac.delay
 
-  def getGraphAsNode(dataReset:Boolean = true)(implicit holderProvider: HolderProvider[THard]): DSPNode[THard] = {
+  def getGraphAsNode(dataReset: Boolean = true)(implicit holderProvider: HolderProvider[THard]): DSPNode[THard] = {
     val graph = getGraph
     graph.asNode(graph.name, graphLatency = latency cycles, dataReset)
   }
@@ -107,16 +107,17 @@ object FIRGen {
                                  (implicit converter: (TSoft, BitCount) => THard): FIRGen[THard, TSoft] = {
     // building mac by add & mult
     val multAddOp = (a: THard, b: THard, c: THard) => {
-      val prod = mult.hardware.impl(Seq(a, b), null).head
-      val sum = add.hardware.impl(Seq(Delay(c, mult.delay), prod), null).head
+      val prod = mult.impl(Seq(a, b), null).head
+      val sum = add.impl(Seq(Delay(c, mult.delay), prod), null).head
       sum
     }
-    val mac = TrinaryNode(multAddOp, s"${add.name}_${mult.name}", width = add.hardware.outWidths.head, delay = (add.delay + mult.delay) cycles)
+    val mac = TrinaryNode(s"${add.name}_${mult.name}", multAddOp, width = add.outWidths.head, delay = (add.delay + mult.delay) cycles)
     new FIRGen(mac, firArch, coeffs, coeffWidth, parallelism)(converter)
   }
 }
 
 // TODO: cannot infer TSoft from the coeffGen, why?
+
 /** Generic method to generate an abstract radix-2 FFT DFG, this method use a "butterfly core" as its building block
  *
  * @param ctButterfly : the implementation of the butterfly core
@@ -128,9 +129,9 @@ object FIRGen {
  * @example parallelism = 3 -> unfold 3; parallelism = -3 -> fold 3
  */
 class ButterflyGen[THard <: Data, TSoft](ctButterfly: ButterflyNode[THard], gsButterfly: ButterflyNode[THard],
-                                 size: Int, fftArch: FFTArch, inverse: Boolean = false,
-                                 coeffGen: Int => TSoft, coeffWidth: BitCount, parallelism: Int = 1)
-                                (implicit converter: (TSoft, BitCount) => THard) extends DFGGen[THard] {
+                                         size: Int, fftArch: FFTArch, inverse: Boolean = false,
+                                         coeffGen: Int => TSoft, coeffWidth: BitCount, parallelism: Int = 1)
+                                        (implicit converter: (TSoft, BitCount) => THard) extends DFGGen[THard] {
 
   def getGraph: DFGGraph[THard] = {
     logger.info(s"start generating butterfly graph of size $size")
@@ -222,15 +223,15 @@ class ButterflyGen[THard <: Data, TSoft](ctButterfly: ButterflyNode[THard], gsBu
   override def latency: Int = log2Up(size) * gsButterfly.delay
 
   // FIXME: as we want butterfly to support "software" evaluation, we didn't bound THard <: Data, thus, DFGGraph.asNode cannot be invoke
-  override def getGraphAsNode(dataReset:Boolean = true)(implicit holderProvider: BitCount => THard): DSPNode[THard] = null
+  override def getGraphAsNode(dataReset: Boolean = true)(implicit holderProvider: BitCount => THard): DSPNode[THard] = null
 }
 
 object ButterflyGen {
   def apply[THard <: Data, TSoft](ctButterfly: ButterflyNode[THard], gsButterfly: ButterflyNode[THard],
-                          size: Int, fftArch: FFTArch, inverse: Boolean,
-                          coeffGen: Int => TSoft, coeffWidth: BitCount,
-                          parallelism: Int)
-                         (implicit converter: (TSoft, BitCount) => THard): ButterflyGen[THard, TSoft] =
+                                  size: Int, fftArch: FFTArch, inverse: Boolean,
+                                  coeffGen: Int => TSoft, coeffWidth: BitCount,
+                                  parallelism: Int)
+                                 (implicit converter: (TSoft, BitCount) => THard): ButterflyGen[THard, TSoft] =
     new ButterflyGen(ctButterfly, gsButterfly, size, fftArch, inverse, coeffGen, coeffWidth, parallelism)(converter)
 }
 
@@ -286,11 +287,11 @@ class BinaryTreeGen[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFG
 
   override def latency: Int = 0
 
-  override def getGraphAsNode(dataReset:Boolean = true)(implicit holderProvider: HolderProvider[T]): DSPNode[T] = null
+  override def getGraphAsNode(dataReset: Boolean = true)(implicit holderProvider: HolderProvider[T]): DSPNode[T] = null
 }
 
 object BinaryTreeGenTest extends App {
-  val node = BinaryNode(sintAdd, "testnode")
+  val node = BinaryNode("testnode", sintAdd)
   val dfg = new BinaryTreeGen(node, 9)
   println(dfg.getGraph)
 }
@@ -312,10 +313,11 @@ class BKKSTreeGen[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFGGe
 
   override def latency: Int = 0
 
-  override def getGraphAsNode(dataReset:Boolean = true)(implicit holderProvider: HolderProvider[T]): DSPNode[T] = null
+  override def getGraphAsNode(dataReset: Boolean = true)(implicit holderProvider: HolderProvider[T]): DSPNode[T] = null
 }
 
 // LQX: implement this, the node is not binary, try to fix it
+
 /** Wallace/Dadda tree graph whose building blocks are 3-2 compressors and inputs are "bit"s, rather than words
  *
  * @see ''COMPUTER ARITHMETIC: Algorithms and Hardware Designs, Behrooz Parhami'', chapter 8.3
@@ -331,7 +333,7 @@ class WallaceTreeGen[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DF
 
   override def latency: Int = 0
 
-  override def getGraphAsNode(dataReset:Boolean = true)(implicit holderProvider: HolderProvider[T]): DSPNode[T] = null
+  override def getGraphAsNode(dataReset: Boolean = true)(implicit holderProvider: HolderProvider[T]): DSPNode[T] = null
 }
 
 // LQX: implement this by transplanting implementations from MCM and Architectures
@@ -345,5 +347,5 @@ class AdderTree[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFGGen[
 
   override def latency: Int = 0
 
-  override def getGraphAsNode(dataReset:Boolean = true)(implicit holderProvider: HolderProvider[T]): DSPNode[T] = null
+  override def getGraphAsNode(dataReset: Boolean = true)(implicit holderProvider: HolderProvider[T]): DSPNode[T] = null
 }

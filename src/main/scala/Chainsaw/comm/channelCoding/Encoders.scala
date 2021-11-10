@@ -31,11 +31,12 @@ object Encoders {
   def convencDFG(dataIn: Seq[Bits], convConfig: ConvConfig): Seq[Bits] = {
     import convConfig._
 
-    val and: BinaryNode[Bits] = BinaryNode(Operators.and, "and")
-    val xor: BinaryNode[Bits] = BinaryNode(Operators.xor, "xor")
+    val and: BinaryNode[Bits] = BinaryNode("and", Operators.and)
+    val xor: BinaryNode[Bits] = BinaryNode("xor", Operators.xor)
+
     def convDirect(coeffs: Seq[Int]): DFGGraph[Bits] = FIRGen(xor, and, DIRECT, coeffs, 1 bits, 1).getGraph
 
-    val convMatrix = Seq.tabulate(n,k) {(i, j) =>
+    val convMatrix = Seq.tabulate(n, k) { (i, j) =>
       val gen = binaryCodeGens(i)(j).reverse.map(_.asDigit)
       convDirect(gen).impl(Seq(dataIn(i))).head
     }
@@ -66,7 +67,9 @@ case class ConvEncoder(convConfig: ConvConfig) extends Component with DSPTestabl
 }
 
 case class ConvEncoderDFG(convConfig: ConvConfig) extends Component with DSPTestable[Vec[Bits], Vec[Bits]] {
+
   import convConfig._
+
   override val dataIn: Flow[Vec[Bits]] = slave Flow Vec(Bits(1 bits), n)
   override val dataOut: Flow[Vec[Bits]] = master Flow Vec(Bits(), k)
   override val latency: Int = 0

@@ -128,9 +128,9 @@ object HuaweiKyber {
   def GSBF(u: UInt, v: UInt, omega: Int): (UInt, UInt) = GSButterfly(u, v, U(omega, 12 bits))
 
   // encapsulate the hardware impl as DFG nodes
-  val kMultModNode: BinaryNode[UInt] = BinaryNode(kMultMod, "kMultMod", delay = 4 cycles)
-  val ctButterflyNode: ButterflyNode[UInt] = ButterflyNode(CTButterfly, "ctButterfly", delay = 5 cycles, width = 12 bits)
-  val gsButterflyNode: ButterflyNode[UInt] = ButterflyNode(GSButterfly, "gsButterfly", delay = 5 cycles, width = 12 bits)
+  val kMultModNode: BinaryNode[UInt] = BinaryNode("kMultMod", kMultMod, delay = 4 cycles)
+  val ctButterflyNode: ButterflyNode[UInt] = ButterflyNode("ctButterfly", CTButterfly, width = 12 bits, delay = 5 cycles)
+  val gsButterflyNode: ButterflyNode[UInt] = ButterflyNode("gsButterfly", GSButterfly, width = 12 bits, delay = 5 cycles)
 
   // parameters for constructing the NTT DFG
   val N = 128
