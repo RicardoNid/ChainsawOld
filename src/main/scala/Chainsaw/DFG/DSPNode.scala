@@ -12,9 +12,10 @@ import scala.language.postfixOps
  * @param outWidths output port number
  * @tparam T hardware signal type in SpinalHDL
  */
-class DSPHardware[T <: Data](val impl: (Seq[T], GlobalCount) => Seq[T], val inDegree: Int, val outWidths: Seq[BitCount] = Seq(-1 bit)) {
+class DSPHardware[T <: Data](val impl: (Seq[T], GlobalCount) => Seq[T],
+                             val inDegree: Int, val outWidths: Seq[BitCount] = Seq(-1 bit)) {
 
-  def asComponent(namep: String)(implicit holderProvider: HolderProvider[T]) = () => new Component with NodeComponent[T] {
+  def asComponent(namep: String)(implicit holderProvider: HolderProvider[T]): () => Component with NodeComponent[T] = () => new Component with NodeComponent[T] {
     setDefinitionName(namep)
     override val dataIn: Vec[T] = in Vec(holderProvider(-1 bits), inDegree)
     override val dataOut: Vec[T] = out Vec(holderProvider(-1 bits), outWidths.size)
@@ -37,14 +38,11 @@ object DSPHardware {
   def apply[T <: Data](impl: (Seq[T], GlobalCount) => Seq[T], inDegree: Int, outWidths: Seq[BitCount]): DSPHardware[T] = new DSPHardware(impl, inDegree, outWidths)
 }
 
-
 // TODO: better implementation of copy
 class DSPNode[T <: Data](
                           val hardware: DSPHardware[T], val name: String,
-                          delayp: CyclesCount, exeTimep: TimeNumber) {
-  val delay: Int = delayp.toInt
-  val exeTime: Double = exeTimep.toDouble
-  def copy(newName: String): DSPNode[T] = new DSPNode(hardware, name, delay cycles, exeTime sec)
+                          val delay: Int, val exeTime: Double) {
+  def copy(newName: String): DSPNode[T] = new DSPNode(hardware, name, delay, exeTime)
 
   override def toString: String = name
 
@@ -66,40 +64,44 @@ class DSPNode[T <: Data](
 }
 
 /** nodes that need to be actually implemented in a DFG, it does computation
+ *
+ * it has no difference or preset field compared to the general DFGNode, we declare this as an annotation of hardware device
  */
-class DeviceNode[T <: Data](implp: DSPHardware[T], namep: String, delayp: CyclesCount, exeTimep: TimeNumber)
-  extends DSPNode(implp, namep, delayp, exeTimep) {
-  override def copy(newName: String): DSPNode[T] = new DeviceNode(hardware, newName, delay cycles, exeTime sec)
+class DeviceNode[T <: Data](
+                             override val hardware: DSPHardware[T], override val name: String,
+                             override val delay: Int, override val exeTime: Double)
+  extends DSPNode(hardware, name, delay, exeTime) {
 }
 
 object DeviceNode {
-  def apply[T <: Data](hardware: DSPHardware[T], namep: String, delayp: CyclesCount, exeTimep: TimeNumber): DeviceNode[T] = new DeviceNode(hardware, namep, delayp, exeTimep)
-
-  def apply[T <: Data](namep: String, delayp: CyclesCount, exeTimep: TimeNumber): DeviceNode[T] = new DeviceNode(Operators.passThrough[T](), namep, delayp, exeTimep)
-
-  def apply[T <: Data](namep: String, delayp: CyclesCount, exeTimep: TimeNumber, width: BitCount): DeviceNode[T] = new DeviceNode(Operators.passThrough[T](width), namep, delayp, exeTimep)
+  def apply[T <: Data](hardware: DSPHardware[T], name: String, delay: CyclesCount, exeTime: TimeNumber): DeviceNode[T] =
+    new DeviceNode(hardware, name, delay.toInt, exeTime.toDouble)
 }
 
 
+/** a node acting as a pass through, which means it has no delay or exeTime, and pass the input to the output
+ */
 class PassThrough[T <: Data](override val name: String, width: BitCount = -1 bits)
-  extends DSPNode[T](Operators.passThrough[T](width), name, delayp = 0 cycles, exeTimep = 0 sec) {
+  extends DSPNode[T](Operators.passThrough[T](width), name, 0, 0) {
   override def copy(newName: String): DSPNode[T] = new PassThrough[T](newName)
 }
 
-class InputNode[T <: Data](name: String) extends PassThrough[T](name) {
+// the following classes have no difference or preset field compared to the PassThrough
+// we declare them as annotations of different roles a node can play in DFG
+class InputNode[T <: Data](name: String, width: BitCount = -1 bits) extends PassThrough[T](name, width) {
   override def copy(newName: String): InputNode[T] = new InputNode[T](newName)
 }
 
 object InputNode {
-  def apply[T <: Data](name: String): InputNode[T] = new InputNode(name)
+  def apply[T <: Data](name: String, width: BitCount = -1 bits): InputNode[T] = new InputNode(name)
 }
 
-class OutputNode[T <: Data](name: String) extends PassThrough[T](name) {
+class OutputNode[T <: Data](name: String, width: BitCount = -1 bits) extends PassThrough[T](name, width) {
   override def copy(newName: String): OutputNode[T] = new OutputNode[T](newName)
 }
 
 object OutputNode {
-  def apply[T <: Data](name: String): OutputNode[T] = new OutputNode(name)
+  def apply[T <: Data](name: String, width: BitCount = -1 bits): OutputNode[T] = new OutputNode(name)
 }
 
 class VirtualNode[T <: Data](name: String, width: BitCount = -1 bits) extends PassThrough[T](name, width) {
@@ -110,33 +112,47 @@ object VirtualNode {
   def apply[T <: Data](name: String, width: BitCount = -1 bits): VirtualNode[T] = new VirtualNode(name, width)
 }
 
+/** nodes which represent a constant(literal in verilog) in the DFG, for its usage, view its factory methods, instead of its constructor
+ */
+class ConstantNode[T <: Data](name: String, hardware: DSPHardware[T])
+  extends DSPNode[T](hardware, name, 0, 0) {
+  override def copy(newName: String): ConstantNode[T] = new ConstantNode(newName, hardware)
+}
+
 object ConstantHardware {
-  def apply[THard <: Data, TSoft](constant: TSoft, width: BitCount)(implicit converter: (TSoft, BitCount) => THard): DSPHardware[THard] = DSPHardware(
+  def apply[THard <: Data, TSoft](constant: TSoft, width: BitCount)
+                                 (implicit converter: (TSoft, BitCount) => THard): DSPHardware[THard] = DSPHardware(
+    // this style delay the hardware literal generation until impl process
     impl = (_: Seq[THard], _: GlobalCount) => Seq(converter(constant, width)),
     inDegree = 0,
     outWidths = Seq(width)
   )
 }
 
-class ConstantNode[T <: Data](namep: String, implp: DSPHardware[T])
-  extends DSPNode[T](implp, namep, 0 cycles, 0 sec) {
-  override def copy(newName: String): ConstantNode[T] = new ConstantNode(newName, hardware)
-}
-
+/** different entrance of creating constant nodes, common converters are provided in the package object of [[DFG]]
+ *
+ */
 object ConstantNode {
+
+  // value + width + converter
   def apply[THard <: Data, TSoft](name: String, constant: TSoft, width: BitCount)
                                  (implicit converter: (TSoft, BitCount) => THard): ConstantNode[THard] = {
     val hardware = ConstantHardware(constant, width)
     new ConstantNode(s"constant_$constant", hardware)
   }
 
+  // value + hard type + converter
   def apply[THard <: Data, TSoft](name: String, hardType: HardType[THard], constant: TSoft)
                                  (implicit converter: (TSoft, BitCount) => THard): ConstantNode[THard] = {
     apply(name, constant, width = hardType.getBitsWidth bits) // FIXME: getBitsWidth is not available outside a Component
   }
 
-  // TODO: this should be the constructor of ConstantNode
-  def apply[T <: Data](namep: String, constant: T): ConstantNode[T] = new ConstantNode(namep, implp =
+  /** using "hard" value directly, although seems to be natural, this won't work! for the reason
+   *
+   * @see [[examples.ContextProblemExample]]
+   */
+  @deprecated
+  def apply[T <: Data](name: String, constant: T): ConstantNode[T] = new ConstantNode(name, hardware =
     DSPHardware(
       impl = (_: Seq[T], _: GlobalCount) => Seq(constant),
       inDegree = 0,

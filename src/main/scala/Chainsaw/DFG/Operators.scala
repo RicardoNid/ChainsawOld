@@ -7,26 +7,27 @@ import spinal.core._
 case class BinaryHardware[T <: Data](op: (T, T) => T, width: BitCount = -1 bits)
   extends DSPHardware[T](impl = (dataIns: Seq[T], _: GlobalCount) => Seq(op(dataIns(0), dataIns(1))), inDegree = 2, outWidths = Seq(width))
 
-class BinaryNode[T <: Data](op: (T, T) => T, width: BitCount = -1 bits, name: String, delay: CyclesCount, exeTime: TimeNumber)
+class BinaryNode[T <: Data](op: (T, T) => T, width: BitCount = -1 bits, name: String, delay: Int, exeTime: Double)
   extends DeviceNode[T](BinaryHardware(op, width), name, delay, exeTime) {
   override def copy(newName: String): BinaryNode[T] = new BinaryNode(op, width, newName, delay, exeTime)
 }
 
 object BinaryNode {
-  def apply[T <: Data](op: (T, T) => T, name: String, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): BinaryNode[T] = new BinaryNode(op, width, name, delay, exeTime)
+  def apply[T <: Data](op: (T, T) => T, name: String, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): BinaryNode[T] =
+    new BinaryNode(op, width, name, delay.toInt, exeTime.toDouble)
 }
 
 case class TrinaryHardware[T <: Data](op: (T, T, T) => T, width: BitCount = -1 bits)
   extends DSPHardware[T](impl = (dataIns: Seq[T], _: GlobalCount) => Seq(op(dataIns(0), dataIns(1), dataIns(2))), inDegree = 3, outWidths = Seq(width))
 
-class TrinaryNode[T <: Data](op: (T, T, T) => T, width: BitCount = -1 bits, name: String, delay: CyclesCount, exeTime: TimeNumber)
+class TrinaryNode[T <: Data](op: (T, T, T) => T, width: BitCount = -1 bits, name: String, delay: Int, exeTime: Double)
   extends DeviceNode[T](TrinaryHardware(op, width), name, delay, exeTime) {
   override def copy(newName: String): TrinaryNode[T] = new TrinaryNode(op, width, newName, delay, exeTime)
 }
 
 object TrinaryNode {
   def apply[T <: Data](op: (T, T, T) => T, name: String, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): TrinaryNode[T] =
-    new TrinaryNode(op, width, name, delay, exeTime)
+    new TrinaryNode(op, width, name, delay.toInt, exeTime.toDouble)
 }
 
 /** Butterfly hardware takes two input and a coefficient, generates two output, they're heavily used as building blocks of more complicated DFG
@@ -39,14 +40,14 @@ case class ButterflyHardware[THard <: Data](op: (THard, THard, THard) => (THard,
     },
     inDegree = 3, outWidths = Seq(width, width))
 
-class ButterflyNode[T <: Data](op: (T, T, T) => (T, T), width: BitCount = -1 bits, name: String, delay: CyclesCount, exeTime: TimeNumber)
+class ButterflyNode[T <: Data](op: (T, T, T) => (T, T), width: BitCount = -1 bits, name: String, delay: Int, exeTime: Double)
   extends DeviceNode[T](ButterflyHardware(op, width), name, delay, exeTime) {
   override def copy(newName: String): ButterflyNode[T] = new ButterflyNode(op, width, newName, delay, exeTime)
 }
 
 object ButterflyNode {
   def apply[T <: Data](op: (T, T, T) => (T, T), name: String, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): ButterflyNode[T] =
-    new ButterflyNode(op, width, name, delay, exeTime)
+    new ButterflyNode(op, width, name, delay.toInt, exeTime.toDouble)
 }
 
 /** commonly used operators
@@ -104,7 +105,7 @@ object Operators {
 
   // ??? nonsense
   // adder with carry
-  class AdderC[THard <: Data](op: (THard, THard, THard) => Seq[THard], name: String, width: Seq[BitCount], delay: CyclesCount, exeTime: TimeNumber)
+  class AdderC[THard <: Data](op: (THard, THard, THard) => Seq[THard], name: String, width: Seq[BitCount], delay: Int, exeTime: Double)
     extends DeviceNode[THard](DSPHardware((dataIns: Seq[THard], _: GlobalCount) => op(dataIns(0), dataIns(1), dataIns(2)), 3, width), name, delay, exeTime) {
     require(width.size == 2)
 
@@ -113,6 +114,6 @@ object Operators {
 
   object AdderC {
     def apply[THard <: Data](op: (THard, THard, THard) => Seq[THard], name: String, width: Seq[BitCount] = Seq(-1 bits, -1 bits), delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): AdderC[THard] =
-      new AdderC(op, name, width, delay, exeTime)
+      new AdderC(op, name, width, delay.toInt, exeTime.toDouble)
   }
 }

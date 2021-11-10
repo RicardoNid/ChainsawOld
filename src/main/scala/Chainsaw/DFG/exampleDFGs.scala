@@ -76,7 +76,7 @@ object implementingDFGs {
 
 object chap2 {
   def fig2_2 = {
-    val Seq(n1, n2, n3, n4, n5, n6) = Seq(1, 1, 1, 2, 2, 2).zipWithIndex.map { case (exe, i) => DeviceNode[SInt](s"node${i + 1}", 0 cycles, exe sec) }
+    val Seq(n1, n2, n3, n4, n5, n6) = Seq(1, 1, 1, 2, 2, 2).zipWithIndex.map { case (exe, i) => DeviceNode[SInt](Operators.passThrough(), s"node${i + 1}", 0 cycles, exe sec) }
     val dfg = DFGGraph[SInt]("fig2.2")
 
     dfg.addPath(n1 >> 2 >> n4 >> n2 >> n1)
