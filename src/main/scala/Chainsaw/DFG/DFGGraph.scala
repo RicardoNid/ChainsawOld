@@ -36,6 +36,8 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def innerNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isInner)
 
+  def outerNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isOuter)
+
   def foreachVertex(body: DSPNode[T] => Unit): Unit = vertexSeq.foreach(body)
 
   def foreachInnerVertex(body: DSPNode[T] => Unit): Unit = innerNodes.foreach(body)
@@ -199,7 +201,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def merged: DFGGraph[T] = new DFGRegOpt(this).getRegMergedDFG
 
-  def folded(foldingSet: Seq[Seq[DSPNode[T] with Foldable[T]]]): DFGGraph[T] = new Folding(this, foldingSet).folded
+  def folded(foldingSet: Seq[Seq[DSPNode[T]]]): DFGGraph[T] = new Folding(this, foldingSet).folded
 
   override def toString: String = {
 

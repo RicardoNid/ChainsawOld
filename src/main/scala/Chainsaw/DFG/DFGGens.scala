@@ -207,7 +207,7 @@ class ButterflyGen[THard <: Data, TSoft](ctButterfly: ButterflyNode[THard], gsBu
       val butterflyGroups: Seq[Seq[ButterflyNode[THard]]] = butterflies.map(col => col.grouped(foldingFactor).toSeq).flatten
 
       DFGTestUtil.verifyFolding(dfg.asInstanceOf[DFGGraph[UInt]],
-        butterflyGroups.asInstanceOf[Seq[Seq[DSPNode[UInt] with Foldable[UInt]]]],
+        butterflyGroups.asInstanceOf[Seq[Seq[DSPNode[UInt]]]],
         HardType(UInt(12 bits)),
         basicLatency = latency) // TODO: this is temp
 

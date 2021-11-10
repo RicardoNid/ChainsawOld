@@ -137,7 +137,7 @@ object DFGTestUtil {
     assert(originalResults.zip(transFormedResults).forall { case (ori, trans) => ori == trans }) // FIXME: verify the unaligned part
   }
 
-  def verifyFolding[T <: Data](original: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T] with Foldable[T]]], elementType: HardType[T], name: String = null, basicLatency: Int = -1)
+  def verifyFolding[T <: Data](original: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T]]], elementType: HardType[T], name: String = null, basicLatency: Int = -1)
                               (implicit holderProvider: HolderProvider[T]) = {
     val algo = new Folding(original, foldingSets)
     val foldedDFG = algo.folded

@@ -398,7 +398,7 @@ package object Chainsaw extends RealFactory {
 
   import scala.annotation.meta._
   @getter @setter @beanGetter @beanSetter
-  class xilinx(message: String = "", since: String = "") extends scala.annotation.StaticAnnotation
+  class xilinxDevice(message: String = "", since: String = "") extends scala.annotation.StaticAnnotation
 
 
   def VivadoSynth[T <: Component](gen: => T, name: String = "temp") = {

@@ -7,23 +7,23 @@ import scala.language.postfixOps
 
 class DSPHardware[T <: Data](val impl: (Seq[T], GlobalCount) => Seq[T], val inDegree: Int, val outWidths: Seq[BitCount] = Seq(-1 bit)) {
 
-  def asComponent(namep:String)(implicit holderProvider: HolderProvider[T]) = () => new Component with NodeComponent[T] {
+  def asComponent(namep: String)(implicit holderProvider: HolderProvider[T]) = () => new Component with NodeComponent[T] {
     setDefinitionName(namep)
     override val dataIn: Vec[T] = in Vec(holderProvider(-1 bits), inDegree)
     override val dataOut: Vec[T] = out Vec(holderProvider(-1 bits), outWidths.size)
     dataOut := Vec(impl(dataIn, GlobalCount(U(0))))
   }
 
-//  def inferable(implicit holderProvider: HolderProvider[T]): Boolean = {
-//    GenRTL(new Component {
-//      val core = asComponent(holderProvider)()
-//      val dataIn: Vec[T] = in Vec(holderProvider(5 bits), inDegree)
-//      val dataOut: Vec[T] = out Vec(holderProvider(-1 bits), outWidths.size)
-//
-//      core.dataIn := dataIn
-//      dataOut := core.dataOut
-//    })
-//  }
+  //  def inferable(implicit holderProvider: HolderProvider[T]): Boolean = {
+  //    GenRTL(new Component {
+  //      val core = asComponent(holderProvider)()
+  //      val dataIn: Vec[T] = in Vec(holderProvider(5 bits), inDegree)
+  //      val dataOut: Vec[T] = out Vec(holderProvider(-1 bits), outWidths.size)
+  //
+  //      core.dataIn := dataIn
+  //      dataOut := core.dataOut
+  //    })
+  //  }
 }
 
 object DSPHardware {
@@ -140,7 +140,7 @@ case class BinaryHardware[T <: Data](op: (T, T) => T, width: BitCount = -1 bits)
   extends DSPHardware[T](impl = (dataIns: Seq[T], _: GlobalCount) => Seq(op(dataIns(0), dataIns(1))), inDegree = 2, outWidths = Seq(width))
 
 class BinaryNode[T <: Data](op: (T, T) => T, width: BitCount = -1 bits, name: String, delay: CyclesCount, exeTime: TimeNumber)
-  extends DeviceNode[T](BinaryHardware(op, width), name, delay, exeTime) with Foldable[T] {
+  extends DeviceNode[T](BinaryHardware(op, width), name, delay, exeTime) {
   override def copy(newName: String): BinaryNode[T] = new BinaryNode(op, width, newName, delay, exeTime)
 }
 
@@ -152,7 +152,7 @@ case class TrinaryHardware[T <: Data](op: (T, T, T) => T, width: BitCount = -1 b
   extends DSPHardware[T](impl = (dataIns: Seq[T], _: GlobalCount) => Seq(op(dataIns(0), dataIns(1), dataIns(2))), inDegree = 3, outWidths = Seq(width))
 
 class TrinaryNode[T <: Data](op: (T, T, T) => T, width: BitCount = -1 bits, name: String, delay: CyclesCount, exeTime: TimeNumber)
-  extends DeviceNode[T](TrinaryHardware(op, width), name, delay, exeTime) with Foldable[T] {
+  extends DeviceNode[T](TrinaryHardware(op, width), name, delay, exeTime) {
   override def copy(newName: String): TrinaryNode[T] = new TrinaryNode(op, width, newName, delay, exeTime)
 }
 
@@ -172,7 +172,7 @@ case class ButterflyHardware[THard <: Data, TSoft](op: (THard, THard, THard) => 
     inDegree = 3, outWidths = Seq(width, width))
 
 class ButterflyNode[T <: Data](op: (T, T, T) => (T, T), width: BitCount = -1 bits, name: String, delay: CyclesCount, exeTime: TimeNumber)
-  extends DeviceNode[T](ButterflyHardware(op, width), name, delay, exeTime) with Foldable[T] {
+  extends DeviceNode[T](ButterflyHardware(op, width), name, delay, exeTime) {
   override def copy(newName: String): ButterflyNode[T] = new ButterflyNode(op, width, newName, delay, exeTime)
 }
 

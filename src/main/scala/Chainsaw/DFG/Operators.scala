@@ -32,7 +32,7 @@ object Operators {
    *
    * @param mreg whether pipeline the multiplication result or not
    */
-  @xilinx
+  @xilinxDevice
   def macDSP48(mreg: Boolean = true): TrinaryNode[SInt] = {
     val op = (coeff: SInt, data: SInt, partialSum: SInt) =>
       if (mreg) RegNext(coeff * data) + partialSum else coeff * data + partialSum
@@ -59,7 +59,7 @@ object Operators {
   // ??? nonsense
   // adder with carry
   class AdderC[THard <: Data](op: (THard, THard, THard) => Seq[THard], name: String, width: Seq[BitCount], delay: CyclesCount, exeTime: TimeNumber)
-    extends DeviceNode[THard](DSPHardware((dataIns: Seq[THard], _: GlobalCount) => op(dataIns(0), dataIns(1), dataIns(2)), 3, width), name, delay, exeTime) with Foldable[THard] {
+    extends DeviceNode[THard](DSPHardware((dataIns: Seq[THard], _: GlobalCount) => op(dataIns(0), dataIns(1), dataIns(2)), 3, width), name, delay, exeTime) {
     require(width.size == 2)
 
     override def copy(newName: String): AdderC[THard] = new AdderC(op, newName, width, delay, exeTime)
