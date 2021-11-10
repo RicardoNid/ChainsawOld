@@ -6,8 +6,9 @@ import spinal.core._
 import scala.language.postfixOps
 
 /** hardware device of a DSPNode
- * @param impl the way it works described in SpinalHDL
- * @param inDegree input port number
+ *
+ * @param impl      the way it works described in SpinalHDL
+ * @param inDegree  input port number
  * @param outWidths output port number
  * @tparam T hardware signal type in SpinalHDL
  */
@@ -36,12 +37,13 @@ object DSPHardware {
   def apply[T <: Data](impl: (Seq[T], GlobalCount) => Seq[T], inDegree: Int, outWidths: Seq[BitCount]): DSPHardware[T] = new DSPHardware(impl, inDegree, outWidths)
 }
 
-class DSPNode[T <: Data](implp: DSPHardware[T], namep: String, delayp: CyclesCount, exeTimep: TimeNumber) {
-  val hardware: DSPHardware[T] = implp
-  val name: String = namep
+
+// TODO: better implementation of copy
+class DSPNode[T <: Data](
+                          val hardware: DSPHardware[T], val name: String,
+                          delayp: CyclesCount, exeTimep: TimeNumber) {
   val delay: Int = delayp.toInt
   val exeTime: Double = exeTimep.toDouble
-
   def copy(newName: String): DSPNode[T] = new DSPNode(hardware, name, delay cycles, exeTime sec)
 
   override def toString: String = name
@@ -63,8 +65,8 @@ class DSPNode[T <: Data](implp: DSPHardware[T], namep: String, delayp: CyclesCou
 
 }
 
-// TODO: better implementation of copy
-
+/** nodes that need to be actually implemented in a DFG, it does computation
+ */
 class DeviceNode[T <: Data](implp: DSPHardware[T], namep: String, delayp: CyclesCount, exeTimep: TimeNumber)
   extends DSPNode(implp, namep, delayp, exeTimep) {
   override def copy(newName: String): DSPNode[T] = new DeviceNode(hardware, newName, delay cycles, exeTime sec)
@@ -79,7 +81,8 @@ object DeviceNode {
 }
 
 
-class PassThrough[T <: Data](namep: String, width: BitCount = -1 bits) extends DSPNode[T](Operators.passThrough[T](width), namep, 0 cycles, 0 sec) {
+class PassThrough[T <: Data](override val name: String, width: BitCount = -1 bits)
+  extends DSPNode[T](Operators.passThrough[T](width), name, delayp = 0 cycles, exeTimep = 0 sec) {
   override def copy(newName: String): DSPNode[T] = new PassThrough[T](newName)
 }
 
@@ -140,67 +143,3 @@ object ConstantNode {
       outWidths = Seq(-1 bits)
     ))
 }
-
-// common nodes which we can build from the op directly
-case class BinaryHardware[T <: Data](op: (T, T) => T, width: BitCount = -1 bits)
-  extends DSPHardware[T](impl = (dataIns: Seq[T], _: GlobalCount) => Seq(op(dataIns(0), dataIns(1))), inDegree = 2, outWidths = Seq(width))
-
-class BinaryNode[T <: Data](op: (T, T) => T, width: BitCount = -1 bits, name: String, delay: CyclesCount, exeTime: TimeNumber)
-  extends DeviceNode[T](BinaryHardware(op, width), name, delay, exeTime) {
-  override def copy(newName: String): BinaryNode[T] = new BinaryNode(op, width, newName, delay, exeTime)
-}
-
-object BinaryNode {
-  def apply[T <: Data](op: (T, T) => T, name: String, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): BinaryNode[T] = new BinaryNode(op, width, name, delay, exeTime)
-}
-
-case class TrinaryHardware[T <: Data](op: (T, T, T) => T, width: BitCount = -1 bits)
-  extends DSPHardware[T](impl = (dataIns: Seq[T], _: GlobalCount) => Seq(op(dataIns(0), dataIns(1), dataIns(2))), inDegree = 3, outWidths = Seq(width))
-
-class TrinaryNode[T <: Data](op: (T, T, T) => T, width: BitCount = -1 bits, name: String, delay: CyclesCount, exeTime: TimeNumber)
-  extends DeviceNode[T](TrinaryHardware(op, width), name, delay, exeTime) {
-  override def copy(newName: String): TrinaryNode[T] = new TrinaryNode(op, width, newName, delay, exeTime)
-}
-
-object TrinaryNode {
-  def apply[T <: Data](op: (T, T, T) => T, name: String, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): TrinaryNode[T] =
-    new TrinaryNode(op, width, name, delay, exeTime)
-}
-
-/** Butterfly hardware takes two input and a coefficient, generates two output, they're heavily used as building blocks of more complicated DFG
- */
-case class ButterflyHardware[THard <: Data](op: (THard, THard, THard) => (THard, THard), width: BitCount = -1 bits) // (a, b, coeff)
-  extends DSPHardware[THard](impl =
-    (dataIns: Seq[THard], _: GlobalCount) => {
-      val ret = op(dataIns(0), dataIns(1), dataIns(2))
-      Seq(ret._1, ret._2)
-    },
-    inDegree = 3, outWidths = Seq(width, width))
-
-class ButterflyNode[T <: Data](op: (T, T, T) => (T, T), width: BitCount = -1 bits, name: String, delay: CyclesCount, exeTime: TimeNumber)
-  extends DeviceNode[T](ButterflyHardware(op, width), name, delay, exeTime) {
-  override def copy(newName: String): ButterflyNode[T] = new ButterflyNode(op, width, newName, delay, exeTime)
-}
-
-object ButterflyNode {
-  def apply[T <: Data](op: (T, T, T) => (T, T), name: String, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): ButterflyNode[T] =
-    new ButterflyNode(op, width, name, delay, exeTime)
-}
-
-case class Compressor32Hardware[THard <: Data](op: (THard, THard, THard) => (THard, THard), override val outWidths: Seq[BitCount] = Seq(-1 bits, -1 bits))
-  extends DSPHardware[THard](
-    impl = (dataIns: Seq[THard], _: GlobalCount) => {
-      val ret = op(dataIns(0), dataIns(1), dataIns(2))
-      Seq(ret._1, ret._2)
-    },
-    inDegree = 3, outWidths)
-//
-//class Compressor32[T <: Data](op: (T, T, T) => (T, T), width: BitCount = -1 bits, name: String, delay: CyclesCount, exeTime: TimeNumber)
-//  extends DeviceNode[T](ButterflyHardware(op, width), name, delay, exeTime) {
-//  override def copy(newName: String): ButterflyNode[T] = new ButterflyNode(op, width, newName, delay, exeTime)
-//}
-//
-//object ButterflyNode {
-//  def apply[T <: Data](op: (T, T, T) => (T, T), name: String, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): ButterflyNode[T] =
-//    new ButterflyNode(op, width, name, delay, exeTime)
-//}
