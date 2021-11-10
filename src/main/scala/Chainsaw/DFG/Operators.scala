@@ -23,7 +23,7 @@ object Operators {
   val sintMultAdd: (SInt, SInt, SInt) => SInt = (a: SInt, b: SInt, c: SInt) => ((a * b) + c)
 
   // bit/digit level operators
-  val sintAddC: (SInt, SInt, SInt) => Seq[SInt] = (a: SInt, b: SInt, c: SInt) => {
+  val sintAddC: (SInt, SInt, SInt) => Seq[SInt] = (a: SInt, b: SInt, c: SInt) => { // adder take and
     val result = a +^ b + c
     Seq(result(result.getBitsWidth - 2 downto 0), result.msb.asSInt)
   }
