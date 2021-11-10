@@ -1,5 +1,6 @@
 package Chainsaw.DFG
 
+import Chainsaw._
 import spinal.core._
 
 object Operators {
@@ -25,6 +26,17 @@ object Operators {
   val sintAddC: (SInt, SInt, SInt) => Seq[SInt] = (a: SInt, b: SInt, c: SInt) => {
     val result = a +^ b + c
     Seq(result(result.getBitsWidth - 2 downto 0), result.msb.asSInt)
+  }
+
+  /** a operator using DSP48 to finish multiply-accumulate
+   *
+   * @param mreg whether pipeline the multiplication result or not
+   */
+  @xilinx
+  def macDSP48(mreg: Boolean = true): TrinaryNode[SInt] = {
+    val op = (coeff: SInt, data: SInt, partialSum: SInt) =>
+      if (mreg) RegNext(coeff * data) + partialSum else coeff * data + partialSum
+    TrinaryNode(op, "macDSP48", delay = (if (mreg) 1 else 0) cycles)
   }
 
   // operators mapped to Xilinx DSP slice

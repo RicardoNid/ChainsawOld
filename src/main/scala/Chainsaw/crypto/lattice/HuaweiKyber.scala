@@ -86,7 +86,7 @@ object HuaweiKyber {
    */
   def kMultMod(a: UInt, b: UInt): UInt = {
     val prod = (a * b).resize(24 bits)
-    prod.addAttribute("use_dsp", "no")
+    //    prod.addAttribute("use_dsp", "no")
     k2RED(RegNext(prod))
   }
 
@@ -148,10 +148,10 @@ object runKyber {
     // gen + sim + synth + impl
     globalImplPolicy = ImplPolicy(useRegInit = false, useSubmodule = true)
 
-    val nttDFG: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, 1).getGraph
-    genDFG(nttDFG, Seq.fill(128)(12 bits))
-    //    val nttDFG_folded_8: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, -8).getGraph
-    //    synthDFG(nttDFG_folded_8, Seq.fill(128)(12 bits), forTiming = false)
-    //    implDFG(nttDFG_folded_8, Seq.fill(128)(12 bits), forTiming = true)
+    val nttDFG_folded_8: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, -8).getGraph
+    val inputWidths = Seq.fill(128)(12 bits)
+    genDFG(nttDFG_folded_8, inputWidths)
+    synthDFG(nttDFG_folded_8, inputWidths, forTiming = false)
+    implDFG(nttDFG_folded_8, inputWidths, forTiming = false)
   }
 }

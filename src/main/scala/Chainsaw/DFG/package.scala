@@ -17,9 +17,9 @@ package object DFG {
 
   case class ImplPolicy(useRegInit: Boolean, useSubmodule: Boolean)
 
-  //  var globalImplPolicy: ImplPolicy = ImplPolicy(true, false) // this version is problem-free under current testbench
+  var globalImplPolicy: ImplPolicy = ImplPolicy(true, false) // this version is problem-free under current testbench
 
-  var globalImplPolicy: ImplPolicy = ImplPolicy(false, true) // this is the config we should take
+  //  var globalImplPolicy: ImplPolicy = ImplPolicy(false, true) // this is the config we should take
 
   // holder providers, serving impl methods
   implicit val sintProvider: HolderProvider[SInt] = (width: BitCount) => if (width.value >= 1) SInt(width) else SInt()

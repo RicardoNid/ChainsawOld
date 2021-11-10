@@ -69,7 +69,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
    * @param globalCount the global counter value in this DFG
    * @return output signals of the node just implemented
    */
-  def implVertex(target: DSPNode[T], signalMap: mutable.Map[DSPNode[T], Seq[T]], delayMap: mutable.Map[DSPNode[T], Seq[Vec[T]]])(implicit globalCount: GlobalCount): Seq[T] = {
+  def implVertex(target: DSPNode[T], signalMap: mutable.Map[DSPNode[T], Seq[T]])(implicit globalCount: GlobalCount): Seq[T] = {
 
     // step1: constructing all driving signals(dataIns)
     val dataGroups: Seq[(Int, Seq[DSPEdge[T]])] = target.incomingEdges // group all incoming edges by input port
@@ -80,18 +80,6 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
 
       dataGroups.map { case (portNumber, singlePortEdges) => // combine dataIns at the same port by a mux
         val singlePortData: Seq[T] = singlePortEdges.map { edge => // gets the delayed version of data
-
-          // option: do register merging or not
-          //          if (dfg.isForwarding) {
-          //            if (edge.delay == 0) signalMap(edge.source)(edge.outOrder)
-          //            else delayMap(edge.source)(edge.outOrder)(edge.delay)
-          //          }
-          //          else {
-          //            val dataIn = signalMap(edge.source)(edge.outOrder)
-          //            if (dataReset) Delay(dataIn, edge.weight.toInt, init = dataIn.getZero)
-          //            else Delay(dataIn, edge.weight.toInt)
-          //          }
-
           val dataIn = signalMap(edge.source)(edge.outOrder) // get the data at driver's output port
           if (globalImplPolicy.useRegInit) Delay(dataIn, edge.weight.toInt, init = dataIn.getZero) // get the delayed version
           else Delay(dataIn, edge.weight.toInt)
@@ -147,7 +135,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
     // step3: implement other nodes one by one
     if (isRecursive) { // for recursive DFG, as we use placeholders, we can implement nodes in any order(when widths given)
       vertexSeq.diff(inputNodes).foreach { target =>
-        val rets = implVertex(target, signalMap, delayMap) // invoke implVertex to implement a node
+        val rets = implVertex(target, signalMap) // invoke implVertex to implement a node
         val placeholders = signalMap(target)
         placeholders.zip(rets).foreach { case (placeholder, ret) => placeholder := ret.resized }
         nameSignal(placeholders, target)
@@ -166,21 +154,8 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
       // until all nodes
       while (nextStageNodes.nonEmpty) {
         nextStageNodes.foreach { target =>
-
-          val rets: Seq[T] = implVertex(target, signalMap, delayMap)
+          val rets: Seq[T] = implVertex(target, signalMap)
           signalMap += target -> rets
-
-          //          logger.debug(s"delays ${delayMap.mkString(" ")}")
-          //          delayMap += target -> rets.zipWithIndex.map { case (signal, outOrder) =>
-          //            val edges = target.outgoingEdges.filter(_.outOrder == outOrder)
-          //            if (edges.nonEmpty) {
-          //              val delayMax = edges.map(_.delay).max
-          //              if (dataReset) History(signal, 0 to delayMax, init = signal.getZero) else History(signal, 0 to delayMax)
-          //            } else {
-          //              Vec(holderProvider(-1 bits))
-          //            }
-          //          }
-
           nameSignal(rets, target)
         }
       }

@@ -1,20 +1,23 @@
 package Chainsaw.DFG
 
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 import spinal.core.Data
 
 import scala.collection.JavaConversions._
 import scala.math.{floor, log}
 
 class Folding[T <: Data](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with Foldable[T]]]) extends Transform {
-  val logger = LoggerFactory.getLogger("folding procedure")
+  val logger: Logger = LoggerFactory.getLogger("folding procedure")
 
   // preparing context for folding
-  val N = foldingSet.head.length // folding factor
+  val N: Int = foldingSet.head.length // folding factor
   require(foldingSet.forall(_.size == N), "folding set should have the same folding factor on each node")
-  // map node -> folding order of the node
-  val foldingOrderOf: Map[DSPNode[T], Int] = foldingSet.flatMap { set => set.zipWithIndex.filterNot(_._1 == null) map { case (node, i) => node -> i } }.toMap
-  val devices: Seq[DSPNode[T]] = foldingSet.map { nodes => // map node -> the device it belongs(folded to)
+
+  // step1: preparing the environment of folding algorithm
+  val foldingOrderOf: Map[DSPNode[T], Int] = foldingSet.flatMap { set => // map node -> folding order of the node
+    set.zipWithIndex.filterNot(_._1 == null) map { case (node, i) => node -> i }
+  }.toMap
+  val devices: Seq[DSPNode[T]] = foldingSet.map { nodes =>
     val nonEmptyNode = nodes.filterNot(_ == null).head // TODO: better solution
     // replace null by an arbitrary nonempty node, which should have no influence on the function as result of null operation won't be used
     val filledNodes: Seq[DSPNode[T] with Foldable[T]] = nodes.map(node => if (node != null) node else nonEmptyNode)
@@ -22,7 +25,8 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T] with F
     logger.debug(s"folding ${filledNodes.map(_.getClass).mkString(" ")}")
     filledNodes.head.fold(filledNodes)
   }
-  val deviceOf: Map[DSPNode[T], DSPNode[T]] = foldingSet.zip(devices).flatMap { case (nodes, device) => nodes.map(_ -> device) }.toMap
+  val deviceOf: Map[DSPNode[T], DSPNode[T]] = foldingSet.zip(devices).flatMap { case (nodes, device) => // map node -> the device it belongs(folded to)
+    nodes.map(_ -> device) }.toMap
 
   /** Mapping delays to folded delays
    *

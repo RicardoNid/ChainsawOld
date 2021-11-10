@@ -395,6 +395,12 @@ package object Chainsaw extends RealFactory {
 
   val synthWorkspace = "/home/ltr/IdeaProjects/Chainsaw/synthWorkspace"
 
+
+  import scala.annotation.meta._
+  @getter @setter @beanGetter @beanSetter
+  class xilinx(message: String = "", since: String = "") extends scala.annotation.StaticAnnotation
+
+
   def VivadoSynth[T <: Component](gen: => T, name: String = "temp") = {
     val report = VivadoFlow(design = gen, name, s"$synthWorkspace/$name").doit()
     report.printArea()
