@@ -52,30 +52,31 @@ class DFGGraphTest extends AnyFlatSpec {
   //    })
   //  }
 
-  "the folding algorithm" should "fold correctly on chap6 fig6_3" in verifyFolding(chap6.fig6_3, chap6.foldingSet, testHardType, "chap6_fig6_3")
+  "the folding algorithm" should "fold correctly on chap6 fig6_4" in verifyFolding(chap6.fig6_3, chap6.foldingSet, testHardType, "chap6_fig6_3")
+  "the folding algorithm" should "also fold correctly on chap6 fig6_4" in verifyFolding(chap6.fig6_5, chap6.foldingSet, testHardType, "chap6_fig6_5")
   it should "fold correctly on simple graph" in verifyFolding(simpleFolding.dfg, simpleFolding.foldingSet, testHardType)
-  it should "fold correctly on paper1992 fig6_a(example3)" in verifyFolding(paper1992OnFolding.fig6_a, paper1992OnFolding.foldingSet_example3, testHardType)
-  it should "fold correctly on paper1992 fig6_a(example4)" in verifyFolding(paper1992OnFolding.fig6_a, paper1992OnFolding.foldingSet_example4, testHardType)
+  it should "fold correctly on paper1992 fig6_b(example3)" in verifyFolding(paper1992OnFolding.fig6_a, paper1992OnFolding.foldingSet_example3, testHardType)
+  it should "fold correctly on paper1992 fig7_a(example4)" in verifyFolding(paper1992OnFolding.fig6_a, paper1992OnFolding.foldingSet_example4, testHardType)
 
-  it should "fold correctly on paper1992 fig8_a(example6)" in {
+  it should "fold correctly on paper1992 fig8_b(example6)" in {
     val dfg = paper1992OnFolding.fig8_a
     val foldingSet = paper1992OnFolding.foldingSet8_a_example6
     verifyFolding(dfg, foldingSet, testHardType)
   }
 
-  it should "fold correctly on paper1992 fig9_a(example7)" in {
+  it should "fold correctly on paper1992 fig9_b(example7)" in {
     val dfg = paper1992OnFolding.fig9_a
     val foldingSet = paper1992OnFolding.foldingSet9_a_example7
     verifyFolding(dfg, foldingSet, testHardType, "paper1992_fig9_a")
   }
 
-  it should "fold correctly on paper1992 fig10_a(example8)" in {
+  it should "fold correctly on paper1992 fig10_b(example8)" in {
     val dfg = paper1992OnFolding.fig10_a
     val foldingSet = paper1992OnFolding.foldingSet10_a_example8and10
     verifyFolding(dfg, foldingSet, testHardType, "paper1992_fig10_a")
   }
 
-  it should "retimed correctly on paper1992 fig10_c(example10)" in {
+  it should "retimed correctly on paper1992 fig10_b(example10)" in {
     val dfg = paper1992OnFolding.fig10_c
     val foldingSet = paper1992OnFolding.foldingSet10_a_example8and10
     verifyFolding(dfg, foldingSet, testHardType, "paper1992_fig10_c")
