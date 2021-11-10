@@ -5,6 +5,12 @@ import spinal.core._
 
 import scala.language.postfixOps
 
+/** hardware device of a DSPNode
+ * @param impl the way it works described in SpinalHDL
+ * @param inDegree input port number
+ * @param outWidths output port number
+ * @tparam T hardware signal type in SpinalHDL
+ */
 class DSPHardware[T <: Data](val impl: (Seq[T], GlobalCount) => Seq[T], val inDegree: Int, val outWidths: Seq[BitCount] = Seq(-1 bit)) {
 
   def asComponent(namep: String)(implicit holderProvider: HolderProvider[T]) = () => new Component with NodeComponent[T] {
@@ -163,7 +169,7 @@ object TrinaryNode {
 
 /** Butterfly hardware takes two input and a coefficient, generates two output, they're heavily used as building blocks of more complicated DFG
  */
-case class ButterflyHardware[THard <: Data, TSoft](op: (THard, THard, THard) => (THard, THard), width: BitCount = -1 bits) // (a, b, coeff)
+case class ButterflyHardware[THard <: Data](op: (THard, THard, THard) => (THard, THard), width: BitCount = -1 bits) // (a, b, coeff)
   extends DSPHardware[THard](impl =
     (dataIns: Seq[THard], _: GlobalCount) => {
       val ret = op(dataIns(0), dataIns(1), dataIns(2))
@@ -180,3 +186,21 @@ object ButterflyNode {
   def apply[T <: Data](op: (T, T, T) => (T, T), name: String, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): ButterflyNode[T] =
     new ButterflyNode(op, width, name, delay, exeTime)
 }
+
+case class Compressor32Hardware[THard <: Data](op: (THard, THard, THard) => (THard, THard), override val outWidths: Seq[BitCount] = Seq(-1 bits, -1 bits))
+  extends DSPHardware[THard](
+    impl = (dataIns: Seq[THard], _: GlobalCount) => {
+      val ret = op(dataIns(0), dataIns(1), dataIns(2))
+      Seq(ret._1, ret._2)
+    },
+    inDegree = 3, outWidths)
+//
+//class Compressor32[T <: Data](op: (T, T, T) => (T, T), width: BitCount = -1 bits, name: String, delay: CyclesCount, exeTime: TimeNumber)
+//  extends DeviceNode[T](ButterflyHardware(op, width), name, delay, exeTime) {
+//  override def copy(newName: String): ButterflyNode[T] = new ButterflyNode(op, width, newName, delay, exeTime)
+//}
+//
+//object ButterflyNode {
+//  def apply[T <: Data](op: (T, T, T) => (T, T), name: String, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 1 ns): ButterflyNode[T] =
+//    new ButterflyNode(op, width, name, delay, exeTime)
+//}
