@@ -135,6 +135,14 @@ object ConstantHardware {
     outWidths = Seq(width),
     delay = 0 cycles, exeTime = 0 sec
   )
+
+  def apply[THard <: Data](constant: THard): DSPHardware[THard] = DSPHardware(
+    // this style delay the hardware literal generation until impl process
+    impl = (_: Seq[THard], _: GlobalCount) => Seq(constant),
+    inDegree = 0,
+    outWidths = Seq(constant.getBitsWidth bits),
+    delay = 0 cycles, exeTime = 0 sec
+  )
 }
 
 /** nodes which represent a constant(literal in verilog) in the DFG, for its usage, view its factory methods, instead of its constructor
@@ -153,6 +161,11 @@ object ConstantNode {
                                  (implicit converter: (TSoft, BitCount) => THard): ConstantNode[THard] = {
     val hardware = ConstantHardware(constant, width)
     new ConstantNode(s"constant_$constant", hardware)
+  }
+
+  def apply[THard <: Data](name: String, constant: THard): ConstantNode[THard] = {
+    val hardware = ConstantHardware(constant)
+    new ConstantNode(name, hardware)
   }
 
 }

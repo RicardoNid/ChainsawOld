@@ -87,10 +87,11 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   // Add edge into basicDFG(MISO, no MUX)
   def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double, schedules: Seq[Schedule]): Unit = {
-    if (!this.isInstanceOf[ConstraintGraph[T]]) {
-      if (source.outWidths.size > 1) logger.warn(s"adding edge to MIMO node $source with no specified port number")
-      if (target.inDegree > 1) logger.warn(s"adding to MIMO node $target with no specified port number")
-    }
+    // TODO: consider whether this is necessary
+//    if (!this.isInstanceOf[ConstraintGraph[T]]) {
+//      if (source.outWidths.size > 1) logger.warn(s"adding edge to MIMO node $source with no specified port number")
+//      if (target.inDegree > 1) logger.warn(s"adding to MIMO node $target with no specified port number")
+//    }
     addEdge(source, target, 0, target.incomingEdges.size, delay, schedules)
   }
 

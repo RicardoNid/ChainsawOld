@@ -5,7 +5,7 @@ import cc.redberry.rings.scaladsl.UnivariateRingZp64
 object FastAlgos {
 
   def p2pMult(f: Seq[Long], g: Seq[Long])(implicit polyRing: UnivariateRingZp64): Seq[Long] =
-    f.zip(g).map { case (f, g) => polyRing.cfRing(f * g) }
+    f.zip(g).map { case (f, g) => polyRing.cfRing(f * g)}
 
   /** accelerate the cyclic convolution on Zp by NTT
    *

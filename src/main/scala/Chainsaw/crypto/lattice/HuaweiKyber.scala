@@ -152,6 +152,8 @@ object runKyber {
     val inputWidths = Seq.fill(128)(12 bits)
     genDFG(nttDFG_folded_8, inputWidths)
     synthDFG(nttDFG_folded_8, inputWidths, forTiming = false)
-    implDFG(nttDFG_folded_8, inputWidths, forTiming = false)
+
+    val nttDFG: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, 1).getGraph
+    synthDFG(nttDFG, inputWidths, forTiming = false)
   }
 }
