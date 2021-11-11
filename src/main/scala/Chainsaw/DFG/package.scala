@@ -15,6 +15,10 @@ package object DFG {
 
   type HolderProvider[T] = BitCount => T
 
+  implicit class hardware2Node[T <: Data](hardware: DSPHardware[T]) {
+    def asDSPNode(name: String): DeviceNode[T] = DeviceNode(name, hardware)
+  }
+
   case class ImplPolicy(useRegInit: Boolean, useSubmodule: Boolean)
 
   var globalImplPolicy: ImplPolicy = ImplPolicy(true, false) // this version is problem-free under current testbench
@@ -99,9 +103,15 @@ package object DFG {
     // actions
     def addVertex() = dfg.addVertex(node)
 
-    def addConstantDriver[TSoft](constant: TSoft, width: BitCount, order: Int = 0)
+    def addConstantDriver[TSoft](constant: TSoft, width: BitCount, order: Int)
                                 (implicit converter: (TSoft, BitCount) => T): Unit = {
       val constantNode = ConstantNode(s"constant_$constant", constant, width)
+      dfg.addVertex(constantNode)
+      dfg.addEdge(constantNode(0), node(order), 0)
+    }
+
+    def addConstantDriver(constant: T, order: Int): Unit = {
+      val constantNode = ConstantNode(s"constant", constant)
       dfg.addVertex(constantNode)
       dfg.addEdge(constantNode(0), node(order), 0)
     }

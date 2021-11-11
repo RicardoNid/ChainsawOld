@@ -50,6 +50,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
     val component = hardware.asComponent(commonName)
     nodes.map(node => node -> component)
   }.flatten.toMap
+  logger.info(s"${componentMap.mkString(" ")}")
 
   def nameSignal(signals: Seq[T], target: DSPNode[T]): Unit = {
     if (signals.size == 1) signals.head.setName(target.name, weak = true)

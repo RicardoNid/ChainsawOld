@@ -88,10 +88,10 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   // Add edge into basicDFG(MISO, no MUX)
   def addEdge(source: DSPNode[T], target: DSPNode[T], delay: Double, schedules: Seq[Schedule]): Unit = {
     // TODO: consider whether this is necessary
-//    if (!this.isInstanceOf[ConstraintGraph[T]]) {
-//      if (source.outWidths.size > 1) logger.warn(s"adding edge to MIMO node $source with no specified port number")
-//      if (target.inDegree > 1) logger.warn(s"adding to MIMO node $target with no specified port number")
-//    }
+    //    if (!this.isInstanceOf[ConstraintGraph[T]]) {
+    //      if (source.outWidths.size > 1) logger.warn(s"adding edge to MIMO node $source with no specified port number")
+    //      if (target.inDegree > 1) logger.warn(s"adding to MIMO node $target with no specified port number")
+    //    }
     addEdge(source, target, 0, target.incomingEdges.size, delay, schedules)
   }
 
@@ -204,6 +204,14 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def folded(foldingSet: Seq[Seq[DSPNode[T]]]): DFGGraph[T] = new Folding(this, foldingSet).folded
 
+  def unfolded(unfoldingFactor: Int): DFGGraph[T] = new Unfolding(this, unfoldingFactor).unfolded
+
+  def parallelized(parallelism: Int, foldingSet: Seq[Seq[DSPNode[T]]] = null): DFGGraph[T] = {
+    if (parallelism == 1) this
+    else if (parallelism > 1) unfolded(parallelism)
+    else folded(foldingSet)
+  }
+
   override def toString: String = {
 
     val inputEdges = edgeSeq.filter(edge => edge.source.isInput || edge.source.isInstanceOf[ConstantNode[T]])
@@ -245,6 +253,25 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
       0 sec
     )
     )
+  }
+
+  def nodeRetiming(nodeDelayMap: Map[DSPNode[T], Int]): DFGGraph[T] = {
+    val cg = ConstraintGraph[T]()
+    nodeDelayMap.foreach { case (u, innerDelay) =>
+      u.targets.foreach { v =>
+        cg.addConstraint(u - v <= -innerDelay) // v - u >= innerDelay
+      }
+    }
+
+    val retimedDFG = retimed(cg.getSolution)
+
+    nodeDelayMap.foreach { case (u, innerDelay) =>
+      retimedDFG.outgoingEdgesOf(u).foreach(edge =>
+        retimedDFG.setEdgeWeight(edge, retimedDFG.getEdgeWeight(edge) - innerDelay)
+      )
+    }
+
+    retimedDFG
   }
 }
 

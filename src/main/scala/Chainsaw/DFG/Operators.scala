@@ -10,10 +10,6 @@ import scala.language.postfixOps
  */
 object Operators {
 
-  implicit class hardware2Node[T <: Data](hardware: DSPHardware[T]) {
-    def asDSPNode(name: String): DeviceNode[T] = DeviceNode(name, hardware)
-  }
-
   /** generate a pass through hardware of given width
    */
   def passThrough[T <: Data](width: BitCount = -1 bits): DSPHardware[T] = DSPHardware(
