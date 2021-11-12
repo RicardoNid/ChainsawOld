@@ -46,11 +46,17 @@ object DFGTestUtil {
 
     logger.info(s"input at $inputSchedule, output at $outputSchedule")
 
-    val originalLatency = if (basicLatency == -1) {
-      original.latency
-    } else basicLatency
-    var transformedLatency = originalLatency
-    latencyTransformations.foreach(trans => transformedLatency = trans.trans(transformedLatency))
+        val originalLatency1 = if (basicLatency == -1) {
+          original.latency
+        } else basicLatency
+        var transformedLatency1 = originalLatency1
+        latencyTransformations.foreach(trans => transformedLatency1 = trans.trans(transformedLatency1))
+
+    val originalLatency = original.latency
+    val transformedLatency = transformed.latency
+
+    printlnGreen(s"true: $originalLatency1 -> $transformedLatency1")
+    printlnGreen(s"now : $originalLatency -> $transformedLatency")
 
     /** Describe the simulation procedure
      *
@@ -90,7 +96,7 @@ object DFGTestUtil {
         dataIn.setMonitor(inputRecord, "input")
         clockDomain.forkStimulus(2)
         clockDomain.waitSampling() // now, the global counter value is 1
-        clockDomain.waitSampling((inputSchedule.time - 1) + dfg.globalLcm) // to align the counter value with input schedule
+        clockDomain.waitSampling(dfg.globalLcm - 1)
         dataOut.setMonitor(outputRecord, "output")
 
         if (testCases == null) {
@@ -140,15 +146,16 @@ object DFGTestUtil {
   def verifyFolding[T <: Data](original: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T]]], elementType: HardType[T], name: String = null, basicLatency: Int = -1)
                               (implicit holderProvider: HolderProvider[T]) = {
     val algo = new Folding(original, foldingSets)
-    val foldedDFG = algo.folded
+    val foldedDFG = algo.transformed
     val N = foldingSets.head.size
+    printlnRed(foldedDFG.latency)
     verifyFunctionalConsistency(original, foldedDFG, elementType, -N, algo.latencyTransformations, name = name, basicLatency = basicLatency) // TODO: customized width
   }
 
   def verifyUnfolding[T <: Data](original: DFGGraph[T], unfoldingFactor: Int, elementType: HardType[T], name: String = null, basicLatency: Int = -1)
                                 (implicit holderProvider: HolderProvider[T]) = {
     val algo = new Unfolding(original, unfoldingFactor)
-    val unfoldedDFG = algo.unfolded
+    val unfoldedDFG = algo.transformed
     verifyFunctionalConsistency(original, unfoldedDFG, elementType, unfoldingFactor, algo.latencyTransformations, name = name, basicLatency = basicLatency)
   }
 }

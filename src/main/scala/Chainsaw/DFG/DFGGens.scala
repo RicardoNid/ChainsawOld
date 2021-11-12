@@ -67,11 +67,11 @@ class FIRGen[THard <: Data, TSoft](mac: TrinaryNode[THard],
 
     // folding/unfolding according to the pattern
     val ret = if (parallelism == 1) dfg
-    else if (parallelism > 1) new Unfolding(dfg, parallelism).unfolded
+    else if (parallelism > 1) new Unfolding(dfg, parallelism).transformed
     else {
       val foldingFactor = -parallelism
       val multAddGroups = macs.grouped(-parallelism).toSeq.map(_.padTo(foldingFactor, null))
-      new Folding(dfg, multAddGroups).folded
+      new Folding(dfg, multAddGroups).transformed
     }
     logger.debug(s"fir dfg:\n$ret")
     ret
@@ -203,7 +203,7 @@ class ButterflyGen[THard <: Data, TSoft](ctButterfly: ButterflyNode[THard], gsBu
     ret.foreach(port => dfg.setOutput(port.node, port.order))
 
     val adjustedRet = if (parallelism == 1) dfg
-    else if (parallelism > 1) new Unfolding(dfg, parallelism).unfolded
+    else if (parallelism > 1) new Unfolding(dfg, parallelism).transformed
     else {
       val foldingFactor = -parallelism
       val butterflyGroups: Seq[Seq[ButterflyNode[THard]]] = butterflies.map(col => col.grouped(foldingFactor).toSeq).flatten
@@ -213,7 +213,7 @@ class ButterflyGen[THard <: Data, TSoft](ctButterfly: ButterflyNode[THard], gsBu
         HardType(UInt(12 bits)),
         basicLatency = latency) // TODO: this is temp
 
-      new Folding(dfg, butterflyGroups).folded
+      new Folding(dfg, butterflyGroups).transformed
     }
 
     logger.debug(s"butterfly dfg:\n$dfg")

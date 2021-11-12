@@ -8,6 +8,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 
 import java.util
+import scala.annotation.meta.getter
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 import scala.language.postfixOps
@@ -15,6 +16,8 @@ import scala.language.postfixOps
 class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[DSPNode[T], DSPEdge[T]](classOf[DSPEdge[T]]) {
 
   implicit def currentDFG: DFGGraph[T] = this
+
+  var ioPositions: mutable.Map[DSPNode[T], Int] = mutable.Map[DSPNode[T], Int]()
 
   val logger: Logger = LoggerFactory.getLogger("editing DFG")
 
@@ -31,6 +34,8 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   def inputNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isInput)
 
   def outputNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isOutput)
+
+  def ioNodes: Seq[DSPNode[T]] = inputNodes ++ outputNodes
 
   def constantNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isConstant)
 
@@ -64,6 +69,11 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   def setEdgeSchedules(e: DSPEdge[T], schedules: Seq[Schedule]): Unit = {
     addEdge(e.source(e.outOrder), e.target(e.inOrder), e.weight, schedules)
     removeEdge(e)
+  }
+
+  override def addVertex(v: DSPNode[T]): Boolean = {
+    if (v.isInput || v.isOutput && !ioPositions.contains(v)) ioPositions += v -> 0
+    super.addVertex(v)
   }
 
   def addVertices(vertices: DSPNode[T]*) = vertices.foreach(addVertex)
@@ -133,12 +143,14 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     val inputName = if (name.nonEmpty) name else s"input${inputNodes.size}"
     val inputNode = InputNode[T](inputName)
     addVertex(inputNode)
+    ioPositions += inputNode -> 0
     inputNode
   }
 
   def setInput(target: DSPNode[T], inOrder: Int = 0, name: String = "", schedules: Seq[Schedule] = NoMUX()): InputNode[T] = {
     val inputNode = addInput(name)
     addEdge(inputNode(0), target(inOrder), 0, schedules)
+    ioPositions += inputNode -> 0
     inputNode
   }
 
@@ -147,6 +159,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     val outputNode = OutputNode[T](outputName)
     addVertex(outputNode)
     addEdge(source(outOrder), outputNode(0), 0, schedules)
+    ioPositions += outputNode -> 0
     outputNode
   }
 
@@ -177,13 +190,22 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     Seq.tabulate(inputNodes.size, outputNodes.size)((i, j) => algo.getPath(inputNodes(i), outputNodes(j))).flatten
   }
 
-  def isHomogeneous: Boolean = delayPaths.forall(_.getWeight == delayPaths.head.getWeight)
+  def inputPositions: Seq[Int] = ioPositions.filter(_._1.isInput).values.toSeq
 
-  /** Currently, it is defined as the shortest path between inputs and outputs
-   */
-  def latencyPath: GraphPath[DSPNode[T], DSPEdge[T]] = delayPaths.minBy(_.getWeight) // TODO: a serious definition of latency
+  def outputPositions: Seq[Int] = ioPositions.filter(_._1.isOutput).values.toSeq
 
-  def latency: Int = latencyPath.getWeight.toInt
+  def isHomogeneous: Boolean = {
+    println(ioPositions.mkString(" "))
+    inputPositions.forall(_ == 0) && outputPositions.forall(_ == outputPositions.head)
+  }
+
+  def latency: Int = if (!isHomogeneous) throw new IllegalArgumentException("latency of non-homogeneous graph is not defined")
+  else ioPositions(outputNodes.head) - ioPositions(inputNodes.head)
+
+  def setLatency(newLatency: Int): Unit = ioPositions.keys.foreach { node =>
+    if (node.isInput) ioPositions(node) = 0
+    if (node.isOutput) ioPositions(node) = newLatency
+  }
 
   def criticalPathLength: Double = new CriticalPathAlgo(this).criticalPathLength
 
@@ -198,13 +220,13 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     cg
   }
 
-  def retimed(solutions: Map[DSPNode[T], Int]): DFGGraph[T] = new Retiming(this, solutions).retimed
+  def retimed(solutions: Map[DSPNode[T], Int]): DFGGraph[T] = new Retiming(this, solutions).transformed
 
   def merged: DFGGraph[T] = new DFGRegOpt(this).getRegMergedDFG
 
-  def folded(foldingSet: Seq[Seq[DSPNode[T]]]): DFGGraph[T] = new Folding(this, foldingSet).folded
+  def folded(foldingSet: Seq[Seq[DSPNode[T]]]): DFGGraph[T] = new Folding(this, foldingSet).transformed
 
-  def unfolded(unfoldingFactor: Int): DFGGraph[T] = new Unfolding(this, unfoldingFactor).unfolded
+  def unfolded(unfoldingFactor: Int): DFGGraph[T] = new Unfolding(this, unfoldingFactor).transformed
 
   def parallelized(parallelism: Int, foldingSet: Seq[Seq[DSPNode[T]]] = null): DFGGraph[T] = {
     if (parallelism == 1) this
@@ -229,6 +251,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
       s"inner edges:\n\t${otherEdges.map(edge => s"${edge.symbol} $edge").mkString("\n\t")}\n" +
       s"output edges:\n\t${outputEdges.map(edge => s"${edge.symbol} $edge").mkString("\n\t")}\n" +
       s"loops:\n\t${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}\n" +
+      s"ioPositions: \n\t${ioPositions.mkString(" ")}" +
       s"------end------\n"
   }
 
@@ -237,6 +260,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   override def clone(): AnyRef = {
     val graph = super.clone().asInstanceOf[DFGGraph[T]]
     graph.foreachEdge(edge => graph.setEdgeWeight(edge, edge.weight))
+    graph.ioPositions = mutable.Map[DSPNode[T], Int](this.ioPositions.toSeq: _*)
     graph
   }
 

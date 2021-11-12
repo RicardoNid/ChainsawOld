@@ -8,7 +8,7 @@ import scala.math.floor
  *
  * @param foldingSet 2D folding set which contains Seq of Seq of nodes, null nodes may be included
  */
-class Folding[T <: Data](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T]]]) extends Transform {
+class Folding[T <: Data](override val dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T]]]) extends Transform[T] {
   val logger: Logger = LoggerFactory.getLogger("folding procedure")
 
   // preparing context for folding
@@ -42,7 +42,7 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T]]]) ext
   }
 
   // the procedure of constructing folded DFG
-  lazy val folded: DFGGraph[T] = {
+  override lazy val transformed: DFGGraph[T] = {
 
     logger.info(s"\n\tstart folding dfg[${dfg.name}]")
     logger.debug(s"original:\n$dfg")
@@ -60,6 +60,7 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T]]]) ext
     val foldedDFG = DFGGraph[T](s"${dfg.name}_folded")
     foldedDFG.addVertices(retimedDFG.outerNodes: _*) // keep outer nodes the same
     foldedDFG.addVertices(devices: _*) // fold inner nodes(device nodes) into devices
+    foldedDFG.ioPositions ++= retimedDFG.ioPositions
 
     // step4: adding edges
     retimedDFG.foreachEdge { edge =>
@@ -72,9 +73,18 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T]]]) ext
     }
     logger.debug(s"folded dfg:\n$foldedDFG")
 
+    // adjusting ioPosition
+    val before = foldedDFG.ioPositions.toSeq
+    foldedDFG.inputNodes.foreach(node => foldedDFG.ioPositions(node) = foldedDFG.ioPositions(node) * N)
+    foldedDFG.outputNodes.foreach(node => foldedDFG.ioPositions(node) = foldedDFG.ioPositions(node) * N + foldingOrderOf(node.sources.head))
+    val after = foldedDFG.ioPositions.toSeq
+    logger.info(s"folding IO adjustment: ${before.diff(after).mkString(" ")} -> ${after.diff(before).mkString(" ")} ")
+
     // TODO: align the outputs ASAP
     // step5: align the output schedule
-    alignOutput(foldedDFG)
+    val ret = alignOutput(foldedDFG)
+    ret
+
   }
 
   /** calculator transforming delay -> folded delay and schedules -> folded schedules
@@ -91,7 +101,7 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T]]]) ext
   def getTransformed(edge: DSPEdge[T])(implicit referenceDFG: DFGGraph[T]): (Int, Seq[Schedule]) = {
     val U = edge.source
     val V = edge.target
-    val u = if (U.isOuter) foldingOrderOf(V) else foldingOrderOf(U) // the folding order of an input follows its target
+    val u = if (U.isOuter) 0 else foldingOrderOf(U) // the folding order of an input follows its target
     val v = if (V.isOuter) foldingOrderOf(U) else foldingOrderOf(V) // the folding order of an output follows its source
     val w = edge.weightWithSource
     val Pu = if (U.isOuter) 0 else deviceOf(U).delay
@@ -116,14 +126,23 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T]]]) ext
     // N is the period, and time % N is the position
     // % N because the original DFG may have MUX, and thus, the "global period" is not the same as the local one
     implicit val referenceDFG: DFGGraph[T] = foldedDFG
-    def outputPosition(output: DSPNode[T]) = output.incomingEdges.head.schedules.head.time % N
 
-    val outputRetimingSolution = foldedDFG.outputNodes.map { output =>
-      output -> (N - outputPosition(output) - 1) // extra delay needed
+    val inputRetimingSolution = foldedDFG.inputNodes.map { input =>
+      input -> (0 - foldedDFG.ioPositions(input)) // extra delay needed
     }.toMap
 
+
+    val inputRetimed = foldedDFG.retimed(inputRetimingSolution)
+
+    println(s"input position ${inputRetimed.inputPositions.mkString(" ")}")
+
+    val outputRetimingSolution = inputRetimed.outputNodes.map { output =>
+      output -> (inputRetimed.outputPositions.max - inputRetimed.ioPositions(output)) // extra delay needed
+    }.toMap
+
+    val ret = inputRetimed.retimed(outputRetimingSolution)
+
     logger.debug(s"retiming output of folded dfg:\n${outputRetimingSolution.mkString(" ")}")
-    val ret = foldedDFG.retimed(outputRetimingSolution)
 
     logger.info(
       s"\n\t${foldedDFG.delayAmount} buffer regs in the folded DFG" +
@@ -134,9 +153,11 @@ class Folding[T <: Data](dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T]]]) ext
   }
 
   override def latencyTransformations: Seq[LatencyTrans] = {
-    implicit val foldedDFG: DFGGraph[T] = folded // TODO: avoid rerun this
+    implicit val foldedDFG: DFGGraph[T] = transformed // TODO: avoid rerun this
     val inputSchedule: Int = foldedDFG.inputNodes.head.outgoingEdges.flatMap(_.schedules.map(_.time)).min
     val outputSchedule: Int = foldedDFG.outputNodes.head.incomingEdges.head.schedules.head.time
     new Retiming(dfg, retimingSolution).latencyTransformations :+ LatencyTrans(N, outputSchedule - inputSchedule)
   }
+
+  //  logIO()
 }

@@ -58,6 +58,8 @@ object implementingDFGs {
   butterfly.setOutput(adds(0))
   butterfly.setOutput(adds(1))
 
+  println(butterfly)
+  println(butterfly.ioPositions.mkString(" "))
   val butterflyNode = butterfly.asNode("butterflyNode")
 
   def nestedDFG: DFGGraph[SInt] = {
@@ -89,9 +91,9 @@ object chap2 {
 
 object chap5 {
 
-  val add = BinaryNode("add", sintAdd,  10 bits, 0 cycles, 1 ns)
-  val add_inner_delay = BinaryNode("add0",sintAdd,  10 bits, 8 cycles, 1 ns)
-  val cmult = BinaryNode("cmult",sintMult,  10 bits, 0 cycles, 1 ns)
+  val add = BinaryNode("add", sintAdd, 10 bits, 0 cycles, 1 ns)
+  val add_inner_delay = BinaryNode("add0", sintAdd, 10 bits, 8 cycles, 1 ns)
+  val cmult = BinaryNode("cmult", sintMult, 10 bits, 0 cycles, 1 ns)
 
   def fig5_2 = {
     val dfg_5_2 = DFGGraph[SInt]("fig5.2")
@@ -117,11 +119,11 @@ object chap5 {
   def fig5_10 = {
     val dfg_5_10 = DFGGraph[SInt]("fig5.10")
 
-    val x = BinaryNode("x",sintMult,  10 bits, 0 cycles, 1 ns)
+    val x = BinaryNode("x", sintMult, 10 bits, 0 cycles, 1 ns)
     dfg_5_10.genConstBinaryNode(x, 1)
-    val Seq(a, b, c) = Seq("a", "b", "c").map(name => BinaryNode(name,sintMult,  10 bits, 0 cycles, 1 ns))
+    val Seq(a, b, c) = Seq("a", "b", "c").map(name => BinaryNode(name, sintMult, 10 bits, 0 cycles, 1 ns))
     Seq(a, b, c).foreach(dfg_5_10.genConstBinaryNode(_, 2))
-    val Seq(d, e) = Seq("d", "e").map(name => BinaryNode(name,sintAdd,  10 bits, 0 cycles, 1 ns))
+    val Seq(d, e) = Seq("d", "e").map(name => BinaryNode(name, sintAdd, 10 bits, 0 cycles, 1 ns))
     printlnGreen("using fig 5.10")
     dfg_5_10.addPath(x >> c >> 2 >> d >> 4 >> e)
     dfg_5_10.addPath(x >> b >> d)
@@ -150,9 +152,9 @@ object chap5 {
 
 object chap6 {
 
-  val adds = (0 until 4).map(i => BinaryNode(s"add$i",sintAdd,  10 bits, 0 cycles, 1 ns))
+  val adds = (0 until 4).map(i => BinaryNode(s"add$i", sintAdd, 10 bits, 0 cycles, 1 ns))
   // val cmults = (0 until 4).map(i => BinaryNode(sintMult, s"cmult_$i" , 10 bits, 1 cycles, 2 ns))
-  val cmults = (0 until 4).map(i => BinaryNode(s"cmult$i",sintMult,  10 bits, 0 cycles, 2 ns))
+  val cmults = (0 until 4).map(i => BinaryNode(s"cmult$i", sintMult, 10 bits, 0 cycles, 2 ns))
 
   def fig6_3 = {
     val dfg_6_3 = DFGGraph[SInt]("fig6.3")
@@ -211,7 +213,7 @@ object paper1992OnFolding {
 
   /*  -----------------------------------fig6_a_example3------------------------------------*/
 
-  val cmults = (0 until 4).map(i => BinaryNode(s"cmult$i",sintMult,  10 bits))
+  val cmults = (0 until 4).map(i => BinaryNode(s"cmult$i", sintMult, 10 bits))
 
   def fig6_a = {
     val dfg_6_a = DFGGraph[SInt]("paper1992fig6_a")
@@ -233,7 +235,7 @@ object paper1992OnFolding {
   /*  -----------------------------------fig8_a_example6------------------------------------*/
 
   val multadd = TrinaryNode("multadd", sintMultAdd, 10 bits)
-  val cmults_8_a = (0 until 4).map(i => BinaryNode(s"cmult${i + 1}",sintMult,  10 bits, 0 cycles, 1 ns))
+  val cmults_8_a = (0 until 4).map(i => BinaryNode(s"cmult${i + 1}", sintMult, 10 bits, 0 cycles, 1 ns))
 
   def fig8_a = {
     val dfg_8_a = DFGGraph[SInt]("paper1992fig8_a")
@@ -273,7 +275,7 @@ object paper1992OnFolding {
 
   /*  -----------------------------------fig10_a_example8and10------------------------------------*/
 
-  val cmults_10_a = (0 until 4).map(i => BinaryNode(s"A${i + 1}",sintMult,  10 bits, 0 cycles, 1 ns))
+  val cmults_10_a = (0 until 4).map(i => BinaryNode(s"A${i + 1}", sintMult, 10 bits, 0 cycles, 1 ns))
 
   def fig10 = {
     val dfg_10_a = DFGGraph[SInt]("paper1992fig10")
@@ -309,8 +311,8 @@ object paper1992OnFolding {
 
   /*  -----------------------------------fig12_a_example11------------------------------------*/
 
-  val cmults_12_a = (0 until 4).map(i => BinaryNode(s"M${i + 1}",sintMult,  10 bits, 0 cycles, 1 ns))
-  val adds_12_a = (0 until 4).map(i => BinaryNode(s"A${i + 1}",sintAdd,  10 bits, 0 cycles, 1 ns))
+  val cmults_12_a = (0 until 4).map(i => BinaryNode(s"M${i + 1}", sintMult, 10 bits, 0 cycles, 1 ns))
+  val adds_12_a = (0 until 4).map(i => BinaryNode(s"A${i + 1}", sintAdd, 10 bits, 0 cycles, 1 ns))
 
   def fig12_a = {
     val dfg_12_a = DFGGraph[SInt]("paper1992fig12_a")
@@ -331,8 +333,8 @@ object paper1992OnFolding {
   /*  -----------------------------------fig13_a_example12------------------------------------*/
 
   val dfg_13_a = DFGGraph[SInt]("paper1992fig13_a")
-  val cmults_13_a = (0 until 2).map(i => BinaryNode(s"cmult_$i",sintMult,  10 bits, 0 cycles, 1 ns))
-  val adds_13_a = (0 until 2).map(i => BinaryNode(s"cadder_$i",sintAdd,  10 bits, 0 cycles, 1 ns))
+  val cmults_13_a = (0 until 2).map(i => BinaryNode(s"cmult_$i", sintMult, 10 bits, 0 cycles, 1 ns))
+  val adds_13_a = (0 until 2).map(i => BinaryNode(s"cadder_$i", sintAdd, 10 bits, 0 cycles, 1 ns))
 
   def fig13_a = {
     val dfg_13_a = DFGGraph[SInt]("paper1992fig13_a")
@@ -350,6 +352,7 @@ object paper1992OnFolding {
   /*  -----------------------------------fig14_a_example13------------------------------------*/
 
   val adderc_fig14_a = (0 until 3).map(i => sintAddCNode(10 bits).copy(s"adderC_$i"))
+  val Seq(a1, a2 ,a3) = adderc_fig14_a
 
   def fig14_a: DFGGraph[SInt] = {
     val dfg = DFGGraph[SInt]("paper1992fig14_a")
@@ -358,13 +361,21 @@ object paper1992OnFolding {
     // zero => adder
     adderc_fig14_a.zipWithIndex.foreach { case (ac, i) => dfg.addEdge(zero(0), ac(2), 0, Seq(Schedule(i, 4))) }
     // carry => next adder
-    dfg.addEdge(adderc_fig14_a(0)(1), adderc_fig14_a(1)(2), 0, Seq(Schedule(0, 4), Schedule(2, 4), Schedule(3, 4)))
-    dfg.addEdge(adderc_fig14_a(1)(1), adderc_fig14_a(2)(2), 0, Seq(Schedule(0, 4), Schedule(1, 4), Schedule(3, 4)))
-    dfg.addEdge(adderc_fig14_a(2)(1), adderc_fig14_a(0)(2), 1, Seq(Schedule(1, 4), Schedule(2, 4), Schedule(3, 4)))
+    dfg.addEdge(a1(1), a2(2), 0, Seq(Schedule(0, 4), Schedule(2, 4), Schedule(3, 4)))
+    dfg.addEdge(a2(1), a3(2), 0, Seq(Schedule(0, 4), Schedule(1, 4), Schedule(3, 4)))
+    dfg.addEdge(a3(1), a1(2), 1, Seq(Schedule(1, 4), Schedule(2, 4), Schedule(3, 4)))
     // input => adder
     adderc_fig14_a.zipWithIndex.foreach { case (ac, i) => dfg.setInput(ac, 0, s"x_3k_$i") }
     adderc_fig14_a.zipWithIndex.foreach { case (ac, i) => dfg.setInput(ac, 1, s"y_3k_$i") }
-    adderc_fig14_a.zipWithIndex.foreach { case (ac, i) => dfg.setOutput(ac, 0, s"s_3k_$i") }
+    val outputs = adderc_fig14_a.zipWithIndex.map { case (ac, i) => dfg.setOutput(ac, 0, s"s_3k_$i") }
+
+//    dfg.setEdgeWeight(dfg.getEdge(adderc_fig14_a(0), outputs(0)), 0)
+//    dfg.setEdgeWeight(dfg.getEdge(adderc_fig14_a(1), outputs(1)), 1)
+//    dfg.setEdgeWeight(dfg.getEdge(adderc_fig14_a(2), outputs(2)), 2)
+//
+//    dfg.ioPositions(outputs(0)) = 2
+//    dfg.ioPositions(outputs(1)) = 2
+//    dfg.ioPositions(outputs(2)) = 2
 
     dfg
   }

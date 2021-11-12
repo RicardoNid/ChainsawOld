@@ -1,22 +1,7 @@
--15.toByte & 0xFF
+def getSeqFromText(string: String) = string.split(" +")
 
-137.toByte
+getSeqFromText("Chainsaw is an open-source framework based on  **D**ata-**F**low **G**raph and , presented as a extension library SpinalHDL, a HGL(like Chisel). Design flow of data-driven hardware is divided into three levels: algorithm, architecuture, and operators. For alogrithm, We provide utilities to convert a problem from its original form to a strength-reduced, filtering-based form. For architecture, users could build their hardware on customized/pre-built DFGs, and thus could do automatic folding, unfolding and pipelining/retiming to achieve different performance level. And for operator level, customized/pre-built arithmetic operators for different technologies serve as the building blocks. Besides, as data-driven applications are highly patterned,  off-the-shelf simultaion suite and pre-designed scripts for FPGAs are also provided.").size
 
-new String("ab".getBytes)
+getSeqFromText("Chainsaw is an open-source framework based on  DFG and presented as a extension library SpinalHDL, a HGL(like Chisel). Design flow of  is divided into three levels: algorithm, architecuture, and operators. For alogrithm, We provide utilities to convert a problem from its original form to a strength-reduced, filtering-based form. For architecture, users could build their hardware on customized/pre-built DFGs, and thus could do automatic folding, unfolding and pipelining/retiming to achieve different performance level. And for operator level, customized/pre-built arithmetic operators for different technologies serve as the building blocks. Besides, as data-driven applications are highly patterned,  off-the-shelf simultaion suite and pre-designed scripts for FPGAs are provided.").size
 
-"ab".getBytes
-"AB".getBytes
-
-BigInt("ab".getBytes) // 97 * 256 + 98
-BigInt("Ab".getBytes) // 97 * 256 + 98
-
-val temp = BigInt(Seq(-1, 3).map(_.toByte).toArray)
-temp.toString(16)
-
-BigInt("C4CBD2D9", 16)
-
-BigInt("00", 16)
-
-0xff ^ 0x10
-
- 0xef ^ 0x98 ^ 0x10 ^ 0xf9
+getSeqFromText("Chainsaw is an open-source RTL design framework for data-diven applications based on DFG, presented as a extension library SpinalHDL, a HGL(like Chisel). Design flow of  is divided into three levels: algorithm, architecuture, and operators. For alogrithm, We provide utilities to convert a problem from its original form to a strength-reduced, filtering-based form. For architecture, users could build their hardware on customized/pre-built DFGs, and thus could do automatic folding, unfolding and pipelining/retiming to achieve different performance level. And for operator level, customized/pre-built arithmetic operators for different technologies serve as the building blocks. Off-the-shelf simultaion suite also provided.").size

@@ -46,8 +46,8 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]])
           logger.debug(s"implementing MUX, ${occupationsOneSource.mkString(" ")} / $localLcm")
         }
 
-        if (!isFull || !isPow2(globalLcm)) default(ret.assignDontCare()) // FIXME: this should work, why?
-        //        if (!isFull || !isPow2(globalLcm)) default(ret assignFromBits B(0, retWidth))
+        //        if (!isFull || !isPow2(globalLcm)) default(ret.assignDontCare()) // FIXME: this should work, why?
+        if (!isFull || !isPow2(globalLcm)) default(ret assignFromBits B(0, retWidth))
         //        if (!isFull || !isPow2(globalLcm)) default(ret := dataIns.head.resized)
       }
       ret

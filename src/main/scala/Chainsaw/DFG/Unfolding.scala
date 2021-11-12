@@ -4,7 +4,7 @@ import org.slf4j.LoggerFactory
 import spinal.core._
 
 // TODO: when inner delay = 3, edge delay = 1, N = 2, we need a pre-retiming
-class Unfolding[T <: Data](dfg: DFGGraph[T], unfoldingFactor: Int) extends Transform {
+class Unfolding[T <: Data](override val dfg: DFGGraph[T], unfoldingFactor: Int) extends Transform[T] {
 
   val logger = LoggerFactory.getLogger("unfolding procedure")
 
@@ -32,13 +32,26 @@ class Unfolding[T <: Data](dfg: DFGGraph[T], unfoldingFactor: Int) extends Trans
 
   /** Unfolding algo
    */
-  lazy val unfolded: DFGGraph[T] = {
+  override lazy val transformed: DFGGraph[T] = {
     logger.info("start unfolding")
     implicit val preprocessedDFG: DFGGraph[T] = preprocessed
     val unfoldedDFG = DFGGraph[T](s"${dfg.name}_unfolded")
     // nodes duplicated on the unfolded DFG, including I/O nodes
     val nodeMap = preprocessedDFG.vertexSeq.map(vertex => vertex -> (0 until unfoldingFactor).map(i => vertex.copy(s"${vertex.name}_unfolded_$i"))).toMap
     preprocessedDFG.foreachEdge { edge =>
+
+      // adjusting ioPosition
+      preprocessedDFG.inputNodes.foreach(input => (0 until unfoldingFactor).foreach { i =>
+        val unfoldedInput = nodeMap(input)(i)
+        unfoldedDFG.addVertex(unfoldedInput)
+        unfoldedDFG.ioPositions(unfoldedInput) = preprocessedDFG.ioPositions(input) / unfoldingFactor
+      })
+      preprocessedDFG.outputNodes.foreach(output => (0 until unfoldingFactor).foreach { i =>
+        val unfoldedOutput = nodeMap(output)(i)
+        unfoldedDFG.addVertex(unfoldedOutput)
+        unfoldedDFG.ioPositions(unfoldedOutput) = (preprocessedDFG.ioPositions(output) + i) / unfoldingFactor
+      })
+
       val (sources, targets) = (nodeMap(edge.source), nodeMap(edge.target))
       val w = edge.weightWithSource
 
@@ -65,10 +78,13 @@ class Unfolding[T <: Data](dfg: DFGGraph[T], unfoldingFactor: Int) extends Trans
         }
       }
     }
+
     logger.debug(s"unfoldedDFG\n$unfoldedDFG")
     unfoldedDFG
   }
 
   // TODO: implement 1/N more fluently, considering how this can cascade with other transform
   override def latencyTransformations: Seq[LatencyTrans] = Seq(LatencyTrans(-unfoldingFactor, 0))
+
+//  logIO()
 }

@@ -53,7 +53,7 @@ class DFGGraphTest extends AnyFlatSpec {
   //  }
 
   "the folding algorithm" should "fold correctly on chap6 fig6_4" in verifyFolding(chap6.fig6_3, chap6.foldingSet, testHardType, "chap6_fig6_3")
-  "the folding algorithm" should "also fold correctly on chap6 fig6_4" in verifyFolding(chap6.fig6_5, chap6.foldingSet, testHardType, "chap6_fig6_5")
+  "the folding algorithm" should "also fold correctly on chap6 fig6_5" in verifyFolding(chap6.fig6_5, chap6.foldingSet, testHardType, "chap6_fig6_5")
   it should "fold correctly on simple graph" in verifyFolding(simpleFolding.dfg, simpleFolding.foldingSet, testHardType)
   it should "fold correctly on paper1992 fig6_b(example3)" in verifyFolding(paper1992OnFolding.fig6_a, paper1992OnFolding.foldingSet_example3, testHardType)
   it should "fold correctly on paper1992 fig7_a(example4)" in verifyFolding(paper1992OnFolding.fig6_a, paper1992OnFolding.foldingSet_example4, testHardType)
