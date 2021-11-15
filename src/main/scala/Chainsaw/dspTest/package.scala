@@ -8,6 +8,7 @@ import Chainsaw._
 import Chainsaw.DFG._
 import Chainsaw.matlabIO._
 import org.slf4j.{Logger, LoggerFactory}
+import spinal.sim.SimThread
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -247,7 +248,7 @@ package object dspTest {
       }
     }
 
-    def forkWhenValid(body: => Unit) = fork {
+    def forkWhenValid(body: => Unit): SimThread = fork {
       while (true) {
         if (dc.valid.toBoolean) {
           body
@@ -257,7 +258,7 @@ package object dspTest {
     }
 
     // set monitors for all kinds of DataCarrier
-    def setMonitor[D](Container: ArrayBuffer[D], name: String = "") = forkWhenValid {
+    def setMonitor[D](Container: ArrayBuffer[D], name: String = ""): SimThread = forkWhenValid {
       //      println(s"sampling $name at ${simTime()}")
       dc.payload match {
         case vec: Vec[_] => Container ++= peekWhatever(vec)

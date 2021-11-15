@@ -36,17 +36,17 @@ class ButterflyHardware[T <: Data](op: (T, T, T) => (T, T), width: BitCount = -1
 
 // step2: declare a DSPNode extends the DeviceNode and override the copy method to avoid type regression
 class BinaryNode[T <: Data](name: String, hardware: BinaryHardware[T]) extends DeviceNode(name, hardware) {
-  override def copy(newName: String): BinaryNode[T] = new BinaryNode(name, hardware)
+  override def copy(newName: String): BinaryNode[T] = new BinaryNode(newName, hardware)
 }
 
 class TrinaryNode[T <: Data](name: String, hardware: TrinaryHardware[T]) extends DeviceNode(name, hardware) {
-  override def copy(newName: String): TrinaryNode[T] = new TrinaryNode(name, hardware)
+  override def copy(newName: String): TrinaryNode[T] = new TrinaryNode(newName, hardware)
 }
 
 /** Butterfly hardware takes two input and a coefficient, generates two output, they're heavily used as building blocks of more complicated DFG, the two inputs are not symmetric
  */
 class ButterflyNode[T <: Data](name: String, hardware: ButterflyHardware[T]) extends DeviceNode(name, hardware) {
-  override def copy(newName: String): ButterflyNode[T] = new ButterflyNode(name, hardware)
+  override def copy(newName: String): ButterflyNode[T] = new ButterflyNode(newName, hardware)
 }
 
 // step3: declare a factory method as a entrance for the users
