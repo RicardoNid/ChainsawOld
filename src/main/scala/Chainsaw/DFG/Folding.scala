@@ -101,7 +101,7 @@ class Folding[T <: Data](override val dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPN
   def getTransformed(edge: DSPEdge[T])(implicit referenceDFG: DFGGraph[T]): (Int, Seq[Schedule]) = {
     val U = edge.source
     val V = edge.target
-    val u = if (U.isOuter) 0 else foldingOrderOf(U) // the folding order of an input follows its target
+    val u = if (U.isOuter) foldingOrderOf(V) else foldingOrderOf(U) // the folding order of an input follows its target
     val v = if (V.isOuter) foldingOrderOf(U) else foldingOrderOf(V) // the folding order of an output follows its source
     val w = edge.weightWithSource
     val Pu = if (U.isOuter) 0 else deviceOf(U).delay
@@ -127,10 +127,13 @@ class Folding[T <: Data](override val dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPN
     // % N because the original DFG may have MUX, and thus, the "global period" is not the same as the local one
     implicit val referenceDFG: DFGGraph[T] = foldedDFG
 
+    val ref = foldedDFG.inputPositions.min
     val inputRetimingSolution = foldedDFG.inputNodes.map { input =>
-      input -> (0 - foldedDFG.ioPositions(input)) // extra delay needed
+      if(foldedDFG.ioPositions(input) >= N + ref)  input -> (ref - foldedDFG.ioPositions(input))// extra delay needed
+      else input -> 0
     }.toMap
 
+    println(s"input position ${foldedDFG.inputPositions.mkString(" ")}")
 
     val inputRetimed = foldedDFG.retimed(inputRetimingSolution)
 
@@ -158,6 +161,4 @@ class Folding[T <: Data](override val dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPN
     val outputSchedule: Int = foldedDFG.outputNodes.head.incomingEdges.head.schedules.head.time
     new Retiming(dfg, retimingSolution).latencyTransformations :+ LatencyTrans(N, outputSchedule - inputSchedule)
   }
-
-  //  logIO()
 }

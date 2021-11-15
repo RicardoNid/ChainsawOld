@@ -159,7 +159,9 @@ package object dspTest {
       val innerGolden = golden.drop(initLength * outputSize)
 
       import dut.{clockDomain, dataIn, dataOut, latency}
+      dataIn.halt()
       clockDomain.forkStimulus(2)
+      clockDomain.waitSampling()
       dutResult ++= flowPeekPoke(dut, testCases, dataIn, dataOut, latency).drop(initLength * outputSize)
 
       if (innerGolden != null) {

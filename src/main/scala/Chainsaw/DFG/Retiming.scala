@@ -21,7 +21,7 @@ class Retiming[T <: Data](override val dfg: DFGGraph[T], solution: Map[DSPNode[T
       val ru = r(edge.source)
       val rv = r(edge.target)
       // delay transformation: new delay = delay + r(v) - r(u)
-      retimedDFG.setEdgeWeight(edge, edge.weight + rv - ru)
+      retimedDFG.setEdgeWeight(edge, edge.delay + rv - ru)
       // MUX transformation: new time = (time + r(v) % period)
       retimedDFG.setEdgeSchedules(edge, edge.schedules.map(schedule =>
         Schedule((schedule.time + rv) % schedule.period, schedule.period)))

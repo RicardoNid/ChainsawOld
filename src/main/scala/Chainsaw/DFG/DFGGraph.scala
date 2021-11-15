@@ -196,7 +196,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def isHomogeneous: Boolean = {
     println(ioPositions.mkString(" "))
-    inputPositions.forall(_ == 0) && outputPositions.forall(_ == outputPositions.head)
+    inputPositions.forall(_ == inputPositions.head) && outputPositions.forall(_ == outputPositions.head)
   }
 
   def latency: Int = if (!isHomogeneous) throw new IllegalArgumentException("latency of non-homogeneous graph is not defined")
