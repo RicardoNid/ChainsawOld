@@ -1,19 +1,19 @@
 package Chainsaw.DFG
 
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 
 // TODO: when inner delay = 3, edge delay = 1, N = 2, we need a pre-retiming
-class Unfolding[T <: Data](override val dfg: DFGGraph[T], unfoldingFactor: Int) extends Transform[T] {
+class Unfolding[T <: Data](val dfg: DFGGraph[T], unfoldingFactor: Int) {
 
-  val logger = LoggerFactory.getLogger("unfolding procedure")
+  val logger: Logger = LoggerFactory.getLogger("unfolding procedure")
 
   if (!dfg.hasNoParallelEdge) require(dfg.globalLcm % unfoldingFactor == 0) // when there's mux and we use unfolding
 
   /** Preprocess the dfg to separate delay and mux
    */
   lazy val preprocessed: DFGGraph[T] = {
-    implicit val preprocessedDFG = dfg.clone().asInstanceOf[DFGGraph[T]]
+    implicit val preprocessedDFG: DFGGraph[T] = dfg.clone().asInstanceOf[DFGGraph[T]]
     logger.debug(s"original DFG:\n$dfg")
     preprocessedDFG.foreachEdge { edge =>
       val (source, target) = (edge.source, edge.target)
@@ -32,7 +32,7 @@ class Unfolding[T <: Data](override val dfg: DFGGraph[T], unfoldingFactor: Int) 
 
   /** Unfolding algo
    */
-  override lazy val transformed: DFGGraph[T] = {
+  lazy val transformed: DFGGraph[T] = {
     logger.info("start unfolding")
     implicit val preprocessedDFG: DFGGraph[T] = preprocessed
     val unfoldedDFG = DFGGraph[T](s"${dfg.name}_unfolded")
@@ -82,9 +82,4 @@ class Unfolding[T <: Data](override val dfg: DFGGraph[T], unfoldingFactor: Int) 
     logger.debug(s"unfoldedDFG\n$unfoldedDFG")
     unfoldedDFG
   }
-
-  // TODO: implement 1/N more fluently, considering how this can cascade with other transform
-  override def latencyTransformations: Seq[LatencyTrans] = Seq(LatencyTrans(-unfoldingFactor, 0))
-
-//  logIO()
 }

@@ -161,7 +161,8 @@ package object dspTest {
       import dut.{clockDomain, dataIn, dataOut, latency}
       dataIn.halt()
       clockDomain.forkStimulus(2)
-      clockDomain.waitSampling()
+      // TODO: for folded design of factor N, N - 1 idle cycles should be inserted to set the global counter to 0
+      //      clockDomain.waitSampling(3)
       dutResult ++= flowPeekPoke(dut, testCases, dataIn, dataOut, latency).drop(initLength * outputSize)
 
       if (innerGolden != null) {

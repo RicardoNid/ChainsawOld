@@ -32,14 +32,14 @@ object SM4 {
     .map(BigInt(_, 16)).map(B(_, 32 bits))
 
   def CKData: Array[Bits] = getBigSeqFromHex(
-    "00070E15 1C232A31 383F464D 545B6269 " +
-      "70777E85 8C939AA1 A8AFB6BD C4CBD2D9 " +
-      "E0E7EEF5 FC030A11 181F262D 343B4249 " +
-      "50575E65 6C737A81 888F969D A4ABB2B9 " +
-      "C0C7CED5 DCE3EAF1 F8FF060D 141B2229 " +
-      "30373E45 4C535A61 686F767D 848B9299 " +
-      "A0A7AEB5 BCC3CAD1 D8DFE6ED F4FB0209 " +
-      "10171E25 2C333A41 484F565D 646B7279 ").map(B(_, 32 bits))
+    "00070E15 1C232A31 383F464D 545B6269" +
+      " 70777E85 8C939AA1 A8AFB6BD C4CBD2D9" +
+      " E0E7EEF5 FC030A11 181F262D 343B4249" +
+      " 50575E65 6C737A81 888F969D A4ABB2B9" +
+      " C0C7CED5 DCE3EAF1 F8FF060D 141B2229" +
+      " 30373E45 4C535A61 686F767D 848B9299" +
+      " A0A7AEB5 BCC3CAD1 D8DFE6ED F4FB0209" +
+      " 10171E25 2C333A41 484F565D 646B7279").map(B(_, 32 bits))
 
   def substitutionS(data: Bits)(implicit config: SM4Config): Bits = {
     require(data.getBitsWidth == 8)
@@ -89,7 +89,7 @@ object SM4 {
   }
 
   val baseLineConfig: SM4Config = SM4Config(
-    readAsync = false,
+    readAsync = true,
     usingBRAM = false,
     usingROM = true,
     parallelism = 1
@@ -240,12 +240,13 @@ object SM4HardwareSpinal {
   }
 }
 
-case class SM4HardwareDFG(usingDFG: Boolean = true, implicit val config: SM4Config) extends Component with DSPTestable[Vec[Bits], Bits] {
+case class SM4HardwareDFG(config: SM4Config) extends Component with DSPTestable[Vec[Bits], Bits] {
 
   import SM4._
   import SM4Operators._
   import config._
 
+  implicit val currentConfig = config
   // data path
   override val dataIn: Flow[Vec[Bits]] = slave Flow Vec(Bits(128 bits), 2)
   override val dataOut: Flow[Bits] = master Flow Bits(128 bits)
@@ -330,27 +331,3 @@ case class SM4HardwareDFG(usingDFG: Boolean = true, implicit val config: SM4Conf
   dataOut.valid := Delay(dataIn.valid, latency, init = False)
 }
 
-object SM4HardwareDFG {
-  def main(args: Array[String]): Unit = {
-
-    import SM4._
-
-    globalImplPolicy = ImplPolicy(useRegInit = false, useSubmodule = false)
-
-    val readAsyncs = Seq(true, false)
-    val usingBRAMs = Seq(true, false)
-    val parallelisms = Seq(1, -2, -4)
-
-    //        Seq.tabulate(2, 2, 3) { (i, j, k) =>
-    //          val config = SM4Config(readAsync = readAsyncs(i), usingBRAM = usingBRAMs(j), usingROM = true, parallelism = parallelisms(k))
-    //          doFlowPeekPokeTest(s"testSM4_$config", new SM4HardwareDFG(config = config), Seq.fill(config.parallelism.abs)(Seq(testCase, testKey)), Seq(golden))
-    //          VivadoSynth(new SM4HardwareDFG(config = config), s"synthSM4_$config")
-    //        }
-
-
-    doFlowPeekPokeTest(s"testSM4_$baseLineConfig", new SM4HardwareDFG(config = baseLineConfig), Seq.fill(baseLineConfig.parallelism.abs)(Seq(testCase, testKey)), Seq(golden))
-
-//    VivadoSynth(SM4HardwareSpinal(comb = false))
-    VivadoSynth(SM4HardwareDFG(config = baseLineConfig))
-  }
-}

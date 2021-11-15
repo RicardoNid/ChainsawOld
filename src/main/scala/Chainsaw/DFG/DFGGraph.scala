@@ -220,7 +220,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     cg
   }
 
-  def retimed(solutions: Map[DSPNode[T], Int]): DFGGraph[T] = new Retiming(this, solutions).transformed
+  def retimed(solutions: Map[DSPNode[T], Int]): DFGGraph[T] = new Retiming(this).retimed(solutions)
 
   def merged: DFGGraph[T] = new DFGRegOpt(this).getRegMergedDFG
 
@@ -279,9 +279,9 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     )
   }
 
-  def nodeRetiming(nodeDelayMap: Map[DSPNode[T], Int]): DFGGraph[T] = {
+  def nodeRetiming(incrementMap: Map[DSPNode[T], Int]): DFGGraph[T] = {
     val cg = ConstraintGraph[T]()
-    nodeDelayMap.foreach { case (u, innerDelay) =>
+    incrementMap.foreach { case (u, innerDelay) =>
       u.targets.foreach { v =>
         cg.addConstraint(u - v <= -innerDelay) // v - u >= innerDelay
       }
@@ -289,7 +289,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
     val retimedDFG = retimed(cg.getSolution)
 
-    nodeDelayMap.foreach { case (u, innerDelay) =>
+    incrementMap.foreach { case (u, innerDelay) =>
       retimedDFG.outgoingEdgesOf(u).foreach(edge =>
         retimedDFG.setEdgeWeight(edge, retimedDFG.getEdgeWeight(edge) - innerDelay)
       )

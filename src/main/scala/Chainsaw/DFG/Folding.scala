@@ -8,7 +8,7 @@ import scala.math.floor
  *
  * @param foldingSet 2D folding set which contains Seq of Seq of nodes, null nodes may be included
  */
-class Folding[T <: Data](override val dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T]]]) extends Transform[T] {
+class Folding[T <: Data](val dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T]]]){
   val logger: Logger = LoggerFactory.getLogger("folding procedure")
 
   // preparing context for folding
@@ -42,7 +42,7 @@ class Folding[T <: Data](override val dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPN
   }
 
   // the procedure of constructing folded DFG
-  override lazy val transformed: DFGGraph[T] = {
+  lazy val transformed: DFGGraph[T] = {
 
     logger.info(s"\n\tstart folding dfg[${dfg.name}]")
     logger.debug(s"original:\n$dfg")
@@ -153,12 +153,5 @@ class Folding[T <: Data](override val dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPN
         s"\n\t${ret.delayAmount} regs in total"
     )
     ret
-  }
-
-  override def latencyTransformations: Seq[LatencyTrans] = {
-    implicit val foldedDFG: DFGGraph[T] = transformed // TODO: avoid rerun this
-    val inputSchedule: Int = foldedDFG.inputNodes.head.outgoingEdges.flatMap(_.schedules.map(_.time)).min
-    val outputSchedule: Int = foldedDFG.outputNodes.head.incomingEdges.head.schedules.head.time
-    new Retiming(dfg, retimingSolution).latencyTransformations :+ LatencyTrans(N, outputSchedule - inputSchedule)
   }
 }

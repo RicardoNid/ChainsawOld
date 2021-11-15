@@ -2,6 +2,9 @@ package Chainsaw.crypto
 
 package object symmetric {
 
+  // substituation and permutation are basic methods in symmetric cryptography
+  def substitution[T](data: Seq[Int], table: Seq[Int]): Seq[Int] = data.map(index => table(index))
+
   def permutation[T](data: Seq[T], order: Seq[Int]): Seq[T] = {
     order.map(index => data(index - 1))
   }
@@ -11,13 +14,8 @@ package object symmetric {
     permutation(data, inverseOrder)
   }
 
-  def substitution[T](data: Seq[Int], table: Seq[Int]) = data.map(index => table(index))
-
-  def getSeqFromText(string: String) = string.split(" +").map(_.toInt)
-
-  def getBigSeqFromHex(string: String) = {
-    string.split(" +").map(string => BigInt(string, 16))
-  }
-
+  /** get BigInts from HEX strings split by spaces
+   */
+  def getBigSeqFromHex(string: String): Array[BigInt] = string.split(" +").map(string => BigInt(string, 16))
 
 }
