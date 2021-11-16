@@ -56,7 +56,7 @@ object Operators {
       val ret = if (mreg) RegNext(coeff * data) + partialSum else coeff * data + partialSum
       ret.addAttribute("use_dsp", "yes")
     }
-    TrinaryNode(s"macDSP48_${if(mreg) "usingMReg" else ""}", op, delay = (if (mreg) 1 else 0) cycles)
+    TrinaryHardware(op, delay = (if (mreg) 1 else 0) cycles).asDeviceNode(s"macDSP48_${if (mreg) "usingMReg" else ""}")
   }
 
 }

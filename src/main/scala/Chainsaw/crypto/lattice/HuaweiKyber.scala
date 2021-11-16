@@ -128,9 +128,9 @@ object HuaweiKyber {
   def GSBF(u: UInt, v: UInt, omega: Int): (UInt, UInt) = GSButterfly(u, v, U(omega, 12 bits))
 
   // encapsulate the hardware impl as DFG nodes
-  val kMultModNode: BinaryNode[UInt] = BinaryNode("kMultMod", kMultMod, delay = 4 cycles)
-  val ctButterflyNode: ButterflyNode[UInt] = ButterflyNode("ctButterfly", CTButterfly, width = 12 bits, delay = 5 cycles)
-  val gsButterflyNode: ButterflyNode[UInt] = ButterflyNode("gsButterfly", GSButterfly, width = 12 bits, delay = 5 cycles)
+  val kMultModNode: BinaryNode[UInt] = BinaryHardware(kMultMod, delay = 4 cycles).asDeviceNode("kMultMod")
+  val ctButterflyNode: ButterflyNode[UInt] = ButterflyHardware(CTButterfly, width = 12 bits, delay = 5 cycles).asDeviceNode("ctButterfly")
+  val gsButterflyNode: ButterflyNode[UInt] = ButterflyHardware(GSButterfly, width = 12 bits, delay = 5 cycles).asDeviceNode("gsButterfly")
 
   // parameters for constructing the NTT DFG
   val N = 128
@@ -155,5 +155,7 @@ object runKyber {
 
     val nttDFG: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, 1).getGraph
     synthDFG(nttDFG, inputWidths, forTiming = false)
+
+    globalImplPolicy = ImplPolicy(useRegInit = true, useSubmodule = false)
   }
 }

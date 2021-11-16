@@ -31,8 +31,8 @@ object Encoders {
   def convencDFG(dataIn: Seq[Bits], convConfig: ConvConfig): Seq[Bits] = {
     import convConfig._
 
-    val and: BinaryNode[Bits] = BinaryNode("and", Operators.and)
-    val xor: BinaryNode[Bits] = BinaryNode("xor", Operators.xor)
+    val and: BinaryNode[Bits] = BinaryHardware(Operators.and).asDeviceNode("and")
+    val xor: BinaryNode[Bits] = BinaryHardware(Operators.xor).asDeviceNode("xor")
 
     def convDirect(coeffs: Seq[Int]): DFGGraph[Bits] = FIRGen(xor, and, DIRECT, coeffs, 1 bits, 1).getGraph
 

@@ -36,7 +36,7 @@ class FIRTest extends AnyFlatSpec {
 
     val dfgGen = FIRGen(mac, SYSTOLIC, coeffs, coeffWidth, 1)
     val dfg: DFGGraph[SInt] = dfgGen.getGraph
-    implDFG(dfg, Seq(27 bits), forTiming = true)
+    if(doSynth) implDFG(dfg, Seq(27 bits), forTiming = true)
 
 //    Seq.tabulate(3, 2) { (i, j) =>
 //      val dfgGen = FIRGen(nodes(j), archs(i), coeffs, coeffWidth, 1)
@@ -46,6 +46,7 @@ class FIRTest extends AnyFlatSpec {
 //        implDFG(dfg, Seq(27 bits), forTiming = true)
 //      }
 //    }
+    globalImplPolicy = ImplPolicy(useRegInit = true, useSubmodule = false)
   }
 
 

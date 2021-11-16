@@ -228,6 +228,8 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def unfolded(unfoldingFactor: Int): DFGGraph[T] = new Unfolding(this, unfoldingFactor).transformed
 
+
+
   def parallelized(parallelism: Int, foldingSet: Seq[Seq[DSPNode[T]]] = null): DFGGraph[T] = {
     if (parallelism == 1) this
     else if (parallelism > 1) unfolded(parallelism)

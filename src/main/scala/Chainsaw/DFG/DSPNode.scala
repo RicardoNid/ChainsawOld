@@ -23,6 +23,8 @@ class DSPHardware[T <: Data](val impl: (Seq[T], GlobalCount) => Seq[T],
     dataOut := Vec(impl(dataIn, GlobalCount(U(0))))
   }
 
+  def asDeviceNode(name:String) = DeviceNode(name, this)
+
   //  def inferable(implicit holderProvider: HolderProvider[T]): Boolean = {
   //    GenRTL(new Component {
   //      val core = asComponent(holderProvider)()

@@ -111,7 +111,7 @@ object FIRGen {
       val sum = add.impl(Seq(Delay(c, mult.delay), prod), null).head
       sum
     }
-    val mac = TrinaryNode(s"${add.name}_${mult.name}", multAddOp, width = add.outWidths.head, delay = (add.delay + mult.delay) cycles)
+    val mac = TrinaryHardware(multAddOp, width = add.outWidths.head, delay = (add.delay + mult.delay) cycles).asDeviceNode(s"${add.name}_${mult.name}")
     new FIRGen(mac, firArch, coeffs, coeffWidth, parallelism)(converter)
   }
 }
@@ -291,7 +291,7 @@ class BinaryTreeGen[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFG
 }
 
 object BinaryTreeGenTest extends App {
-  val node = BinaryNode("testnode", sintAdd)
+  val node = BinaryHardware(sintAdd).asDeviceNode("testnode")
   val dfg = new BinaryTreeGen(node, 9)
   println(dfg.getGraph)
 }

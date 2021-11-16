@@ -28,8 +28,8 @@ class DFGGensTest extends AnyFlatSpec {
   val doSynths: Boolean = false
 
   // operators for fir test
-  val add: BinaryNode[SInt] = BinaryNode("add", sintAdd)
-  val mult: BinaryNode[SInt] = BinaryNode("mult", sintMult)
+  val add: BinaryNode[SInt] = BinaryHardware(sintAdd).asDeviceNode("add")
+  val mult: BinaryNode[SInt] = BinaryHardware(sintMult).asDeviceNode("mult")
 
 
   def dspMAC: TrinaryNode[SInt] = Operators.macDSP48(mreg = true)
@@ -74,8 +74,8 @@ class DFGGensTest extends AnyFlatSpec {
   // implement convolutional encoder(finite field) by fir DFG
   "fir structure" should "be correct as convenc" in {
     // operators for convenc test
-    val and = BinaryNode("and",Operators.and )
-    val xor = BinaryNode("xor",Operators.xor )
+    val and = BinaryHardware(Operators.and).asDeviceNode("and")
+    val xor = BinaryHardware( Operators.xor).asDeviceNode("xor")
 
     import comm.channelCoding._
     val convencTestCase = Seq.fill(7)(BigInt(0)) ++ (0 until 100).map(_ => DSPRand.nextBigInt(1))

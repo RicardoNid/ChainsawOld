@@ -40,4 +40,6 @@ class SM4Test extends AnyFlatSpec {
       if (doSynth) VivadoSynth(new SM4HardwareDFG(config), s"synthSM4_$config")
     }
   }
+
+  globalImplPolicy = ImplPolicy(useRegInit = true, useSubmodule = false)
 }

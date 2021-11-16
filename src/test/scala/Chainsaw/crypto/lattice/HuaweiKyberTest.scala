@@ -89,12 +89,12 @@ class HuaweiKyberTest extends AnyFlatSpec {
 
   "KAddMod" should "pass the random test" in {
     val golden = testPairs.map(pair => cfRing(pair(0) + pair(1)))
-    testDSPNode(BinaryNode("kAddMod",kAddMod,  delay = 1 cycles), Seq(opWidth, opWidth), testPairs, golden)
+    testDSPNode(BinaryHardware(kAddMod,  delay = 1 cycles).asDeviceNode("kAddMod"), Seq(opWidth, opWidth), testPairs, golden)
   }
 
   "KSubMod" should "pass the random test" in {
     val golden = testPairs.map(pair => cfRing(pair(0) - pair(1)))
-    testDSPNode(BinaryNode("kSubMod",kSubMod,  delay = 1 cycles), Seq(opWidth, opWidth), testPairs, golden)
+    testDSPNode(BinaryHardware(kSubMod,  delay = 1 cycles).asDeviceNode("kSubMod"), Seq(opWidth, opWidth), testPairs, golden)
   }
 
   "CTBF" should "pass the random test" in {
