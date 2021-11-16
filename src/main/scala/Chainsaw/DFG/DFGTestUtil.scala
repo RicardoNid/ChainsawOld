@@ -30,7 +30,7 @@ object DFGTestUtil {
     val scaleFactor = if (speedUp > 1) speedUp else 1
     require(transformed.inputNodes.size == original.inputNodes.size * scaleFactor &&
       transformed.outputNodes.size == original.outputNodes.size * scaleFactor,
-      "speed up factor doesn't match the port number")
+      s"speed up factor doesn't match the port number, (${original.inputNodes.size} ,${original.outputNodes.size}), *$scaleFactor != (${transformed.inputNodes.size} ,${transformed.outputNodes.size})")
 
     // data tobe filled
     val originalTestCases = ArrayBuffer[BigInt]()
@@ -86,7 +86,7 @@ object DFGTestUtil {
         dataIn.setMonitor(inputRecord, "input")
         clockDomain.forkStimulus(2)
         clockDomain.waitSampling() // now, the global counter value is 1
-        clockDomain.waitSampling(dfg.globalLcm - 1)
+        clockDomain.waitSampling(dfg.period - 1)
         dataOut.setMonitor(outputRecord, "output")
 
         if (testCases == null) {
@@ -135,8 +135,7 @@ object DFGTestUtil {
 
   def verifyFolding[T <: Data](original: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T]]], elementType: HardType[T], name: String = null, basicLatency: Int = -1)
                               (implicit holderProvider: HolderProvider[T]) = {
-    val algo = new Folding(original, foldingSets)
-    val foldedDFG = algo.transformed
+    val foldedDFG = original.folded(foldingSets)
     val N = foldingSets.head.size
     printlnRed(foldedDFG.latency)
     verifyFunctionalConsistency(original, foldedDFG, elementType, -N, name = name, basicLatency = basicLatency) // TODO: customized width
@@ -144,8 +143,7 @@ object DFGTestUtil {
 
   def verifyUnfolding[T <: Data](original: DFGGraph[T], unfoldingFactor: Int, elementType: HardType[T], name: String = null, basicLatency: Int = -1)
                                 (implicit holderProvider: HolderProvider[T]) = {
-    val algo = new Unfolding(original, unfoldingFactor)
-    val unfoldedDFG = algo.transformed
+    val unfoldedDFG = original.unfolded(unfoldingFactor)
     verifyFunctionalConsistency(original, unfoldedDFG, elementType, unfoldingFactor, name = name, basicLatency = basicLatency)
   }
 }

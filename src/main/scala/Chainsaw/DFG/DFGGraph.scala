@@ -76,7 +76,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     super.addVertex(v)
   }
 
-  def addVertices(vertices: DSPNode[T]*) = vertices.foreach(addVertex)
+  def addVertices(vertices: DSPNode[T]*): Unit = vertices.foreach(addVertex)
 
   @deprecated // mark the original addEdge as deprecated to ask the developer/user to use methods we provide
   override def addEdge(sourceVertex: DSPNode[T], targetVertex: DSPNode[T], e: DSPEdge[T]): Boolean = super.addEdge(sourceVertex, targetVertex, e)
@@ -177,9 +177,9 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def isMerged: Boolean = delayAmount == unmergedDelayAmount
 
-  /** The least common multiple of all muxes in this DFG, which is the working period of this DFG
+  /** the least common multiple of all muxes in this DFG, which is the working period of this DFG
    */
-  def globalLcm: Int = {
+  def period: Int = {
     val periods = edgeSeq.flatMap(_.schedules).map(_.period).distinct.sorted.reverse
     logger.debug(s"periods of MUX in $name:\n${periods.mkString(" ")}")
     periods.reduce(lcm)
@@ -224,7 +224,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def merged: DFGGraph[T] = new DFGRegOpt(this).getRegMergedDFG
 
-  def folded(foldingSet: Seq[Seq[DSPNode[T]]]): DFGGraph[T] = new Folding(this, foldingSet).transformed
+  def folded(foldingSet: Seq[Seq[DSPNode[T]]]): DFGGraph[T] = new Folding(this, foldingSet).transformedNew
 
   def unfolded(unfoldingFactor: Int): DFGGraph[T] = new Unfolding(this, unfoldingFactor).transformed
 
@@ -251,7 +251,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
       s"inner edges:\n\t${otherEdges.map(edge => s"${edge.symbol} $edge").mkString("\n\t")}\n" +
       s"output edges:\n\t${outputEdges.map(edge => s"${edge.symbol} $edge").mkString("\n\t")}\n" +
       s"loops:\n\t${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}\n" +
-      s"ioPositions: \n\t${ioPositions.mkString(" ")}" +
+      s"ioPositions: \n\t${ioPositions.mkString(" ")}\n" +
       s"------end------\n"
   }
 

@@ -7,6 +7,8 @@ import scala.language.postfixOps
 
 case class Schedule(time: Int, period: Int) {
   override def toString: String = s"$time / $period"
+
+  def timesUnderPeriod(globalPeriod: Int): Seq[Int] = (0 until globalPeriod / period).map(i => i * period + time)
 }
 
 object NoMUX {

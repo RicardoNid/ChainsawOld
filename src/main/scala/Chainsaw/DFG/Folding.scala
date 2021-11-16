@@ -41,6 +41,12 @@ class Folding[T <: Data](val dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T]]])
     cg.getSolution
   }
 
+  lazy val transformedNew = {
+    val ret = new NewFolding(dfg.retimed(retimingSolution), foldingSet).build
+    ret.ioPositions = transformed.ioPositions
+    ret
+  }
+
   // the procedure of constructing folded DFG
   lazy val transformed: DFGGraph[T] = {
 
@@ -121,13 +127,15 @@ class Folding[T <: Data](val dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T]]])
 
   def getDelay(edge: DSPEdge[T])(implicit referenceDFG: DFGGraph[T]): Int = getTransformed(edge)._1
 
+  /** align all inputs & outputs by adding delays
+   */
   def alignOutput(foldedDFG: DFGGraph[T]): DFGGraph[T] = {
 
     // N is the period, and time % N is the position
     // % N because the original DFG may have MUX, and thus, the "global period" is not the same as the local one
     implicit val referenceDFG: DFGGraph[T] = foldedDFG
 
-    val ref = foldedDFG.inputPositions.min
+    val ref = foldedDFG.inputPositions.min //
     val inputRetimingSolution = foldedDFG.inputNodes.map { input =>
       if(foldedDFG.ioPositions(input) >= N + ref)  input -> (ref - foldedDFG.ioPositions(input))// extra delay needed
       else input -> 0

@@ -8,14 +8,17 @@ import spinal.core._
 abstract class DSPEdge[T <: Data] {
   val name: String
   val schedules: Seq[Schedule]
-  val inOrder: Int
   val outOrder: Int
+  val inOrder: Int
 
   def hasNoMux: Boolean = this.schedules.equals(NoMUX())
 
   /** get a new edge with different schedules
    */
   def changeSchedules(schedules: Seq[Schedule]): DefaultDelay[T] = DefaultDelay[T](schedules, this.outOrder, this.inOrder)
+
+  def sameAs(that:DSPEdge[T]): Boolean =
+    outOrder == that.outOrder && inOrder == that.inOrder
 }
 
 /** concrete class of DSPEdge, representing "delays" in the DFG

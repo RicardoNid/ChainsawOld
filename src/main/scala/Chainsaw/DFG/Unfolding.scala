@@ -8,7 +8,7 @@ class Unfolding[T <: Data](val dfg: DFGGraph[T], unfoldingFactor: Int) {
 
   val logger: Logger = LoggerFactory.getLogger("unfolding procedure")
 
-  if (!dfg.hasNoParallelEdge) require(dfg.globalLcm % unfoldingFactor == 0) // when there's mux and we use unfolding
+  if (!dfg.hasNoParallelEdge) require(dfg.period % unfoldingFactor == 0) // when there's mux and we use unfolding
 
   /** Preprocess the dfg to separate delay and mux
    */

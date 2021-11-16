@@ -76,7 +76,7 @@ class DFGGraphTest extends AnyFlatSpec {
     verifyFolding(dfg, foldingSet, testHardType, "paper1992_fig10_a")
   }
 
-  it should "retimed correctly on paper1992 fig10_b(example10)" in {
+  it should "fold correctly on paper1992 fig10_b(example10)" in {
     val dfg = paper1992OnFolding.fig10_c
     val foldingSet = paper1992OnFolding.foldingSet10_a_example8and10
     verifyFolding(dfg, foldingSet, testHardType, "paper1992_fig10_c")

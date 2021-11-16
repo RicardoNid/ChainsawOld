@@ -9,6 +9,7 @@ import xilinx.{IMPL, VivadoFlow, VivadoTask}
 
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
+import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.math._
 import scala.sys.process.Process
@@ -376,7 +377,7 @@ package object Chainsaw extends RealFactory {
   }
 
 
-  /**  following methods are designed for doing synth/impl through command-line
+  /** following methods are designed for doing synth/impl through command-line
    * for these methods, the results are exported to a default dir in this project, the sub dir can be specific by name field
    */
   def GenRTL[T <: Component](gen: => T, print: Boolean = false, name: String = "temp") = {
@@ -397,7 +398,11 @@ package object Chainsaw extends RealFactory {
 
 
   import scala.annotation.meta._
-  @getter @setter @beanGetter @beanSetter
+
+  @getter
+  @setter
+  @beanGetter
+  @beanSetter
   class xilinxDevice(message: String = "", since: String = "") extends scala.annotation.StaticAnnotation
 
 
@@ -453,13 +458,14 @@ package object Chainsaw extends RealFactory {
     Process(cmd) !
   }
 
+  @tailrec
   def gcd(a: Int, b: Int): Int = {
-    require(a >= b)
-    if (b == 0) a
-    else gcd(b, a % b)
+    val (p, q) = if (a >= b) (a, b) else (b, a)
+    if (q == 0) p
+    else gcd(q, p % q)
   }
 
-  def lcm(a: Int, b: Int) = a * b / gcd(a, b)
+  def lcm(a: Int, b: Int): Int = a * b / gcd(a, b)
 
   object DFGTest extends Tag("DFGTest")
 }

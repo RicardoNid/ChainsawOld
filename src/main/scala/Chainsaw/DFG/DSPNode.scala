@@ -84,6 +84,7 @@ class DSPNode[T <: Data](val name: String, val hardware: DSPHardware[T]) {
 class DeviceNode[T <: Data](override val name: String,
                             override val hardware: DSPHardware[T])
   extends DSPNode(name, hardware) {
+  override def copy(newName: String): DSPNode[T] = new DeviceNode[T](name, hardware)
 }
 
 object DeviceNode {

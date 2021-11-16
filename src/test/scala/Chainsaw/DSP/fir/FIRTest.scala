@@ -7,6 +7,8 @@ import Chainsaw.matlabIO._
 import org.scalatest.flatspec.AnyFlatSpec
 import spinal.core.{SInt, _}
 
+import scala.language.postfixOps
+
 class FIRTest extends AnyFlatSpec {
 
   val doSynth = false
@@ -30,14 +32,20 @@ class FIRTest extends AnyFlatSpec {
     val archs = Seq(DIRECT, TRANSPOSE, SYSTOLIC)
     val nodes = Seq(pipelinedMAC, mac)
 
-    Seq.tabulate(3, 2) { (i, j) =>
-      val dfgGen = FIRGen(nodes(j), archs(i), coeffs, coeffWidth, 1)
-      val dfg: DFGGraph[SInt] = dfgGen.getGraph
-      testDFG(dfg, dfgGen.latency cycles, Seq(27 bits), firTestCase.map(Seq(_)), firGolden, initLength = testSize)
-      if(doSynth) {
-        implDFG(dfg, Seq(27 bits), forTiming = false)
-      }
-    }
+    globalImplPolicy = ImplPolicy(useRegInit = false, useSubmodule = false)
+
+    val dfgGen = FIRGen(mac, SYSTOLIC, coeffs, coeffWidth, 1)
+    val dfg: DFGGraph[SInt] = dfgGen.getGraph
+    implDFG(dfg, Seq(27 bits), forTiming = true)
+
+//    Seq.tabulate(3, 2) { (i, j) =>
+//      val dfgGen = FIRGen(nodes(j), archs(i), coeffs, coeffWidth, 1)
+//      val dfg: DFGGraph[SInt] = dfgGen.getGraph
+//      testDFG(dfg, dfgGen.latency cycles, Seq(27 bits), firTestCase.map(Seq(_)), firGolden, initLength = testSize)
+//      if(doSynth) {
+//        implDFG(dfg, Seq(27 bits), forTiming = true)
+//      }
+//    }
   }
 
 

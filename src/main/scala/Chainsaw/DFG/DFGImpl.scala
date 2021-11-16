@@ -37,7 +37,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
   // attributes tobe used, they provide the "environment" of "synthesis"
   val isRecursive: Boolean = referenceDFG.isRecursive
   val vertexSeq: Seq[DSPNode[T]] = referenceDFG.vertexSeq
-  val globalLcm: Int = referenceDFG.globalLcm
+  val globalLcm: Int = referenceDFG.period
   val inputNodes: Seq[DSPNode[T]] = referenceDFG.inputNodes
   val outputNodes: Seq[DSPNode[T]] = referenceDFG.outputNodes
   val signalMap: mutable.Map[DSPNode[T], Seq[T]] = mutable.Map[DSPNode[T], Seq[T]]() // storing the output signals of implemented nodes

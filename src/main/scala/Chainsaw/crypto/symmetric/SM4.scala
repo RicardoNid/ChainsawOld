@@ -24,8 +24,10 @@ object SM4 {
 
   def transformL(data: Bits, forData: Boolean)(implicit config: SM4Config): Bits = {
     require(data.getBitsWidth == 32)
-    if (forData) (data ^ data.rotateLeft(2)) ^ (data.rotateLeft(10) ^ data.rotateLeft(18) ^ data.rotateLeft(24))
-    else data ^ data.rotateLeft(13) ^ data.rotateLeft(23)
+    val rotateValues = if(forData) Seq(0,2,10,18,24) else Seq(0,13,23)
+    val ret = rotateValues.map(data.rotateLeft).reduce(_ ^ _)
+    ret.addAttribute("use_dsp", "logic")
+    ret
   }
 
   def FKData: Seq[Bits] = Seq("A3B1BAC6", "56AA3350", "677D9197", "B27022DC")
