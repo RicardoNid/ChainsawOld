@@ -72,6 +72,8 @@ package object DFG {
 
     def source: DSPNode[T] = dfg.getEdgeSource(edge)
 
+    def isLatencyEdge: Boolean = edge.isInstanceOf[LatencyEdge[T]]
+
     // weight-related properties
 
     /** we keep it a Double here as sometimes, DFG will be used/cloned for other purpose(such as critical path calculation)

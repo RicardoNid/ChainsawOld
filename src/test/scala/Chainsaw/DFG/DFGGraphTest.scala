@@ -13,6 +13,7 @@ import scala.language.postfixOps
 class DFGGraphTest extends AnyFlatSpec {
 
   import Operators._
+
   globalImplPolicy = ImplPolicy(useRegInit = true, useSubmodule = false)
 
   val testHardType: HardType[SInt] = HardType(SInt(10 bits))
@@ -33,7 +34,7 @@ class DFGGraphTest extends AnyFlatSpec {
   "dfg" should "be implemented correctly" in {
     val dfg = DFGGraph[SInt]("simpleGraph")
 
-    val pts = (0 until 4).map(i => BinaryHardware(sintMult,  10 bits, 0 cycles, 1 ns).asDeviceNode(s"pt$i"))
+    val pts = (0 until 4).map(i => BinaryHardware(sintMult, 10 bits, 0 cycles, 1 ns).asDeviceNode(s"pt$i"))
     val ptsCNodes = (0 until 4).map(i => ConstantNode[SInt, Int](s"ptscnode_${i + 1}", 1, 10 bits))
     val Seq(pt0, pt1, pt2, pt3) = pts
     dfg.addPath(pt0 >> 1 >> pt1 >> 1 >> pt2 >> 1 >> pt3)
@@ -89,11 +90,12 @@ class DFGGraphTest extends AnyFlatSpec {
     verifyFolding(dfg, foldingSet, testHardType, name = "paper1992_fig12_a")
   }
 
-  it should "fold correctly on paper1992 fig13_d(example12)" in {
-    val dfg = paper1992OnFolding.fig13_a
-    val foldingSet = paper1992OnFolding.foldingSet_example12
-    verifyFolding(dfg, foldingSet, testHardType)
-  }
+  // skip this as no I/O specified
+  //  it should "fold correctly on paper1992 fig13_d(example12)" in {
+  //    val dfg = paper1992OnFolding.fig13_a
+  //    val foldingSet = paper1992OnFolding.foldingSet_example12
+  //    verifyFolding(dfg, foldingSet, testHardType)
+  //  }
 
   it should "fold correctly on paper1992 fig14_a(example13_v1)" in {
     val dfg = paper1992OnFolding.fig14_a
@@ -130,7 +132,7 @@ class DFGGraphTest extends AnyFlatSpec {
   "the reg opt algorithms" should "work on multiple different graphs" in {
 
     val duts0 = textBookDUTs.filterNot(_.isMerged)
-    logger.info(s"testing reg merge on\n${duts0.map(_.name).mkString(" ")}"+
+    logger.info(s"testing reg merge on\n${duts0.map(_.name).mkString(" ")}" +
       s"\n${duts0.map(dut => s"${dut.name}: ${dut.unmergedDelayAmount} -> ${dut.merged.unmergedDelayAmount}").mkString("\n")}")
     assert(duts0.forall(_.merged.isMerged))
 
@@ -167,10 +169,10 @@ class DFGGraphTest extends AnyFlatSpec {
     })
   }
 
-//  "DSPNode" should "have a correct inferable property" in {
-//    println(crypto.lattice.HuaweiKyber.ctButterflyNode.hardware.inferable)
-//    println(BinaryNode(Operators.sintMult, "mult").hardware.inferable)
-//    println(BinaryNode(sintMult, s"cmult", 10 bits, 0 cycles, 2 ns).hardware.inferable)
-//  }
+  //  "DSPNode" should "have a correct inferable property" in {
+  //    println(crypto.lattice.HuaweiKyber.ctButterflyNode.hardware.inferable)
+  //    println(BinaryNode(Operators.sintMult, "mult").hardware.inferable)
+  //    println(BinaryNode(sintMult, s"cmult", 10 bits, 0 cycles, 2 ns).hardware.inferable)
+  //  }
 
 }

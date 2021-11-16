@@ -29,9 +29,9 @@ package object dspTest {
     }
   }
 
-  /** poke data of whatever type(bool, int, double, complex), not type-safe(won't by found by linter)
+  /** poke data of whatever type(bool, int, double, complex), not type-safe(won't be found by linter)
    */
-  def pokeWhatever[D](port: Data, data: D): Unit = {
+  def pokeWhatever[D](port: Data, data: D): Unit = { // TODO: check whether it works for SInt
     port match {
       case bool: Bool => bool #= data.asInstanceOf[Boolean]
       case bitVector: BitVector => bitVector #= data.asInstanceOf[BigInt]
@@ -180,6 +180,10 @@ package object dspTest {
   }
 
 
+  /** these methods help user's on testing Flow/Streams when the one-line test is not avilable
+   * @param dc Flow/Stream
+   * @tparam T payload type
+   */
   implicit class DataCarrierUtil[T <: Data](dc: DataCarrier[T]) {
 
     def halt() = {

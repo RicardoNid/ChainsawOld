@@ -53,8 +53,12 @@ case class DSPPath[T <: Data](nodes: ArrayBuffer[DSPNode[T]], delays: ArrayBuffe
   }
 }
 
+/** source - target <= value, without any retiming, r(V) = r(U) = 0, so when value < 0, retiming is needed
+ */
 case class DSPConstraint[T <: Data](target: DSPNode[T], source: DSPNode[T], value: Int) {
-  def <=(value: Int) = DSPConstraint(target, source, value = value)
+  def <=(value: Int): DSPConstraint[T] = DSPConstraint(target, source, value = value)
+
+  def >=(value: Int): DSPConstraint[T] = DSPConstraint(source, target, value = -value)
 }
 
 case class DSPNodeWithOrder[T <: Data](node: DSPNode[T], order: Int)

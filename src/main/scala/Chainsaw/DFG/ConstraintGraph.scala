@@ -87,6 +87,12 @@ object ConstraintGraph {
     ret.initFrom(dfg)
     ret
   }
+
+  def apply[T <: Data](constraints:Seq[DSPConstraint[T]]): ConstraintGraph[T] = {
+    val ret = ConstraintGraph[T]()
+    constraints.foreach(ret.addConstraint(_))
+    ret
+  }
 }
 
 

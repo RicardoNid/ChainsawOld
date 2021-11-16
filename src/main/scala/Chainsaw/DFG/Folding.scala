@@ -41,6 +41,14 @@ class Folding[T <: Data](val dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T]]])
     cg.getSolution
   }
 
+  lazy val transformedNew = {
+    val algo = new NewFolding(dfg, foldingSet)
+    println(s"here ${algo.constraints.mkString(" ")}")
+    println(s"here ${algo.constraints.map(_.value).mkString(" ")}")
+    if(algo.isValid) algo.build
+    else new NewFolding(algo.retimed, foldingSet).build
+  }
+
   // the procedure of constructing folded DFG
   lazy val transformed: DFGGraph[T] = {
 

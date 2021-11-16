@@ -28,7 +28,17 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def vertexSeq: Seq[DSPNode[T]] = super.vertexSet().toSeq
 
-  def edgeSeq: Seq[DSPEdge[T]] = super.edgeSet().toSeq
+  def edgeSeq: Seq[DSPEdge[T]] = super.edgeSet().filterNot(_.isInstanceOf[LatencyEdge[T]]).toSeq
+
+  def latencyEdges: Seq[DSPEdge[T]] = super.edgeSet().filter(_.isInstanceOf[LatencyEdge[T]]).toSeq
+
+  def inputLatencies = latencyEdges.filter(_.target.isInput).map(_.delay)
+
+  def outputLatencies = latencyEdges.filter(_.target.isOutput).map(_.delay)
+
+  override def incomingEdgesOf(vertex: DSPNode[T]): util.Set[DSPEdge[T]] = super.incomingEdgesOf(vertex).filterNot(_.isLatencyEdge)
+
+  override def outgoingEdgesOf(vertex: DSPNode[T]): util.Set[DSPEdge[T]] = super.outgoingEdgesOf(vertex).filterNot(_.isLatencyEdge)
 
   // special nodes and their traversing methods
   def inputNodes: Seq[DSPNode[T]] = vertexSeq.filter(_.isInput)
@@ -115,6 +125,13 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   def addEdge(source: DSPNodeWithOrder[T], target: DSPNodeWithOrder[T], delay: Double): Unit =
     addEdge(source.node, target.node, source.order, target.order, delay)
 
+  def addLatencyEdge(source: DSPNode[T], target: DSPNode[T], delay: Double = 0): Unit = {
+    require(source.isInput && target.isOuter)
+    val edge = LatencyEdge[T]()
+    super.addEdge(source, target, edge)
+    setEdgeWeight(edge, delay)
+  }
+
   /** Add an expression to a basic DFG, that is, "derive" a new node by several driving nodes
    *
    * @example dfg.add(Seq(a,b) >=> (0,1) >=> c), when c is an adder, this means c.output = a.output + b.output
@@ -144,6 +161,10 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     val inputNode = InputNode[T](inputName)
     addVertex(inputNode)
     ioPositions += inputNode -> 0
+
+    if (inputNodes.size > 1) // avoid self-loop
+      addLatencyEdge(inputNodes.head, inputNode)
+
     inputNode
   }
 
@@ -152,16 +173,19 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     val inputNode = addInput(name)
     require(schedules.size == 1, "you can't specify such an input in original DFG")
     addEdge(inputNode(0), target(inOrder), schedules.head.time, schedules)
-    ioPositions += inputNode -> 0
     inputNode
   }
 
   def setOutput(source: DSPNode[T], outOrder: Int = 0, name: String = "", schedules: Seq[Schedule] = NoMUX()): OutputNode[T] = {
+    require(inputNodes.nonEmpty, "setting inputs before outputs")
     val outputName = if (name.nonEmpty) name else s"output${outputNodes.size}"
     val outputNode = OutputNode[T](outputName)
     addVertex(outputNode)
     addEdge(source(outOrder), outputNode(0), 0, schedules)
     ioPositions += outputNode -> 0
+
+    addLatencyEdge(inputNodes.head, outputNode)
+
     outputNode
   }
 
@@ -196,13 +220,18 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def outputPositions: Seq[Int] = ioPositions.filter(_._1.isOutput).values.toSeq
 
-  def isHomogeneous: Boolean = {
-    println(ioPositions.mkString(" "))
-    inputPositions.forall(_ == inputPositions.head) && outputPositions.forall(_ == outputPositions.head)
-  }
+  //  def isHomogeneous: Boolean = {
+  //    println(ioPositions.mkString(" "))
+  //    inputPositions.forall(_ == inputPositions.head) && outputPositions.forall(_ == outputPositions.head)
+  //  }
 
-  def latency: Int = if (!isHomogeneous) throw new IllegalArgumentException("latency of non-homogeneous graph is not defined")
-  else ioPositions(outputNodes.head) - ioPositions(inputNodes.head)
+  //  def latency: Int = if (!isHomogeneous) throw new IllegalArgumentException("latency of non-homogeneous graph is not defined")
+  //  else ioPositions(outputNodes.head) - ioPositions(inputNodes.head)
+
+  def isHomogeneous: Boolean = inputLatencies.forall(_ == 0) && outputLatencies.forall(_ == outputLatencies.head)
+
+  def latency: Int = if (isHomogeneous) outputLatencies.head
+  else throw new IllegalArgumentException("latency of non-homogeneous graph is not defined")
 
   def setLatency(newLatency: Int): Unit = ioPositions.keys.foreach { node =>
     if (node.isInput) ioPositions(node) = 0
@@ -226,10 +255,10 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def merged: DFGGraph[T] = new DFGRegOpt(this).getRegMergedDFG
 
-  def folded(foldingSet: Seq[Seq[DSPNode[T]]]): DFGGraph[T] = new Folding(this, foldingSet).transformed
+  //  def folded(foldingSet: Seq[Seq[DSPNode[T]]]): DFGGraph[T] = new Folding(this, foldingSet).transformed
+  def folded(foldingSet: Seq[Seq[DSPNode[T]]]): DFGGraph[T] = new Folding(this, foldingSet).transformedNew
 
   def unfolded(unfoldingFactor: Int): DFGGraph[T] = new Unfolding(this, unfoldingFactor).transformed
-
 
 
   def parallelized(parallelism: Int, foldingSet: Seq[Seq[DSPNode[T]]] = null): DFGGraph[T] = {
@@ -254,6 +283,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
       s"input edges:\n\t${inputEdges.map(edge => s"${edge.symbol} $edge").mkString("\n\t")}\n" +
       s"inner edges:\n\t${otherEdges.map(edge => s"${edge.symbol} $edge").mkString("\n\t")}\n" +
       s"output edges:\n\t${outputEdges.map(edge => s"${edge.symbol} $edge").mkString("\n\t")}\n" +
+      s"latency edges:\n\t${latencyEdges.map(edge => s"${edge.symbol} $edge").mkString("\n\t")}\n" +
       s"loops:\n\t${new alg.cycle.CycleDetector(this).findCycles().mkString(" ")}\n" +
       s"ioPositions: \n\t${ioPositions.mkString(" ")}\n" +
       s"------end------\n"

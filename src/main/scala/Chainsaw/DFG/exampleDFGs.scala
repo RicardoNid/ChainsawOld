@@ -318,7 +318,6 @@ object paper1992OnFolding {
 
   lazy val foldingSet_example11 = Seq(Seq(add4, add2, null, add3, add1), Seq(mult1, mult3, mult2, mult4, null))
 
-  // skip this as no I/O specified
   lazy val fig13_a: DFGGraph[SInt] = {
     val dfg_13_a = DFGGraph[SInt]("paper1992fig13_a")
     as.foreach(dfg_13_a.addVertex(_))
@@ -354,7 +353,7 @@ object paper1992OnFolding {
 object chap4 {
   def fig4_3 = {
     val Seq(r1, r2, r3, r4) = (0 until 4).map(i => VirtualNode[SInt](s"const$i"))
-    val cg = ConstraintGraph[SInt]
+    val cg = ConstraintGraph[SInt]()
     cg.addConstraint(r1 - r2 <= 0)
     cg.addConstraint(r3 - r1 <= 5)
     cg.addConstraint(r4 - r1 <= 4)
