@@ -224,7 +224,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def merged: DFGGraph[T] = new DFGRegOpt(this).getRegMergedDFG
 
-  def folded(foldingSet: Seq[Seq[DSPNode[T]]]): DFGGraph[T] = new Folding(this, foldingSet).transformedNew
+  def folded(foldingSet: Seq[Seq[DSPNode[T]]]): DFGGraph[T] = new Folding(this, foldingSet).transformed
 
   def unfolded(unfoldingFactor: Int): DFGGraph[T] = new Unfolding(this, unfoldingFactor).transformed
 

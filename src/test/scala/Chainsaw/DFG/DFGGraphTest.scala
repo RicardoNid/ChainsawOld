@@ -13,6 +13,7 @@ import scala.language.postfixOps
 class DFGGraphTest extends AnyFlatSpec {
 
   import Operators._
+  globalImplPolicy = ImplPolicy(useRegInit = true, useSubmodule = false)
 
   val testHardType: HardType[SInt] = HardType(SInt(10 bits))
 
