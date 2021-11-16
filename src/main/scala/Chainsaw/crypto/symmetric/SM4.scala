@@ -280,8 +280,8 @@ case class SM4HardwareDFG(config: SM4Config) extends Component with DSPTestable[
   // connecting operators
 
   // constant drivers
-  xorNodes.zip(FKData).foreach { case (xorNode, fk) => xorNode.addConstantDriver(fk, 0) }
-  keyNodes.zip(CKData).foreach { case (keyNode, ck) => keyNode.addConstantDriver(ck, 4) }
+  xorNodes.zip(FKData).foreach { case (xorNode, fk) => xorNode.addConstantDriver(fk, 0, NoMUX()) }
+  keyNodes.zip(CKData).foreach { case (keyNode, ck) => keyNode.addConstantDriver(ck, 4, NoMUX()) }
 
   // initial transform of keys
   (0 until 4).foreach { i => sm4CoreDFG.addEdge(keyInputs(i), xorNodes(i), 0) }

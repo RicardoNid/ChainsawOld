@@ -15,6 +15,11 @@ import scala.language.postfixOps
 
 // step1: declare a DSPNode extends the DeviceNode and override the copy method to avoid type regression
 // the subclasses of DSPNode capture no patterns, just acting as annotations
+
+class UnaryNode[T <: Data](name: String, hardware: UnaryHardware[T]) extends DeviceNode(name, hardware) {
+  override def copy(newName: String): UnaryNode[T] = new UnaryNode(newName, hardware)
+}
+
 class BinaryNode[T <: Data](name: String, hardware: BinaryHardware[T]) extends DeviceNode(name, hardware) {
   override def copy(newName: String): BinaryNode[T] = new BinaryNode(newName, hardware)
 }
@@ -27,8 +32,19 @@ class ButterflyNode[T <: Data](name: String, hardware: ButterflyHardware[T]) ext
   override def copy(newName: String): ButterflyNode[T] = new ButterflyNode(newName, hardware)
 }
 
-
 // step2: declare a DSPHardware, capturing the characteristics by preset field
+class UnaryHardware[T <: Data](op: T => T, width: BitCount, delay: Int, exeTime: Double)
+  extends DSPHardware[T](
+    impl = (dataIn: Seq[T], _: GlobalCount) => Seq(op(dataIn(0))),
+    inDegree = 1, outWidths = Seq(width), delay, exeTime) {
+  override def asDeviceNode(name: String): UnaryNode[T] = new UnaryNode[T](name, this)
+}
+
+object UnaryHardware {
+  def apply[T <: Data](op: T => T, width: BitCount = -1 bits, delay: CyclesCount = 0 cycles, exeTime: TimeNumber = 0 sec): UnaryHardware[T] =
+    new UnaryHardware(op, width, delay.toInt, exeTime.toDouble)
+}
+
 class BinaryHardware[T <: Data](op: (T, T) => T, width: BitCount, delay: Int, exeTime: Double)
   extends DSPHardware[T](
     impl = (dataIn: Seq[T], _: GlobalCount) => Seq(op(dataIn(0), dataIn(1))),

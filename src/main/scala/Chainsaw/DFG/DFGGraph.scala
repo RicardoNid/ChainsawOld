@@ -147,9 +147,11 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     inputNode
   }
 
+  // TODO: change the order of arguments
   def setInput(target: DSPNode[T], inOrder: Int = 0, name: String = "", schedules: Seq[Schedule] = NoMUX()): InputNode[T] = {
     val inputNode = addInput(name)
-    addEdge(inputNode(0), target(inOrder), 0, schedules)
+    require(schedules.size == 1, "you can't specify such an input in original DFG")
+    addEdge(inputNode(0), target(inOrder), schedules.head.time, schedules)
     ioPositions += inputNode -> 0
     inputNode
   }

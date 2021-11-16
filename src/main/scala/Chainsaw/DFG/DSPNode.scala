@@ -3,6 +3,7 @@ package Chainsaw.DFG
 import Chainsaw._
 import spinal.core._
 
+import scala.collection.immutable
 import scala.language.postfixOps
 
 /** hardware device of a DSPNode
@@ -23,7 +24,10 @@ class DSPHardware[T <: Data](val impl: (Seq[T], GlobalCount) => Seq[T],
     dataOut := Vec(impl(dataIn, GlobalCount(U(0))))
   }
 
-  def asDeviceNode(name:String) = DeviceNode(name, this)
+  def asDeviceNode(name: String): DeviceNode[T] = DeviceNode(name, this)
+
+  def asDeviceNodes(name: String, count: Int): Seq[DeviceNode[T]]
+  = (0 until count).map(i => asDeviceNode(s"${name}_$i"))
 
   //  def inferable(implicit holderProvider: HolderProvider[T]): Boolean = {
   //    GenRTL(new Component {
@@ -86,7 +90,7 @@ class DSPNode[T <: Data](val name: String, val hardware: DSPHardware[T]) {
 class DeviceNode[T <: Data](override val name: String,
                             override val hardware: DSPHardware[T])
   extends DSPNode(name, hardware) {
-  override def copy(newName: String): DSPNode[T] = new DeviceNode[T](name, hardware)
+  override def copy(newName: String): DSPNode[T] = new DeviceNode[T](newName, hardware)
 }
 
 object DeviceNode {

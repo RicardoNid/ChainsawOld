@@ -61,25 +61,25 @@ class DFGGraphTest extends AnyFlatSpec {
 
   it should "fold correctly on paper1992 fig8_b(example6)" in {
     val dfg = paper1992OnFolding.fig8_a
-    val foldingSet = paper1992OnFolding.foldingSet8_a_example6
+    val foldingSet = paper1992OnFolding.foldingSet_example6
     verifyFolding(dfg, foldingSet, testHardType)
   }
 
   it should "fold correctly on paper1992 fig9_b(example7)" in {
     val dfg = paper1992OnFolding.fig9_a
-    val foldingSet = paper1992OnFolding.foldingSet9_a_example7
+    val foldingSet = paper1992OnFolding.foldingSet_example7
     verifyFolding(dfg, foldingSet, testHardType, "paper1992_fig9_a")
   }
 
   it should "fold correctly on paper1992 fig10_b(example8)" in {
     val dfg = paper1992OnFolding.fig10_a
-    val foldingSet = paper1992OnFolding.foldingSet10_a_example8and10
+    val foldingSet = paper1992OnFolding.foldingSet_example8and10
     verifyFolding(dfg, foldingSet, testHardType, "paper1992_fig10_a")
   }
 
   it should "fold correctly on paper1992 fig10_b(example10)" in {
     val dfg = paper1992OnFolding.fig10_c
-    val foldingSet = paper1992OnFolding.foldingSet10_a_example8and10
+    val foldingSet = paper1992OnFolding.foldingSet_example8and10
     verifyFolding(dfg, foldingSet, testHardType, "paper1992_fig10_c")
   }
 
@@ -91,7 +91,7 @@ class DFGGraphTest extends AnyFlatSpec {
 
   it should "fold correctly on paper1992 fig13_d(example12)" in {
     val dfg = paper1992OnFolding.fig13_a
-    val foldingSet = paper1992OnFolding.foldingSet13_a_example12
+    val foldingSet = paper1992OnFolding.foldingSet_example12
     verifyFolding(dfg, foldingSet, testHardType)
   }
 
@@ -103,7 +103,7 @@ class DFGGraphTest extends AnyFlatSpec {
 
   it should "fold correctly on paper1992 fig15_a(example13_v2)" in {
     val dfg = paper1992OnFolding.fig14_a
-    val foldingSet = paper1992OnFolding.foldingSet14_a_example13_v2
+    val foldingSet = paper1992OnFolding.foldingSet_example13_v2
     verifyFolding(dfg, foldingSet, testHardType, name = "paper1992_fig15_a")
   }
 

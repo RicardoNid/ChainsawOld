@@ -20,14 +20,13 @@ object Operators {
     exeTime = 0 sec
   )
 
-  // binary operators
-
   // logical operators
   val and: (Bits, Bits) => Bits = (a: Bits, b: Bits) => a & b
   val or: (Bits, Bits) => Bits = (a: Bits, b: Bits) => a | b
   val xor: (Bits, Bits) => Bits = (a: Bits, b: Bits) => a ^ b
 
   // sint operators
+  val sintInc: SInt => SInt = (signal: SInt) => signal + 1
   val sintAdd: (SInt, SInt) => SInt = (a: SInt, b: SInt) => a + b
   val sintMult: (SInt, SInt) => SInt = (a: SInt, b: SInt) => a * b
   val sintMultAdd: (SInt, SInt, SInt) => SInt = (a: SInt, b: SInt, c: SInt) => (a * b) + c
@@ -55,6 +54,7 @@ object Operators {
     val op = (coeff: SInt, data: SInt, partialSum: SInt) => {
       val ret = if (mreg) RegNext(coeff * data) + partialSum else coeff * data + partialSum
       ret.addAttribute("use_dsp", "yes")
+      ret
     }
     TrinaryHardware(op, delay = (if (mreg) 1 else 0) cycles).asDeviceNode(s"macDSP48_${if (mreg) "usingMReg" else ""}")
   }

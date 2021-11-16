@@ -89,7 +89,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
         val schedulesOnePort: Seq[Seq[Schedule]] = singlePortEdges.map(_.schedules) // get the schedules
         val succeed = Try(DFGMUX[T](schedulesOnePort).impl(singlePortData, globalLcm)) // data + schedules -> MUX
         succeed match {
-          case Failure(exception) => throw new IllegalArgumentException(s"MUX impl failed on:\n${singlePortEdges.map(_.symbol).mkString("|")}")
+          case Failure(exception) => throw new IllegalArgumentException(s"MUX impl failed on:\n${singlePortEdges.map(edge =>  s"${edge.symbol} ${edge.schedules.mkString(" ")}").mkString("\n")}")
           case Success(value) => value
         }
       }

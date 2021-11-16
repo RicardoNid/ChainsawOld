@@ -103,17 +103,17 @@ package object DFG {
     // actions
     def addVertex() = dfg.addVertex(node)
 
-    def addConstantDriver[TSoft](constant: TSoft, width: BitCount, order: Int)
+    def addConstantDriver[TSoft](constant: TSoft, width: BitCount, order: Int, schedules: Seq[Schedule] = NoMUX())
                                 (implicit converter: (TSoft, BitCount) => T): Unit = {
       val constantNode = ConstantNode(s"constant_$constant", constant, width)
       dfg.addVertex(constantNode)
-      dfg.addEdge(constantNode(0), node(order), 0)
+      dfg.addEdge(constantNode(0), node(order), 0, schedules)
     }
 
-    def addConstantDriver(constant: T, order: Int): Unit = {
+    def addConstantDriver(constant: T, order: Int, schedules: Seq[Schedule]): Unit = {
       val constantNode = ConstantNode(s"constant", constant)
       dfg.addVertex(constantNode)
-      dfg.addEdge(constantNode(0), node(order), 0)
+      dfg.addEdge(constantNode(0), node(order), 0, schedules)
     }
 
   }
