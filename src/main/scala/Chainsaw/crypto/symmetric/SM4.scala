@@ -329,7 +329,6 @@ case class SM4HardwareDFG(config: SM4Config) extends Component with DSPTestable[
   dataOut.payload := parallelized.impl(Seq(x0, x1, x2, x3) ++ Seq(k0, k1, k2, k3)).reverse.reduce(_ ## _)
   // set latency automatically
   override val latency: Int = parallelized.latency
-  printlnGreen(parallelized.latency)
   dataOut.valid := Delay(dataIn.valid, latency, init = False)
 }
 

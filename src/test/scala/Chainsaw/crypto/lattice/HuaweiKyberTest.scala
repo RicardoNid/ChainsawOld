@@ -155,11 +155,12 @@ class HuaweiKyberTest extends AnyFlatSpec {
   implicit def long2UInt: (Long, BitCount) => UInt = (value: Long, _: BitCount) => U(value, 12 bits) // TODO:
 
   "the IKNTT hardware" should "pass the random test" in {
-
     testDSPNode[UInt, Seq[BigInt], BigInt](
       inttDFG.asNode("intt", log2Up(N) * 5 cycles), Seq.fill(N)(12 bits),
       knttTestCase,
       kinttGolden.flatten)
   }
+
+  "KNTT"
 
 }

@@ -130,14 +130,14 @@ object DFGTestUtil {
 
     assert(originalResults.size > 10)
     assert(transFormedResults.size > 10)
-    assert(originalResults.zip(transFormedResults).forall { case (ori, trans) => ori == trans }) // FIXME: verify the unaligned part
+    assert(originalResults.sorted.diff(transFormedResults.sorted).isEmpty)
+//    assert(originalResults.zip(transFormedResults).forall { case (ori, trans) => ori == trans }) // FIXME: verify the unaligned part
   }
 
   def verifyFolding[T <: Data](original: DFGGraph[T], foldingSets: Seq[Seq[DSPNode[T]]], elementType: HardType[T], name: String = null, basicLatency: Int = -1)
                               (implicit holderProvider: HolderProvider[T]) = {
     val foldedDFG = original.folded(foldingSets)
     val N = foldingSets.head.size
-    printlnRed(foldedDFG.latency)
     verifyFunctionalConsistency(original, foldedDFG, elementType, -N, name = name, basicLatency = basicLatency) // TODO: customized width
   }
 

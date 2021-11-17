@@ -59,6 +59,19 @@ case class DSPConstraint[T <: Data](target: DSPNode[T], source: DSPNode[T], valu
   def <=(value: Int): DSPConstraint[T] = DSPConstraint(target, source, value = value)
 
   def >=(value: Int): DSPConstraint[T] = DSPConstraint(source, target, value = -value)
+
+  override def toString: String = s"$source - $target <= $value"
 }
 
 case class DSPNodeWithOrder[T <: Data](node: DSPNode[T], order: Int)
+
+trait DFGGen[T <: Data] {
+  def getGraph: DFGGraph[T]
+
+  def latency: Int
+}
+
+trait NodeComponent[T <: Data] {
+  val dataIn: Vec[T]
+  val dataOut: Vec[T]
+}

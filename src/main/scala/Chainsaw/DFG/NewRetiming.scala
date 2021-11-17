@@ -1,29 +1,34 @@
 package Chainsaw.DFG
 
+import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 
-class NewRetiming[T <: Data](override val dfg: DFGGraph[T], solution: Map[DSPNode[T], Int]) extends Transform[T] {
+class NewRetiming[T <: Data](override val dfg: DFGGraph[T], solution: Map[DSPNode[T], Int]) extends DFGTransform[T] {
 
   override val transformName: String = "retiming"
+  override val logger: Logger = LoggerFactory.getLogger("retiming procedure")
 
-  def r(node: DSPNode[T]) = solution.getOrElse(node, 0)
-
-  override def timeSpaceTransform(iteration: Iteration[T]): Iteration[T] = {
-    val newDevice = iteration.device
-    val newTime = iteration.time + solution.getOrElse(iteration.device, 0)
-    Iteration(newDevice, newTime)
-  }
+  def r(node: DSPNode[T]): Int = solution.getOrElse(node, 0)
 
   override def periodTransform(period: Int): Int = period
 
-  override def iterationsInvolved: Seq[Iteration[T]] =
-    dfg.vertexSeq.flatMap(device => (0 until dfg.period).map(i => Iteration(device, i)))
+  override def ioMultiple: Int = 1
+
+  override def spaceTransform(iteration: Iteration[T]): DSPNode[T] = iteration.device
+
+  override def timeTransform(iteration: Iteration[T]): Int = iteration.time + r(iteration.device)
+
+  override def rangeInvolved: Int = dfg.period
 
   override def constraint(sourceIteration: Iteration[T], targetIteration: Iteration[T]): DSPConstraint[T] = {
     val (u, v) = (sourceIteration.device, targetIteration.device)
     val (tU, tV) = (sourceIteration.time, targetIteration.time)
     v - u >= tU - tV + r(u) - r(v) + u.delay
   }
+
+  override def getTransformed: DFGGraph[T] =
+    if (isValid) transformed
+    else throw new IllegalArgumentException(s"invalid retiming values, constraint:${constraints.mkString(" ")}")
 }
 
 object NewRetiming {
@@ -46,7 +51,7 @@ object NewRetiming {
       .map { case (input, position) => input -> (outputPosition - position) }
       .toMap
 
-    val ret = new NewRetiming(dfg, inputRetimingValues++ outputRetimingValues).build
+    val ret = new NewRetiming(dfg, inputRetimingValues ++ outputRetimingValues).transformed
     ret.setLatency(outputPosition - inputPosition)
     ret
   }

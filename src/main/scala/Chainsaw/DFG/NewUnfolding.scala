@@ -1,35 +1,35 @@
 package Chainsaw.DFG
 
+import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
 
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
+class NewUnfolding[T <: Data](override val dfg: DFGGraph[T], unfoldingFactor: Int) extends DFGTransform[T] {
 
-import org.jgrapht._
-import org.jgrapht.graph._
-import org.jgrapht.graph.builder._
-import org.jgrapht.nio._
-import org.jgrapht.nio.dot._
-import org.jgrapht.traverse._
-import org.jgrapht.generate._
+  override val transformName: String = "unfolding"
+  override val logger: Logger = LoggerFactory.getLogger("unfolding procedure")
 
-import scala.collection.JavaConversions._
+  val unfoldedDevicesMap: Map[DSPNode[T], Seq[DSPNode[T]]] =
+    dfg.vertexSeq.map(device => device -> (0 until unfoldingFactor).map(i => device.copy(s"${device.name}_unfolded$i"))).toMap
 
-//class NewUnfolding[T <: Data](override val dfg: DFGGraph[T], unfoldingFactor: Int) extends Transform[T] {
-//
-////  val newDevices =
-//
-//  override val transformName: String = "unfolding"
-//
-//  override def timeSpaceTransform(iteration: Iteration[T]): Iteration[T] = {
-//
-//  }
-//
-//  override def periodTransform(period: Int): Int = ???
-//
-//  override def iterationsInvolved: Seq[Iteration[T]] = ???
-//}
+  override def periodTransform(period: Int): Int =
+    if (unfoldingFactor >= dfg.period) {
+      require(unfoldingFactor % dfg.period == 0)
+      1
+    }
+    else { // TODO: add tests for this situation
+      require(dfg.period % unfoldingFactor == 0)
+      dfg.period / unfoldingFactor
+    }
+
+  override def ioMultiple: Int = unfoldingFactor
+
+  override def rangeInvolved: Int = unfoldingFactor max dfg.period
+
+  override def spaceTransform(iteration: Iteration[T]): DSPNode[T] = unfoldedDevicesMap(iteration.device)(iteration.time % unfoldingFactor)
+
+  override def timeTransform(iteration: Iteration[T]): Int = iteration.time / unfoldingFactor
+
+  override def constraint(sourceIteration: Iteration[T], targetIteration: Iteration[T]): DSPConstraint[T] = sourceIteration.device - targetIteration.device <= 0 // always valid
+
+  override def getTransformed: DFGGraph[T] = transformed
+}

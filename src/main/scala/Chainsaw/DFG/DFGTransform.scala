@@ -4,26 +4,48 @@ import Chainsaw._
 import org.slf4j.Logger
 import spinal.core._
 
-case class Iteration[T <: Data](device: DSPNode[T], time: Int)
+case class Iteration[T <: Data](device: DSPNode[T], time: Int) {
+
+  def delayTo(that: Iteration[T]): Int = that.time - time - device.delay
+
+  def schedule(period: Int): Int = time % period
+
+}
 
 /** definition and execution of time-space transformation
  *
  * @tparam T
  */
-trait Transform[T <: Data] {
+trait DFGTransform[T <: Data] {
 
   implicit val dfg: DFGGraph[T]
 
+  // distinct part(definition of a transform)
   val transformName: String
 
-  def timeSpaceTransform(iteration: Iteration[T]): Iteration[T]
+  val logger: Logger
 
   def periodTransform(period: Int): Int
 
-  def iterationsInvolved: Seq[Iteration[T]]
+  def ioMultiple: Int
+
+  def rangeInvolved: Int
+
+  def iterationsInvolved: Seq[Iteration[T]] = dfg.vertexSeq.flatMap(device => (0 until rangeInvolved).map(i => Iteration(device, i)))
+
+  def spaceTransform(iteration: Iteration[T]): DSPNode[T]
+
+  def timeTransform(iteration: Iteration[T]): Int
+
+  def constraint(sourceIteration: Iteration[T], targetIteration: Iteration[T]): DSPConstraint[T]
+
+  def getTransformed: DFGGraph[T]
+
+  // common part
+  def timeSpaceTransform(iteration: Iteration[T]): Iteration[T] = Iteration(spaceTransform(iteration), timeTransform(iteration))
 
   def pairsInvolved: Seq[(Iteration[T], Iteration[T], DSPEdge[T])] = {
-    iterationsInvolved.flatMap { sourceIteration =>
+    iterationsInvolved.flatMap { sourceIteration => // concrete pairs
       val (u, uT) = (sourceIteration.device, sourceIteration.time)
       u.outgoingEdges.filter { edge => // filter edges start from this source iteration
         edge.schedules.flatMap(schedule => schedule.timesUnderPeriod(dfg.period))
@@ -32,11 +54,11 @@ trait Transform[T <: Data] {
         val targetIteration = Iteration(edge.target, sourceIteration.time + edge.weightWithSource)
         (sourceIteration, targetIteration, edge)
       }
-    } ++
-      dfg.latencyEdges.map(edge => (Iteration(edge.source, 0), Iteration(edge.target, edge.weightWithSource), edge))
+    } ++ // pairs for latency
+      (dfg.latencyEdges.flatMap(edge => (0 until ioMultiple).
+        map(i => (Iteration(edge.source, 0), Iteration(edge.target, i + edge.weightWithSource), edge)))
+        ++ (1 to ioMultiple).map(i => (Iteration(dfg.ioReference, 0), Iteration(dfg.ioReference, i), LatencyEdge[T]())))
   }
-
-  def constraint(sourceIteration: Iteration[T], targetIteration: Iteration[T]): DSPConstraint[T]
 
   def constraints: Seq[DSPConstraint[T]] = pairsInvolved.map { case (source, target, _) => constraint(source, target) }
 
@@ -44,19 +66,20 @@ trait Transform[T <: Data] {
 
   def retimed: DFGGraph[T] = {
     val cg = ConstraintGraph[T](constraints)
-    new NewRetiming(dfg, cg.getSolution).build
+    new NewRetiming(dfg, cg.getSolution).transformed
   }
 
-  def build: DFGGraph[T] = {
+  def transformed: DFGGraph[T] = {
 
-    logger.info(s"iterationsInvolved\n${iterationsInvolved.mkString(" ")}")
+    logger.info("start transformation")
 
-    logger.info(s"before $transformName:\n$dfg")
+    logger.debug(s"\niterationsInvolved\n\t${iterationsInvolved.mkString(" ")}")
+    logger.debug(s"\nbefore $transformName:\n\t$dfg")
     val transformedDFG = DFGGraph[T](s"dfg_$transformName")
     val transformedPeriod = periodTransform(dfg.period)
 
     // make sure that nodes(especially I/O) is in correct order
-    iterationsInvolved.map(timeSpaceTransform).map(_.device).foreach(transformedDFG.addVertex(_))
+    iterationsInvolved.map(spaceTransform).foreach(transformedDFG.addVertex(_))
 
     pairsInvolved.foreach { case (sourceIteration, targetIteration, edge) =>
 
@@ -68,6 +91,7 @@ trait Transform[T <: Data] {
 
       transformedDFG.addVertices(uPrime, vPrime)
       if (edge.isLatencyEdge) {
+        if (transformName == "unfolding") println(sourceIteration, targetIteration)
         transformedDFG.addLatencyEdge(uPrime, vPrime, tVPrime - tUPrime - uPrime.delay)
       } else {
         transformedDFG.addEdge(
@@ -77,24 +101,11 @@ trait Transform[T <: Data] {
       }
     }
 
-    logger.info(s"$transformName result:\n$transformedDFG")
-    val ret = if (transformName == "folding") NewRetiming.alignIO(transformedDFG) else transformedDFG
-    //    val ret = transformedDFG
-    logger.info(s"latency after IO alignment:\n${ret.latencyEdges.map(ret.getEdgeWeight(_)).mkString(" ")}")
-    //    logger.info(s"latency after IO alignment:\n${ret.latency}")
+    logger.debug(s"$transformName result:\n$transformedDFG")
+    val ret = if(! this.isInstanceOf[NewRetiming[T]]) NewRetiming.alignIO(transformedDFG) else transformedDFG
+    logger.debug(s"latency after IO alignment:\n${ret.latencyEdges.map(ret.getEdgeWeight(_)).mkString(" ")}")
     ret
   }
 }
 
-trait DFGGen[T <: Data] {
-  def getGraph: DFGGraph[T]
 
-  def latency: Int
-
-  def getGraphAsNode(dataReset: Boolean = false)(implicit holderProvider: HolderProvider[T]): DSPNode[T]
-}
-
-trait NodeComponent[T <: Data] {
-  val dataIn: Vec[T]
-  val dataOut: Vec[T]
-}

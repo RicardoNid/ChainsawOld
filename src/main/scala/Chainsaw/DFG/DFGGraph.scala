@@ -8,7 +8,6 @@ import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 
 import java.util
-import scala.annotation.meta.getter
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 import scala.language.postfixOps
@@ -29,7 +28,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   def vertexSeq: Seq[DSPNode[T]] = super.vertexSet().toSeq
 
   def edgeSeq: Seq[DSPEdge[T]] = super.edgeSet().filterNot(_.isInstanceOf[LatencyEdge[T]]).toSeq
-  
+
   def ioReference: DSPNode[T] = inputNodes.head
 
   def latencyEdges: Seq[DSPEdge[T]] = super.edgeSet().filter(_.isInstanceOf[LatencyEdge[T]]).toSeq
@@ -85,7 +84,9 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   override def addVertex(v: DSPNode[T]): Boolean = {
     if (v.isInput || v.isOutput && !ioPositions.contains(v)) ioPositions += v -> 0
-    super.addVertex(v)
+    val success = super.addVertex(v)
+    //    if ((v.isInput && inputNodes.size > 1) || v.isOutput) addLatencyEdge(ioReference, v) // for input, size > 1 to avoid self-loop
+    success
   }
 
   def addVertices(vertices: DSPNode[T]*): Unit = vertices.foreach(addVertex)
@@ -162,11 +163,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     val inputName = if (name.nonEmpty) name else s"input${inputNodes.size}"
     val inputNode = InputNode[T](inputName)
     addVertex(inputNode)
-    ioPositions += inputNode -> 0
-
-    if (inputNodes.size > 1) // avoid self-loop
-      addLatencyEdge(ioReference, inputNode)
-
+    if (inputNodes.size > 1) addLatencyEdge(ioReference, inputNode)
     inputNode
   }
 
@@ -183,11 +180,8 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     val outputName = if (name.nonEmpty) name else s"output${outputNodes.size}"
     val outputNode = OutputNode[T](outputName)
     addVertex(outputNode)
-    addEdge(source(outOrder), outputNode(0), 0, schedules)
-    ioPositions += outputNode -> 0
-
     addLatencyEdge(ioReference, outputNode)
-
+    addEdge(source(outOrder), outputNode(0), 0, schedules)
     outputNode
   }
 
@@ -209,7 +203,6 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
    */
   def period: Int = {
     val periods = edgeSeq.flatMap(_.schedules).map(_.period).distinct.sorted.reverse
-    logger.debug(s"periods of MUX in $name:\n${periods.mkString(" ")}")
     periods.reduce(lcm)
   }
 
@@ -235,13 +228,12 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   def latency: Int = if (isIOAligned) outputLatencies.head
   else throw new IllegalArgumentException("latency of non-homogeneous graph is not defined")
 
-//  def setLatency(newLatency: Int): Unit = ioPositions.keys.foreach { node =>
-//    if (node.isInput) ioPositions(node) = 0
-//    if (node.isOutput) ioPositions(node) = newLatency
-//  }
+  //  def setLatency(newLatency: Int): Unit = ioPositions.keys.foreach { node =>
+  //    if (node.isInput) ioPositions(node) = 0
+  //    if (node.isOutput) ioPositions(node) = newLatency
+  //  }
 
   def setLatency(newLatency: Int) = {
-    printlnGreen("here")
     latencyEdges.filter(_.target.isInput).foreach(setEdgeWeight(_, 0))
     latencyEdges.filter(_.target.isOutput).foreach(setEdgeWeight(_, newLatency))
   }
@@ -259,15 +251,16 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     cg
   }
 
-  def retimed(solutions: Map[DSPNode[T], Int]): DFGGraph[T] = new Retiming(this).retimed(solutions)
+  def retimed(solutions: Map[DSPNode[T], Int]): DFGGraph[T] = new NewRetiming(this, solutions).getTransformed
 
   def merged: DFGGraph[T] = new DFGRegOpt(this).getRegMergedDFG
 
   //  def folded(foldingSet: Seq[Seq[DSPNode[T]]]): DFGGraph[T] = new Folding(this, foldingSet).transformed
-  def folded(foldingSet: Seq[Seq[DSPNode[T]]]): DFGGraph[T] = new Folding(this, foldingSet).transformedNew
 
-  def unfolded(unfoldingFactor: Int): DFGGraph[T] = new Unfolding(this, unfoldingFactor).transformed
+  def folded(foldingSet: Seq[Seq[DSPNode[T]]]): DFGGraph[T] = new NewFolding(this, foldingSet).getTransformed
 
+  //  def unfolded(unfoldingFactor: Int): DFGGraph[T] = new Unfolding(this, unfoldingFactor).transformed
+  def unfolded(unfoldingFactor: Int): DFGGraph[T] = new NewUnfolding(this, unfoldingFactor).getTransformed
 
   def parallelized(parallelism: Int, foldingSet: Seq[Seq[DSPNode[T]]] = null): DFGGraph[T] = {
     if (parallelism == 1) this

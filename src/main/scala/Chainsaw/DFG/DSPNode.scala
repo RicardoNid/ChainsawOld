@@ -106,15 +106,15 @@ class PassThrough[T <: Data](override val name: String, width: BitCount = -1 bit
 // the following classes have no difference or preset field compared to the PassThrough
 // we declare them as annotations of different roles a node can play in DFG
 class InputNode[T <: Data](name: String, width: BitCount = -1 bits) extends PassThrough[T](name, width) {
-  override def copy(newName: String): InputNode[T] = new InputNode(name, width)
+  override def copy(newName: String): InputNode[T] = new InputNode(newName, width)
 }
 
 class OutputNode[T <: Data](name: String, width: BitCount = -1 bits) extends PassThrough[T](name, width) {
-  override def copy(newName: String): OutputNode[T] = new OutputNode(name, width)
+  override def copy(newName: String): OutputNode[T] = new OutputNode(newName, width)
 }
 
 class VirtualNode[T <: Data](name: String, width: BitCount = -1 bits) extends PassThrough[T](name, width) {
-  override def copy(newName: String): VirtualNode[T] = new VirtualNode(name, width)
+  override def copy(newName: String): VirtualNode[T] = new VirtualNode(newName, width)
 }
 
 object InputNode {

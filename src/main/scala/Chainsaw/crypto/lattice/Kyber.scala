@@ -7,7 +7,7 @@ import cc.redberry.rings.scaladsl._
 import spinal.core.isPow2
 
 /**
- * @see High-Speed NTT-based Polynomial Multiplication Accelerator for CRYSTALS-Kyber Post-Quantum Cryptography [[[[https://eprint.iacr.org/2021/563.pdf]]]]
+ * @see High-Speed NTT-based Polynomial Multiplication Accelerator for CRYSTALS-Kyber Post-Quantum Cryptography [[https://eprint.iacr.org/2021/563.pdf]]
  */
 object Kyber {
 

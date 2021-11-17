@@ -1,6 +1,7 @@
 package Chainsaw.DFG
 
 import Chainsaw._
+import Chainsaw.DFG._
 import spinal.core._
 import spinal.lib._
 
@@ -64,15 +65,12 @@ class FIRGen[THard <: Data, TSoft](mac: TrinaryNode[THard],
       case SYSTOLIC => buildFir(2, 1)
     }
     dfg.setOutput(macs.last)
+    dfg.setLatency(latency)
 
-    // folding/unfolding according to the pattern
-    val ret = if (parallelism == 1) dfg
-    else if (parallelism > 1) new Unfolding(dfg, parallelism).transformed
-    else {
-      val foldingFactor = -parallelism
-      val multAddGroups = macs.grouped(-parallelism).toSeq.map(_.padTo(foldingFactor, null))
-      new Folding(dfg, multAddGroups).transformed
-    }
+    val multAddGroups =
+      if (parallelism < 0) macs.grouped(-parallelism).toSeq.map(_.padTo(-parallelism, null))
+      else null
+    val ret = dfg.parallelized(parallelism, multAddGroups)
     logger.debug(s"fir dfg:\n$ret")
     ret
   }
@@ -201,29 +199,20 @@ class ButterflyGen[THard <: Data, TSoft](ctButterfly: ButterflyNode[THard], gsBu
     }
 
     ret.foreach(port => dfg.setOutput(port.node, port.order))
+    dfg.setLatency(latency)
 
-    val adjustedRet = if (parallelism == 1) dfg
-    else if (parallelism > 1) new Unfolding(dfg, parallelism).transformed
-    else {
-      val foldingFactor = -parallelism
-      val butterflyGroups: Seq[Seq[ButterflyNode[THard]]] = butterflies.map(col => col.grouped(foldingFactor).toSeq).flatten
+    val butterflyGroups: Seq[Seq[ButterflyNode[THard]]] =
+      if (parallelism < 0) butterflies.map(col => col.grouped(-parallelism).toSeq).flatten
+      else null
+    val parallelizedDFG = dfg.parallelized(parallelism, butterflyGroups)
 
-      DFGTestUtil.verifyFolding(dfg.asInstanceOf[DFGGraph[UInt]],
-        butterflyGroups.asInstanceOf[Seq[Seq[DSPNode[UInt]]]],
-        HardType(UInt(12 bits)),
-        basicLatency = latency) // TODO: this is temp
-
-      new Folding(dfg, butterflyGroups).transformed
-    }
+    if(parallelism < 0) DFGTestUtil.verifyFolding[UInt](dfg.asInstanceOf[DFGGraph[UInt]], butterflyGroups.asInstanceOf[Seq[Seq[DSPNode[UInt]]]], UInt(12 bits), "testFoldedButterfly")
 
     logger.debug(s"butterfly dfg:\n$dfg")
-    adjustedRet
+    parallelizedDFG
   }
 
   override def latency: Int = log2Up(size) * gsButterfly.delay
-
-  // FIXME: as we want butterfly to support "software" evaluation, we didn't bound THard <: Data, thus, DFGGraph.asNode cannot be invoke
-  override def getGraphAsNode(dataReset: Boolean = true)(implicit holderProvider: BitCount => THard): DSPNode[THard] = null
 }
 
 object ButterflyGen {
@@ -286,8 +275,6 @@ class BinaryTreeGen[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFG
   }
 
   override def latency: Int = 0
-
-  override def getGraphAsNode(dataReset: Boolean = true)(implicit holderProvider: HolderProvider[T]): DSPNode[T] = null
 }
 
 object BinaryTreeGenTest extends App {
@@ -312,8 +299,6 @@ class BKKSTreeGen[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFGGe
   }
 
   override def latency: Int = 0
-
-  override def getGraphAsNode(dataReset: Boolean = true)(implicit holderProvider: HolderProvider[T]): DSPNode[T] = null
 }
 
 // LQX: implement this, the node is not binary, try to fix it
@@ -332,8 +317,6 @@ class WallaceTreeGen[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DF
   }
 
   override def latency: Int = 0
-
-  override def getGraphAsNode(dataReset: Boolean = true)(implicit holderProvider: HolderProvider[T]): DSPNode[T] = null
 }
 
 // LQX: implement this by transplanting implementations from MCM and Architectures
@@ -346,6 +329,4 @@ class AdderTree[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFGGen[
   }
 
   override def latency: Int = 0
-
-  override def getGraphAsNode(dataReset: Boolean = true)(implicit holderProvider: HolderProvider[T]): DSPNode[T] = null
 }

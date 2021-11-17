@@ -150,12 +150,13 @@ object runKyber {
 
     val nttDFG_folded_8: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, -8).getGraph
     val inputWidths = Seq.fill(128)(12 bits)
-    genDFG(nttDFG_folded_8, inputWidths)
+
+    //    genDFG(nttDFG_folded_8, inputWidths)
     synthDFG(nttDFG_folded_8, inputWidths, forTiming = false)
-
-    val nttDFG: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, 1).getGraph
-    synthDFG(nttDFG, inputWidths, forTiming = false)
-
-    globalImplPolicy = ImplPolicy(useRegInit = true, useSubmodule = false)
+    //
+    //    val nttDFG: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, 1).getGraph
+    //    synthDFG(nttDFG, inputWidths, forTiming = false)
+    //
+    //    globalImplPolicy = ImplPolicy(useRegInit = true, useSubmodule = false)
   }
 }
