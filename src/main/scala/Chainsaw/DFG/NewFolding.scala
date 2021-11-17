@@ -3,14 +3,7 @@ package Chainsaw.DFG
 import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 
-import scala.math.{ceil, floor}
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
+import scala.math.ceil
 
 /** my folding algorithm based on periodic time-space transformation
  *
@@ -29,7 +22,8 @@ class NewFolding[T <: Data](override val dfg: DFGGraph[T], foldingSet: Seq[Seq[D
       set.zipWithIndex.filterNot(_._1 == null) map { case (node, i) => node -> i }
     }.toMap
     ofDevice ++
-      (dfg.inputNodes ++ dfg.constantNodes).map(_ -> 0).toMap ++
+      dfg.inputNodes.map(node => node -> 0) ++
+      dfg.constantNodes.map(_ -> 0).toMap ++
       dfg.outputNodes.map(node => node -> ofDevice(node.sources.head))
   }
 
@@ -40,20 +34,16 @@ class NewFolding[T <: Data](override val dfg: DFGGraph[T], foldingSet: Seq[Seq[D
 
   override val transformName: String = "folding"
 
-  override def iterationsInvolved: Seq[Iteration[T]] = (dfg.innerNodes ++ dfg.inputNodes ++ dfg.constantNodes).flatMap(device => (0 until dfg.period).map(i => Iteration(device, i)))
+  override def iterationsInvolved: Seq[Iteration[T]] =
+    dfg.vertexSeq.flatMap(device => (0 until dfg.period).map(i => Iteration(device, i)))
 
   override def periodTransform(period: Int): Int = dfg.period * N
 
   override def timeSpaceTransform(iteration: Iteration[T]): Iteration[T] = {
+
     val (oldDevice, oldTime) = (iteration.device, iteration.time)
     val newDevice = deviceOf.getOrElse(oldDevice, oldDevice)
-    val foldingOrder = oldDevice match {
-      case node: DeviceNode[_] => foldingOrderOf(oldDevice)
-      case node: ConstantNode[_] => 0
-      case input: InputNode[_] => 0
-      case output: OutputNode[_] => foldingOrderOf(output.sources.head)
-      case _ => throw new IllegalArgumentException(s"a more accurate class rather than ${oldDevice.getClass} should be specified")
-    }
+    val foldingOrder = foldingOrderOf(oldDevice)
     val newSchedule = oldTime * N + foldingOrder
     Iteration(newDevice, newSchedule)
   }

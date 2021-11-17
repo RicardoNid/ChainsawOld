@@ -44,7 +44,7 @@ trait Transform[T <: Data] {
 
   def retimed: DFGGraph[T] = {
     val cg = ConstraintGraph[T](constraints)
-    dfg.retimed(cg.getSolution)
+    new NewRetiming(dfg, cg.getSolution).build
   }
 
   def build: DFGGraph[T] = {
@@ -55,8 +55,10 @@ trait Transform[T <: Data] {
     val transformedDFG = DFGGraph[T](s"dfg_$transformName")
     val transformedPeriod = periodTransform(dfg.period)
 
-    pairsInvolved.foreach{ case(sourceIteration, targetIteration, edge) =>
-      val targetIteration = Iteration(edge.target, sourceIteration.time + edge.weightWithSource)
+    // make sure that nodes(especially I/O) is in correct order
+    iterationsInvolved.map(timeSpaceTransform).map(_.device).foreach(transformedDFG.addVertex(_))
+
+    pairsInvolved.foreach { case (sourceIteration, targetIteration, edge) =>
 
       val newSourceIteration = timeSpaceTransform(sourceIteration)
       val newTargetIteration = timeSpaceTransform(targetIteration)
@@ -76,8 +78,11 @@ trait Transform[T <: Data] {
     }
 
     logger.info(s"$transformName result:\n$transformedDFG")
-    logger.info(s"latency:\n${transformedDFG.latency}")
-    transformedDFG
+    val ret = if (transformName == "folding") NewRetiming.alignIO(transformedDFG) else transformedDFG
+    //    val ret = transformedDFG
+    logger.info(s"latency after IO alignment:\n${ret.latencyEdges.map(ret.getEdgeWeight(_)).mkString(" ")}")
+    //    logger.info(s"latency after IO alignment:\n${ret.latency}")
+    ret
   }
 }
 

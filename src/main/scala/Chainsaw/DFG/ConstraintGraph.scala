@@ -27,8 +27,8 @@ import scala.collection.JavaConversions._
  */
 class ConstraintGraph[T <: Data]() extends DFGGraph[T]("constraintGraph") {
 
-  val referenceNode: VirtualNode[T] = VirtualNode[T]("reference")
-  super.addVertex(referenceNode)
+  val reference: VirtualNode[T] = VirtualNode[T]("reference")
+  super.addVertex(reference)
 
   /** init a ConstraintGraph from a DFG with all its nodes
    */
@@ -38,7 +38,7 @@ class ConstraintGraph[T <: Data]() extends DFGGraph[T]("constraintGraph") {
    */
   override def addVertex(constraintNode: DSPNode[T]): Boolean = {
     val succeed = super.addVertex(constraintNode)
-    addEdge(referenceNode, constraintNode, 0) // ref -> this node
+    addEdge(reference, constraintNode, 0) // ref -> this node
     succeed
   }
 
@@ -63,9 +63,9 @@ class ConstraintGraph[T <: Data]() extends DFGGraph[T]("constraintGraph") {
   def getSolution: Map[DSPNode[T], Int] = {
     logger.debug(s"solving constraint graph: $this")
     val algo = new BellmanFordShortestPath(this)
-    val paths = algo.getPaths(referenceNode) // shortest paths starts from referenceNode
+    val paths = algo.getPaths(reference) // shortest paths starts from referenceNode
     val ret: Map[DSPNode[T], Int] =
-      vertexSeq.filterNot(_ == referenceNode) // for all nodes except ref
+      vertexSeq.filterNot(_ == reference) // for all nodes except ref
         .map(node => node -> paths.getWeight(node).toInt).toMap // node -> shortest distance of ref -> node
     val minValue = ret.values.min
     ret.map { case (node, value) => node -> (value - minValue) } // so that the minimum value is 0, but the retiming won't change

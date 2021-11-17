@@ -29,12 +29,14 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   def vertexSeq: Seq[DSPNode[T]] = super.vertexSet().toSeq
 
   def edgeSeq: Seq[DSPEdge[T]] = super.edgeSet().filterNot(_.isInstanceOf[LatencyEdge[T]]).toSeq
+  
+  def ioReference: DSPNode[T] = inputNodes.head
 
   def latencyEdges: Seq[DSPEdge[T]] = super.edgeSet().filter(_.isInstanceOf[LatencyEdge[T]]).toSeq
 
-  def inputLatencies = latencyEdges.filter(_.target.isInput).map(_.delay)
+  def inputLatencies: Seq[Int] = 0 +: inputNodes.tail.map(input => getAllEdges(ioReference, input).filter(_.isLatencyEdge).head.delay)
 
-  def outputLatencies = latencyEdges.filter(_.target.isOutput).map(_.delay)
+  def outputLatencies: Seq[Int] = outputNodes.map(output => getAllEdges(ioReference, output).filter(_.isLatencyEdge).head.delay)
 
   override def incomingEdgesOf(vertex: DSPNode[T]): util.Set[DSPEdge[T]] = super.incomingEdgesOf(vertex).filterNot(_.isLatencyEdge)
 
@@ -163,7 +165,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     ioPositions += inputNode -> 0
 
     if (inputNodes.size > 1) // avoid self-loop
-      addLatencyEdge(inputNodes.head, inputNode)
+      addLatencyEdge(ioReference, inputNode)
 
     inputNode
   }
@@ -184,7 +186,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     addEdge(source(outOrder), outputNode(0), 0, schedules)
     ioPositions += outputNode -> 0
 
-    addLatencyEdge(inputNodes.head, outputNode)
+    addLatencyEdge(ioReference, outputNode)
 
     outputNode
   }
@@ -226,16 +228,22 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   //  }
 
   //  def latency: Int = if (!isHomogeneous) throw new IllegalArgumentException("latency of non-homogeneous graph is not defined")
-  //  else ioPositions(outputNodes.head) - ioPositions(inputNodes.head)
+  //  else ioPositions(outputNodes.head) - ioPositions(referenceNode)
 
-  def isHomogeneous: Boolean = inputLatencies.forall(_ == 0) && outputLatencies.forall(_ == outputLatencies.head)
+  def isIOAligned: Boolean = inputLatencies.forall(_ == 0) && outputLatencies.forall(_ == outputLatencies.head)
 
-  def latency: Int = if (isHomogeneous) outputLatencies.head
+  def latency: Int = if (isIOAligned) outputLatencies.head
   else throw new IllegalArgumentException("latency of non-homogeneous graph is not defined")
 
-  def setLatency(newLatency: Int): Unit = ioPositions.keys.foreach { node =>
-    if (node.isInput) ioPositions(node) = 0
-    if (node.isOutput) ioPositions(node) = newLatency
+//  def setLatency(newLatency: Int): Unit = ioPositions.keys.foreach { node =>
+//    if (node.isInput) ioPositions(node) = 0
+//    if (node.isOutput) ioPositions(node) = newLatency
+//  }
+
+  def setLatency(newLatency: Int) = {
+    printlnGreen("here")
+    latencyEdges.filter(_.target.isInput).foreach(setEdgeWeight(_, 0))
+    latencyEdges.filter(_.target.isOutput).foreach(setEdgeWeight(_, newLatency))
   }
 
   def criticalPathLength: Double = new CriticalPathAlgo(this).criticalPathLength
