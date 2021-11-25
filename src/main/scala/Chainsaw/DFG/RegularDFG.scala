@@ -129,10 +129,12 @@ class RegularDFG[T <: Data](name: String) extends DFGGraph[T](name) {
 
     // testing
     // TODO: Clean this
-    //    val addingAllEdgeChain_UPLEFT0 = addAllEdgeChain(UPLEFT, IN,0,0,1,true,false)
-    val addingAllEdgeChain_UPLEFT0 = addAllEdgeChain(UPRIGHT, IN, 0, 0, 1, true, true)
-    val addingAllEdgeChain_UP0 = addAllEdgeChain(UP, IN, 1, 1, 1, true, true)
-    //    val addingAllEdgeChain_UP1 = addAllEdgeChain(UP, IN,2,2,1,true,true)
+    //     val addingAllEdgeChain_UPLEFT0 = addAllEdgeChain(UPLEFT, IN,0,0,1,true,false)
+     val addingAllEdgeChain_UPLEFT0: Unit = addAllEdgeChain(UPRIGHT, IN,0,0,1,true,true)
+//    val addingAllEdgeChain_LEFT0: Unit = addAllEdgeChain(LEFT, IN,0,0,1,true,true)
+//    val addingAllEdgeChain_LEFT1: Unit = addAllEdgeChain(LEFT, IN,3,3,1,true,true)
+    val addingAllEdgeChain_UP0: Unit = addAllEdgeChain(UP, IN,1,1,1,true,true)
+//    val addingAllEdgeChain_UP1: Unit = addAllEdgeChain(UP, IN,2,2,1,true,true)
 
     println()
     println(this) // print all Nodes and Edges
@@ -150,7 +152,8 @@ class RegularDFG[T <: Data](name: String) extends DFGGraph[T](name) {
     println(inoutNodeAttrSeq.mkString("\n"))
     //    println(inoutNodeAttrSeq("input_UP_0_3(1)"))
 
-    def shapeAttr(label: String): String = {
+    // for Node shape
+    def shapeAttr(label:String):String = {
       var shape = ""
       if (label.startsWith("input")) {
         shape = "rect"
@@ -164,7 +167,8 @@ class RegularDFG[T <: Data](name: String) extends DFGGraph[T](name) {
       shape
     }
 
-    def colorAttr(label: String): String = {
+    // for Node color
+    def colorAttr(label:String):String = {
       var color = ""
       if (label.startsWith("input")) {
         color = "#228B22"
@@ -178,8 +182,9 @@ class RegularDFG[T <: Data](name: String) extends DFGGraph[T](name) {
       color
     }
 
-
-    def posAttr(label: String): String = {
+    // FIXME: double inoutput in the same direction (make it prettier maybe?)
+    // for Node position
+    def posAttr(label:String):String = {
       var pos = ""
       if (label.startsWith("input") || label.startsWith("output")) {
         var inoutList = inoutNodeAttrSeq(label)
@@ -196,10 +201,18 @@ class RegularDFG[T <: Data](name: String) extends DFGGraph[T](name) {
       pos
     }
 
+    // for edge visibility
+    def invisAttr(edgeName: String): String = {
+      var invis = ""
+      if (edgeName.contains("Chainsaw.DFG.LatencyEdge")) {invis = "invis"}    // those LatencyEdges should be invisible
+      invis
+    }
+
 
     val exporter = new DOTExporter[DSPNode[T], DSPEdge[T]]()
 
-    def dotAttr(v: DSPNode[T]) = {
+    // Setting Nodes Attributes
+    def dotNodeAttr(v: DSPNode[T]) = {
       val map = mutable.Map[String, org.jgrapht.nio.Attribute]().asJava
       map.put("label", DefaultAttribute.createAttribute(v.toString))
       map.put("shape", DefaultAttribute.createAttribute(shapeAttr(v.toString)))
@@ -208,11 +221,18 @@ class RegularDFG[T <: Data](name: String) extends DFGGraph[T](name) {
       println(map)
       map
     }
+    val nodeAttrFunction = (v: DSPNode[T]) => {dotNodeAttr(v)}
+    exporter.setVertexAttributeProvider(nodeAttrFunction.asJava)
 
-    val attrFunction = (v: DSPNode[T]) => {
-      dotAttr(v)
+    // Setting Edges Attributes
+    def dotEdgeAttr(e: DSPEdge[T]) = {
+      val map = mutable.Map[String, org.jgrapht.nio.Attribute]().asJava
+      map.put("style", DefaultAttribute.createAttribute(invisAttr(e.toString)))
+      map
     }
-    exporter.setVertexAttributeProvider(attrFunction.asJava)
+    val edgeAttrFunction = (e: DSPEdge[T]) => {dotEdgeAttr(e)}
+    exporter.setEdgeAttributeProvider(edgeAttrFunction.asJava)
+
 
     val writer = new StringWriter()
     exporter.exportGraph(this, writer)
