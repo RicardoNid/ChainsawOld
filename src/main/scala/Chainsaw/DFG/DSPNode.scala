@@ -155,7 +155,7 @@ object ConstantHardware {
 /** nodes which represent a constant(literal in verilog) in the DFG, for its usage, view its factory methods, instead of its constructor
  */
 class ConstantNode[T <: Data](name: String, hardware: DSPHardware[T]) extends DSPNode[T](name, hardware) {
-  override def copy(newName: String): DSPNode[T] = new ConstantNode(name, hardware)
+  override def copy(newName: String): DSPNode[T] = new ConstantNode(newName, hardware)
 }
 
 /** different entrance of creating constant nodes, common converters are provided in the package object of [[DFG]]
