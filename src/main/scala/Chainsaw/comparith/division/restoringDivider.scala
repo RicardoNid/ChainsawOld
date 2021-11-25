@@ -7,17 +7,13 @@ import spinal.core._
 import scala.collection._
 import spinal.core.sim._
 
-
-// specify the divider config use this case class
-case class DividerConfig(val signed: Boolean, val width: Int)
-
 // the restoringDivider algorithm
 class restoringDivider(val config: DividerConfig) extends Component {
   val io = new Bundle {
-    val dividend = if (config.signed) in SInt (2 * config.width + 1 bits) else in UInt (2 * config.width + 1 bits)
-    val divisor = if (config.signed) in SInt (config.width + 1 bits) else in UInt (config.width + 1 bits)
-    val quotient = if (config.signed) out SInt (config.width + 1 bits) else out UInt (config.width + 1 bits)
-    val remainder = if (config.signed) out SInt (config.width + 1 bits) else out UInt (config.width + 1 bits)
+    val dividend = in SInt (2 * config.width + 1 bits)
+    val divisor = in SInt (config.width + 1 bits)
+    val quotient = out SInt (config.width + 1 bits)
+    val remainder = out SInt (config.width + 1 bits)
   }
 
   // preprocess the dividend and divisor
@@ -47,8 +43,8 @@ class restoringDivider(val config: DividerConfig) extends Component {
   val dividendReg = Reg(UInt(2 * config.width + 1 bits)) init (uintDividend)
   val quotientReg = Reg(UInt(config.width + 1 bits)) init (U(0, config.width + 1 bits))
 
-  if (config.signed) io.remainder := dividendReg(config.width, config.width + 1 bits).asSInt else io.remainder := dividendReg(config.width, config.width + 1 bits)
-  if (config.signed) io.quotient := quotientReg.asSInt else io.quotient := quotientReg
+  io.remainder := dividendReg(config.width, config.width + 1 bits).asSInt
+  io.quotient := quotientReg.asSInt
 
 
   // define other signal which the compute need
@@ -129,14 +125,14 @@ class restoringDivider(val config: DividerConfig) extends Component {
 import spinal.sim._
 
 
-object Test extends App {
-  SimConfig.withWave.allOptimisation.compile(new restoringDivider(DividerConfig(false, 4)))
+object TestRestoringDivider extends App {
+  SimConfig.withWave.allOptimisation.compile(new restoringDivider(DividerConfig(true, 4)))
     .doSim { dut =>
       import dut.{clockDomain, io}
       clockDomain.forkStimulus(10)
       clockDomain.assertReset()
-      io.dividend #= 117
-      io.divisor #= 10
+      io.dividend #= -49
+      io.divisor #= -7
 
       clockDomain.deassertReset()
       if (dut.config.signed) {
