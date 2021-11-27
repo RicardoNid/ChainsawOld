@@ -8,7 +8,7 @@ import scala.collection._
 import spinal.core.sim._
 
 // the restoringDivider algorithm
-class restoringDivider(val config: DividerConfig) extends Component {
+class RestoringDivider(val config: DividerConfig) extends Component {
   val io = new Bundle {
     val dividend = in SInt (2 * config.width + 1 bits)
     val divisor = in SInt (config.width + 1 bits)
@@ -126,7 +126,7 @@ import spinal.sim._
 
 
 object TestRestoringDivider extends App {
-  SimConfig.withWave.allOptimisation.compile(new restoringDivider(DividerConfig(true, 4)))
+  SimConfig.withWave.allOptimisation.compile(new RestoringDivider(DividerConfig(true, 4)))
     .doSim { dut =>
       import dut.{clockDomain, io}
       clockDomain.forkStimulus(10)
