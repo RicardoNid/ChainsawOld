@@ -190,6 +190,8 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def isForwarding: Boolean = !isRecursive
 
+  def alignmentDelayAmount: Int = edgeSeq.filter(edge => edge.source.isOuter || edge.target.isOuter).map(_.delay).sum
+
   def delayAmount: Int = vertexSeq.map { node =>
     val edgesOnPorts: Seq[Seq[DSPEdge[T]]] = node.outgoingEdges.groupBy(_.outOrder).toSeq.map(_._2)
     edgesOnPorts.map(_.map(_.delay).max).sum
@@ -198,6 +200,8 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   def unmergedDelayAmount: Int = edgeSeq.map(_.delay).sum
 
   def isMerged: Boolean = delayAmount == unmergedDelayAmount
+
+
 
   /** the least common multiple of all muxes in this DFG, which is the working period of this DFG
    */
@@ -251,16 +255,16 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     cg
   }
 
-  def retimed(solutions: Map[DSPNode[T], Int]): DFGGraph[T] = new NewRetiming(this, solutions).getTransformed
+  def retimed(solutions: Map[DSPNode[T], Int]): DFGGraph[T] = new Retiming(this, solutions).getTransformed
 
   def merged: DFGGraph[T] = new DFGRegOpt(this).getRegMergedDFG
 
   //  def folded(foldingSet: Seq[Seq[DSPNode[T]]]): DFGGraph[T] = new Folding(this, foldingSet).transformed
 
-  def folded(foldingSet: Seq[Seq[DSPNode[T]]]): DFGGraph[T] = new NewFolding(this, foldingSet).getTransformed
+  def folded(foldingSet: Seq[Seq[DSPNode[T]]]): DFGGraph[T] = new Folding(this, foldingSet).getTransformed
 
   //  def unfolded(unfoldingFactor: Int): DFGGraph[T] = new Unfolding(this, unfoldingFactor).transformed
-  def unfolded(unfoldingFactor: Int): DFGGraph[T] = new NewUnfolding(this, unfoldingFactor).getTransformed
+  def unfolded(unfoldingFactor: Int): DFGGraph[T] = new Unfolding(this, unfoldingFactor).getTransformed
 
   def parallelized(parallelism: Int, foldingSet: Seq[Seq[DSPNode[T]]] = null): DFGGraph[T] = {
     if (parallelism == 1) this

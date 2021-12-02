@@ -1,7 +1,7 @@
 package Chainsaw.crypto.symmetric
 
-import Chainsaw.DFG.{ImplPolicy, globalImplPolicy}
-import Chainsaw.VivadoSynth
+import Chainsaw.DFG.{ImplPolicy, genDFG, globalImplPolicy, synthImplPolicy, testImplPolicy}
+import Chainsaw.{GenRTL, VivadoSynth}
 import Chainsaw.dspTest._
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -11,7 +11,11 @@ class SM4Test extends AnyFlatSpec {
 
   val doSynth = false
 
-  globalImplPolicy = ImplPolicy(useRegInit = false, useSubmodule = false)
+  globalImplPolicy = synthImplPolicy
+
+  "the SM4 design" should "generate correctly" in {
+    GenRTL(SM4HardwareDFG(baseLineConfig))
+  }
 
   "the SM4 design" should "work correctly on combinational version" in {
     val combConfig = SM4Config(readAsync = true, usingBRAM = false, usingROM = true, 1, comb = true)
@@ -41,5 +45,5 @@ class SM4Test extends AnyFlatSpec {
     }
   }
 
-  globalImplPolicy = ImplPolicy(useRegInit = true, useSubmodule = false)
+  globalImplPolicy = testImplPolicy
 }

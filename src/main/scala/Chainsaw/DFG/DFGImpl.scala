@@ -26,20 +26,22 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
   val logger: Logger = LoggerFactory.getLogger(s"implementing procedure")
 
   // do regs merging before
-  implicit val referenceDFG: DFGGraph[T] = if (!dfg.isMerged) dfg.merged else dfg
+  implicit val preprocessed: DFGGraph[T] = if (!dfg.isMerged) dfg.merged else dfg
 
   logger.info(
-    s"\n\tstart implementing DFG[${dfg.name}] , with regInit = ${globalImplPolicy.useRegInit}, useSubmodule = ${globalImplPolicy.useSubmodule}" +
+    s"\n\tstart implementing DFG[${dfg.name}], with config: " +
+      s"\n\t\tregInit = ${globalImplPolicy.useRegInit}, useSubmodule = ${globalImplPolicy.useSubmodule}" +
       s"\n\tnumber of nodes: ${dfg.innerNodes.size}, number of modules: ${dfg.innerNodes.map(_.hardware).distinct.size}" +
-      s"\n\tmerging regs: ${dfg.unmergedDelayAmount} -> ${referenceDFG.unmergedDelayAmount}"
+      s"\n\tmerging regs on edges: ${dfg.unmergedDelayAmount} -> ${preprocessed.unmergedDelayAmount}" +
+      s"\n\talignment regs amount: ${preprocessed.alignmentDelayAmount}"
   )
 
   // attributes tobe used, they provide the "environment" of "synthesis"
-  val isRecursive: Boolean = referenceDFG.isRecursive
-  val vertexSeq: Seq[DSPNode[T]] = referenceDFG.vertexSeq
-  val globalLcm: Int = referenceDFG.period
-  val inputNodes: Seq[DSPNode[T]] = referenceDFG.inputNodes
-  val outputNodes: Seq[DSPNode[T]] = referenceDFG.outputNodes
+  val isRecursive: Boolean = preprocessed.isRecursive
+  val vertexSeq: Seq[DSPNode[T]] = preprocessed.vertexSeq
+  val period: Int = preprocessed.period
+  val inputNodes: Seq[DSPNode[T]] = preprocessed.inputNodes
+  val outputNodes: Seq[DSPNode[T]] = preprocessed.outputNodes
   val signalMap: mutable.Map[DSPNode[T], Seq[T]] = mutable.Map[DSPNode[T], Seq[T]]() // storing the output signals of implemented nodes
   val delayMap: mutable.Map[DSPNode[T], Seq[Vec[T]]] = mutable.Map[DSPNode[T], Seq[Vec[T]]]()
 
@@ -57,7 +59,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
   }
 
   def initGlobalCount(): GlobalCount = { //
-    val globalCounter = CounterFreeRun(globalLcm)
+    val globalCounter = CounterFreeRun(period)
     globalCounter.value.setName("globalCounter")
     GlobalCount(globalCounter.value)
   }
@@ -79,17 +81,21 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
     val dataInsOnPorts: Seq[T] = // implement dataIns one port at a time
 
       dataGroups.map { case (portNumber, singlePortEdges) => // combine dataIns at the same port by a mux
-        val singlePortData: Seq[T] = singlePortEdges.map { edge => // gets the delayed version of data
-          val dataIn = signalMap(edge.source)(edge.outOrder) // get the data at driver's output port
-          if (globalImplPolicy.useRegInit) Delay(dataIn, edge.weight.toInt, init = dataIn.getZero) // get the delayed version
-          else Delay(dataIn, edge.weight.toInt)
+        val isROM = singlePortEdges.forall(_.source.isConstant)
+        val singlePortData: Seq[T] = {
+          if (isROM) singlePortEdges.map(_.source.asInstanceOf[ConstantNode[T]].getConstant)
+          else singlePortEdges.map { edge => // gets the delayed version of data
+            val dataIn = signalMap(edge.source)(edge.outOrder) // get the data at driver's output port
+            if (globalImplPolicy.useRegInit) Delay(dataIn, edge.weight.toInt, init = dataIn.getZero) // get the delayed version
+            else Delay(dataIn, edge.weight.toInt)
+          }
         }
 
         // implement the MUX
         val schedulesOnePort: Seq[Seq[Schedule]] = singlePortEdges.map(_.schedules) // get the schedules
-        val succeed = Try(DFGMUX[T](schedulesOnePort).impl(singlePortData, globalLcm)) // data + schedules -> MUX
+        val succeed = Try(DFGMUX[T](schedulesOnePort, period).impl(singlePortData, asROM = false)) // data + schedules -> MUX
         succeed match {
-          case Failure(exception) => throw new IllegalArgumentException(s"MUX impl failed on:\n${singlePortEdges.map(edge =>  s"${edge.symbol} ${edge.schedules.mkString(" ")}").mkString("\n")}")
+          case Failure(exception) => throw new IllegalArgumentException(s"MUX impl failed on:\n${singlePortEdges.map(edge => s"${edge.symbol} ${edge.schedules.mkString(" ")}").mkString("\n")}")
           case Success(value) => value
         }
       }
@@ -101,7 +107,7 @@ class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmod
         !target.isInstanceOf[VirtualNode[T]] && componentMap.contains(target)
         && !isRecursive
     ) { // when available, implement it by submodule
-      logger.debug(s"implementing $target using submodule, inputWidths = ${dataInsOnPorts.map(_.getBitsWidth).mkString(" ")}")
+      logger.info(s"implementing $target using submodule, inputWidths = ${dataInsOnPorts.map(_.getBitsWidth).mkString(" ")}")
       val nodeComponent = componentMap(target)()
       nodeComponent.dataIn := Vec(dataInsOnPorts)
       nodeComponent.dataOut

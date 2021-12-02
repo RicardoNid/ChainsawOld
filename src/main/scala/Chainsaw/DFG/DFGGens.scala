@@ -206,7 +206,7 @@ class ButterflyGen[THard <: Data, TSoft](ctButterfly: ButterflyNode[THard], gsBu
       else null
     val parallelizedDFG = dfg.parallelized(parallelism, butterflyGroups)
 
-    if(parallelism < 0) DFGTestUtil.verifyFolding[UInt](dfg.asInstanceOf[DFGGraph[UInt]], butterflyGroups.asInstanceOf[Seq[Seq[DSPNode[UInt]]]], UInt(12 bits), "testFoldedButterfly")
+    if (parallelism < 0) DFGTestUtil.verifyFolding[UInt](dfg.asInstanceOf[DFGGraph[UInt]], butterflyGroups.asInstanceOf[Seq[Seq[DSPNode[UInt]]]], UInt(12 bits), "testFoldedButterfly")
 
     logger.debug(s"butterfly dfg:\n$dfg")
     parallelizedDFG

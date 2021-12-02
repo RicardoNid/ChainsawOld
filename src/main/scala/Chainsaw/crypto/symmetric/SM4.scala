@@ -22,13 +22,12 @@ case class SM4Config(readAsync: Boolean, usingBRAM: Boolean, usingROM: Boolean, 
 
 object SM4 {
 
-  def transformL(data: Bits, forData: Boolean)(implicit config: SM4Config): Bits = {
+  def transformL(data: Bits, forData: Boolean)(implicit config: SM4Config): Bits = new Composite(data) {
     require(data.getBitsWidth == 32)
-    val rotateValues = if(forData) Seq(0,2,10,18,24) else Seq(0,13,23)
-    val ret = rotateValues.map(data.rotateLeft).reduce(_ ^ _)
-    ret.addAttribute("use_dsp", "logic")
-    ret
-  }
+    val rotateValues = if (forData) Seq(0, 2, 10, 18, 24) else Seq(0, 13, 23)
+    val afterL = rotateValues.map(data.rotateLeft).reduce(_ ^ _)
+    afterL.addAttribute("use_dsp", "logic")
+  }.afterL
 
   def FKData: Seq[Bits] = Seq("A3B1BAC6", "56AA3350", "677D9197", "B27022DC")
     .map(BigInt(_, 16)).map(B(_, 32 bits))
@@ -64,7 +63,6 @@ object SM4 {
         " 89 69 97 4A 0C 96 77 7E 65 B9 F1 09 C5 6E C6 84" +
         " 18 F0 7D EC 3A DC 4D 20 79 EE 5F 3E D7 CB 39 48").map(B(_, 8 bits))
 
-
     val SROM = Mem(SBoxData)
 
     if (!config.readAsync && config.usingBRAM) SROM.addAttribute("ram_style", "block")
@@ -74,21 +72,21 @@ object SM4 {
     else SROM.readSync(data.asUInt)
   }
 
-  def transformT(data: Bits, forData: Boolean)(implicit config: SM4Config): Bits = {
+  def transformT(data: Bits, forData: Boolean)(implicit config: SM4Config): Bits = new Composite(data) {
     require(data.getBitsWidth == 32)
-    data.setName("beforeS", weak = true)
+    //    data.setName("beforeS", weak = true)
     val afterS = data.subdivideIn(8 bits).reverse
       .map(substitutionS).reduce(_ ## _).asBits
-    afterS.setName("afterS", weak = true)
-    transformL(afterS, forData)
-  }
+    //    afterS.setName("afterS", weak = true)
+    val afterT = transformL(afterS, forData)
+  }.afterT
 
-  def transformF(data: Seq[Bits], key: Bits, forData: Boolean)(implicit config: SM4Config): Bits = {
+  def transformF(data: Seq[Bits], key: Bits, forData: Boolean)(implicit config: SM4Config): Bits = new Composite(key) {
     require(data.forall(_.getBitsWidth == 32) && key.getBitsWidth == 32)
     val Seq(x0, x1, x2, x3) = data
     val x0Pipelined = if (config.readAsync) x0 else RegNext(x0)
-    x0Pipelined ^ transformT((x1 ^ x2) ^ (x3 ^ key), forData)
-  }
+    val afterF = x0Pipelined ^ transformT((x1 ^ x2) ^ (x3 ^ key), forData)
+  }.afterF
 
   val baseLineConfig: SM4Config = SM4Config(
     readAsync = true,
@@ -101,7 +99,6 @@ object SM4 {
   val goldenString: String = "68\t1E\tDF\t34\tD2\t06\t96\t5E\t86\tB3\tE9\t4F\t53\t6E\t42\t46".replace("\t", "")
   val testCase, testKey = BigInt(testString, 16)
   val golden = BigInt(goldenString, 16)
-
 }
 
 object SM4Operators {
@@ -165,7 +162,7 @@ case class SM4HardwareSpinal(comb: Boolean) extends Component {
       kNext.setName(s"keyAtRound${i + 1}")
       keyAtEachRound += kNext
 
-      val dataNext = dataTrans(dataAtEachRound.takeRight(4), keyAtEachRound(i + 4))
+      val dataNext = dataTrans(dataAtEachRound.takeRight(4), keyAtEachRound.last)
       dataNext.setName(s"dataAtRound${i + 1}")
       dataAtEachRound += dataNext
     }
@@ -201,7 +198,7 @@ case class SM4HardwareSpinal(comb: Boolean) extends Component {
         delayLine(gap)
       }
       val kNext = keyTrans(keySources, CKData(i))
-      kNext.setName(s"keyAtRound${i + 1}")
+      //      kNext.setName(s"keyAtRound${i + 1}")
 
       keyDelayLineAtEachRound += History(kNext, delayLength)
 
@@ -210,7 +207,7 @@ case class SM4HardwareSpinal(comb: Boolean) extends Component {
         delayLine(gap)
       }
       val dataNext = dataTrans(dataSources, keyDelayLineAtEachRound(i + 4)(1))
-      dataNext.setName(s"dataAtRound${i + 1}")
+      //      dataNext.setName(s"dataAtRound${i + 1}")
 
       dataDelayLineAtEachRound += History(dataNext, delayLength)
     }
@@ -222,7 +219,7 @@ case class SM4HardwareSpinal(comb: Boolean) extends Component {
 object SM4HardwareSpinal {
   def main(args: Array[String]): Unit = {
 
-    val comb = false
+    val comb = true
 
     SimConfig.withWave.compile(SM4HardwareSpinal(comb)).doSim { dut =>
 

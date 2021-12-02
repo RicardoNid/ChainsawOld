@@ -11,7 +11,7 @@ import org.scalatest.Tag
 
 class EncodersTest extends AnyFlatSpec {
 
-  val doSynths = false
+  val doSynths = true
 
   val logger: Logger = LoggerFactory.getLogger("testing encoders")
 

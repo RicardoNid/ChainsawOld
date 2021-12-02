@@ -5,13 +5,13 @@ import spinal.core.sim._
 import spinal.lib._
 import spinal.sim._
 import spinal.lib.fsm._
-
 import Chainsaw._
 import Chainsaw.Real
-
 import Chainsaw._
 import spinal.core._
 import spinal.lib._
+
+import scala.language.postfixOps
 
 /** High-throughput general interlever that implements matrix interleaving with any given parameters
  *
@@ -35,8 +35,6 @@ case class MatIntrlv[T <: Data](row: Int, col: Int, pFIn: Int, pFOut: Int, dataT
     else if (pFIn == pFOut && pFIn % row == 0 && pFIn % col == 0 && (row * col) % pFIn == 0) 1
     else if (pFIn == row && pFOut == col || (pFIn == col && pFOut == row)) 2
     else 3
-
-  printlnGreen(s"interleaver is on mode $mode")
 
   val dataIn = slave Stream Vec(dataType, pFIn)
   val dataOut = master Stream Vec(dataType, pFOut)
@@ -91,7 +89,8 @@ case class MatIntrlv[T <: Data](row: Int, col: Int, pFIn: Int, pFOut: Int, dataT
 }
 
 object InterleaverFTN extends App {
-  VivadoSynth(new MatIntrlv(32, 128, 256, pFOut = 256, HardType(Bits(1 bits))), name = "Interleaver")
-  //  VivadoSynth(new InterleaverFTN(128, 32, 128), name = "DeInterleaver")
+  //  VivadoSynth(new MatIntrlv(32, 128, 256, pFOut = 256, HardType(Bits(1 bits))), name = "Interleaver")
+//  VivadoSynth(MatIntrlv(64 * 8, 256, 1024, 1024, HardType(Bits(1 bits))), name = "superInterleave")
+  VivadoSynth(MatIntrlv(64, 256, 1024, 1024, HardType(Bits(1 bits))), name = "superInterleave")
 }
 

@@ -66,7 +66,7 @@ trait DFGTransform[T <: Data] {
 
   def retimed: DFGGraph[T] = {
     val cg = ConstraintGraph[T](constraints)
-    new NewRetiming(dfg, cg.getSolution).transformed
+    new Retiming(dfg, cg.getSolution).transformed
   }
 
   def transformed: DFGGraph[T] = {
@@ -102,7 +102,7 @@ trait DFGTransform[T <: Data] {
     }
 
     logger.debug(s"$transformName result:\n$transformedDFG")
-    val ret = if(! this.isInstanceOf[NewRetiming[T]]) NewRetiming.alignIO(transformedDFG) else transformedDFG
+    val ret = if(! this.isInstanceOf[Retiming[T]]) Retiming.alignIO(transformedDFG) else transformedDFG
     logger.debug(s"latency after IO alignment:\n${ret.latencyEdges.map(ret.getEdgeWeight(_)).mkString(" ")}")
     ret
   }

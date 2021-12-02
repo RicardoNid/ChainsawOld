@@ -32,7 +32,7 @@ class FIRTest extends AnyFlatSpec {
     val archs = Seq(DIRECT, TRANSPOSE, SYSTOLIC)
     val nodes = Seq(pipelinedMAC, mac)
 
-    globalImplPolicy = ImplPolicy(useRegInit = false, useSubmodule = false)
+    globalImplPolicy = synthImplPolicy
 
     val dfgGen = FIRGen(mac, SYSTOLIC, coeffs, coeffWidth, 1)
     val dfg: DFGGraph[SInt] = dfgGen.getGraph
@@ -46,7 +46,7 @@ class FIRTest extends AnyFlatSpec {
 //        implDFG(dfg, Seq(27 bits), forTiming = true)
 //      }
 //    }
-    globalImplPolicy = ImplPolicy(useRegInit = true, useSubmodule = false)
+    globalImplPolicy = testImplPolicy
   }
 
 

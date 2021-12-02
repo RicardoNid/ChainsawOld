@@ -156,6 +156,8 @@ object ConstantHardware {
  */
 class ConstantNode[T <: Data](name: String, hardware: DSPHardware[T]) extends DSPNode[T](name, hardware) {
   override def copy(newName: String): DSPNode[T] = new ConstantNode(name, hardware)
+
+  def getConstant: T = impl(null, null).head
 }
 
 /** different entrance of creating constant nodes, common converters are provided in the package object of [[DFG]]

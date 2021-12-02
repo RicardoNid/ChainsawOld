@@ -14,7 +14,7 @@ class DFGGraphTest extends AnyFlatSpec {
 
   import Operators._
 
-  globalImplPolicy = ImplPolicy(useRegInit = true, useSubmodule = false)
+  globalImplPolicy = testImplPolicy
 
   val testHardType: HardType[SInt] = HardType(SInt(10 bits))
 
@@ -153,9 +153,9 @@ class DFGGraphTest extends AnyFlatSpec {
         Seq(Schedule(1, 4), Schedule(2, 4)),
         Seq(Schedule(0, 8), Schedule(4, 8)),
         Seq(Schedule(3, 12), Schedule(7, 12), Schedule(11, 12))
-      ))
+      ), 24)
 
-      dataOut := mux.impl(dataIn, 24)
+      dataOut := mux.impl(dataIn)
     }, name = "complexMUX")
 
     GenRTL(new Component {
@@ -164,8 +164,8 @@ class DFGGraphTest extends AnyFlatSpec {
       implicit val globalCount: GlobalCount = GlobalCount(count)
       val dataOut: Bits = out Bits (4 bits)
 
-      val mux: DFGMUX[Bits] = DFGMUX[Bits](Seq(Seq(Schedule(1, 1))))
-      dataOut := mux.impl(Seq(dataIn), 24)
+      val mux: DFGMUX[Bits] = DFGMUX[Bits](Seq(Seq(Schedule(1, 1))), 24)
+      dataOut := mux.impl(Seq(dataIn))
     })
   }
 
