@@ -288,7 +288,8 @@ class RegularDFGTest extends AnyFlatSpec {
     val SAdfg = new RegularDFG[SInt]("examplRegularGraph")
     val cell = Operators.SACell(6 bits)
     SAdfg.build2D(1, 2, cell, EdgeSeq)
-    // testDSPNode[SInt, Seq[BigInt], Int]
+    testDFG(SAdfg,1 cycles, Seq.fill(3)(6 bits), Seq(Seq.fill(3)(BigInt(1))), Seq.fill(3)(1), 0)
+//    val alg0 = new Retiming(SAdfg)
   }
 
   "SA" should "be correct as simplified SA" in testSA
