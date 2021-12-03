@@ -116,8 +116,10 @@ class RegularDFG[T <: Data](name: String) extends DFGGraph[T](name) {
     } // def addAllEdgeChain
 
     // adding all edges
-    edges.foreach { edge =>
-      addAllEdgeChain(edge.edgeDirection, edge.InOut, edge.outOrder, edge.inOrder, edge.delay, edge.withInput, edge.withOutput)
+    edges.foreach { edgeGroup =>
+      addAllEdgeChain(edgeGroup.edgeDirection, edgeGroup.InOut, edgeGroup.outOrder, edgeGroup.inOrder,
+        edgeGroup.delay, edgeGroup.withInput, edgeGroup.withOutput
+      )
     }
 
     println()
@@ -140,11 +142,9 @@ class RegularDFG[T <: Data](name: String) extends DFGGraph[T](name) {
       var shape = ""
       if (label.startsWith("input")) {
         shape = "rect"
-      }
-      else if (label.startsWith("output")) {
+      } else if (label.startsWith("output")) {
         shape = "rect"
-      }
-      else {
+      } else {
         shape = "doubleoctagon"
       }
       shape
@@ -154,13 +154,9 @@ class RegularDFG[T <: Data](name: String) extends DFGGraph[T](name) {
     def colorAttr(label:String):String = {
       var color = ""
       if (label.startsWith("input")) {
-        color = "#228B22"
-      }
-      else if (label.startsWith("output")) {
-        color = "#800000"
-      }
-      else {
-        color = ""
+        color = "#00BB00"    // green
+      } else if (label.startsWith("output")) {
+        color = "#FF0000"    // red
       }
       color
     }
@@ -188,10 +184,24 @@ class RegularDFG[T <: Data](name: String) extends DFGGraph[T](name) {
     }
 
     // for edge visibility
-    def invisAttr(edgeName: String): String = {
+    def edgeInvisAttr(edgeName: String): String = {
       var invis = ""
-      if (edgeName.contains("Chainsaw.DFG.LatencyEdge")) {invis = "invis"}    // those LatencyEdges should be invisible
+      if (edgeName.contains("Chainsaw.DFG.LatencyEdge")) {
+        invis = "invis"    // those LatencyEdges should be invisible
+      }
       invis
+    }
+
+    // for edge color
+    def edgeColorAttr(e: DSPEdge[T]):String = {
+      var color = ""
+      if (e.delay > 0) {color = "#1E90FF"
+      } else if (e.source.toString.startsWith("input")) {
+        color = "#00BB00"
+      } else if (e.target.toString.startsWith("output")) {
+        color = "#FF0000"
+      }
+      color
     }
 
 
@@ -213,7 +223,9 @@ class RegularDFG[T <: Data](name: String) extends DFGGraph[T](name) {
     // Setting Edges Attributes
     def dotEdgeAttr(e: DSPEdge[T]) = {
       val map = mutable.Map[String, org.jgrapht.nio.Attribute]().asJava
-      map.put("style", DefaultAttribute.createAttribute(invisAttr(e.toString)))
+      map.put("style", DefaultAttribute.createAttribute(edgeInvisAttr(e.toString)))
+      map.put("label", DefaultAttribute.createAttribute(s" z = ${e.delay} "))
+      map.put("color", DefaultAttribute.createAttribute(edgeColorAttr(e)))
       map
     }
     val edgeAttrFunction = (e: DSPEdge[T]) => {dotEdgeAttr(e)}
@@ -265,6 +277,7 @@ import Chainsaw.DSPRand
 import Chainsaw.RandomUtil
 import Chainsaw.dspTest._
 import spinal.core._
+import spinal.lib._
 import scala.language.postfixOps
 
 class RegularDFGTest extends AnyFlatSpec {
@@ -277,8 +290,8 @@ class RegularDFGTest extends AnyFlatSpec {
   def testSA(): Unit = {
 
     val EdgeSeq: Seq[RegularEdge] = Seq(
-      RegularEdge(edgeDirection = LEFT, InOut = IN, outOrder = 0, inOrder = 0, delay = 1, withInput = true, withOutput = true),
-      RegularEdge(edgeDirection = UP, InOut = IN, outOrder = 1, inOrder = 1, delay = 1, withInput = true, withOutput = true)
+      RegularEdge(edgeDirection = UP, InOut = IN, outOrder = 0, inOrder = 0, delay = 1, withInput = true, withOutput = true),
+      RegularEdge(edgeDirection = LEFT, InOut = IN, outOrder = 1, inOrder = 1, delay = 1, withInput = true, withOutput = true)
     )
 
     //val SAdfg = new RegularDFG[Bits]("examplRegularGraph")
@@ -287,9 +300,15 @@ class RegularDFGTest extends AnyFlatSpec {
 
     val SAdfg = new RegularDFG[SInt]("examplRegularGraph")
     val cell = Operators.SACell(6 bits)
-    SAdfg.build2D(1, 2, cell, EdgeSeq)
-    testDFG(SAdfg,1 cycles, Seq.fill(3)(6 bits), Seq(Seq.fill(3)(BigInt(1))), Seq.fill(3)(1), 0)
-//    val alg0 = new Retiming(SAdfg)
+    SAdfg.build2D(2, 2, cell, EdgeSeq)
+    println("Input and Output Nodes:")
+    println(SAdfg.inputNodes)
+    println(SAdfg.outputNodes)
+    println()
+    testDFG(dfg = SAdfg, graphLatency = 2 cycles, inputWidths = Seq.fill(4)(6 bits),
+      testCases = Seq(Seq.fill(4)(BigInt(1))), golden = Seq(0,4,0,4), initLength = 0        // decide golden by yourself
+    )
+
   }
 
   "SA" should "be correct as simplified SA" in testSA
