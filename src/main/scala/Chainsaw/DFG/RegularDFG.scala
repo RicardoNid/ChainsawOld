@@ -165,16 +165,27 @@ class RegularDFG[T <: Data](name: String) extends DFGGraph[T](name) {
     // for Node position
     def posAttr(label:String):String = {
       var pos = ""
+      val orderStepping = false    // true or false
       val step = 3    // used to measure the length of unit step in Graphviz placement
       if (label.startsWith("input") || label.startsWith("output")) {
         var inoutList = inoutNodeAttrSeq(label)
         var (x, y, order, index1, index2) = (inoutList(0), inoutList(1), inoutList(2), inoutList(3), inoutList(4))
         if (label.startsWith("input")) {
-          pos = (((index2*(order+1)) * (step) + y * step * 2).toString + ","
-               + ((index1*(order+1)) * (-step) + x * (-step * 2)).toString + "!")
+          if (orderStepping) {
+            pos = (((index2*(order+1)) * (step) + y * step * 2).toString + ","
+                 + ((index1*(order+1)) * (-step) + x * (-step * 2)).toString + "!")
+          } else {
+            pos = ((index2 * (step) + y * step * 2).toString + ","
+                 + (index1 * (-step) + x * (-step * 2)).toString + "!")
+          }
         } else if (label.startsWith("output")) {
-          pos = (((index2*(order+1)) * (-step) + y * step * 2).toString + ","
-               + ((index1*(order+1)) * (step) + x * (-step * 2)).toString + "!")
+          if (orderStepping) {
+            pos = (((index2*(order+1)) * (-step) + y * step * 2).toString + ","
+                 + ((index1*(order+1)) * (step) + x * (-step * 2)).toString + "!")
+          } else {
+            pos = ((index2 * (-step) + y * step * 2).toString + ","
+                 + (index1 * (step) + x * (-step * 2)).toString + "!")
+          }
         }
       } else {
         var posNum = label.split("_").takeRight(2)    // original position: (i, j)
@@ -195,11 +206,12 @@ class RegularDFG[T <: Data](name: String) extends DFGGraph[T](name) {
     // for edge color
     def edgeColorAttr(e: DSPEdge[T]):String = {
       var color = ""
-      if (e.delay > 0) {color = "#1E90FF"
+      if (e.delay > 0) {
+        color = "#1E90FF"
       } else if (e.source.toString.startsWith("input")) {
-        color = "#00BB00"
+        color = "#00BB00"    // green
       } else if (e.target.toString.startsWith("output")) {
-        color = "#FF0000"
+        color = "#FF0000"    // red
       }
       color
     }
@@ -226,6 +238,7 @@ class RegularDFG[T <: Data](name: String) extends DFGGraph[T](name) {
       map.put("style", DefaultAttribute.createAttribute(edgeInvisAttr(e.toString)))
       map.put("label", DefaultAttribute.createAttribute(s" z = ${e.delay} "))
       map.put("color", DefaultAttribute.createAttribute(edgeColorAttr(e)))
+      map.put("penwidth", DefaultAttribute.createAttribute(s"1"))                 // edge linewidth
       map
     }
     val edgeAttrFunction = (e: DSPEdge[T]) => {dotEdgeAttr(e)}
@@ -240,32 +253,17 @@ class RegularDFG[T <: Data](name: String) extends DFGGraph[T](name) {
   }
 }
 
+// Systolic Array structure testing
 object RegularDFG {
   def main(args: Array[String]): Unit = {
     val dfg = new RegularDFG[Bits]("examplRegularGraph")
     val and: BinaryNode[Bits] = BinaryHardware(Operators.and).asDeviceNode("and")
     val EdgeSeq: Seq[RegularEdge] = Seq(
-      //RegularEdge(edgeDirection = UPLEFT, InOut = IN, outOrder = 0, inOrder = 0, delay = 1, withInput = true, withOutput = false),
-      //RegularEdge(edgeDirection = UPRIGHT, InOut = IN, outOrder = 0, inOrder = 0, delay = 1, withInput = true, withOutput = true),
-      RegularEdge(edgeDirection = LEFT, InOut = IN, outOrder = 0, inOrder = 0, delay = 1, withInput = true, withOutput = true),
-      RegularEdge(edgeDirection = UP, InOut = IN, outOrder = 1, inOrder = 1, delay = 1, withInput = true, withOutput = true)
+      RegularEdge(edgeDirection = UP, InOut = IN, outOrder = 0, inOrder = 0, delay = 1, withInput = true, withOutput = true),
+      RegularEdge(edgeDirection = LEFT, InOut = IN, outOrder = 1, inOrder = 1, delay = 1, withInput = true, withOutput = true)
+      //RegularEdge(edgeDirection = UPRIGHT, InOut = IN, outOrder = 2, inOrder = 2, delay = 1, withInput = true, withOutput = true)
     )
     dfg.build2D(3, 4, and, EdgeSeq)
-    println("using main")
-
-    // TODO 1: Matrix P -> d -> directionMap
-    val P = DenseMatrix((0,-1,1),(-1,1,0))
-    val dA = DenseVector(0,1,0)
-    val dB = DenseVector(1,0,0)
-    val dC = DenseVector(0,0,1)
-    val A = P * dA    // Matrix Multiplication
-    val B = P * dB    // Matrix Multiplication
-    val C = P * dC    // Matrix Multiplication
-    println(s"\nP * dA = \n$A")
-    println(s"\nP * dB = \n$B")
-    println(s"\nP * dC = \n$B")
-
-
   }
 }
 
@@ -282,10 +280,12 @@ import scala.language.postfixOps
 
 class RegularDFGTest extends AnyFlatSpec {
 
+  /*
   val SATestCase: Seq[BigInt] = Seq.fill(10)(BigInt(0)) ++ (0 until 20).map(_ => DSPRand.nextBigInt(2))
   println(s"SATestCase: $SATestCase")
-  val SAGolden = SATestCase  //.toArray.map(_.toDouble)
+  val SAGolden = SATestCase.map(_ * 2)  //.toArray.map(_.toDouble)
   println(s"SAGolden:   $SAGolden")  //.toList
+   */
 
   def testSA(): Unit = {
 
@@ -293,7 +293,6 @@ class RegularDFGTest extends AnyFlatSpec {
       RegularEdge(edgeDirection = UP, InOut = IN, outOrder = 0, inOrder = 0, delay = 1, withInput = true, withOutput = true),
       RegularEdge(edgeDirection = LEFT, InOut = IN, outOrder = 1, inOrder = 1, delay = 1, withInput = true, withOutput = true)
     )
-
     //val SAdfg = new RegularDFG[Bits]("examplRegularGraph")
     //val and: BinaryNode[Bits] = BinaryHardware(Operators.and).asDeviceNode("and")
     //SAdfg.build2D(1, 1, and, EdgeSeq)
@@ -305,13 +304,30 @@ class RegularDFGTest extends AnyFlatSpec {
     println(SAdfg.inputNodes)
     println(SAdfg.outputNodes)
     println()
-    testDFG(dfg = SAdfg, graphLatency = 2 cycles, inputWidths = Seq.fill(4)(6 bits),
+    testDFG(dfg = SAdfg, graphLatency = 2 cycles, inputWidths = Seq.fill(4)(6 bits),        // graphLatency = (row-1) + (col-1)
       testCases = Seq(Seq.fill(4)(BigInt(1))), golden = Seq(0,4,0,4), initLength = 0        // decide golden by yourself
     )
 
   }
 
-  "SA" should "be correct as simplified SA" in testSA
+  "SA" should "be correct as simplified SA" in testSA    // Systolic Array testing
+
+
+  def testMapping() = {
+    // TODO 1: Matrix P -> d -> directionMap
+    val P = DenseMatrix((0,-1,1),(-1,1,0))
+    val dA = DenseVector(0,1,0)
+    val dB = DenseVector(1,0,0)
+    val dC = DenseVector(0,0,1)
+    val A = P * dA    // Matrix Multiplication
+    val B = P * dB    // Matrix Multiplication
+    val C = P * dC    // Matrix Multiplication
+    println(s"\nP * dA = \n$A")
+    println(s"\nP * dB = \n$B")
+    println(s"\nP * dC = \n$B")
+  }
+
+  "SA" should "be correct as SA mapping" in testMapping    // Unfinished mapping
 
 }
 
