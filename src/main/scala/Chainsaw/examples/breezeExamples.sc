@@ -104,6 +104,7 @@ any(b0) // exist
 all(b1) // forall
 
 // rounding and signs
+
 import breeze.numerics.round
 
 round(randM)
@@ -150,6 +151,7 @@ vt
 
 import breeze.numerics.constants.{Pi, e}
 import breeze.numerics.{Inf, NaN}
+
 NaN
 Inf
 -Inf
@@ -164,6 +166,9 @@ import breeze.numerics.exp
 val c0 = i
 exp(-i)
 
+// signal processing
+
+import breeze.signal._
 
 
 

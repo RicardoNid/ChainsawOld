@@ -31,8 +31,8 @@ class ViterbiHardTest extends AnyFlatSpec {
     assert(golden.reverse.mkString("") == dutResults.mkString(""))
   }
 
-  it should "synth correctly" in{
-  VivadoSynth(ViterbiHard(trellis, 100, temp))
+  it should "synth correctly" in {
+    VivadoSynth(ViterbiHard(trellis, 100, temp))
   }
 
 }
