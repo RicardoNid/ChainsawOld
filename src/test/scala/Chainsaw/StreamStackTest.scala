@@ -40,7 +40,7 @@ class StreamStackTest extends AnyFunSuite {
 
       def pushBubble(): Unit = {
         io.push.valid #= false
-        io.push.payload #= DSPRand.nextInt(16)
+        io.push.payload #= ChainsawRand.nextInt(16)
       }
 
       def pop() = {

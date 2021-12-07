@@ -62,8 +62,8 @@ object SCMSim {
   def main(args: Array[String]): Unit = {
     ChainsawDebug = true
     import Chainsaw.tobeTransplanted.AOperations.getPOF
-    (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.CSD))
-    (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.MAG))
-    (0 until 5).foreach(_ => randomSim(getPOF(DSPRand.nextInt(1023)), SCMArch.MULT))
+    (0 until 5).foreach(_ => randomSim(getPOF(ChainsawRand.nextInt(1023)), SCMArch.CSD))
+    (0 until 5).foreach(_ => randomSim(getPOF(ChainsawRand.nextInt(1023)), SCMArch.MAG))
+    (0 until 5).foreach(_ => randomSim(getPOF(ChainsawRand.nextInt(1023)), SCMArch.MULT))
   }
 }

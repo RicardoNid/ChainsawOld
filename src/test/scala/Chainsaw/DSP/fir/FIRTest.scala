@@ -15,10 +15,10 @@ class FIRTest extends AnyFlatSpec {
 
   val testSize = 120
   val coeffWidth: BitCount = 18 bits
-  val coeffs: Seq[Int] = (0 until 120).map(_ => DSPRand.nextInt(1 << 12))
+  val coeffs: Seq[Int] = (0 until 120).map(_ => ChainsawRand.nextInt(1 << 12))
 
   // preparing testcase and golden
-  val firTestCase: Seq[BigInt] = Seq.fill(testSize)(BigInt(0)) ++ (0 until 100).map(_ => DSPRand.nextBigInt(12))
+  val firTestCase: Seq[BigInt] = Seq.fill(testSize)(BigInt(0)) ++ (0 until 100).map(_ => ChainsawRand.nextBigInt(12))
   val firGolden: Array[Int] = eng.feval("filter",
     coeffs.reverse.map(_.toDouble).toArray, Array(1),
     firTestCase.map(_.toDouble).toArray)

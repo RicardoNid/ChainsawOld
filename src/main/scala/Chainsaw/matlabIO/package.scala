@@ -7,18 +7,10 @@ package Chainsaw
 
 import com.mathworks.engine.MatlabEngine
 import com.mathworks.matlab.types
+import spinal.core._
 
 import java.nio.file.Paths
 import scala.io.Source
-
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
 
 package object matlabIO {
 
@@ -34,12 +26,6 @@ package object matlabIO {
   type MStruct = types.Struct
   type MHandleObject = types.HandleObject
   type MCellStr = types.CellStr
-
-  object MComplex {
-    def apply(real: Double, imag: Double): MComplex = new MComplex(real, imag)
-
-    def apply(real: Double): MComplex = new MComplex(real, 0)
-  }
 
   def writeFile(fileName: String, content: String) = {
     val filepath = Paths.get(matlabWorkingSpace.toString, fileName)
@@ -113,55 +99,8 @@ package object matlabIO {
     def asMatlab = "[" + array.map(_.mkString(", ")).mkString("; ") + "]"
   }
 
-  /** Implement some basic operations of complex number
-   *
-   * @param complex
-   */
-  implicit class ComplexUtil(complex: MComplex) {
-    def *(that: MComplex): MComplex = new MComplex(
-      complex.real * that.real - complex.imag * that.imag,
-      complex.real * that.imag + complex.imag * that.real)
-
-    def *(that: Double): MComplex = complex * new MComplex(that, 0)
-
-    def +(that: MComplex) = new MComplex(
-      complex.real + that.real,
-      complex.imag + that.imag
-    )
-
-    def -(that: MComplex) = new MComplex(
-      complex.real - that.real,
-      complex.imag - that.imag
-    )
-
-    def /(that: Double) = new MComplex(
-      complex.real / that,
-      complex.imag / that
-    )
-
-    def formatted(fmtstr: String) = complex.real.formatted(fmtstr) + " + " + complex.imag.formatted(fmtstr) + "i"
-
-    def sameAs(that: MComplex, epsilon: Double = 1.0) = {
-      (complex.real - that.real).abs < epsilon &&
-        (complex.imag - that.imag).abs < epsilon
-    }
-
-    override def equals(obj: Any) = {
-      obj match {
-        case complex: MComplex => this.sameAs(complex)
-        case _ => false
-      }
-    }
-
-    def toString(length: Int) =
-      complex.real.toString.padTo(length, ' ').take(length) + " + " +
-        (complex.imag.toString).padTo(length, ' ').take(length) + "i"
-
-    def conj = new MComplex(complex.real, -complex.imag)
-
-    def modulus = scala.math.sqrt(complex.real * complex.real + complex.imag * complex.imag)
-
-    def unary_- = new MComplex(-complex.real, -complex.imag)
+  implicit class MComplexUtil(complex: MComplex) {
+    def toBComplex = breeze.math.Complex(complex.real, complex.imag)
   }
 
   implicit class EngUtil(eng: MatlabEngine) {

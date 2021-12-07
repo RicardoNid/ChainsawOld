@@ -106,7 +106,7 @@ object ComplexNumber {
 }
 
 object CN {
-  def apply(complex: MComplex, dataType: HardType[SFix]): ComplexNumber = {
+  def apply(complex: BComplex, dataType: HardType[SFix]): ComplexNumber = {
     def toSF(value:Double) = SF(value, dataType().maxExp exp, dataType().minExp exp)
     ComplexNumber(toSF(complex.real), toSF(complex.imag))
   }

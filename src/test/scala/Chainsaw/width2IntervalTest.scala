@@ -16,13 +16,13 @@ class width2IntervalTest extends AnyFunSuite {
   test("testWidths2Interval2Widths"){
     val temp = QWidths(1,-3)
     def reversible(qWidths: QWidths) = {
-      val info = width2Interval(qWidths, DSPRand.nextBoolean())
+      val info = width2Interval(qWidths, ChainsawRand.nextBoolean())
       val recovered = interval2Width(info, qWidths.minExp exp)
       assert(recovered.minExp == qWidths.minExp)
       assert(recovered.maxExp == qWidths.maxExp)
     }
     (0 until 10000)
-      .map(_ => QWidths(DSPRand.nextInt(24), -DSPRand.nextInt(25)))
+      .map(_ => QWidths(ChainsawRand.nextInt(24), -ChainsawRand.nextInt(25)))
       .foreach(reversible)
   }
 }

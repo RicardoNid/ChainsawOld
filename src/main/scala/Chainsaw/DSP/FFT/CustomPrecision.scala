@@ -29,5 +29,5 @@ trait CustomPrecision {
 
   def toCoeff: BigDecimal => SFix = SF(_, 1 exp, -(coeffWidth - 2) exp)
 
-  def toComplexCoeff(complex: MComplex): ComplexNumber = ComplexNumber(toCoeff(complex.real), toCoeff(complex.imag))
+  def toComplexCoeff(complex: BComplex): ComplexNumber = ComplexNumber(toCoeff(complex.real), toCoeff(complex.imag))
 }

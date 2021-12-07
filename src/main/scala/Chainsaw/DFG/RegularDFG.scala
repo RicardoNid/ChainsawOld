@@ -271,7 +271,7 @@ object RegularDFG {
 // TODO 2: Try to do test
 import org.scalatest.flatspec.AnyFlatSpec
 import Chainsaw.matlabIO._
-import Chainsaw.DSPRand
+import Chainsaw.ChainsawRand
 import Chainsaw.RandomUtil
 import Chainsaw.dspTest._
 import spinal.core._

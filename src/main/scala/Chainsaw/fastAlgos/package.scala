@@ -8,20 +8,27 @@ import breeze.signal._
 
 package object fastAlgos {
 
-  implicit class dvUtil(dv: DenseVector[Complex]) {
+  // TODO: generic
+  implicit class dvComplexUtil(dv: DenseVector[BComplex]) {
 
     def reverse = new DenseVector(dv.toArray.reverse)
 
-    def rotateLeft(i: Int) = {
+    def rotateLeft(i: Int): DenseVector[BComplex] = {
       val (l, r) = dv.toArray.splitAt(i)
       new DenseVector(r ++ l)
     }
 
-    def rotateRight(i: Int) = {
+    def rotateRight(i: Int): DenseVector[BComplex] = {
       val (l, r) = dv.toArray.splitAt(dv.length - i)
       new DenseVector(r ++ l)
     }
 
+    def ~= (that: DenseVector[BComplex]) = {
+      val epsilon = 1E-4
+      abs(dv - that).forall(_ < epsilon)
+    }
+
+    def toMatlab = dv.toArray.map(_.toMComplex)
   }
 
 }

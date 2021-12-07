@@ -63,14 +63,14 @@ class CORDICSim(cordicConfig: CordicConfig) extends CORDICDUT(cordicConfig) with
 
 class testCORDIC extends AnyFunSuite {
   private def randomCase(cordicConfig: CordicConfig) = {
-    val theta = (DSPRand.nextDouble() * 0.5 - 0.25) * Pi
-    val unit = DSPRand.nextDouble() * 2 - 1
+    val theta = (ChainsawRand.nextDouble() * 0.5 - 0.25) * Pi
+    val unit = ChainsawRand.nextDouble() * 2 - 1
     cordicConfig.algebricMode match {
       case CIRCULAR =>
         cordicConfig.rotationMode match {
           case ROTATION => CordicSimData(1.0, 0.0, theta)
           case VECTORING =>
-            val x = DSPRand.nextDouble()
+            val x = ChainsawRand.nextDouble()
             val y = unit * 0.707 * x
             CordicSimData(x, y, 0.0)
         }
@@ -78,7 +78,7 @@ class testCORDIC extends AnyFunSuite {
         cordicConfig.rotationMode match {
           case ROTATION => CordicSimData(1.0, 0.0, theta)
           case VECTORING =>
-            val x = DSPRand.nextDouble() * 2
+            val x = ChainsawRand.nextDouble() * 2
             val y = unit * x * 0.8
             CordicSimData(x, y, 0.0)
         }
@@ -86,7 +86,7 @@ class testCORDIC extends AnyFunSuite {
         cordicConfig.rotationMode match {
           case ROTATION => CordicSimData(1.0, 0.0, theta)
           case VECTORING =>
-            val x = DSPRand.nextDouble()
+            val x = ChainsawRand.nextDouble()
             val y = unit * x * 0.707
             CordicSimData(x, y, 0.0)
         }

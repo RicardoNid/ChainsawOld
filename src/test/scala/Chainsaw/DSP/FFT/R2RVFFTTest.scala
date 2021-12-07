@@ -25,7 +25,7 @@ class R2RVFFTTest extends AnyFlatSpec with Matchers {
     dataIn.valid #= false
     clockDomain.waitSampling()
 
-    val testCase = (0 until testSize).map(_ => (DSPRand.nextDouble() - 0.5) * 2)
+    val testCase = (0 until testSize).map(_ => (ChainsawRand.nextDouble() - 0.5) * 2)
     dataIn.payload.zip(testCase).foreach { case (fix, d) => fix #= d }
     dataIn.valid #= true
     clockDomain.waitSampling()
@@ -35,7 +35,7 @@ class R2RVFFTTest extends AnyFlatSpec with Matchers {
 
     println(s"latency = ${dut.latency}")
     //    println(testCase.mkString(" "))
-    println(Refs.FFT(testCase.map(MComplex(_)).toArray).take(testSize / 2)
+    println(Refs.FFT(testCase.map(BComplex(_)).toArray).take(testSize / 2)
       .mkString(" "))
     // FIXME: UNACCESSIBLE SIGNAL : (toplevel/dataOut_payload_0_real : out SInt[16 bits]) isn't accessible during the simulation.
     //    val dutResult = dataOut.payload.map(_.toComplex)

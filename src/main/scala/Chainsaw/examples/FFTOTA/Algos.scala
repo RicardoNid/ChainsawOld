@@ -43,21 +43,21 @@ object Algos {
 
   def CooleyTukeyCoeffs(N1: Int, N2: Int) = Seq.tabulate(N2, N1)((n2, k1) => n2 * k1).flatten
 
-  def WNnk(N: Int, nk: Int): MComplex = {
-    val ret = Try(eng.feval[MComplex]("exp", new MComplex(0, -2 * Pi * nk / N)))
+  def WNnk(N: Int, nk: Int): BComplex = {
+    val ret = Try(eng.feval[BComplex]("exp", new BComplex(0, -2 * Pi * nk / N)))
     ret match {
-      case Failure(exception) => new MComplex(eng.feval[Double]("exp", new MComplex(0, -2 * Pi * nk / N)), 0)
+      case Failure(exception) => new BComplex(eng.feval[Double]("exp", new BComplex(0, -2 * Pi * nk / N)), 0)
       case Success(value) => value
     }
   }
 
-  def DFT(dataIn: Seq[MComplex]) = DSP.FFT.Refs.FFT(dataIn.toArray)
+  def DFT(dataIn: Seq[BComplex]) = DSP.FFT.Refs.FFT(dataIn.toArray)
 
   def main(args: Array[String]): Unit = {
-    val mult = (dataIn: Seq[MComplex], N1: Int, N2: Int) => dataIn.zip(CooleyTukeyCoeffs(N1, N2).map(WNnk(N1 * N2, _))).map { case (data, coeff) => data * coeff }
+    val mult = (dataIn: Seq[BComplex], N1: Int, N2: Int) => dataIn.zip(CooleyTukeyCoeffs(N1, N2).map(WNnk(N1 * N2, _))).map { case (data, coeff) => data * coeff }
     val ctfft = CooleyTukeyBuilder(Seq(2, 2, 2), DFT, mult)
 
-    val testCase: Seq[MComplex] = (0 until 8).map(_ => DSPRand.nextComplex(-1, 1))
+    val testCase: Seq[BComplex] = (0 until 8).map(_ => ChainsawRand.nextComplex(-1, 1))
     println(ctfft(testCase).mkString(" "))
     println(DSP.FFT.Refs.FFT(testCase.toArray).mkString(" "))
   }

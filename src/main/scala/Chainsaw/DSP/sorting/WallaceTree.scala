@@ -88,7 +88,7 @@ case class WallaceAdder(n: Int, width: Int) extends Component {
 object WallaceTree {
   def main(args: Array[String]): Unit = {
     SimConfig.withWave.compile(WallaceAdder(6, 7)).doSim { dut =>
-      val testCases = (0 until 6).map(_ => DSPRand.nextInt(1 << 7))
+      val testCases = (0 until 6).map(_ => ChainsawRand.nextInt(1 << 7))
       dut.dataIn.zip(testCases).foreach { case (port, data) => port #= data }
       sleep(1)
       assert(dut.dataOut.toInt == testCases.sum)

@@ -7,7 +7,7 @@ import spinal.core._
 object ROMMUXExample {
 
   def main(args: Array[String]): Unit = {
-    def data: Seq[UInt] = (0 until 128).map(_ => DSPRand.nextBigInt(12)).map(U(_, 12 bits))
+    def data: Seq[UInt] = (0 until 128).map(_ => ChainsawRand.nextBigInt(12)).map(U(_, 12 bits))
 
     VivadoSynth(new Component {
 

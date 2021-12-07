@@ -11,14 +11,7 @@ import scala.math.Pi
 package object FFT {
   val eng = AsyncEng.get()
 
-  def WNnk(N: Int, nk: Int): MComplex = {
-    val ret = Try(eng.feval[MComplex]("exp", new MComplex(0, -2 * Pi * nk / N)))
-    ret match {
-      case Failure(exception) => new MComplex(eng.feval[Double]("exp", new MComplex(0, -2 * Pi * nk / N)), 0)
-      case Success(value) => value
-    }
-  }
-  def WNnk(N: Int, n: Int, k: Int): MComplex = WNnk(N, n * k)
+  def WNnk(N: Int, nk: Int): BComplex = breeze.numerics.exp(BComplex(0, -2 * Pi * nk / N))
 
   def isPowR(input: Int, radix: Int): Boolean = if (input == radix) true else isPowR(input / radix, radix)
 
@@ -33,6 +26,7 @@ package object FFT {
     def delayed(signal: ComplexNumber) = Delay(signal, latency)
 
     def toFixedCoeff: Double => SFix = SF(_, coeffType().maxExp exp, coeffType().minExp exp)
+
     // multiply (1 - j) / sqrt(2)
     def multiply1minusj(signal: ComplexNumber) = {
       val A = signal.real + signal.imag

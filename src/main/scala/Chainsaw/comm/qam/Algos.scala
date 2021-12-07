@@ -1,11 +1,12 @@
 package Chainsaw.comm.qam
 
+import Chainsaw._
 import Chainsaw.matlabIO._
 import scala.collection.mutable.ArrayBuffer
 
 object Algos {
 
-  def qamdemod(input: MComplex, bitsAllocated: Int) = {
+  def qamdemod(input: BComplex, bitsAllocated: Int) = {
 
     def fold(value: Double, times: Int) = {
       val folded = ArrayBuffer[Double]()

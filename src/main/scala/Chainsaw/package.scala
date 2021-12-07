@@ -14,6 +14,9 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math._
 import scala.sys.process.Process
 import scala.util.{Failure, Random, Success, Try}
+import breeze.linalg.DenseVector
+
+import scala.reflect.ClassTag
 
 package object Chainsaw extends RealFactory {
 
@@ -223,12 +226,12 @@ package object Chainsaw extends RealFactory {
   /** Simulation methods for complex number, based on SFix
    */
   implicit class SimComplexPimper(cn: ComplexNumber) {
-    def #=(value: MComplex): Unit = {
+    def #=(value: BComplex): Unit = {
       cn.real #= value.real
       cn.imag #= value.imag
     }
 
-    def toComplex = new MComplex(cn.real.toDouble, cn.imag.toDouble)
+    def toComplex = new BComplex(cn.real.toDouble, cn.imag.toDouble)
   }
 
   /*
@@ -288,6 +291,8 @@ package object Chainsaw extends RealFactory {
     def equals(that: Seq[T]) = seq.zip(that).forall { case (t, t1) => t == t1 }
 
     def approximatelyEquals(that: Seq[T], approEquals: (T, T) => Boolean) = seq.zip(that).forall { case (t, t1) => approEquals(t, t1) }
+
+    def asDv(implicit tag: ClassTag[T]) = new DenseVector(seq.toArray)
   }
   //  implicit def Seq2Vec[T <: Data](seq: Seq[T]): Vec[T] = Vec(seq)
 
@@ -309,19 +314,27 @@ package object Chainsaw extends RealFactory {
   }
 
   // use this val as Generator to keep the behavior consistency through the project
-  val DSPRand = new Random(42) // using this as global random gen, with a fixed seed
+  val ChainsawRand = new Random(42) // using this as global random gen, with a fixed seed
+
+  import breeze.stats.distributions.Rand
 
   /** Utils for Random to generate more different types of stimulus
    */
   implicit class RandomUtil(rand: Random) {
 
-    def nextComplex(min: Double = 0, max: Double = 1) = new MComplex(
+    def nextComplex(min: Double = 0, max: Double = 1): BComplex = new BComplex(
       rand.nextDouble() * (max - min) + min,
       rand.nextDouble() * (max - min) + min)
 
     def nextBigInt(bitLength: Int) = BigInt(rand.nextString(bitLength).map(_ % 2).mkString(""), 2)
 
     def nextBinaryString(bitLength: Int): String = rand.nextString(bitLength).map(_ % 2).mkString("")
+
+    def nextComplexDV(size: Int, dist: Rand[Double] = Rand.uniform): DenseVector[BComplex] = {
+      val a = DenseVector.rand[Double](size, dist)
+      val b = DenseVector.rand[Double](size, dist)
+      new DenseVector(a.toArray.zip(b.toArray).map { case (real, imag) => BComplex(real, imag) })
+    }
   }
 
   /*
@@ -468,5 +481,46 @@ package object Chainsaw extends RealFactory {
   def lcm(a: Int, b: Int): Int = a * b / gcd(a, b)
 
   object DFGTest extends Tag("DFGTest")
+
+  type BComplex = breeze.math.Complex
+
+  object BComplex {
+    def apply(real: Double, imag: Double): BComplex = new BComplex(real, imag)
+
+    def apply(real: Double): BComplex = new BComplex(real, 0)
+  }
+
+  /** Implement some basic operations of complex number
+   *
+   * @param complex
+   */
+  implicit class ComplexUtil(complex: BComplex) {
+
+    def toMComplex = new MComplex(complex.real, complex.imag)
+
+    def formatted(fmtstr: String) = complex.real.formatted(fmtstr) + " + " + complex.imag.formatted(fmtstr) + "i"
+
+    def sameAs(that: BComplex, epsilon: Double = 1.0) = {
+      (complex.real - that.real).abs < epsilon &&
+        (complex.imag - that.imag).abs < epsilon
+    }
+
+    override def equals(obj: Any) = {
+      obj match {
+        case complex: BComplex => this.sameAs(complex)
+        case _ => false
+      }
+    }
+
+    def toString(length: Int) =
+      complex.real.toString.padTo(length, ' ').take(length) + " + " +
+        (complex.imag.toString).padTo(length, ' ').take(length) + "i"
+
+    def modulus = scala.math.sqrt(complex.real * complex.real + complex.imag * complex.imag)
+
+    def unary_- = new BComplex(-complex.real, -complex.imag)
+  }
+
+
 }
 

@@ -36,33 +36,33 @@ package object dspTest {
       case bool: Bool => bool #= data.asInstanceOf[Boolean]
       case bitVector: BitVector => bitVector #= data.asInstanceOf[BigInt]
       case sfix: SFix => sfix #= data.asInstanceOf[Double]
-      case complexNumber: ComplexNumber => complexNumber #= data.asInstanceOf[MComplex]
+      case complexNumber: ComplexNumber => complexNumber #= data.asInstanceOf[BComplex]
       case vec: Vec[_] =>
         vec.head match {
           case bool: Bool => vec.asInstanceOf[Vec[Bool]].zip(data.asInstanceOf[Seq[Boolean]]).foreach { case (port, int) => port #= int }
           case bitVector: BitVector => vec.asInstanceOf[Vec[BitVector]].zip(data.asInstanceOf[Seq[BigInt]]).foreach { case (port, int) => port #= int }
           case sfix: SFix => vec.asInstanceOf[Vec[SFix]].zip(data.asInstanceOf[Seq[Double]]).foreach { case (port, int) => port #= int }
-          case complexNumber: ComplexNumber => vec.asInstanceOf[Vec[ComplexNumber]].zip(data.asInstanceOf[Seq[MComplex]]).foreach { case (port, int) => port #= int }
+          case complexNumber: ComplexNumber => vec.asInstanceOf[Vec[ComplexNumber]].zip(data.asInstanceOf[Seq[BComplex]]).foreach { case (port, int) => port #= int }
         }
       case fragment: Fragment[_] =>
         fragment.fragment match {
           case bool: Bool => bool #= data.asInstanceOf[Boolean]
           case bitVector: BitVector => bitVector #= data.asInstanceOf[BigInt]
           case sfix: SFix => sfix #= data.asInstanceOf[Double]
-          case complexNumber: ComplexNumber => complexNumber #= data.asInstanceOf[MComplex]
+          case complexNumber: ComplexNumber => complexNumber #= data.asInstanceOf[BComplex]
           case vec: Vec[_] =>
             vec.head match {
               case bool: Bool => vec.asInstanceOf[Vec[Bool]].zip(data.asInstanceOf[Seq[Boolean]]).foreach { case (port, int) => port #= int }
               case bitVector: BitVector => vec.asInstanceOf[Vec[BitVector]].zip(data.asInstanceOf[Seq[BigInt]]).foreach { case (port, int) => port #= int }
               case sfix: SFix => vec.asInstanceOf[Vec[SFix]].zip(data.asInstanceOf[Seq[Double]]).foreach { case (port, int) => port #= int }
-              case complexNumber: ComplexNumber => vec.asInstanceOf[Vec[ComplexNumber]].zip(data.asInstanceOf[Seq[MComplex]]).foreach { case (port, int) => port #= int }
+              case complexNumber: ComplexNumber => vec.asInstanceOf[Vec[ComplexNumber]].zip(data.asInstanceOf[Seq[BComplex]]).foreach { case (port, int) => port #= int }
             }
         }
     }
   }
 
   def pokeZero[D](port: Data): Unit = {
-    val complex0 = MComplex(0, 0)
+    val complex0 = BComplex(0, 0)
     port match {
       //      case bool: Bool => bool #= false
       case bitVector: BitVector => bitVector #= 0

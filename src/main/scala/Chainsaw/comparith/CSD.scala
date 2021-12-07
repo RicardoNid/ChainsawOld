@@ -1,6 +1,6 @@
 package Chainsaw.comparith
 
-import Chainsaw.DSPRand
+import Chainsaw.ChainsawRand
 
 import scala.annotation.tailrec
 import scala.math.pow
@@ -82,8 +82,8 @@ object CSD {
       assert(verifyCSD(encode(testCase), testCase), s"value: $testCase, your coding: ${encode(testCase)}")
 
     println(s"CSD example: 31 is encoded as ${optimalCSD(31)}")
-    (0 until 10000).foreach(_ => testCSD(DSPRand.nextInt(10000), optimalCSD))
-    (0 until 10000).foreach(_ => testCSD(DSPRand.nextInt(10000), classicCSD))
+    (0 until 10000).foreach(_ => testCSD(ChainsawRand.nextInt(10000), optimalCSD))
+    (0 until 10000).foreach(_ => testCSD(ChainsawRand.nextInt(10000), classicCSD))
     println("CSD test passed")
 
   }

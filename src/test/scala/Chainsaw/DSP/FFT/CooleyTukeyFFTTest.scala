@@ -26,12 +26,12 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
   def testCooleyTukeyFFTHardware(testLength: Int, factors: Seq[Int], inverse: Boolean = false, epsilon: Double = 0.1, realSequence: Boolean = false) = {
     SimConfig.withWave.compile(CooleyTukeyFFTStream(N = testLength, factors = factors, inverse = inverse, dataType, coeffType)).doSim { dut =>
 
-      val testComplex: Array[MComplex] = if (!realSequence) (0 until testLength).map(_ => DSPRand.nextComplex(-1.0, 1.0)).toArray
-      else if (realSequence && !inverse) (0 until testLength).map(_ => (DSPRand.nextDouble() - 0.5) * 2).map(new MComplex(_, 0.0)).toArray
+      val testComplex: Array[BComplex] = if (!realSequence) (0 until testLength).map(_ => ChainsawRand.nextComplex(-1.0, 1.0)).toArray
+      else if (realSequence && !inverse) (0 until testLength).map(_ => (ChainsawRand.nextDouble() - 0.5) * 2).map(new BComplex(_, 0.0)).toArray
       else {
-        val zero = new MComplex(0.0, 0.0)
-        val valid = (1 until testLength / 2).map(_ => DSPRand.nextComplex(-1.0, 1.0))
-        val conjed = valid.map(_.conj).reverse
+        val zero = new BComplex(0.0, 0.0)
+        val valid = (1 until testLength / 2).map(_ => ChainsawRand.nextComplex(-1.0, 1.0))
+        val conjed = valid.map(_.conjugate).reverse
         (zero +: valid :+ zero) ++ conjed
       }.toArray
 
@@ -41,11 +41,11 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
       dataOut.ready #= true
       clockDomain.waitSampling()
 
-      val dutResult = ArrayBuffer[MComplex]()
+      val dutResult = ArrayBuffer[BComplex]()
       val monitor = fork {
         while (true) {
           if (dataOut.valid.toBoolean) {
-            dutResult ++= dataOut.payload.map(complex => new MComplex(complex.real.toDouble, complex.imag.toDouble))
+            dutResult ++= dataOut.payload.map(complex => new BComplex(complex.real.toDouble, complex.imag.toDouble))
           }
           clockDomain.waitSampling()
         }
@@ -80,7 +80,7 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
       factors1 = factors1, factors2 = factors2, inverse = inverse,
       dataType, coeffType)).doSim { dut =>
 
-      val testBase = (0 until testLength).map(i => new MComplex(DSPRand.nextDouble() - 0.5, DSPRand.nextDouble() - 0.5)).toArray
+      val testBase = (0 until testLength).map(i => new BComplex(ChainsawRand.nextDouble() - 0.5, ChainsawRand.nextDouble() - 0.5)).toArray
       val testComplex = testBase
 
       import dut.{clockDomain, dataIn, dataOut}
@@ -89,11 +89,11 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
       dataOut.ready #= true
       clockDomain.waitSampling()
 
-      val dutResult = ArrayBuffer[MComplex]()
+      val dutResult = ArrayBuffer[BComplex]()
       val monitor = fork {
         while (true) {
           if (dataOut.valid.toBoolean) {
-            dutResult ++= dataOut.payload.map(complex => new MComplex(complex.real.toDouble, complex.imag.toDouble))
+            dutResult ++= dataOut.payload.map(complex => new BComplex(complex.real.toDouble, complex.imag.toDouble))
           }
           clockDomain.waitSampling()
         }

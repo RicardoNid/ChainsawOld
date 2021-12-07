@@ -26,7 +26,7 @@ class EncodersTest extends AnyFlatSpec {
 
   def synthConvEncoder(dut: ConvConfig => Component, convConfig: ConvConfig): VivadoReport = VivadoSynth(dut(convConfig))
 
-  val testCases: Seq[BigInt] = (0 until 100).map(_ => DSPRand.nextBigInt(1))
+  val testCases: Seq[BigInt] = (0 until 100).map(_ => ChainsawRand.nextBigInt(1))
 
   val conv802_11: ConvConfig = ConvConfig(Array(171, 133), radix = 8)
   val convMatlab: ConvConfig = ConvConfig(Array(Array(23, 35, 0), Array(0, 5, 13)), radix = 8)
