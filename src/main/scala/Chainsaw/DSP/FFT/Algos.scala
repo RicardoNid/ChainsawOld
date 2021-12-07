@@ -6,9 +6,26 @@ import cc.redberry.rings.primes._
 import cc.redberry.rings.scaladsl._
 import spinal.core._
 
+import breeze.linalg._
+import breeze.math._
+import breeze.numerics._
+import breeze.numerics.constants._
+import breeze.signal._
+
 import scala.collection.mutable.ArrayBuffer
 
 object Algos extends App {
+
+  def omega(index:Int)(implicit N:Int) = exp(-i * 2 * Pi * index / N ) // \omega ^{ik}
+  def beta(index:Int)(implicit N:Int) = exp(-i  * Pi * index / N ) // \omega ^{ik}
+
+  def bluesteinChirp(input:DenseVector[Complex]) = {
+    implicit val N = input.length
+    val data: DenseVector[Complex] = input *:* DenseVector.tabulate(N)(i => beta(-i * i)) // pointwise product
+    val coeff: DenseVector[Complex] = DenseVector.tabulate(N)(i => beta(i * i))
+
+//    convolved *:* DenseVector.tabulate(N)(k => beta(-k*k))
+  }
 
   // build radix-r Cooley-Tukey FFT by the "block" and "parallel line" given
   def cooleyTukeyBuilder[T](input: Seq[T], factors: Seq[Int],
