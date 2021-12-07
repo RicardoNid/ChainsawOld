@@ -9,6 +9,8 @@ import scala.language.postfixOps
 import scala.math.{abs, pow}
 import Operators._
 
+import scala.collection.mutable.ArrayBuffer
+
 // Architecutre selections
 object FirArch extends Enumeration {
   type FirArch = Value
@@ -206,7 +208,7 @@ class ButterflyGen[THard <: Data, TSoft](ctButterfly: ButterflyNode[THard], gsBu
       else null
     val parallelizedDFG = dfg.parallelized(parallelism, butterflyGroups)
 
-    if(parallelism < 0) DFGTestUtil.verifyFolding[UInt](dfg.asInstanceOf[DFGGraph[UInt]], butterflyGroups.asInstanceOf[Seq[Seq[DSPNode[UInt]]]], UInt(12 bits), "testFoldedButterfly")
+    if (parallelism < 0) DFGTestUtil.verifyFolding[UInt](dfg.asInstanceOf[DFGGraph[UInt]], butterflyGroups.asInstanceOf[Seq[Seq[DSPNode[UInt]]]], UInt(12 bits), "testFoldedButterfly")
 
     logger.debug(s"butterfly dfg:\n$dfg")
     parallelizedDFG
@@ -226,45 +228,56 @@ object ButterflyGen {
 
 // LQX: implement this
 class BinaryTreeGen[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFGGen[T] {
+  /**
+   * @return the binaryTree graph we build
+   */
   override def getGraph: DFGGraph[T] = {
     val dfg = DFGGraph[T](s"binaryTree_using_${binaryNode.name}")
+    logger.info(s"start generating binaryTree graph of size $size")
+    if(!isPow2(size + 1)) logger.info("this binaryTree is not a full-binaryTree")
 
-    // define the interlayer op for building binaryTree
-    def interLayerOp(lastLayerNodes: Seq[BinaryNode[T]], currentLayerNodes: Seq[BinaryNode[T]], level: Int): Unit = {
-      require(lastLayerNodes.size == pow(2, level).toInt, "the number of lastlayernodes is mismatch the level")
+    /**the inter-layer op for building binaryTree
+     * @param upLayerNodes it is the level layer nodes(seq) for connection when we connecting level layer and level +1 layer
+     * @param downLayerNodes it is the level + 1 layer nodes(seq) for connection when we connecting level layer and level +1 layer
+     * @param level the level of connection which means we connecting the level layer and level + 1 layer
+     */
+    def interLayerOp(upLayerNodes: Seq[BinaryNode[T]], downLayerNodes: Seq[BinaryNode[T]], level: Int): Unit = {
+      require(upLayerNodes.size == pow(2, level).toInt, "the number of uplayernodes is mismatch the level")
 
-      val groupCurrentNodes = currentLayerNodes.filter(node => currentLayerNodes.indexOf(node) % 2 == 0)
-        .zipAll(currentLayerNodes.filter(node => currentLayerNodes.indexOf(node) % 2 == 1), null, null)
-      groupCurrentNodes.zip(lastLayerNodes).foreach { case ((cn1, cn2), ln) =>
-        Seq(cn1, cn2).filter(_.isInstanceOf[BinaryNode[T]]).zipWithIndex.foreach { case (cn, id) => dfg.addEdge(cn(0), ln(id), 0) }
+      // pre-process for downLayerNodes
+      val evenIndexDownNodes = downLayerNodes.zipWithIndex.filter(_._2 % 2 == 0).map(_._1)
+      val groupDownLayerNodes = evenIndexDownNodes.zipAll(downLayerNodes.diff(evenIndexDownNodes), null, null)
+      // connecting nodes
+      groupDownLayerNodes.zip(upLayerNodes).foreach { case ((cn1, cn2), ln) =>
+        Seq(cn1, cn2).filterNot(_ == null).zipWithIndex.foreach { case (cn, id) =>
+          dfg.addEdge(cn(0), ln(id), 0) }
       }
     }
 
     // according to the size ; build the nodes and add it to dfg
     val treeNodes = Seq.tabulate(size)(i => binaryNode.copy(s"${binaryNode.name}${i + 1}"))
     treeNodes.foreach(dfg.addVertex)
-
     // use the op above to construct graph
     val levelCount = log2Up(size + 1) - 1
     (0 until levelCount).foreach { level =>
 
       // decide the layer-nodes
       val indexCond = pow(2, level + 2).toInt - 1 >= size
-      val lastLayerNodes = treeNodes.slice(pow(2, level).toInt - 1, pow(2, level + 1).toInt - 1)
-      val currentLayerNodes = indexCond match {
+      val upLayerNodes = treeNodes.slice(pow(2, level).toInt - 1, pow(2, level + 1).toInt - 1)
+      val downLayerNodes = indexCond match {
         case true => treeNodes.slice(pow(2, level + 1).toInt - 1, size)
         case false => treeNodes.slice(pow(2, level + 1).toInt - 1, pow(2, level + 2).toInt - 1)
       }
 
-      interLayerOp(lastLayerNodes, currentLayerNodes, level)
+      interLayerOp(upLayerNodes, downLayerNodes, level)
       // set the IO port
       if (level == 0) {
-        dfg.setOutput(lastLayerNodes(0), 0)
+        dfg.setOutput(upLayerNodes(0), 0)
       }
       if (level == levelCount - 1) {
-        val paddingNodes = currentLayerNodes ++ Seq.fill(pow(2, level + 1).toInt - currentLayerNodes.size)(null)
+        val paddingNodes = downLayerNodes ++ Seq.fill(pow(2, level + 1).toInt - downLayerNodes.size)(null)
 
-        val layerMap = lastLayerNodes.zipWithIndex.map { case (node, id) => node -> paddingNodes.slice(2 * id, 2 * id + 2) }
+        val layerMap = upLayerNodes.zipWithIndex.map { case (node, id) => node -> paddingNodes.slice(2 * id, 2 * id + 2) }
         layerMap.foreach { case (ln, pns) =>
           pns.foreach(pn => if (pn == null) dfg.setInput(ln, dfg.incomingEdgesOf(ln).size)
           else (0 until 2).foreach(i => dfg.setInput(pn, i)))

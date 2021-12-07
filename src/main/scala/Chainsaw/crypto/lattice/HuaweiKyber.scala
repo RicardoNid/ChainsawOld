@@ -146,13 +146,18 @@ object runKyber {
     implicit def long2UInt: (Long, BitCount) => UInt = (value: Long, _: BitCount) => U(value, 12 bits) // TODO:
 
     // gen + sim + synth + impl
-    globalImplPolicy = ImplPolicy(useRegInit = false, useSubmodule = true)
+    globalImplPolicy = synthImplPolicy
 
-    val nttDFG_folded_8: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, -8).getGraph
-    val inputWidths = Seq.fill(128)(12 bits)
+    //    val nttDFG_folded_8: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, -8).getGraph
+    //    val nttDFG_folded_8: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, -128).getGraph
+    //    val inputWidths = Seq.fill(128)(12 bits)
+    val inputWidths = Seq.fill(32)(12 bits)
+    val fftExample = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 32, DIF, inverse = false, coeffGen, 12 bits, -4).getGraph
+    println(fftExample)
+    synthDFG(fftExample, inputWidths, forTiming = true)
 
     //    genDFG(nttDFG_folded_8, inputWidths)
-    synthDFG(nttDFG_folded_8, inputWidths, forTiming = false)
+    //    synthDFG(nttDFG_folded_8, inputWidths, forTiming = false)
     //
     //    val nttDFG: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, size = 128, DIF, inverse = false, coeffGen, 12 bits, 1).getGraph
     //    synthDFG(nttDFG, inputWidths, forTiming = false)

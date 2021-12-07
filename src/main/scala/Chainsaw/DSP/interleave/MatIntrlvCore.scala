@@ -7,27 +7,42 @@ import spinal.lib.fsm._
 
 case class MatIntrlvCore[T <: Data](row: Int, col: Int, dataType: HardType[T]) extends Component {
 
-  val dataIn = slave Stream Vec(dataType(), col)
-  val dataOut = master Stream Vec(dataType(), row)
+  logger.info(s"implementing a $row * $col MatIntrlv of ${dataType.getBitsWidth}-bits-width elements")
+  val dataIn: Stream[Vec[T]] = slave Stream Vec(dataType(), col)
+  val dataOut: Stream[Vec[T]] = master Stream Vec(dataType(), row)
 
   val ramCount, ramDepth = row max col
-  val addrWidth = log2Up(ramDepth)
+  val addrWidth: Int = log2Up(ramDepth)
 
   // ping-pong was implemented by using different address range of the same dual-port ram
-  val rams = Seq.fill(ramCount)(Mem(dataType, 1 << (addrWidth + 1)))
+  val rams: Seq[Mem[T]] = Seq.fill(ramCount)(Mem(dataType, 1 << (addrWidth + 1)))
 
   // 0 for ping(lower addr), 1 for pong(higher addr)
-  val readPointer = RegInit(False)
-  val writePointer = RegInit(False)
+  val readPointer: Bool = RegInit(False)
+  val writePointer: Bool = RegInit(False)
 
-  val counterIn = Counter(row)
-  val counterOut = Counter(col)
+  val counterIn: Counter = Counter(row)
+  val counterOut: Counter = Counter(col)
 
-  // padding are used to simplify rotation logics, they will be pruned by synthsizer
-
+  // padding are used to simplify rotation logics, they will be pruned by synthesizer
   // write ports
-  val dataInPadded = Vec(dataIn.payload.padTo(ramCount, dataIn.payload(0).getZero))
-  val dataInShifted: Vec[T] = dataInPadded.rotateLeft(counterIn.value)
+  val dataInPadded: Vec[T] = Vec(dataIn.payload.padTo(ramCount, dataIn.payload(0).getZero))
+  //  val dataInShifted: Vec[T] = dataInPadded.rotateLeft(counterIn.value)
+  val dataInShifted: Vec[T] = cloneOf(dataInPadded)
+
+  switch(counterIn.value) {
+    (0 until row).foreach { i =>
+      is(U(i)) { // rotate left
+        dataInShifted.zip(dataInPadded.takeRight(ramCount - i) ++ dataInPadded.take(i)).foreach{ case (shifted, padded) => shifted := padded}
+      }
+    }
+    if (row < (1 << counterIn.value.getBitsWidth)){
+      default{
+        dataInShifted.zip(dataInPadded).foreach{ case (shifted, padded) => shifted := padded}
+      }
+    }
+  }
+
   rams.zip(dataInShifted).foreach { case (ram, data) =>
     ram.write(address = writePointer.asUInt @@ counterIn.value.resize(addrWidth), data = data, enable = dataIn.fire)
   }
@@ -42,7 +57,22 @@ case class MatIntrlvCore[T <: Data](row: Int, col: Int, dataType: HardType[T]) e
     ram.readAsync(address = readPointer.asUInt @@ addr)
   }.padTo(ramCount, dataIn.payload(0).getZero))
   val dataRemapped = Vec(dataOutShifted.head +: dataOutShifted.tail.reverse)
-  val dataOutPadded = dataRemapped.rotateRight(counterOut.value) // not shifted now, still padded
+//  val dataOutPadded = dataRemapped.rotateRight(counterOut.value) // not shifted now, still padded
+  val dataOutPadded = cloneOf(dataRemapped)
+
+  switch(counterOut.value) {
+    (0 until col).foreach { i =>
+      is(U(i)) { // rotate left
+        dataOutPadded.zip(dataRemapped.takeRight(i) ++ dataRemapped.take(ramCount - i)).foreach{ case (shifted, padded) => shifted := padded}
+      }
+    }
+    if (col < (1 << counterOut.value.getBitsWidth)){
+      default{
+        dataOutPadded.zip(dataRemapped).foreach{ case (shifted, padded) => shifted := padded}
+      }
+    }
+  }
+
   dataOut.payload.zip(dataOutPadded).foreach { case (out, padded) => out := padded } // drop the padded part by zip mechanism
 
   val fsm = new StateMachine {

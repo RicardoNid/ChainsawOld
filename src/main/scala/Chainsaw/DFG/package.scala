@@ -19,9 +19,13 @@ package object DFG {
     def asDSPNode(name: String): DeviceNode[T] = DeviceNode(name, hardware)
   }
 
-  case class ImplPolicy(useRegInit: Boolean, useSubmodule: Boolean)
+  case class ImplPolicy(useRegInit: Boolean, useSubmodule: Boolean, useDontCare: Boolean)
 
-  var globalImplPolicy: ImplPolicy = ImplPolicy(true, false) // this version is problem-free under current testbench
+  val testImplPolicy = ImplPolicy(true, false, false)
+
+  val synthImplPolicy = ImplPolicy(false, true, true)
+
+  var globalImplPolicy: ImplPolicy = testImplPolicy // this version is problem-free under current testbench
 
   //  var globalImplPolicy: ImplPolicy = ImplPolicy(false, true) // this is the config we should take
 

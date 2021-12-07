@@ -44,8 +44,11 @@ class DFGGensTest extends AnyFlatSpec {
     if (useDSP) FIRGen(dspMAC, arch, firCoeffs, 18 bits, 1).getGraphAsNode()
     else FIRGen(add, mult, arch, firCoeffs, 18 bits, 1).getGraphAsNode()
 
-  def testFIR(arch: FirArch, useDSP: Boolean): Seq[Seq[BigInt]] =
+  def testFIR(arch: FirArch, useDSP: Boolean): Seq[Seq[BigInt]] = {
+    println(firTestCase)         // just for test
+    println(firGolden.toList)    // just for test
     testDSPNode[SInt, Seq[BigInt], Int](firDUT(arch, useDSP), Seq(18 bits), firTestCase.map(Seq(_)), firGolden.map(_.toInt), initLength = firSize)
+  }
 
   def synthFIR(arch: FirArch, useDSP: Boolean): VivadoReport =
     synthDSPNode[SInt](firDUT(arch, useDSP), Seq(18 bits))

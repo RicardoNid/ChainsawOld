@@ -13,6 +13,9 @@ import scala.collection.mutable.ArrayBuffer
  */
 case class QAMDeModCore(symbolType: HardType[ComplexNumber], bitsAllocated: Int, factor:Double = 1.0) extends Component {
 
+  require(bitsAllocated > 0 && bitsAllocated <= 8)
+  if(bitsAllocated == 5 || bitsAllocated == 7) logger.warn(s"QAM32/QAM128 are specially, which can't be fully implemented by using threshold values")
+
   val dataIn = slave Flow symbolType
   val dataOut = master Flow Bits(bitsAllocated bits)
   dataIn.valid.allowPruning()

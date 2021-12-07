@@ -40,11 +40,11 @@ case class QAMDeMod(bitAlloc: Seq[Int], powAlloc: Seq[Double], symbolType: HardT
 }
 
 object QAMDeMod {
-
   def main(args: Array[String]): Unit = {
-
+    val bitAlloc = Seq.fill(256)(4)
+    val powerAlloc = Seq.fill(256)(1.0)
+    val symbolType = HardType(ComplexNumber(1, -14))
+    GenRTL(QAMDeMod(bitAlloc, powerAlloc, symbolType))
+    VivadoSynth(QAMDeMod(bitAlloc, powerAlloc, symbolType))
   }
 }
-
-
-

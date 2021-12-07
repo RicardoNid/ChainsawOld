@@ -22,7 +22,7 @@ case class DFT(N: Int, inverse: Boolean = false,
     case 2 => {
       if (!inverse) Vec(Seq(dataIn(0) + dataIn(1), dataIn(0) - dataIn(1)).map(RegNext(_)))
       //      else Vec(Seq(dataIn(0) + dataIn(1), dataIn(0) - dataIn(1)).map(complex => RegNext(complex >> 1)))
-      else Vec(Seq(dataIn(0) + dataIn(1), dataIn(0) - dataIn(1)))
+      else Vec(Seq(dataIn(0) + dataIn(1), (dataIn(0) - dataIn(1))))
     }
     case 4 => {
       val A = RegNext(dataIn(0) + dataIn(2))

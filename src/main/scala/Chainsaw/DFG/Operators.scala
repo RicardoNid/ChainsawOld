@@ -59,4 +59,13 @@ object Operators {
     TrinaryHardware(op, delay = (if (mreg) 1 else 0) cycles).asDeviceNode(s"macDSP48_${if (mreg) "usingMReg" else ""}")
   }
 
+  // testing Systolic Array cell
+  def SACell(width: BitCount): DeviceNode[SInt] = DeviceNode("SACell",
+    DSPHardware(impl =
+      (dataIns: Seq[SInt], _: GlobalCount) => {
+        val result = dataIns(0) +^ dataIns(1)
+        Seq(result, result)
+      }, 2, Seq(width, 1 bits), 0 cycles, 0 sec)
+  )
+
 }
