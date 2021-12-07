@@ -15,7 +15,7 @@ case class NTT(ring: Ring[Long], N: Int) {
   require(isPow2(N))
   val p: Int = ring.cardinality().intValue() // p of \Z_p
 
-  val omega: Long = ring.getNthRoot(N) // root of twiddle factor
+  val omega: Long = 3061 // root of twiddle factor
 
   /** gs butterfly operator, which is used in DIF butterfly network
    */
@@ -34,11 +34,11 @@ case class NTT(ring: Ring[Long], N: Int) {
     val inverseString = if (inverse) "inverse " else ""
     val fastString = if (inverse) "fast " else ""
     val inverseN: Long = ring.pow(N, -1)
-    logger.info(s"start $fastString${inverseString}NTT:\nN:$N, N^-1:$inverseN, omega:$omega")
+    //    logger.info(s"start $fastString${inverseString}NTT:\nN:$N, N^-1:$inverseN, omega:$omega")
 
     val ret = if (fast) {
       def buildStage(dataIns: Seq[Long]) = {
-        logger.debug(s"input to stage:    ${dataIns.mkString(" ")}")
+        //        logger.debug(s"input to stage:    ${dataIns.mkString(" ")}")
         val (up, down) = dataIns.splitAt(dataIns.size / 2)
         val step = N / dataIns.size
         val temp = up.zip(down).zipWithIndex.map { case ((u, v), i) =>
@@ -47,7 +47,7 @@ case class NTT(ring: Ring[Long], N: Int) {
           else ctButterfly(u, v, twiddle)
         }
         val ret = temp.map(_._1) ++ temp.map(_._2)
-        logger.debug(s"output from stage: ${ret.mkString(" ")}")
+        //        logger.debug(s"output from stage: ${ret.mkString(" ")}")
         ret
       }
 
@@ -68,7 +68,7 @@ case class NTT(ring: Ring[Long], N: Int) {
 
       if (!inverse) bitReverse(buildRecursively(coeffs))
       else {
-        logger.info(s"see ${bitReverse(coeffs)}")
+        //        logger.info(s"see ${bitReverse(coeffs)}")
         buildRecursively(bitReverse(coeffs)).map(value => ring(value * inverseN))
       }
     }
@@ -79,7 +79,7 @@ case class NTT(ring: Ring[Long], N: Int) {
       }
     }
 
-    logger.info(s"get NTT \ninput:  ${coeffs.mkString(" ")}\nresult: ${ret.mkString(" ")}")
+    //    logger.info(s"get NTT \ninput:  ${coeffs.mkString(" ")}\nresult: ${ret.mkString(" ")}")
     ret
   }
 
