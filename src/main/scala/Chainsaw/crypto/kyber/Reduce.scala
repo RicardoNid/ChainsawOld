@@ -19,7 +19,7 @@ object Reduce {
   *return {-q+1,...,q-1}
   */
   def montgomeryReduce(a: SInt): SInt = {
-    require(a.getWidth==16)
+    //require(a.getWidth==32)
     var u: SInt = (62209 * a).resize(16)
     val t: SInt = ((a - u * q) >> 16).resize(16)
     t
