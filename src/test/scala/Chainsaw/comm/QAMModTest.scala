@@ -25,7 +25,7 @@ class QAMModTest extends AnyFunSuite {
       dataIn.valid #= false
       clockDomain.waitSampling()
 
-      val testCase = bitAlloc.map(bitAllocated => DSPRand.nextInt(1 << bitAllocated)).toArray
+      val testCase = bitAlloc.map(bitAllocated => ChainsawRand.nextInt(1 << bitAllocated)).toArray
       val testBits = BigInt(testCase.zip(bitAlloc).map{ case (value, bitAllocated) => value.toBinaryString.padToLeft(bitAllocated, '0')}.mkString(""), 2)
 
       dataIn.payload #= testBits

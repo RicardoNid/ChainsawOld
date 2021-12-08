@@ -26,9 +26,9 @@ class R2HSIFFTTest extends AnyFlatSpec with Matchers {
       dataIn.valid #= false
       clockDomain.waitSampling()
 
-      val zero = new MComplex(0, 0)
-      val valid = zero +: (1 until testSize / 2).map(_ => DSPRand.nextComplex(-1, 1))
-      val conjed = valid.tail.map(_.conj).reverse
+      val zero = new BComplex(0, 0)
+      val valid = zero +: (1 until testSize / 2).map(_ => ChainsawRand.nextComplex(-1, 1))
+      val conjed = valid.tail.map(_.conjugate).reverse
       val testCase = valid ++ (zero +: conjed)
 
       dataIn.payload.zip(testCase).foreach { case (number, complex) => number #= complex }

@@ -35,8 +35,8 @@ class DFGGensTest extends AnyFlatSpec {
   def dspMAC: TrinaryNode[SInt] = Operators.macDSP48(mreg = true)
 
   val firSize = 10
-  val firCoeffs: Seq[Int] = (0 until firSize).map(_ => DSPRand.nextInt(1 << 16) + 1000)
-  val firTestCase: Seq[BigInt] = Seq.fill(firSize)(BigInt(0)) ++ (0 until 100).map(_ => DSPRand.nextBigInt(2))
+  val firCoeffs: Seq[Int] = (0 until firSize).map(_ => ChainsawRand.nextInt(1 << 16) + 1000)
+  val firTestCase: Seq[BigInt] = Seq.fill(firSize)(BigInt(0)) ++ (0 until 100).map(_ => ChainsawRand.nextBigInt(2))
   // generate golden by Matlab
   val firGolden: Array[Double] = eng.feval("filter", firCoeffs.reverse.map(_.toDouble).toArray, Array(1), firTestCase.map(_.toDouble).toArray).asInstanceOf[Array[Double]]
 
@@ -81,7 +81,7 @@ class DFGGensTest extends AnyFlatSpec {
     val xor = BinaryHardware( Operators.xor).asDeviceNode("xor")
 
     import comm.channelCoding._
-    val convencTestCase = Seq.fill(7)(BigInt(0)) ++ (0 until 100).map(_ => DSPRand.nextBigInt(1))
+    val convencTestCase = Seq.fill(7)(BigInt(0)) ++ (0 until 100).map(_ => ChainsawRand.nextBigInt(1))
     val conv802_11: ConvConfig = ConvConfig(Array(171, 133), radix = 8)
     val trellisM = Refs.poly2trellisM(conv802_11.ms.map(_ + 1), conv802_11.codeGens)
     // generate golden by Matlab

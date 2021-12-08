@@ -68,7 +68,7 @@ class MontExpSystolicTest extends AnyFunSuite {
             lastRadixSquare = testRadixSquare
             lastExponent = testExponent
 
-            val testInputs = (0 until currentInstanceNumber).map(_ => if (testcase.useGivenValue) testcase.X else BigInt(ref.getPrivateValue) / DSPRand.nextInt(10000) - DSPRand.nextInt(10000))
+            val testInputs = (0 until currentInstanceNumber).map(_ => if (testcase.useGivenValue) testcase.X else BigInt(ref.getPrivateValue) / ChainsawRand.nextInt(10000) - ChainsawRand.nextInt(10000))
             // get words
             require(testExponent % 2 == 1)
             val testExponentWords = testExponent.toString(2).padTo(currentTestSize, '0').grouped(testWordSize).toArray.map(wordString => BigInt(wordString.reverse, 2))

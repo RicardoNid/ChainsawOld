@@ -12,7 +12,7 @@ class QamdemodAlgosTest extends AnyFlatSpec {
 
   def testSpecificBit(bitsAllocated: Int) = {
     val testUpperbound = Refs.getQAMValues(bitsAllocated).map(_.modulus).max
-    val testCases = (0 until 200).map(_ => DSPRand.nextComplex(-testUpperbound, testUpperbound)).filterNot(complex => isInt(complex.real) || isInt((complex.imag)))
+    val testCases = (0 until 200).map(_ => ChainsawRand.nextComplex(-testUpperbound, testUpperbound)).filterNot(complex => isInt(complex.real) || isInt((complex.imag)))
     val yours: Seq[Int] = testCases.map(Algos.qamdemod(_, bitsAllocated))
     val golden: Array[Int] = Refs.qamdemod(testCases.toArray, bitsAllocated)
     println(s"yours  ${yours.map(_.toString.padToLeft(3, ' ')).mkString(" ")}")

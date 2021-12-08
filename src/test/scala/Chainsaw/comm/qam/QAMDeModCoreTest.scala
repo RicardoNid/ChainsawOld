@@ -19,7 +19,7 @@ class QAMDeModCoreTest extends AnyFlatSpec {
     def isInt = (value: Double) => value == ceil(value)
 
     val testUpperbound = Refs.getQAMValues(bitsAllocated).map(_.modulus).max
-    val testCasesBeforeNorm = (0 until 1000).map(_ => DSPRand.nextComplex(-testUpperbound, testUpperbound))
+    val testCasesBeforeNorm = (0 until 1000).map(_ => ChainsawRand.nextComplex(-testUpperbound, testUpperbound))
       .filterNot(complex => isInt(complex.real) || isInt((complex.imag)))
     val testCases = testCasesBeforeNorm.map(_ / Refs.getQAMRms(bitsAllocated) * factor)
     var dutResults = ArrayBuffer[BigInt]()

@@ -16,13 +16,13 @@ class QAMDeModTest extends AnyFlatSpec {
 
   def runSim() = {
 
-    val bitAlloc = (0 until 10).map(_ => DSPRand.nextInt(7) + 1)
+    val bitAlloc = (0 until 10).map(_ => ChainsawRand.nextInt(7) + 1)
     printlnGreen(bitAlloc.mkString(" "))
-    val powAlloc = (0 until 10).map(_ => DSPRand.nextDouble())
+    val powAlloc = (0 until 10).map(_ => ChainsawRand.nextDouble())
     //    val powAlloc = Seq.fill(10)(1.0)
     val testUpperbound = 1
 
-    val testCase: Seq[MComplex] = powAlloc.map(DSPRand.nextComplex(-testUpperbound, testUpperbound) * _)
+    val testCase: Seq[BComplex] = powAlloc.map(ChainsawRand.nextComplex(-testUpperbound, testUpperbound) * _)
     var dutResults = ArrayBuffer[BigInt]()
 
     SimConfig.withWave.compile(QAMDeMod(bitAlloc, powAlloc, HardType(ComplexNumber(3, -14)))).doSim { dut =>

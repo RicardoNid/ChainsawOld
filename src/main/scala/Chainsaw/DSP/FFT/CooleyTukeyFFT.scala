@@ -1,7 +1,7 @@
 package Chainsaw.DSP.FFT
 
 import Chainsaw._
-import Chainsaw.matlabIO.MComplex
+import Chainsaw.matlabIO.BComplex
 import spinal.core._
 import spinal.lib._
 
@@ -60,7 +60,7 @@ case class CooleyTukeyBackToBack(
   val dataOut = master Stream Vec(complexDataType, pF)
 
   //  val twiddleFactors: Seq[Seq[MComplex]] = Algos.cooleyTukeyCoeffIndices(N1, N2).map(_.map(i => if (inverse) WNnk(N, -i) else WNnk(N, i)))
-  val twiddleFactors: Seq[Seq[MComplex]] = Algos.cooleyTukeyCoeffIndices(N2, N1).map(_.map(i => if (inverse) WNnk(N, -i) else WNnk(N, i)))
+  val twiddleFactors: Seq[Seq[BComplex]] = Algos.cooleyTukeyCoeffIndices(N2, N1).map(_.map(i => if (inverse) WNnk(N, -i) else WNnk(N, i)))
   //  val twiddleFactorROM: Mem[Vec[ComplexNumber]] = Mem(twiddleFactors.map(vec => Vec(vec.map(CN(_, coeffType)))))
   val twiddleFactorROMs = twiddleFactors.map(vec => Mem(Vec(vec.map(CN(_, coeffType)))))
   val factorCounter = Counter(N2, inc = core1.dataOut.fire)

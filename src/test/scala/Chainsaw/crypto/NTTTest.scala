@@ -17,7 +17,7 @@ class NTTTest extends AnyFlatSpec {
   implicit val cfRing: Ring[Long] = polyRing.cfRing
 
   val testSize = 128
-  val testCase: Seq[Long] = (0 until testSize).map(_ => DSPRand.nextInt(p).toLong)
+  val testCase: Seq[Long] = (0 until testSize).map(_ => ChainsawRand.nextInt(p).toLong)
 
   val nttAlgo: NTT = NTT(cfRing, testSize)
 

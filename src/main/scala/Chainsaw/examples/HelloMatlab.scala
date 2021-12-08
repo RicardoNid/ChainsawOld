@@ -35,12 +35,12 @@ object HelloMatlab {
     println(eng.getVariable[Double]("ans"))
 
     // about array size
-    val anotherComplex = Array(new MComplex(1, 2)) //
+    val anotherComplex = Array(new BComplex(1, 2)) //
     eng.putVariable("anotherComplex", anotherComplex)
-    val ret = eng.getVariable[MComplex]("anotherComplex")
+    val ret = eng.getVariable[BComplex]("anotherComplex")
     println(ret.getClass)
     val retArray = try {
-      eng.getVariable[Array[MComplex]]("anotherComplex")
+      eng.getVariable[Array[BComplex]]("anotherComplex")
     } catch {
       case _ => println("failed")
     }
@@ -49,7 +49,7 @@ object HelloMatlab {
     val jagged = Array(Array(1, 2), Array(1, 2, 3))
     eng.putVariable("jagged", jagged)
     println(eng.getVariable[Array[Array[Int]]]("jagged").map(_.mkString(" ")).mkString("\n"))
-    println(eng.getVariable[MComplex]("complex"))
+    println(eng.getVariable[BComplex]("complex"))
 
   }
 }

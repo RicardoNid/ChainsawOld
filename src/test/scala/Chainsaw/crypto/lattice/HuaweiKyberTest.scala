@@ -4,7 +4,7 @@ import Chainsaw.DFG.FFTArch._
 import Chainsaw.crypto.FastAlgos.{CCByNTT, NWCByNTT, p2pMult}
 import Chainsaw.crypto.lattice.Kyber.KNTT
 import Chainsaw.crypto._
-import Chainsaw.{DSPRand, crypto, logger}
+import Chainsaw.{ChainsawRand, crypto, logger}
 import cc.redberry.rings.scaladsl.{Ring, UnivariateRingZp64}
 import org.scalatest.flatspec.AnyFlatSpec
 import spinal.core._
@@ -23,10 +23,10 @@ class HuaweiKyberTest extends AnyFlatSpec {
   implicit val polyRing: UnivariateRingZp64 = UnivariateRingZp64(p, "x")
   implicit val cfRing: Ring[Long] = polyRing.cfRing
 
-  def getTestCase(n: Int): Seq[Long] = (0 until n).map(_ => DSPRand.nextInt(p).toLong)
+  def getTestCase(n: Int): Seq[Long] = (0 until n).map(_ => ChainsawRand.nextInt(p).toLong)
 
   val f, g = getTestCase(polySize)
-  val cs: Seq[Int] = (0 until 100).map(_ => DSPRand.nextInt((p - 1) * (p - 1) + 1))
+  val cs: Seq[Int] = (0 until 100).map(_ => ChainsawRand.nextInt((p - 1) * (p - 1) + 1))
 
   behavior of "software"
 
@@ -77,10 +77,10 @@ class HuaweiKyberTest extends AnyFlatSpec {
   // TODO: test method should support int/long as a replacement of bigint
   // TODO: exhaustive test of KRED
 
-  val testProducts: Seq[BigInt] = (0 until 10000).map(_ => BigInt(DSPRand.nextInt((p - 1) * (p - 1) + 1))) // 10000-point random test
+  val testProducts: Seq[BigInt] = (0 until 10000).map(_ => BigInt(ChainsawRand.nextInt((p - 1) * (p - 1) + 1))) // 10000-point random test
   val testProductsExhaustive: Seq[BigInt] = (0 to (p - 1) * (p - 1)).map(BigInt(_))
-  val randomOmega = DSPRand.nextInt(p)
-  val testPairs: Seq[Seq[BigInt]] = (0 until 10000).map(_ => BigInt(DSPRand.nextInt(p))).grouped(2).toSeq.map(vec => Seq(vec(0), vec(1), BigInt(randomOmega)))
+  val randomOmega = ChainsawRand.nextInt(p)
+  val testPairs: Seq[Seq[BigInt]] = (0 until 10000).map(_ => BigInt(ChainsawRand.nextInt(p))).grouped(2).toSeq.map(vec => Seq(vec(0), vec(1), BigInt(randomOmega)))
 
   "KMultMod" should "pass the random test" in {
     val golden = testPairs.map(vec => (vec(0) * vec(1) * k2) % p).map(cfRing(_))
@@ -133,7 +133,7 @@ class HuaweiKyberTest extends AnyFlatSpec {
   // we use DIT here to process a bit-reversed sequence as we won't reorder the result of NTT
   val inttDFG: DFGGraph[UInt] = ButterflyGen(ctButterflyNode, gsButterflyNode, N, DIT, inverse = true, coeffGen, 12 bits, 1).getGraph
 
-  val nttTestCase: Seq[Seq[Long]] = Seq.tabulate(testCount, N)((_, _) => DSPRand.nextInt(p).toLong)
+  val nttTestCase: Seq[Seq[Long]] = Seq.tabulate(testCount, N)((_, _) => ChainsawRand.nextInt(p).toLong)
   val knttTestCase: Seq[Seq[BigInt]] = nttTestCase.flatten.map(value => BigInt(cfRing(value * k2Inverse))).grouped(N).toSeq
 
   val nttGolden: Seq[Seq[Long]] = nttTestCase.map(NTT)

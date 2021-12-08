@@ -14,7 +14,7 @@ class PlayWithReal extends Component {
 
   // API test
   // random exponents in [-25, 24]
-  val SQs = (0 until 100).map(_ => (DSPRand.nextInt(24), DSPRand.nextInt(25))).map{ case (i, f) => SQ(i + f + 1, f)}
+  val SQs = (0 until 100).map(_ => (ChainsawRand.nextInt(24), ChainsawRand.nextInt(25))).map{ case (i, f) => SQ(i + f + 1, f)}
   val SQReals = SQs.map(QFormatReal)
   SQs.zip(SQReals).foreach{ case (sq, real) => assert(
     real.maxExp == sq.nonFraction - 1 // maxExp == i
@@ -22,7 +22,7 @@ class PlayWithReal extends Component {
     s"bad SQ: $sq lead to ${real.maxExp} & ${real.minExp}")}
   printlnGreen("SQFormat API passed")
 
-  val UQs = (0 until 100).map(_ => (DSPRand.nextInt(24), DSPRand.nextInt(25))).map{ case (i, f) => UQ(i + f, f)}
+  val UQs = (0 until 100).map(_ => (ChainsawRand.nextInt(24), ChainsawRand.nextInt(25))).map{ case (i, f) => UQ(i + f, f)}
   val UQReals = UQs.map(QFormatReal)
   UQs.zip(UQReals).foreach{ case (uq, real) => assert(
     real.maxExp == uq.nonFraction // maxExp == i
@@ -31,12 +31,12 @@ class PlayWithReal extends Component {
   printlnGreen("UQFormat API passed")
 
   val randomRanges = (0 until 1000).map { i =>
-    val lower = DSPRand.nextDouble() * 10 + 0.5
-    RealInfo(lower, lower + DSPRand.nextDouble() * 10)
+    val lower = ChainsawRand.nextDouble() * 10 + 0.5
+    RealInfo(lower, lower + ChainsawRand.nextDouble() * 10)
   }
   val randomInputs = randomRanges.map(info => Real(info, -4 exp))
   // more or less on LSB, check "equal to" or "close to" in the simulation
-  val randomOutputs = randomRanges.map(info => Real(info + 1, (DSPRand.nextInt(2) - 1) - 4 exp))
+  val randomOutputs = randomRanges.map(info => Real(info + 1, (ChainsawRand.nextInt(2) - 1) - 4 exp))
   randomInputs.zip(randomOutputs).foreach { case (real, real1) => real1 := real.truncated }
   in(randomInputs: _*)
   out(randomOutputs: _*)
@@ -55,10 +55,10 @@ class PlayWithReal extends Component {
 
 
   val randomRangesForAddition = (0 until 20).map { i =>
-    val lower = DSPRand.nextDouble() * 10
-    RealInfo(lower, lower + DSPRand.nextDouble() * 10)
+    val lower = ChainsawRand.nextDouble() * 10
+    RealInfo(lower, lower + ChainsawRand.nextDouble() * 10)
   }
-  val randomInputsForAddition = randomRangesForAddition.map(info => Real(info, -DSPRand.nextInt(5) exp))
+  val randomInputsForAddition = randomRangesForAddition.map(info => Real(info, -ChainsawRand.nextInt(5) exp))
   val randomOutputsForAddtion = (0 until randomInputsForAddition.length / 2).map(i =>
     randomInputsForAddition(2 * i) + randomInputsForAddition(2 * i + 1))
 

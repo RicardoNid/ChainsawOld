@@ -38,7 +38,7 @@ object DESRef {
   val decrypt: Cipher = Cipher.getInstance("DES/ECB/PKCS5Padding")
   decrypt.init(Cipher.DECRYPT_MODE, secretKeyECB)
 
-  def genTestCase: Array[Byte] = DSPRand.nextBigInt(63).toByteArray
+  def genTestCase: Array[Byte] = ChainsawRand.nextBigInt(63).toByteArray
 
   def testDESEncrypt(testCase: Array[Byte], yours: Array[Byte]): Unit = {
     assert(yours.sameElements(encrypt.doFinal(testCase)))

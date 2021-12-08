@@ -16,7 +16,7 @@ import scala.math.sqrt
  * @param customSymbols when you need to specify custom QAM values(different from Matlab)
  */
 case class QAMDeMod(bitAlloc: Seq[Int], powAlloc: Seq[Double], symbolType: HardType[ComplexNumber],
-                    gray: Boolean = true, customSymbols: Map[Int, Seq[MComplex]] = Map[Int, Seq[MComplex]]()) extends Component {
+                    gray: Boolean = true, customSymbols: Map[Int, Seq[BComplex]] = Map[Int, Seq[BComplex]]()) extends Component {
 
   val fixedType = HardType(symbolType().real)
 

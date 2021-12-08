@@ -16,8 +16,8 @@ object MatlabFixedPointExample {
   def main(args: Array[String]): Unit = {
     eng.setWorkingDir("~/FTN326/fixedPoint")
     eng.eval("testFixedFFT")
-    val data = eng.load[Array[MComplex]]("fixedFFT", "fftInput")
-    val output = eng.load[Array[MComplex]]("fixedFFT", "fftOutput")
+    val data = eng.load[Array[BComplex]]("fixedFFT", "fftInput")
+    val output = eng.load[Array[BComplex]]("fixedFFT", "fftOutput")
     println(data.mkString(" "))
     println(output.mkString(" "))
 

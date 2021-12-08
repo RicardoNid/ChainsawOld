@@ -89,10 +89,10 @@ object MontAlgos {
     // use random value here as they should be irrelevant to the result
     // the input happens latter
     // TODO: change it, use ArrayBuffers that start from nothing
-    val MWords = Array.fill(n + 1, e + 1)(BigInt(DSPRand.nextInt(100)))
-    val YWords = Array.fill(n + 1, e + 1)(BigInt(DSPRand.nextInt(100)))
-    val SWords = ArrayBuffer.fill(n + 1, e + 1)(BigInt(DSPRand.nextInt(100)))
-    val CWords = ArrayBuffer.fill(n + 1, e + 2)(BigInt(DSPRand.nextInt(100))) // carry, 2-bits long
+    val MWords = Array.fill(n + 1, e + 1)(BigInt(ChainsawRand.nextInt(100)))
+    val YWords = Array.fill(n + 1, e + 1)(BigInt(ChainsawRand.nextInt(100)))
+    val SWords = ArrayBuffer.fill(n + 1, e + 1)(BigInt(ChainsawRand.nextInt(100)))
+    val CWords = ArrayBuffer.fill(n + 1, e + 2)(BigInt(ChainsawRand.nextInt(100))) // carry, 2-bits long
     val XBits = X.toString(2).padToLeft(n, '0').reverse
     val y0 = Y.toString(2).last.asDigit
 
@@ -226,8 +226,8 @@ object MontAlgos {
   def verifyMM(algo: (BigInt, BigInt, BigInt) => BigInt) = {
     (0 until 10).foreach { _ =>
       val modulus = BigInt(ref.getModulus)
-      val input0 = (modulus - DSPRand.nextInt(10000))
-      val input1 = modulus - DSPRand.nextInt(10000)
+      val input0 = (modulus - ChainsawRand.nextInt(10000))
+      val input1 = modulus - ChainsawRand.nextInt(10000)
       val ZN = Zp(modulus)
       val r = BigInt(1) << (modulus.bitLength + 2)
       val rInverse = ZN.reciprocal(r)
@@ -260,7 +260,7 @@ object MontAlgos {
   def verifyME(algo: (BigInt, BigInt, BigInt) => BigInt) = {
     (0 until 1).foreach { _ =>
       val modulus = BigInt(ref.getModulus)
-      val x = modulus - DSPRand.nextInt(10000)
+      val x = modulus - ChainsawRand.nextInt(10000)
       val e = ref.getPublicValue
       val ZN = Zp(modulus)
       val algoResult = algo(x, e, modulus)

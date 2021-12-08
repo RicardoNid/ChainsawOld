@@ -15,7 +15,7 @@ class MatIntrlvCoreTest extends AnyFunSuite {
     def testMatIntrlvCoreHardware(row: Int, col: Int) = {
       SimConfig.withWave.compile(new MatIntrlvCore(row, col, dataType)).doSim { dut =>
 
-        val testData0, testData1 = Seq.tabulate(row, col)((_, _) => DSPRand.nextInt(1 << dataWidth))
+        val testData0, testData1 = Seq.tabulate(row, col)((_, _) => ChainsawRand.nextInt(1 << dataWidth))
         val transposed0 = Algos.transpose(testData0)
         val transposed1 = Algos.transpose(testData1)
 
@@ -96,7 +96,7 @@ class MatIntrlvCoreTest extends AnyFunSuite {
         dataOut.fire.simPublic()
       }).doSim { dut =>
 
-        val testData0, testData1 = (0 until row * col).map(_ => DSPRand.nextInt(1 << dataWidth))
+        val testData0, testData1 = (0 until row * col).map(_ => ChainsawRand.nextInt(1 << dataWidth))
         val transposed0 = Algos.matIntrlv(testData0, row, col)
         val transposed1 = Algos.matIntrlv(testData1, row, col)
 

@@ -83,7 +83,7 @@ object Bitonic extends App {
     clockDomain.forkStimulus(2)
     clockDomain.waitSampling()
 
-    val testCase = (0 until size).map(_ => DSPRand.nextInt(size)).map(BigInt(_))
+    val testCase = (0 until size).map(_ => ChainsawRand.nextInt(size)).map(BigInt(_))
     dataIn.poke(testCase)
     clockDomain.waitSampling(latency + 1)
 

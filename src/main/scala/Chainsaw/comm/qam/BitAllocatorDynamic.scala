@@ -49,7 +49,7 @@ object BitAllocatorDynamic {
   def main(args: Array[String]): Unit = {
     //    VivadoSynth(BitAllocatorDynamic(1024, 256, Seq(2, 3, 4, 5, 6, 7, 8)))
     SimConfig.withWave.compile(BitAllocatorDynamic(1024, 256, Seq(2, 3, 4, 5, 6, 7, 8))).doSim { dut =>
-      dut.dataIn #= DSPRand.nextBigInt(1024)
+      dut.dataIn #= ChainsawRand.nextBigInt(1024)
       val bitAlloc = Seq.fill(64)(2) ++ Seq.fill(128)(4) ++ Seq.fill(64)(6)
       val bitPosition = (0 until 256).map(i => bitAlloc.take(i).sum)
       println(bitPosition.mkString(" "))
