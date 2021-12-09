@@ -30,7 +30,9 @@ object Ntt {
     val modulus = zp.modulus
     val omega = getNthRoot(modulus, N)
 
-    new DenseVector(genericDft(data, omega).toArray)
+    val ret = genericDft(data, omega)
+    println(ret)
+    ret
   }
 
   def intt(data: DenseVector[Int])(implicit zp: Zp): DenseVector[Int] = ntt(data, inverse = true)
