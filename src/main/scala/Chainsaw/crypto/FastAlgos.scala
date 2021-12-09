@@ -1,6 +1,7 @@
 package Chainsaw.crypto
 
 import cc.redberry.rings.scaladsl.UnivariateRingZp64
+import Chainsaw.ringsUtils._
 
 object FastAlgos {
 

@@ -5,7 +5,4 @@ import breeze.numerics._
 import breeze.numerics.constants._
 import breeze.signal._
 
-abs(Complex(1, 1))
-
-exp(-10 * i)
-
+-10 % 3

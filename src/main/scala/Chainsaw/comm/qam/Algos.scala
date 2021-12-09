@@ -8,11 +8,14 @@ object Algos {
 
   def qamdemod(input: BComplex, bitsAllocated: Int) = {
 
+    def getThresholds(bits: Int) = 0 +: (bits - 1 to 1 by -1).map(1 << _)
+
     def fold(value: Double, times: Int) = {
+      val thresholds = getThresholds(times)
       val folded = ArrayBuffer[Double]()
       (0 until times).foreach { i =>
-        if (i == 0) folded += value
-        else folded += (folded.last.abs - (1 << (times - i)))
+        if (i == 0) folded += (value - thresholds(i))
+        else folded += (folded.last.abs - thresholds(i))
       }
       folded
     }

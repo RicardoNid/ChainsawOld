@@ -1,6 +1,7 @@
 package Chainsaw.crypto.lattice
 
 import Chainsaw.DFG.FFTArch._
+import Chainsaw.ringsUtils._
 import Chainsaw.crypto.FastAlgos.{CCByNTT, NWCByNTT, p2pMult}
 import Chainsaw.crypto.lattice.Kyber.KNTT
 import Chainsaw.crypto._

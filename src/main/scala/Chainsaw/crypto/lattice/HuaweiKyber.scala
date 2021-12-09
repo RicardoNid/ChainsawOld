@@ -7,6 +7,7 @@ import Chainsaw.crypto._
 import cc.redberry.rings.scaladsl._
 import spinal.core._
 import spinal.lib._
+import Chainsaw.ringsUtils._
 
 import scala.language.postfixOps
 

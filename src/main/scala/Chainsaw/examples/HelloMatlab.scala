@@ -1,5 +1,6 @@
 package Chainsaw.examples
 
+import Chainsaw._
 import Chainsaw.matlabIO._
 import com.mathworks.engine.MatlabEngine
 
@@ -35,7 +36,7 @@ object HelloMatlab {
     println(eng.getVariable[Double]("ans"))
 
     // about array size
-    val anotherComplex = Array(new BComplex(1, 2)) //
+    val anotherComplex = Array(BComplex(1, 2)) //
     eng.putVariable("anotherComplex", anotherComplex)
     val ret = eng.getVariable[BComplex]("anotherComplex")
     println(ret.getClass)

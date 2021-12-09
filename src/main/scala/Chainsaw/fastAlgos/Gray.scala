@@ -1,20 +1,5 @@
 package Chainsaw.fastAlgos
 
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
-import breeze.linalg._
-import breeze.math._
-import breeze.numerics._
-import breeze.numerics.constants._
-import breeze.signal._
-
-import scala.annotation.tailrec
-
 object Gray {
 
   def grayTable(width: Int): Seq[Int] = {
@@ -31,8 +16,9 @@ object Gray {
   def fromGray(gray: Int, width: Int) = grayTable(width).indexOf(gray)
 
   def main(args: Array[String]): Unit = {
-    val grays = (0 until 8).map(toGray(_, 3))
-    val bins = grays.map(fromGray(_, 3))
+    val bits = 6
+    val grays = (0 until (1 << bits)).map(toGray(_, bits))
+    val bins = grays.map(fromGray(_, bits))
 
     println(grays)
     println(bins)

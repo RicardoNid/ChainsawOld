@@ -2,7 +2,8 @@ package Chainsaw.fastAlgos
 
 import Chainsaw._
 import Chainsaw.fastAlgos.Convolution.{cyclicConvolve, linearConvolve}
-import Chainsaw.fastAlgos.Qammod.{qammod}
+import Chainsaw.fastAlgos.Qam.qammod
+import Chainsaw.matlabIO.{MComplex, eng}
 import breeze.linalg.DenseVector
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -12,7 +13,6 @@ class MatlabRefsTest extends AnyFlatSpec {
   val Bs = (0 until 100).map(_ => ChainsawRand.nextComplexDV(8))
   val Cs = (0 until 100).map(_ => ChainsawRand.nextComplexDV(10))
 
-  def assertClose(a: DenseVector[BComplex], b: DenseVector[BComplex]) = assert(a ~= b)
 
   "linear convolution" should "work" in {
     As.zip(Bs).foreach { case (data, kernel) =>
@@ -32,7 +32,7 @@ class MatlabRefsTest extends AnyFlatSpec {
 
   import breeze.signal.fourierTr
 
-  "dft" should "work" in {
+  "breeze dft" should "work" in {
     As.foreach { data =>
       val breeze = fourierTr.dvComplex1DFFT(data)
       val matlab = MatlabRefs.dft(data)
@@ -40,17 +40,34 @@ class MatlabRefsTest extends AnyFlatSpec {
     }
   }
 
-  val symbols = (0 until 100).map(_ => ChainsawRand.nextInt(256)).asDv
+  "my dft" should "work" in {
+    As.foreach { data =>
+      val mine = new DenseVector(Dft.dft(data.toArray))
+      val matlab = MatlabRefs.dft(data)
+      assert(mine ~= matlab, s"\nmine  : $mine  \nmatlab: $matlab")
+    }
+  }
 
   "qammod" should "work" in {
-    (2 to 8).foreach{ i =>
+    Seq(2, 3, 4, 6, 8).foreach { i =>
       val modulationOrder = 1 << i
       val bits: DenseVector[Int] = (0 until 100).map(_ => ChainsawRand.nextInt(modulationOrder)).asDv
-      val breeze = Qammod.qammod(bits, modulationOrder)
+      val breeze = Qam.qammod(bits, modulationOrder)
       val matlab = MatlabRefs.qammod(bits, modulationOrder)
       assert(breeze ~= matlab, s"\nbreeze: $breeze\nmatlab: $matlab")
     }
   }
+
+  "qamdemod" should "work" in {
+    Seq(2, 3, 4, 6, 8).foreach { i =>
+      val modulationOrder = 1 << i
+      val symbols = (0 until 100).map(_ => ChainsawRand.nextComplex(-1, 1)).asDv
+      val breeze = Qam.qamdemod(symbols, modulationOrder)
+      val matlab = MatlabRefs.qamdemod(symbols, modulationOrder)
+      assert(breeze.equals(matlab), s"\nbreeze: $breeze\nmatlab: $matlab")
+    }
+  }
+
 
 
 }

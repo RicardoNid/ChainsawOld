@@ -1,18 +1,18 @@
-package Chainsaw.DSP.dct
+package Chainsaw.fastAlgos
 
-import breeze.linalg._
-import breeze.math._
-import breeze.numerics._
-import breeze.numerics.constants._
-import breeze.signal._
+import breeze.linalg.{DenseMatrix, DenseVector}
+import breeze.math.i
+import breeze.numerics.{cos, exp}
+import breeze.numerics.constants.Pi
+import breeze.signal.fourierTr
 
-
-object Algo {
+object Dct {
 
   /** type2 DCT
    *
    * @see [[https://en.wikipedia.org/wiki/Discrete_cosine_transform#DCT-II]]
    */
+  @definition
   def dct1D(data: DenseVector[Double]): DenseVector[Double] = {
     val N = data.length
     val coeffs = DenseMatrix.tabulate(N, N) { (k, i) =>
@@ -26,6 +26,7 @@ object Algo {
    *
    * @see [[https://en.wikipedia.org/wiki/Discrete_cosine_transform#Inverse_transforms]]
    */
+  @definition
   def idct1D(data: DenseVector[Double]): DenseVector[Double] = {
     val N = data.length
     val coeffs = DenseMatrix.tabulate(N, N) { (i, k) =>
@@ -36,12 +37,12 @@ object Algo {
     (coeffs * data) /:/ (N.toDouble / 2)
   }
 
-  /**
-   * @see [[#Fast Algorithms for Signal Processing, Theorem 3.5.1, Corollary 3.5.2]]
+  /** implement dct1D by dft
+   * @see ''Fast Algorithms for Signal Processing'', Theorem 3.5.1, Corollary 3.5.2
    */
+  @fastAlgo
   def dct1DByDft(data: DenseVector[Double], method: Int): DenseVector[Double] = {
     val N = data.length
-    val array = data.toArray
 
     val reverse = data(-1 to 0 by -1)
     val seq2n = DenseVector.vertcat(data, reverse) /:/ 2.0
@@ -57,10 +58,4 @@ object Algo {
     }
   }
 
-  def main(args: Array[String]): Unit = {
-
-  }
-
 }
-
-

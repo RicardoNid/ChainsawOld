@@ -6,15 +6,11 @@ import scala.math.BigInt
 
 package object RSA {
 
-  def toWords(value: BigInt, w: Int, e: Int): Array[BigInt] = {
-    value.toString(2).padToLeft(e * w, '0')
-      .grouped(w).toArray.takeRight(e).map(BigInt(_, 2))
-      .reverse
-  }
+  def toWords(value: BigInt, wordLength: Int, wordCount: Int): Seq[BigInt] = toWordStrings(value, wordLength, wordCount).map(BigInt(_, 2)).reverse
 
-  def toWordStrings(value: BigInt, wordSize: Int, wordCount: Int): Seq[String] = {
-    value.toString(2).padToLeft(wordSize * wordCount, '0')
-      .grouped(wordSize).toSeq.takeRight(wordCount)
+  def toWordStrings(value: BigInt, wordLength: Int, wordCount: Int): Seq[String] = {
+    value.toString(2).padToLeft(wordLength * wordCount, '0')
+      .grouped(wordLength).toSeq.takeRight(wordCount)
   }
 
   // from lsb to msb

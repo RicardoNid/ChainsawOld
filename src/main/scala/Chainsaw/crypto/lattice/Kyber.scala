@@ -5,6 +5,7 @@ import Chainsaw.{crypto, logger}
 import cc.redberry.rings
 import cc.redberry.rings.scaladsl._
 import spinal.core.isPow2
+import Chainsaw.ringsUtils._
 
 /**
  * @see High-Speed NTT-based Polynomial Multiplication Accelerator for CRYSTALS-Kyber Post-Quantum Cryptography [[https://eprint.iacr.org/2021/563.pdf]]

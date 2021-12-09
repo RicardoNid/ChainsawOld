@@ -36,8 +36,14 @@ object MatlabRefs {
   /** by default, we set order = gray and using unit average power
    */
   def qammod(data: DenseVector[Int], modulationOrder: Int) = {
-    val ret = eng.feval[Array[MComplex]]("qammod", data.toArray, Array(modulationOrder), "gray", "UnitAveragePower", Array(true))
+    val ret = eng.feval[Array[MComplex]]("qammod", data.toArray, Array(modulationOrder.toDouble), "gray", "UnitAveragePower", Array(true))
     new DenseVector(ret.map(_.toBComplex))
+  }
+
+  def qamdemod(data: DenseVector[BComplex], modulationOrder: Int): DenseVector[Int] = {
+    //    val ret = eng.feval[Array[Double]]("qamdemod", data.toMatlab, Array(modulationOrder))
+    val ret = eng.feval[Array[Double]]("qamdemod", data.toMatlab, Array(modulationOrder.toDouble), "gray", "UnitAveragePower", Array(true))
+    new DenseVector(ret.map(_.toInt))
   }
 
   def main(args: Array[String]): Unit = {

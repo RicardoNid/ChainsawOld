@@ -1,7 +1,6 @@
 package Chainsaw.DSP.FFT
 
 import Chainsaw._
-import Chainsaw.matlabIO.BComplex
 import spinal.core._
 import spinal.lib._
 

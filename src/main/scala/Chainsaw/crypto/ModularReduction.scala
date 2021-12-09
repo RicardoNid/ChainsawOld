@@ -16,6 +16,8 @@ import rings.scaladsl._
 import syntax._
 import rings.primes._
 
+import Chainsaw.ringsUtils._
+
 object ModularReduction {
 
   /** modular reduction for a specific Zp in which p = k * 2^m^ + 1, like Montgomery modular reduction, this won't give an exact mod result, so you need regard it as a different "representation"

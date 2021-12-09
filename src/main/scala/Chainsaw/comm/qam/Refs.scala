@@ -18,8 +18,8 @@ object Refs {
   }
 
   def qamdemod(input: Array[BComplex], bitPerSymbol: Int, gray: Boolean = true): Array[Int] = {
-    val ret = if (!gray) eng.feval[Array[Double]]("qamdemod", input, Array(1 << bitPerSymbol), "bin")
-    else eng.feval[Array[Double]]("qamdemod", input, Array(1 << bitPerSymbol), "gray")
+    val ret = if (!gray) eng.feval[Array[Double]]("qamdemod", input.map(_.toMComplex), Array(1 << bitPerSymbol), "bin")
+    else eng.feval[Array[Double]]("qamdemod", input.map(_.toMComplex), Array(1 << bitPerSymbol), "gray")
     ret.map(_.toInt)
   }
 
