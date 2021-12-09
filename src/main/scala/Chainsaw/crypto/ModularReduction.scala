@@ -1,21 +1,8 @@
 package Chainsaw.crypto
 
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
 import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
-
 import cc.redberry.rings
-
-import rings.poly.PolynomialMethods._
-import rings.scaladsl._
-import syntax._
-import rings.primes._
-
+import cc.redberry.rings.scaladsl._
 import Chainsaw.ringsUtils._
 
 object ModularReduction {

@@ -3,7 +3,7 @@ package Chainsaw
 import breeze.linalg._
 import breeze.numerics._
 
-package object fastAlgos {
+package object algos {
 
   case class definition() extends scala.annotation.StaticAnnotation
   case class fastAlgo() extends scala.annotation.StaticAnnotation

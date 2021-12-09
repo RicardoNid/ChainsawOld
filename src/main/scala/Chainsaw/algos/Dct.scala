@@ -1,4 +1,4 @@
-package Chainsaw.fastAlgos
+package Chainsaw.algos
 
 import breeze.linalg.{DenseMatrix, DenseVector}
 import breeze.math.i
@@ -6,6 +6,9 @@ import breeze.numerics.{cos, exp}
 import breeze.numerics.constants.Pi
 import breeze.signal.fourierTr
 
+/** definition and fast algorithms of DCT, which is closely related to DFT
+ *
+ */
 object Dct {
 
   /** type2 DCT

@@ -1,8 +1,8 @@
-package Chainsaw.fastAlgos
+package Chainsaw.algos
 
 import Chainsaw._
-import Chainsaw.fastAlgos.Convolution.{cyclicConvolve, linearConvolve}
-import Chainsaw.fastAlgos.Qam.qammod
+import Chainsaw.algos.Convolution.{genericCyclicConvolve, genericLinearConvolve}
+import Chainsaw.algos.Qam.qammod
 import Chainsaw.matlabIO.{MComplex, eng}
 import breeze.linalg.DenseVector
 import org.scalatest.flatspec.AnyFlatSpec
@@ -13,22 +13,6 @@ class MatlabRefsTest extends AnyFlatSpec {
   val Bs = (0 until 100).map(_ => ChainsawRand.nextComplexDV(8))
   val Cs = (0 until 100).map(_ => ChainsawRand.nextComplexDV(10))
 
-
-  "linear convolution" should "work" in {
-    As.zip(Bs).foreach { case (data, kernel) =>
-      val breeze = linearConvolve(data, kernel)
-      val matlab = MatlabRefs.conv(data, kernel)
-      assert(breeze ~= matlab, s"\nbreeze: $breeze\nmatlab: $matlab")
-    }
-  }
-
-  "cyclic convolution" should "work" in {
-    As.zip(Cs).foreach { case (data, kernel) =>
-      val breeze = cyclicConvolve(data, kernel)
-      val matlab = MatlabRefs.cconv(data, kernel)
-      assert(breeze ~= matlab, s"\nbreeze: $breeze\nmatlab: $matlab")
-    }
-  }
 
   import breeze.signal.fourierTr
 
@@ -42,7 +26,7 @@ class MatlabRefsTest extends AnyFlatSpec {
 
   "my dft" should "work" in {
     As.foreach { data =>
-      val mine = new DenseVector(Dft.dft(data.toArray))
+      val mine = Dft.dft(data)
       val matlab = MatlabRefs.dft(data)
       assert(mine ~= matlab, s"\nmine  : $mine  \nmatlab: $matlab")
     }

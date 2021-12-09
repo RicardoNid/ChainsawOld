@@ -1,6 +1,6 @@
-package Chainsaw.fastAlgos
+package Chainsaw.algos
 
-import Chainsaw.fastAlgos.Dct._
+import Chainsaw.algos.Dct._
 import breeze.linalg.DenseVector
 import org.scalatest.flatspec.AnyFlatSpec
 

@@ -1,5 +1,8 @@
-package Chainsaw.fastAlgos
+package Chainsaw.algos
 
+/** conversions between binary and gray code
+ *
+ */
 object Gray {
 
   def grayTable(width: Int): Seq[Int] = {

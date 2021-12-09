@@ -10,6 +10,7 @@ import cc.redberry.rings.scaladsl.{Ring, UnivariateRingZp64}
 import org.scalatest.flatspec.AnyFlatSpec
 import spinal.core._
 
+
 import scala.language.postfixOps
 
 class HuaweiKyberTest extends AnyFlatSpec {

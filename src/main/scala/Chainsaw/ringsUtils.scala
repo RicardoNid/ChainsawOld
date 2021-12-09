@@ -55,24 +55,4 @@ object ringsUtils {
 
     def inverseOf(value: Long): Long = ring.pow(value, -1)
   }
-
-  implicit class AnotherZpUtil(ring: Ring[Long]) {
-
-    def p: Long = ring.cardinality().longValue()
-
-    def isCorrect(value: Long): Boolean = value == ring(value)
-
-    def getNthRoot(N: Int): Long = {
-      // TODO: better algo?
-      require(BigPrimes.isPrime(p) && (p - 1) % N == 0, "p is prime & p - 1 % N <=> N-th root of  exists") // TODO: is that true?
-      val ret = (2 until p.toInt).filter { root =>
-        ring.pow(root, N) == ring(1) && // N-th root
-          (1 to N).map(ring.pow(root, _)).distinct.size == N
-      }.head // TODO: which is the "best"?
-      ret
-    }
-
-    def inverseOf(value: Long): Long = ring.pow(value, -1)
-  }
-
 }

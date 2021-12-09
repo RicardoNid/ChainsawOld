@@ -1,4 +1,4 @@
-package Chainsaw.fastAlgos
+package Chainsaw.algos
 
 import Chainsaw._
 import breeze.linalg._

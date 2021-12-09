@@ -1,4 +1,4 @@
-package Chainsaw.fastAlgos
+package Chainsaw.algos
 
 import spinal.core._
 import spinal.core.sim._

@@ -1,53 +1,24 @@
 package Chainsaw.examples
 
+import breeze.linalg._
 import breeze.math.Semiring
-import breeze.linalg.{norm, _}
-import breeze.math._
-import breeze.numerics._
-import breeze.signal._
+import spinal.core._
 
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.ClassTag
 
-case class ZInt(value: Int)
 
-class Zp(p: Int) extends Semiring[ZInt] {
-  override def zero = ZInt(0)
 
-  override def one = ZInt(1)
+class UIntRing(width: Int) extends Semiring[UInt] {
 
-  override def +(a: ZInt, b: ZInt) = ZInt((a.value + b.value) % p)
+  override def zero = U(0, width bits)
 
-  override def *(a: ZInt, b: ZInt) = ZInt((a.value * b.value) % p)
+  override def one = U(1, width bits)
 
-  override def ==(a: ZInt, b: ZInt) = a.value == b.value
+  override def +(a: UInt, b: UInt) = a + b
 
-  override def !=(a: ZInt, b: ZInt) = a.value != b.value
-}
+  override def *(a: UInt, b: UInt) = (a * b).resize(width)
 
-object BreezeGeneric {
+  override def ==(a: UInt, b: UInt) = true
 
-  def genericDft[T](data: DenseVector[T], omega: T, inverse: Boolean = false)
-                   (implicit semiring: Semiring[T], classTag: ClassTag[T]) = {
-
-    val N = data.length
-    val factors = semiring.one +: (1 to N).map(i => product(DenseVector.fill(i)(omega)))
-    println(factors.mkString(" "))
-    require(factors.distinct.size == N && factors.last == factors.head)
-
-    DenseVector.tabulate(N) { k =>
-      val indices = (0 until N).map(i => if (inverse) (i * k) % N else -(i * k) % N + N)
-      val coeffs = DenseVector.tabulate(N)(i => factors(indices(i)))
-      sum(data *:* coeffs)
-    }
-  }
-
-  def main(args: Array[String]): Unit = {
-    import breeze.linalg._
-
-    implicit val ring = new Zp(3329)
-    val a = DenseVector(ZInt(3328))
-    val b = DenseVector(ZInt(3328))
-    println(a *:* b)
-
-  }
+  override def !=(a: UInt, b: UInt) = true
 }
