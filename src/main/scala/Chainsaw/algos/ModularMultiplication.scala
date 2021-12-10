@@ -1,24 +1,33 @@
 package Chainsaw.algos
 
-import cc.redberry.rings
+import breeze.linalg.min
+import breeze.numerics.ceil
 
-import rings.poly.PolynomialMethods._
-import rings.scaladsl._
-import syntax._
-import rings.primes._
-
-import breeze.linalg._
-import breeze.math._
-import breeze.numerics._
-import breeze.numerics.constants._
-import breeze.signal._
-
-import cc.redberry.rings.primes
+import scala.collection.mutable.ArrayBuffer
 
 /** modular multiplication algorithms, they validate themselves while running
  *
  */
 object ModularMultiplication {
+
+  import spinal.core._
+  import spinal.core.sim._
+
+  def evaluateMM(X: BigInt, Y: BigInt, M: BigInt, n: Int, hardware: (UInt, UInt) => UInt): BigInt = {
+    var ret = BigInt(0)
+    SimConfig.withWave.compile(new Component {
+      val x = in UInt (n bits)
+      val y = in UInt (n bits)
+      val ret = out UInt (n bits)
+      ret := hardware(x, y)
+    }).doSim { dut =>
+      dut.x #= X
+      dut.y #= Y
+      sleep(1)
+      ret = dut.ret.toBigInt
+    }
+    ret
+  }
 
   def viewBigInt(x: BigInt) = {
     if (x < 0) println("negative")
@@ -115,8 +124,160 @@ object ModularMultiplication {
     ret
   }
 
+  def r2mm(X: BigInt, Y: BigInt, M: BigInt) = {
+    require(X < M && Y < M)
+    val n = M.bitLength // log2Down(M) + 1
+
+    def hardwareCalculator(X: UInt, Y: UInt) = {
+      val zero = U(0, n bits)
+      val bitsM = U(M, n bits)
+
+      val S = Seq.fill(n + 1)(UInt(n + 1 bits)) // n + 1 bits
+      S(0) := zero.resized
+
+      def connect(i: Int) = {
+        val xi = X(i)
+        val qi = (xi & Y.lsb) ^ S(i).lsb // parity of Si + xi * Y
+        val yPart = Mux(xi, Y, zero)
+        val MPart = Mux(qi, bitsM, zero)
+        S(i + 1) := (S(i) +^ (yPart +^ MPart)) >> 1 // n + 1 bits
+      }
+
+      (0 until n).foreach(connect(_))
+
+      val ret = Mux(S.last > bitsM, S.last - bitsM, S.last) // reduction
+      ret.resize(n)
+    }
+
+    val ret = evaluateMM(X, Y, M, n, hardwareCalculator)
+
+    val R = BigInt(1) << n
+    val RInverse = R.modInverse(M)
+    assert((ret % M) == (X * Y * RInverse) % M)
+    ret
+  }
+
+  def mwr2mm(X: BigInt, Y: BigInt, M: BigInt, w: Int) = {
+    require(X < M && Y < M)
+    val n = M.bitLength // log2Down(M) + 1
+    val e = ceil((n + 1) / w.toDouble).toInt
+    val dataWidth = e * w
+
+    def hardwareCalculator(X: UInt, Y: UInt): UInt = {
+      val zero = U(0, w bits)
+      val bitsM = U(M, dataWidth bits)
+
+      val S = Seq.fill(e + 1)(ArrayBuffer[UInt](zero))
+      val YWords = Y.subdivideIn(w bits) :+ zero
+      val MWords = bitsM.subdivideIn(w bits) :+ zero
+      val C = ArrayBuffer[Bits]()
+
+      def combine(xi: Bool, qi: Bool, Y: UInt, M: UInt, S: UInt) = Mux(xi, Y, zero) +^ Mux(qi, M, zero) +^ S
+
+      (0 until n).foreach { i =>
+        val xi = X(i)
+        val qi = (xi & Y.lsb) ^ S(0).last.lsb
+        val (c, s) = combine(xi, qi, YWords(0), MWords(0), S(0).last).splitAt(w)
+        S(0) += s.asUInt
+        C += c
+        (1 to e).foreach { j =>
+          val (c, s) = (combine(xi, qi, YWords(j), MWords(j), S(j).last) + C.last.asUInt).splitAt(w)
+          S(j) += s.asUInt
+          C += c
+          S(j - 1) += (S(j).last.lsb ## S(j - 1).last(w - 1 downto 1)).asUInt
+        }
+        S(e) += zero
+      }
+      Vec(S.map(_.last)).asBits.asUInt.resize(dataWidth)
+    }
+
+    val ret = evaluateMM(X, Y, M, dataWidth, hardwareCalculator)
+
+    val R = BigInt(1) << n
+    val RInverse = R.modInverse(M)
+    assert((ret % M) == (X * Y * RInverse) % M)
+    ret
+  }
+
+  def optimizedMwr2mm(X: BigInt, Y: BigInt, M: BigInt, w: Int) = {
+    require(X < M && Y < M)
+    val n = M.bitLength // log2Down(M) + 1
+    val e = ceil((n + 1) / w.toDouble).toInt
+    val dataWidth = e * w
+
+    def zero = U(0, w bits)
+    def combine(xi: Bool, qi: Bool, Y: UInt, M: UInt, S: UInt, C:UInt) = (Mux(xi, Y, zero) +^ Mux(qi, M, zero)) +^ (S +^ C)
+
+    case class PEIO(SLsb:Bool, SHigh:UInt, YWord:UInt, MWord:UInt, start:Bool) extends Bundle
+
+    case class PE(SLsb:Bool, SHigh:UInt, xi:Bool, YWord:UInt, MWord:UInt, start:Bool) extends Component {
+
+      val qi = (xi & YWord.lsb) ^ SHigh.lsb
+      val qiReg = RegNextWhen(qi, start)
+      val qiInUse = Mux(start, qi, qiReg)
+
+      val sEven = (B"0" ## SHigh).asUInt
+      val sOdd = (B"1" ## SHigh).asUInt
+
+      val evenReg, oddReg = Reg(UInt(w + 2 bits))
+      val trueRet = Mux(SLsb, oddReg, evenReg)
+      val (cInUse, sOut) = trueRet.splitAt(w)
+
+      evenReg := combine(xi, qiInUse, YWord, MWord, sEven, cInUse.asUInt) // w + 2 bits
+      oddReg := combine(xi, qiInUse, YWord, MWord, sOdd, cInUse.asUInt)
+
+      val startOut = RegNext(start)
+      val mOut = RegNext(MWord)
+      val yOut = RegNext(YWord)
+      val SHighOut = sOut(w -1 downto 1)
+      val SLsbOut = sOut.lsb
+
+      (SLsbOut, SHighOut, yOut, mOut, startOut)
+    }
+
+    def hardwareCalculator(X: UInt, Y: UInt): UInt = {
+      val zero = U(0, w bits)
+      val bitsM = U(M, dataWidth bits)
+
+      val S = Seq.fill(e + 1)(ArrayBuffer[UInt](zero))
+      val YWords = Y.subdivideIn(w bits) :+ zero
+      val MWords = bitsM.subdivideIn(w bits) :+ zero
+      val C = ArrayBuffer[Bits]()
+
+      val pes = Seq.fill(n)(pe)
+
+      println(s"e = $e, n = $n")
+      var acc = 0
+      (0 until n + e).foreach { sum =>
+        if (sum <= e) {
+          (0 to sum).foreach { i =>
+            val j = sum - i
+
+          }
+        }
+        else {
+          ((sum - e) to min(n - 1, sum)).foreach { i =>
+            val j = sum - i
+
+          }
+        }
+      }
+
+      Vec(S.map(_.last)).asBits.asUInt.resize(dataWidth)
+
+    }
+
+    val ret = evaluateMM(X, Y, M, dataWidth, hardwareCalculator)
+
+    val R = BigInt(1) << n
+    val RInverse = R.modInverse(M)
+    assert((ret % M) == (X * Y * RInverse) % M)
+    ret
+  }
+
   /**
    * @see ''Discrete weighted transforms and large-integer arithmetic'' [[https://www.ams.org/mcom/1994-62-205/S0025-5718-1994-1185244-1/S0025-5718-1994-1185244-1.pdf]]
    */
-  def fftms(x: BigInt, y: BigInt, N: BigInt) = {}
+  def fftms(x: BigInt, y: BigInt, N: BigInt) = {
+  }
 }

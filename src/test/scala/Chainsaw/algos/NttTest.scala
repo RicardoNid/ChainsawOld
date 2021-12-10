@@ -8,9 +8,9 @@ import org.scalatest.flatspec.AnyFlatSpec
 class NttTest extends AnyFlatSpec {
 
   val p = 3329
-  implicit val zp = Zp(p)
+  implicit val zp: Zp = Zp(p)
 
-  val numbers = DenseVector.tabulate(256)(_ => ChainsawRand.nextInt(p))
+  val numbers: DenseVector[Int] = DenseVector.tabulate(256)(_ => ChainsawRand.nextInt(p))
 
   behavior of "NTTTest"
 

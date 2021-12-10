@@ -12,10 +12,13 @@ class ConvolutionTest extends AnyFlatSpec {
 
   behavior of "ConvolutionTest"
 
+
   it should "genericLinearConvolve" in {
+
     complexData.zip(complexKernels).foreach { case (data, kernel) =>
       val breeze = genericLinearConvolve(data, kernel)
       val matlab = MatlabRefs.conv(data, kernel)
+      println(s"\nbreeze: $breeze\nmatlab: $matlab")
       assert(breeze ~= matlab, s"\nbreeze: $breeze\nmatlab: $matlab")
     }
   }

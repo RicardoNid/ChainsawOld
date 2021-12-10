@@ -22,7 +22,8 @@ object Dft {
    * @see ''Fast Algorithms for Signal Processing'' Chap1.4
    */
   @definition
-  def genericDft[T](data: DenseVector[T], omega: T, inverse: Boolean = false)(implicit semiring: Semiring[T], classTag: ClassTag[T]) = {
+  def genericDft[T](data: DenseVector[T], omega: T, inverse: Boolean = false)
+                   (implicit semiring: Semiring[T], classTag: ClassTag[T]) = {
 
     val N = data.length
     val factors = semiring.one +: (1 to N).map(i => product(DenseVector.fill(i)(omega)))
@@ -41,4 +42,11 @@ object Dft {
     val omega = exp(-(2 * Pi / N) * i)
     genericDft(data, omega, inverse)
   }
+
+  /** radix-2 fft
+   * @param DIT decimation-in-time/decimation-in-frequency
+   */
+  @fastAlgo
+  def genericR2Fft[T](data: DenseVector[T], omega: T, inverse: Boolean = false, DIT: Boolean = false)
+                     (implicit semiring: Semiring[T], classTag: ClassTag[T]):DenseVector[T]= ??? // TODO
 }

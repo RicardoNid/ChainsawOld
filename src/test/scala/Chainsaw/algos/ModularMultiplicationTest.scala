@@ -33,4 +33,16 @@ class ModularMultiplicationTest extends AnyFlatSpec {
   "McLaughlin multiplication without conditional selections" should "be work" in {
     (0 until testCount).foreach(i => ModularMultiplication.mlws(as(i), bs(i), ns(i)))
   }
+
+  // for large length, the "hardware calculator" would lead to stackoverflow
+  val smallerLN = 8
+  val M = ChainsawRand.nextBigInt(smallerLN)
+  val X = ChainsawRand.nextBigInt(smallerLN) % M
+  val Y = ChainsawRand.nextBigInt(smallerLN) % M
+
+  "R2MM" should "work" in ModularMultiplication.r2mm(X, Y, M)
+
+  "MWR2MM" should "work" in ModularMultiplication.mwr2mm(X, Y, M, 4)
+
+  "optimized MWR2MM" should "work" in ModularMultiplication.optimizedMwr2mm(X, Y, M, 4)
 }
