@@ -2,6 +2,7 @@ package Chainsaw.algos
 
 import breeze.linalg.min
 import breeze.numerics.ceil
+import spinal.core.UInt
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -11,6 +12,7 @@ import scala.collection.mutable.ArrayBuffer
 object ModularMultiplication {
 
   import spinal.core._
+  import spinal.lib._
   import spinal.core.sim._
 
   def evaluateMM(X: BigInt, Y: BigInt, M: BigInt, n: Int, hardware: (UInt, UInt) => UInt): BigInt = {
@@ -131,13 +133,17 @@ object ModularMultiplication {
     def hardwareCalculator(X: UInt, Y: UInt) = {
       val zero = U(0, n bits)
       val bitsM = U(M, n bits)
+      bitsM.setName("M")
 
       val S = Seq.fill(n + 1)(UInt(n + 1 bits)) // n + 1 bits
+      (0 until n + 1).foreach(i => S(i).setName(s"S_$i"))
       S(0) := zero.resized
 
       def connect(i: Int) = {
         val xi = X(i)
+        xi.setName(s"x_$i")
         val qi = (xi & Y.lsb) ^ S(i).lsb // parity of Si + xi * Y
+        qi.setName(s"q_$i")
         val yPart = Mux(xi, Y, zero)
         val MPart = Mux(qi, bitsM, zero)
         S(i + 1) := (S(i) +^ (yPart +^ MPart)) >> 1 // n + 1 bits
@@ -206,11 +212,22 @@ object ModularMultiplication {
     val dataWidth = e * w
 
     def zero = U(0, w bits)
-    def combine(xi: Bool, qi: Bool, Y: UInt, M: UInt, S: UInt, C:UInt) = (Mux(xi, Y, zero) +^ Mux(qi, M, zero)) +^ (S +^ C)
 
-    case class PEIO(SLsb:Bool, SHigh:UInt, YWord:UInt, MWord:UInt, start:Bool) extends Bundle
 
-    case class PE(SLsb:Bool, SHigh:UInt, xi:Bool, YWord:UInt, MWord:UInt, start:Bool) extends Component {
+    case class PEIO() extends Bundle {
+      val SLsb = Bool
+      val SHigh = UInt(w - 1 bits)
+      val YWord = UInt(w bits)
+      val MWord = UInt(w bits)
+      val start = Bool()
+    }
+
+    case class PE() extends Component {
+      val pipeIn = in(PEIO())
+      val pipeOut = out(PEIO())
+      val xi = in Bool()
+
+      import pipeIn._
 
       val qi = (xi & YWord.lsb) ^ SHigh.lsb
       val qiReg = RegNextWhen(qi, start)
@@ -221,56 +238,67 @@ object ModularMultiplication {
 
       val evenReg, oddReg = Reg(UInt(w + 2 bits))
       val trueRet = Mux(SLsb, oddReg, evenReg)
-      val (cInUse, sOut) = trueRet.splitAt(w)
+      val (cOut, sOut) = trueRet.splitAt(w)
+      val cInUse = Mux(start, U(0, 2 bits), cOut.asUInt)
 
-      evenReg := combine(xi, qiInUse, YWord, MWord, sEven, cInUse.asUInt) // w + 2 bits
-      oddReg := combine(xi, qiInUse, YWord, MWord, sOdd, cInUse.asUInt)
+      def core(xi: Bool, qi: Bool, Y: UInt, M: UInt, S: UInt, C: UInt) = (Mux(xi, Y, zero) +^ Mux(qi, M, zero)) +^ (S +^ C)
 
-      val startOut = RegNext(start)
-      val mOut = RegNext(MWord)
-      val yOut = RegNext(YWord)
-      val SHighOut = sOut(w -1 downto 1)
-      val SLsbOut = sOut.lsb
+      evenReg := core(xi, qiInUse, YWord, MWord, sEven, cInUse) // w + 2 bits
+      oddReg := core(xi, qiInUse, YWord, MWord, sOdd, cInUse)
 
-      (SLsbOut, SHighOut, yOut, mOut, startOut)
+      pipeOut.start := RegNext(start, init = False)
+      pipeOut.MWord := RegNext(MWord)
+      pipeOut.YWord := RegNext(YWord)
+      pipeOut.SHigh := sOut(w - 1 downto 1).asUInt
+      pipeOut.SLsb := sOut.lsb
     }
 
-    def hardwareCalculator(X: UInt, Y: UInt): UInt = {
+    case class PEArray() extends Component {
+
       val zero = U(0, w bits)
       val bitsM = U(M, dataWidth bits)
+      val X, Y = in UInt (dataWidth bits)
+      val ret = out UInt (n bits) // TODO: check range of every step
+      val valid = out Bool()
 
-      val S = Seq.fill(e + 1)(ArrayBuffer[UInt](zero))
-      val YWords = Y.subdivideIn(w bits) :+ zero
-      val MWords = bitsM.subdivideIn(w bits) :+ zero
-      val C = ArrayBuffer[Bits]()
+      val YWords = Vec(Y.subdivideIn(w bits) :+ zero)
+      val MWords = Vec(bitsM.subdivideIn(w bits) :+ zero)
 
-      val pes = Seq.fill(n)(pe)
+      val counter = CounterFreeRun(e + 1)
+      val pes = Seq.fill(n)(PE())
+      X.asBools.take(n).zip(pes).foreach { case (bool, pe) => pe.xi := bool }
 
-      println(s"e = $e, n = $n")
-      var acc = 0
-      (0 until n + e).foreach { sum =>
-        if (sum <= e) {
-          (0 to sum).foreach { i =>
-            val j = sum - i
+      pes.head.pipeIn.SLsb := False
+      pes.head.pipeIn.SHigh := U(0, w - 1 bits)
+      pes.head.pipeIn.MWord := MWords(counter)
+      pes.head.pipeIn.YWord := YWords(counter)
+      pes.head.pipeIn.start := (counter === U(0))
 
-          }
-        }
-        else {
-          ((sum - e) to min(n - 1, sum)).foreach { i =>
-            val j = sum - i
+      pes.tail.zip(pes.init).foreach { case (next, prev) => next.pipeIn := prev.pipeOut }
+      pes.map { pe => pe.pipeOut.SHigh ## pe.pipeOut.SLsb }.asBits().asUInt
 
-          }
-        }
-      }
+      val outCounter = Counter(e + 1)
+      when(pes.last.pipeOut.start || outCounter =/= outCounter.getZero)(outCounter.increment())
 
-      Vec(S.map(_.last)).asBits.asUInt.resize(dataWidth)
-
+      val outRegs = Reg(Vec(UInt(w bits), e + 1))
+      outRegs(outCounter) := (pes.last.pipeOut.SHigh ## pes.last.pipeOut.SLsb).asUInt
+      ret := outRegs.asBits(n downto 1).asUInt
+      valid := Delay(pes.last.pipeOut.start, e, init = False)
     }
 
-    val ret = evaluateMM(X, Y, M, dataWidth, hardwareCalculator)
+    var ret = BigInt(0)
+    SimConfig.withWave.compile(PEArray()).doSim { dut =>
+      dut.clockDomain.forkStimulus(2)
+      dut.X #= X
+      dut.Y #= Y
+      dut.clockDomain.waitSampling(n + e + 1)
+      ret = dut.ret.toBigInt
+    }
 
     val R = BigInt(1) << n
     val RInverse = R.modInverse(M)
+    val golden = (X * Y * RInverse) % M
+    println(golden.toString(16))
     assert((ret % M) == (X * Y * RInverse) % M)
     ret
   }

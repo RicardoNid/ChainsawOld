@@ -35,14 +35,15 @@ class ModularMultiplicationTest extends AnyFlatSpec {
   }
 
   // for large length, the "hardware calculator" would lead to stackoverflow
-  val smallerLN = 8
+  val smallerLN = 32
+  val wordLength = 8
   val M = ChainsawRand.nextBigInt(smallerLN)
   val X = ChainsawRand.nextBigInt(smallerLN) % M
   val Y = ChainsawRand.nextBigInt(smallerLN) % M
 
   "R2MM" should "work" in ModularMultiplication.r2mm(X, Y, M)
 
-  "MWR2MM" should "work" in ModularMultiplication.mwr2mm(X, Y, M, 4)
+  "MWR2MM" should "work" in ModularMultiplication.mwr2mm(X, Y, M, wordLength)
 
-  "optimized MWR2MM" should "work" in ModularMultiplication.optimizedMwr2mm(X, Y, M, 4)
+  "optimized MWR2MM" should "work" in ModularMultiplication.optimizedMwr2mm(X, Y, M, wordLength)
 }
