@@ -21,8 +21,8 @@ case class MontExpSystolic(config: MontConfig) extends Component {
   require(isPow2(w) && isPow2(lMs.min))
 
   val readAsyncMode = true
-
   val io = new Bundle {
+
     val start = in Bool()
     val mode = in Bits (lMs.size bits)
     val keyReset = in Bool()
@@ -291,7 +291,6 @@ case class MontExpSystolic(config: MontConfig) extends Component {
     val MontMultValids = RegNext(Vec(channelAvailable.map(_ && MontMultValid)), init = channelAvailable.getZero)
     io.valids.zip(MontMultValids).foreach { case (io, mult) => io := mult && lastMontMult } // delay the valid of montMult for shifting
   }
-
 
   val debug = new Area {
     val isINIT = fsm.isActive(fsm.INIT)

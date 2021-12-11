@@ -68,3 +68,10 @@ class MontMultPE(w: Int) extends Component {
   io.flowOut.data.MWord := RegNext(MWord)
   io.flowOut.control.setXi := RegNext(setXi, init = False)
 }
+
+object MontMultPE {
+  import Chainsaw._
+  def main(args: Array[String]): Unit = {
+    VivadoSynth(new MontMultPE(16))
+  }
+}

@@ -17,7 +17,7 @@ class Algos(lN: Int) {
   }
 
   def bigMod(a: BigInt, modulus: BigInt) = {
-    require(modulus.toString(2).tail.forall(_ == '0')) // modulus should be a power of the base(2)
+    require(modulus.toString(2).tail.forall(_ == '0')) // Emodulus should be a power of the base(2)
     BigInt(a.toString(2).takeRight(modulus.toString(2).size - 1), 2)
   }
 

@@ -44,6 +44,4 @@ class ModularMultiplicationTest extends AnyFlatSpec {
   "R2MM" should "work" in ModularMultiplication.r2mm(X, Y, M)
 
   "MWR2MM" should "work" in ModularMultiplication.mwr2mm(X, Y, M, wordLength)
-
-  "optimized MWR2MM" should "work" in ModularMultiplication.optimizedMwr2mm(X, Y, M, wordLength)
 }

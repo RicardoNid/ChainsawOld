@@ -521,6 +521,16 @@ package object Chainsaw extends RealFactory {
     def unary_- = new BComplex(-complex.real, -complex.imag)
   }
 
+  // all these methods are from lower to higher(the same as subdividein)
+  def toWords(value: BigInt, wordLength: Int, wordCount: Int): Seq[BigInt] = toWordStrings(value, wordLength, wordCount).map(BigInt(_, 2))
+
+  def toWordStrings(value: BigInt, wordLength: Int, wordCount: Int): Seq[String] = {
+    value.toString(2).padToLeft(wordLength * wordCount, '0')
+      .grouped(wordLength).toSeq.takeRight(wordCount).reverse
+  }
+
+  def toWordsHexString(value: BigInt, w: Int, e: Int): String =
+    toWords(value, w, e).map(_.toString(16).padToLeft(w / 4, '0') + " ").flatten.mkString("")
 
 }
 

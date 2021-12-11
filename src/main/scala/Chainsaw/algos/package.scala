@@ -1,12 +1,19 @@
 package Chainsaw
 
+import Chainsaw.matlabIO.MComplex
 import breeze.linalg._
 import breeze.numerics._
 
 package object algos {
 
   case class definition() extends scala.annotation.StaticAnnotation
+
   case class fastAlgo() extends scala.annotation.StaticAnnotation
+
+  /**
+   * @param original the "definition algo" to who it is equivalent
+   */
+  case class hardAlgo(original: String) extends scala.annotation.StaticAnnotation
 
   case class Modulo(modulo: Int)
 
@@ -25,12 +32,12 @@ package object algos {
       new DenseVector(r ++ l)
     }
 
-    def ~= (that: DenseVector[BComplex]) = {
+    def ~=(that: DenseVector[BComplex]) = {
       val epsilon = 1E-4
       abs(dv - that).forall(_ < epsilon)
     }
 
-    def toMatlab = dv.toArray.map(_.toMComplex)
+    def toMatlab: Array[MComplex] = dv.toArray.map(_.toMComplex)
   }
 
   implicit class dvDoubleUtil(dv: DenseVector[Double]) {
@@ -47,7 +54,7 @@ package object algos {
       new DenseVector(r ++ l)
     }
 
-    def ~= (that: DenseVector[Double]) = {
+    def ~=(that: DenseVector[Double]) = {
       val epsilon = 1E-4
       abs(dv - that).forall(_ < epsilon)
     }
