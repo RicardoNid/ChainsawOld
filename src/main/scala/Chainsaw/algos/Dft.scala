@@ -49,4 +49,13 @@ object Dft {
   @fastAlgo
   def genericR2Fft[T](data: DenseVector[T], omega: T, inverse: Boolean = false, DIT: Boolean = false)
                      (implicit semiring: Semiring[T], classTag: ClassTag[T]):DenseVector[T]= ??? // TODO
+
+  /** the data path of real-valued fft
+   * @see ''Pipelined Architectures for Real-Valued FFT and Hermitian-Symmetric IFFT With Real Datapaths'' [[https://www.semanticscholar.org/paper/Pipelined-Architectures-for-Real-Valued-FFT-and-Salehi-Amirfattahi/d67de58011d0c403682a55471f5adec702acdf0c]]
+   * @param omega
+   */
+  @hardAlgo("dft")
+  def r2rvfft(data:DenseVector[Double], inverse:Boolean){
+
+  }
 }

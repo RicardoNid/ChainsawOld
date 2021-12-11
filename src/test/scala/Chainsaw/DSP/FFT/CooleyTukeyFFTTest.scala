@@ -1,20 +1,12 @@
 package Chainsaw.DSP.FFT
 
 import Chainsaw._
-import Chainsaw.matlabIO._
-import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should._
-import spinal.core.sim._
 import spinal.core._
 import spinal.core.sim._
-import spinal.lib._
-import spinal.sim._
-import spinal.lib.fsm._
-
-import Chainsaw._
-
-import matlabIO._
+import algos.MatlabRefs.{dft, idft}
+import algos._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -63,12 +55,12 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
 
       clockDomain.waitSampling(dut.core.latency + 1)
 
-      val golden = if (!inverse) Refs.FFT(testComplex) else Refs.IFFT(testComplex).map(_ * testLength)
+      val golden = if (!inverse) dft(testComplex.toSeq.asDv) else idft(testComplex.toSeq.asDv).map(_ * testLength)
 
-      println(golden.map(_.toString(6)).mkString(" "))
-      println(dutResult.map(_.toString(6)).mkString(" "))
+      println(golden)
+      println(dutResult)
       assert(dutResult.nonEmpty)
-      assert(golden.zip(dutResult).forall { case (complex, complex1) => complex.sameAs(complex1, epsilon = epsilon) })
+      assert(golden ~= dutResult.asDv)
     }
   }
 

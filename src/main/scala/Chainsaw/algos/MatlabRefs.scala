@@ -33,6 +33,11 @@ object MatlabRefs {
     new DenseVector(ret.map(_.toBComplex))
   }
 
+  def idft(data: DenseVector[BComplex]): DenseVector[BComplex] = {
+    val ret = eng.feval[Array[MComplex]]("ifft", data.toArray.map(_.toMComplex))
+    new DenseVector(ret.map(_.toBComplex))
+  }
+
   /** by default, we set order = gray and using unit average power
    */
   def qammod(data: DenseVector[Int], modulationOrder: Int) = {

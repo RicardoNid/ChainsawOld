@@ -10,6 +10,7 @@ import spinal.sim._
 import spinal.lib.fsm._
 
 import Chainsaw._
+import Chainsaw.algos.MatlabRefs.dft
 import Chainsaw.matlabIO._
 
 class R2RVFFTTest extends AnyFlatSpec with Matchers {
@@ -34,12 +35,6 @@ class R2RVFFTTest extends AnyFlatSpec with Matchers {
     clockDomain.waitSampling(dut.latency)
 
     println(s"latency = ${dut.latency}")
-    //    println(testCase.mkString(" "))
-    println(Refs.FFT(testCase.map(BComplex(_)).toArray).take(testSize / 2)
-      .mkString(" "))
-    // FIXME: UNACCESSIBLE SIGNAL : (toplevel/dataOut_payload_0_real : out SInt[16 bits]) isn't accessible during the simulation.
-    //    val dutResult = dataOut.payload.map(_.toComplex)
-    //    println(dutResult.mkString(" "))
+    println(dft(testCase.map(BComplex(_)).asDv))
   }
-
 }
