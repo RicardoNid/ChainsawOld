@@ -1,15 +1,12 @@
 package Chainsaw.DFG
 
+import Chainsaw.DFG.Operators._
 import Chainsaw._
-import Chainsaw.DFG._
 import spinal.core._
 import spinal.lib._
 
 import scala.language.postfixOps
 import scala.math.{abs, pow}
-import Operators._
-
-import scala.collection.mutable.ArrayBuffer
 
 // Architecutre selections
 object FirArch extends Enumeration {

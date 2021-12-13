@@ -12,10 +12,9 @@ object Operators {
 
   /** generate a pass through hardware of given width
    */
-  def passThrough[T <: Data](width: BitCount = -1 bits): DSPHardware[T] = DSPHardware(
-    impl = (dataIns: Seq[T], _: GlobalCount) => dataIns,
-    inDegree = 1,
-    outWidths = Seq(width),
+  def passThrough[T <: Data](width: BitCount = -1 bits): UnaryHardware[T] = UnaryHardware(
+    op = (dataIns: T) => dataIns,
+    width = width,
     delay = 0 cycles,
     exeTime = 0 sec
   )

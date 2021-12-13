@@ -1,56 +1,66 @@
 package Chainsaw.DFG
 
+import Chainsaw.DFG.DFGDSL.SIntNodeRing
 import Chainsaw.DFG.Operators._
+import Chainsaw.DFG._
 import breeze.linalg._
 import breeze.math._
 import spinal.core._
 
 object DFGDSL {
 
-  class SIntNodeRing(implicit graph: DFGGraph[SInt]) extends Semiring[DFGNode[SInt]] {
+  class SIntNodeRing(implicit graph: DFGGraph[SInt]) extends Semiring[DSPNode[SInt]] {
 
     val Hardware = BinaryHardware(sintMult, 10 bits, 0 cycles, 1 ns)
 
-    override def zero = new DFGNode("zero", Hardware)
+    override def zero = new DSPNode("zero", Hardware)
 
-    override def one = new DFGNode("one", Hardware)
+    override def one = new DSPNode("one", Hardware)
 
-    override def +(a: DFGNode[SInt], b: DFGNode[SInt]) = {
-      val ret = new DFGNode("sum", Hardware)
+    override def +(a: DSPNode[SInt], b: DSPNode[SInt]) = {
+      val ret = new DSPNode(s"${a}_${b}_sum", Hardware)
+      graph.addVertices(a, b, ret)
       graph.addEdge(a, ret, 0)
       graph.addEdge(b, ret, 0)
       ret
     }
 
-    override def *(a: DFGNode[SInt], b: DFGNode[SInt]) = {
-      val ret = new DFGNode("product", Hardware)
+    override def *(a: DSPNode[SInt], b: DSPNode[SInt]) = {
+      val ret = new DSPNode(s"${a}_${b}_product", Hardware)
+      graph.addVertices(a, b, ret)
       graph.addEdge(a, ret, 0)
       graph.addEdge(b, ret, 0)
       ret
     }
 
-    override def ==(a: DFGNode[SInt], b: DFGNode[SInt]) = true
+    override def ==(a: DSPNode[SInt], b: DSPNode[SInt]) = true
 
-    override def !=(a: DFGNode[SInt], b: DFGNode[SInt]) = true
+    override def !=(a: DSPNode[SInt], b: DSPNode[SInt]) = true
   }
 
-  class DFGArea[T <: Data](name:String) {
+  abstract class DFGArea[T <: Data](name: String) {
     implicit val dfg = DFGGraph[T](name)
+    implicit val semiRing: Semiring[DSPNode[T]]
+    val node = passThrough[T]()
+
+    def dfgIn(node: DSPNode[T]) = dfg.setInput(node)
+
+    def dfgOut(node: DSPNode[T]) = dfg.setOutput(node)
+
   }
 
-  class DFGNode[T <: Data](override val name:String, override val hardware: DSPHardware[T])(implicit dfg:DFGGraph[T])
-    extends DSPNode[T](name, hardware){
-    dfg.addVertex(this)
-  }
 
   def main(args: Array[String]): Unit = {
 
-    val area = new DFGArea[SInt]("add"){
-      implicit val sintRing = new SIntNodeRing()
-      val uintHardware = BinaryHardware(sintMult, 10 bits, 0 cycles, 1 ns)
-      val x = new DFGNode("x", uintHardware)
-      val y = new DFGNode("y", uintHardware)
-      val z = x * y
+    val area = new DFGArea[SInt]("add") {
+
+      override implicit val semiRing: Semiring[DSPNode[SInt]] = new SIntNodeRing()
+
+      val x = DenseVector.tabulate(10)(i => new DSPNode(s"x_$i", node))
+      val y = DenseVector.tabulate(10)(i => new DSPNode(s"y_$i", node))
+
+      val z0 = x * y
+      val z1 = x + y
     }
 
     println(area.dfg)

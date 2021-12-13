@@ -26,6 +26,7 @@ class DSPHardware[T <: Data](val impl: (Seq[T], GlobalCount) => Seq[T],
 
   def asDeviceNode(name: String): DeviceNode[T] = DeviceNode(name, this)
 
+
   def asDeviceNodes(name: String, count: Int): Seq[DeviceNode[T]]
   = (0 until count).map(i => asDeviceNode(s"${name}_$i"))
 
