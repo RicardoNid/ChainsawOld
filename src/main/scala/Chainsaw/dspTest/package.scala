@@ -10,6 +10,7 @@ import Chainsaw.matlabIO._
 import org.slf4j.{Logger, LoggerFactory}
 import spinal.sim.SimThread
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 
@@ -181,6 +182,7 @@ package object dspTest {
 
 
   /** these methods help user's on testing Flow/Streams when the one-line test is not avilable
+   *
    * @param dc Flow/Stream
    * @tparam T payload type
    */
@@ -274,6 +276,30 @@ package object dspTest {
         case _ => Container += peekWhatever(dc.payload)
       }
     }
+  }
+
+  def buildCombBinary[THard <: Data](comb: (THard, THard) => THard, hardType: HardType[THard]) = {
+    new Component {
+      val x = in(hardType())
+      val y = in(hardType())
+      val ret = out(hardType())
+      ret := comb(x, y)
+    }
+  }
+
+  def evaluateCombBinary[THard <: Data, TSoft]
+  (comb: (THard, THard) => THard, hardType: HardType[THard],
+   Xs: Seq[TSoft], Ys: Seq[TSoft]): Seq[TSoft] = {
+    val ret = ArrayBuffer[TSoft]()
+    SimConfig.withWave.compile(buildCombBinary(comb, hardType)).doSim { dut =>
+      Xs.indices.foreach { i =>
+        pokeWhatever(dut.x, Xs(i))
+        pokeWhatever(dut.y, Ys(i))
+        sleep(1)
+        ret += peekWhatever(dut.ret)
+      }
+    }
+    ret
   }
 
 }

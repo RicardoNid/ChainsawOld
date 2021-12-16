@@ -15,8 +15,8 @@ import scala.math.sqrt
  * @param gray          symbol order, binary when false, gray when true
  * @param customSymbols when you need to specify custom QAM values(different from Matlab)
  */
-case class QAMDeMod(bitAlloc: Seq[Int], powAlloc: Seq[Double], symbolType: HardType[ComplexNumber],
-                    gray: Boolean = true, customSymbols: Map[Int, Seq[BComplex]] = Map[Int, Seq[BComplex]]()) extends Component {
+case class AdaptiveQamdemod(bitAlloc: Seq[Int], powAlloc: Seq[Double], symbolType: HardType[ComplexNumber],
+                            gray: Boolean = true, customSymbols: Map[Int, Seq[BComplex]] = Map[Int, Seq[BComplex]]()) extends Component {
 
   val fixedType = HardType(symbolType().real)
 
@@ -30,7 +30,7 @@ case class QAMDeMod(bitAlloc: Seq[Int], powAlloc: Seq[Double], symbolType: HardT
   val ends = filteredIndices.map(i => bitAlloc.take(i + 1).sum)
   val segments = ends.zip(starts).map { case (end, start) => bitAlloc.sum - 1 - start downto bitAlloc.sum - end }
 
-  val demods = bitAlloc.zip(powAlloc).map{ case (bit, pow) => QAMDeModCore(symbolType, bit, sqrt(pow))}
+  val demods = bitAlloc.zip(powAlloc).map{ case (bit, pow) => QAMDemod(symbolType, bit, sqrt(pow))}
 
   segments.zipWithIndex.zip(demods).foreach { case ((seg, i), core) =>
     core.dataIn.payload := dataIn.payload(i)
@@ -39,12 +39,12 @@ case class QAMDeMod(bitAlloc: Seq[Int], powAlloc: Seq[Double], symbolType: HardT
   dataOut.valid := RegNext(dataIn.valid, init = False)
 }
 
-object QAMDeMod {
+object AdaptiveQamdemod {
   def main(args: Array[String]): Unit = {
     val bitAlloc = Seq.fill(256)(4)
     val powerAlloc = Seq.fill(256)(1.0)
     val symbolType = HardType(ComplexNumber(1, -14))
-    GenRTL(QAMDeMod(bitAlloc, powerAlloc, symbolType))
-    VivadoSynth(QAMDeMod(bitAlloc, powerAlloc, symbolType))
+    GenRTL(AdaptiveQamdemod(bitAlloc, powerAlloc, symbolType))
+    VivadoSynth(AdaptiveQamdemod(bitAlloc, powerAlloc, symbolType))
   }
 }

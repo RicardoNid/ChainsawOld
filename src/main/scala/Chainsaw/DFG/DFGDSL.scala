@@ -1,8 +1,6 @@
 package Chainsaw.DFG
 
-import Chainsaw.DFG.DFGDSL.SIntNodeRing
 import Chainsaw.DFG.Operators._
-import Chainsaw.DFG._
 import breeze.linalg._
 import breeze.math._
 import spinal.core._
@@ -59,8 +57,9 @@ object DFGDSL {
       val x = DenseVector.tabulate(10)(i => new DSPNode(s"x_$i", node))
       val y = DenseVector.tabulate(10)(i => new DSPNode(s"y_$i", node))
 
-      val z0 = x * y
-      val z1 = x + y
+//      val z0 = x * y
+//      val z1 = x + y
+      val z2 = sum(x *:* y)
     }
 
     println(area.dfg)

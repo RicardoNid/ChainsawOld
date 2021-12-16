@@ -30,6 +30,7 @@ val v4 = new DenseVector(Array(1.0, 2.0, 3.0, 4.0))
 val randV = DenseVector.rand(4, rand = Rand.uniform)
 randV.length
 
+
 // I/O and serialization
 // serialization is provided by Java
 

@@ -356,6 +356,16 @@ package object Chainsaw extends RealFactory {
     def +^(that: SFix) = doAddSub(that, true)
 
     def -^(that: SFix) = doAddSub(that, false)
+
+    def abs = {
+      val ret = cloneOf(sf)
+      ret.raw := sf.raw.abs.asSInt
+      ret
+    }
+
+    def isPositive = ~sf.raw.msb
+
+    def isNegative = sf.raw.msb
   }
 
   implicit class VecUtil[T <: Data](vec: Vec[T]) {
@@ -531,6 +541,12 @@ package object Chainsaw extends RealFactory {
 
   def toWordsHexString(value: BigInt, w: Int, e: Int): String =
     toWords(value, w, e).map(_.toString(16).padToLeft(w / 4, '0') + " ").flatten.mkString("")
+
+  def SFLike(value:Double, sf: SFix) ={
+    val ret = cloneOf(sf)
+    ret := value
+    ret
+  }
 
 }
 

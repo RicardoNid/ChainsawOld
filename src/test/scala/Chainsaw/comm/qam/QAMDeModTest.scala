@@ -25,7 +25,7 @@ class QAMDeModTest extends AnyFlatSpec {
     val testCase: Seq[BComplex] = powAlloc.map(ChainsawRand.nextComplex(-testUpperbound, testUpperbound) * _)
     var dutResults = ArrayBuffer[BigInt]()
 
-    SimConfig.withWave.compile(QAMDeMod(bitAlloc, powAlloc, HardType(ComplexNumber(3, -14)))).doSim { dut =>
+    SimConfig.withWave.compile(AdaptiveQamdemod(bitAlloc, powAlloc, HardType(ComplexNumber(3, -14)))).doSim { dut =>
       import dut.{clockDomain, dataIn, dataOut}
       clockDomain.forkStimulus(2)
       dutResults = flowPeekPoke(dut, Seq(testCase), dataIn, dataOut, 1)
