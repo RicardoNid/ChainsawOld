@@ -2,16 +2,8 @@ package Chainsaw.comm.channelEqualizer
 
 import Chainsaw._
 import spinal.core._
-import spinal.core.sim.SimConfig
+import spinal.core.sim.{SimConfig, _}
 import spinal.lib._
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.language.postfixOps
@@ -72,51 +64,59 @@ case class Equalization(dspType: HardType[SFix]) extends Component {
   counter.value.simPublic()
 
   switch(counter.value) {
-    is(U(0)) {
+    var i = 0
+
+    def exec(block: => Unit) = {
+      is(U(i))(block)
+      i += 1
+    }
+
+    exec {
       mult0(preambleReal, preambleReal, tk) // real^2
       mult1(preambleImag, preambleImag, xk) // imag^2
       temp0 := preambleReal
       temp1 := preambleImag
     }
-    is(U(1)) {
+    exec {
       sub0(dspZero, temp1, temp1)
       add1(xk, tk, tk) // now, tk = energy
     }
-    is(U(2)) {
+    exec {
       mult0(tk, dspQuarter, tk)
       xk := dspOne // now, xk = 1
     }
     (0 until 10).foreach { i => // towords 1 / energy
-      is(U(2 * i + 3))(sub0(dspTwo, tk, temp2))
-      is(U(2 * i + 4)) {
+      exec(sub0(dspTwo, tk, temp2))
+      exec {
         mult0(xk, temp2, xk)
         mult1(tk, temp2, tk)
       }
     } // after this, xk = 1 / energy
-    is(U(23)) {
+    exec {
       mult0(xk, temp0, xk)
       mult1(xk, temp1, tk)
     }
-    is(U(24)) {
+    exec {
       mult0(xk, dspQuarter, xk) // xk = factor.real
       mult1(tk, dspQuarter, tk) // tk = factor.imag
     }
     (0 until 16).foreach { i => // data* factor, (a+bj) * (c+dj)
-      is(3 * i + 25) {
+      exec {
         mult0(dataReal, xk, temp0) // ac
         mult1(dataImag, tk, temp1) // bd
         temp2 := dataReal
         temp3 := dataImag
       }
-      is(3 * i + 26) {
+      exec {
         mult0(temp2, tk, temp2) // ad
         mult1(temp3, xk, temp3) // bc
       }
-      is(3 * i + 27) {
+      exec {
         sub0(temp0, temp1, temp2) // result.real
         add1(temp2, temp3, temp3) // result.imag
       }
     }
+    println(s"cycles count: $i")
     default() // do nothing
   }
 }
@@ -134,7 +134,6 @@ case class FreqEqualizer(golden: Seq[Int], iteration: Int) extends Component {
 object FreqEqualizer {
   def main(args: Array[String]): Unit = {
     //    VivadoSynth(Smooth(Seq.fill(vecSize)(-1), HardType(SFix(7 exp, 18 bits))))
-    //    VivadoSynth(Equalization(HardType(SFix(7 exp, 18 bits))))
 
     SimConfig.withWave.compile(Equalization(SFix(7 exp, 18 bits))).doSim { dut =>
       val dutResult = ArrayBuffer[Seq[BComplex]]()
@@ -157,6 +156,8 @@ object FreqEqualizer {
       println(dataIn / preamble)
       println(dutResult.head.head)
     }
+
+    VivadoSynth(Equalization(HardType(SFix(7 exp, 18 bits))))
 
   }
 }
