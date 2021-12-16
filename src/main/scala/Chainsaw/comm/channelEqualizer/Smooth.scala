@@ -16,14 +16,7 @@ case class Smooth(golden: Seq[Int], dspType: HardType[SFix], vecSize: Int) exten
 
   def shiftRight(vec: Vec[SFix], i: Int) = vec.foreach(v => v := (v >> i).truncated)
 
-//  val adder0, adder1 = VecAdd(dspType, vecSize)
-//  adder0.init()
-//  adder1.init()
-//  val vecAdd: (Vec[SFix], Vec[SFix], Vec[SFix]) => Unit = adder0.add
-
-  def vecAdd (xs:Vec[SFix], ys:Vec[SFix], rets:Vec[SFix])={
-    xs.zip(ys).zip(rets).foreach{ case ((x,y), ret) => ret := x + y}
-  }
+  def vecAdd(xs: Vec[SFix], ys: Vec[SFix], rets: Vec[SFix]) = xs.zip(ys).zip(rets).foreach { case ((x, y), ret) => ret := x + y }
 
   def adjust(vec: Vec[SFix]) = vec.zip(golden).foreach { case (reg, i) => if (i != 1) reg := -reg }
 
@@ -38,7 +31,8 @@ case class Smooth(golden: Seq[Int], dspType: HardType[SFix], vecSize: Int) exten
   val reg0, reg1 = Reg(Vec(dspType(), vecSize))
   val srl0, srl1 = Reg(Vec(dspType(), vecSize + 15))
 
-  val period = 3 + 2 + 1 + 32 + 2
+  val period = 3 + 1 + 1 + 16
+  println(s"period: $period")
 
   val counter = spinal.lib.Counter(period)
   counter.value.simPublic()
@@ -46,10 +40,10 @@ case class Smooth(golden: Seq[Int], dspType: HardType[SFix], vecSize: Int) exten
 
   val fsm = new StateMachine {
     val GETAVERAGE0 = StateEntryPoint()
-    val GETAVERAGE1, GETAVERAGE2, GOLDEN0, GOLDEN1, PREPARE, LAST0, LAST1 = new State()
-    val SMOOTH = new StateDelay(32)
-    val smoothCounter = spinal.lib.Counter(32)
-    val ordered = Seq(GETAVERAGE0, GETAVERAGE1, GETAVERAGE2,  GOLDEN0, GOLDEN1, PREPARE, SMOOTH, LAST0, LAST1)
+    val GETAVERAGE1, GETAVERAGE2, GOLDEN, PREPARE = new State()
+    val SMOOTH = new StateDelay(16)
+    val smoothCounter = spinal.lib.Counter(16)
+    val ordered = Seq(GETAVERAGE0, GETAVERAGE1, GETAVERAGE2, GOLDEN, PREPARE, SMOOTH)
     ordered.zip(ordered.tail :+ GETAVERAGE0).foreach { case (prev, next) =>
       prev match {
         case delay: StateDelay => delay.whenCompleted(goto(next))
@@ -57,7 +51,6 @@ case class Smooth(golden: Seq[Int], dspType: HardType[SFix], vecSize: Int) exten
       }
       prev.whenIsActive(counter.increment())
     }
-
     GETAVERAGE0.whenIsActive {
       reg0 := inReal
       reg1 := inImag
@@ -70,8 +63,10 @@ case class Smooth(golden: Seq[Int], dspType: HardType[SFix], vecSize: Int) exten
       shiftRight(reg0, 1)
       shiftRight(reg1, 1)
     }
-    GOLDEN0.whenIsActive(adjust(reg0))
-    GOLDEN1.whenIsActive(adjust(reg1))
+    GOLDEN.whenIsActive {
+      adjust(reg0)
+      adjust(reg1)
+    }
     PREPARE.whenIsActive {
       srl0.take(7).foreach(_ := reg0.head)
       srl0.slice(7, 7 + vecSize).zip(reg0).foreach { case (srl, reg) => srl := reg }
@@ -85,19 +80,17 @@ case class Smooth(golden: Seq[Int], dspType: HardType[SFix], vecSize: Int) exten
     }
     SMOOTH.whenIsActive {
       smoothCounter.increment()
-      when(!smoothCounter.value.msb) { // [0,8)
-        vecAdd(reg0, Vec(srl0.take(256)), reg0)
-        srl0.init.zip(srl0.tail).foreach { case (low, high) => low := high }
-      }.otherwise { // [8,16)
-        vecAdd(reg1, Vec(srl1.take(256)), reg1)
-        srl1.init.zip(srl1.tail).foreach { case (low, high) => low := high }
-      }
+      vecAdd(reg0, Vec(srl0.take(256)), reg0) // accumulation
+      vecAdd(reg1, Vec(srl1.take(256)), reg1)
+      srl0.init.zip(srl0.tail).foreach { case (low, high) => low := high } // shifting(or, sliding)
+      srl1.init.zip(srl1.tail).foreach { case (low, high) => low := high }
     }
-    LAST0.whenIsActive(shiftRight(reg0, 4))
-    LAST1.whenIsActive(shiftRight(reg1, 4))
   }
 
-  dataOut.payload.zip(reg0.zip(reg1)).foreach { case (out, (real, imag)) => out.real := real; out.imag := imag }
+  dataOut.payload.zip(reg0.zip(reg1)).foreach { case (out, (real, imag)) =>
+    out.real := (real >> 4).truncated
+    out.imag := (imag >> 4).truncated
+  }
   dataOut.valid := RegNext(dataIn.valid)
 }
 
