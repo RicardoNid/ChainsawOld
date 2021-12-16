@@ -1,17 +1,11 @@
 package Chainsaw.comm.channelEqualizer
 
-import Chainsaw.{BComplex, matlabIO}
+import Chainsaw._
 import breeze.linalg.{DenseMatrix, DenseVector, max}
 import breeze.numerics.abs
 import breeze.stats.mean
-import spinal.core.sim.SimConfig
 import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
+import spinal.core.sim.{SimConfig, _}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -43,18 +37,9 @@ object FreqEqualizerAlgo {
 
     def add(x: DenseVector[Double], y: DenseVector[Double]) = x + y
 
-    def sub(x: DenseVector[Double], y: DenseVector[Double], z: DenseVector[Double]) = x - y
-
     def mult(x: DenseVector[Double], y: DenseVector[Double]) = x * y
 
-    def mac(x: DenseVector[Double], y: DenseVector[Double], z: DenseVector[Double]) = x * y + z
-
-    def linear(x: DenseVector[Double], k: Double, b: Double) = x * k + b
-
     def shiftLeft(x: DenseVector[Double], i: Int) = DenseVector.vertcat(x(i to -1), DenseVector.fill(i)(x(-1)))
-
-    def shiftRight(x: DenseVector[Double], i: Int) = DenseVector.vertcat(DenseVector.fill(i)(x(0)), x(0 to -(1 + i)))
-
 
     // block1: adjustment && smooth, using adders
     var reg0, reg1, reg2, reg3 = DenseVector.zeros[Double](256)
@@ -126,16 +111,16 @@ object FreqEqualizerAlgo {
     }
 
     // verify the smooth module
-    SimConfig.withWave.compile(Smooth(golden.toArray.toSeq.map(_.toInt), HardType(SFix(7 exp, 18 bits)))).doSim { dut =>
+    SimConfig.withWave.compile(Smooth(golden.toArray.toSeq.map(_.toInt), HardType(SFix(7 exp, 18 bits)), 256)).doSim { dut =>
 
       val dutResult = ArrayBuffer[Seq[BComplex]]()
       dut.clockDomain.forkStimulus(2)
+      dut.clockDomain.waitSampling()
       dut.dataIn.payload.zip(preamble(0).toArray).foreach { case (port, complex) => port #= complex }
       dut.clockDomain.waitSampling()
       dut.dataIn.payload.zip(preamble(1).toArray).foreach { case (port, complex) => port #= complex }
-      dut.clockDomain.waitSampling()
       (0 until 50).foreach { _ =>
-        if (dut.counter.value.toInt == 41) {
+        if (dut.counter.value.toInt == dut.period - 1) {
           dut.clockDomain.waitSampling()
           dutResult += dut.dataOut.payload.map(_.toComplex)
         }
@@ -147,7 +132,10 @@ object FreqEqualizerAlgo {
       val diff = yoursAfterSmooth - goldenAfterSmooth
       assert(diff.forall(_.abs < 1E-1), max(abs(diff))) // for extreme value
       assert(mean(abs(diff)) < 1E-2, mean(abs(diff))) // for mean performance
+
     }
+
+    VivadoSynth(Smooth(golden.toArray.toSeq.map(_.toInt), HardType(SFix(7 exp, 18 bits)), 256), "Smooth256")
 
   }
 }

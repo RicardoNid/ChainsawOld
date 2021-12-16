@@ -50,6 +50,10 @@ libraryDependencies ++= Seq(
   "ai.djl.pytorch" % "pytorch-native-auto" % "1.8.1"
 )
 
+// https://mvnrepository.com/artifact/com.alibaba/fastjson
+//libraryDependencies += "com.alibaba" % "fastjson" % "1.2.78"
+
+
 //oshi
 libraryDependencies += "com.github.oshi" % "oshi-core" % "5.8.0"
 
