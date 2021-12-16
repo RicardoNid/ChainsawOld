@@ -1,18 +1,71 @@
 package Chainsaw.comm.channelEqualizer
 
 import Chainsaw._
+import breeze.numerics.abs
 import spinal.core._
 import spinal.core.sim.{SimConfig, _}
 import spinal.lib._
+import spinal.lib.fsm._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.language.postfixOps
 
+case class VecAddSub(dspType: HardType[SFix], vecSize: Int) extends Component {
+  val xs, ys = in(Vec(dspType(), vecSize))
+  val mode = in Bits (1 bits)
+  mode.addAttribute("max_fanout", 32)
+  val rets = out(Vec(dspType(), vecSize))
 
-case class Equalization(dspType: HardType[SFix]) extends Component {
+  rets.zip(xs.zip(ys)).foreach { case (ret, (x, y)) => ret := Mux(mode(0), x + y, x - y) }
 
-  val vecSize = 1
+  def drive(modeOuter: Bits, xOuter: Vec[SFix], yOuter: Vec[SFix], retOuter: Vec[SFix]) = {
+    Seq(modeOuter, xOuter, yOuter).zip(Seq(mode, xs, ys)).foreach { case (signal, port) =>
+      if (signal == null) port.assignDontCare() else port := signal
+    }
+    if (retOuter != null) retOuter := rets
+  }
+
+  val add: (Vec[SFix], Vec[SFix], Vec[SFix]) => Unit = drive(B"1", _, _, _)
+  val sub: (Vec[SFix], Vec[SFix], Vec[SFix]) => Unit = drive(B"0", _, _, _)
+
+  def idle() = drive(null, null, null, null)
+
+  def init() = {
+    Seq(mode, xs, ys).foreach(_.allowOverride)
+    idle()
+  }
+}
+
+case class VecMult(dspType: HardType[SFix], vecSize: Int) extends Component {
+  val xs, ys = in(Vec(dspType(), vecSize))
+  val rets = out(Vec(dspType(), vecSize))
+
+  rets.zip(xs.zip(ys)).foreach { case (ret, (x, y)) => ret := (x * y).truncated }
+
+  def drive(xOuter: Vec[SFix], yOuter: Vec[SFix], retOuter: Vec[SFix]) = {
+    Seq(xOuter, yOuter).zip(Seq(xs, ys)).foreach { case (signal, port) =>
+      if (signal == null) port.assignDontCare() else port := signal
+    }
+    if (retOuter != null) retOuter := rets
+  }
+
+  val mult: (Vec[SFix], Vec[SFix], Vec[SFix]) => Unit = drive(_, _, _)
+
+  def idle() = drive(null, null, null)
+
+  def init() = {
+    Seq(xs, ys).foreach(_.allowOverride)
+    idle()
+  }
+
+}
+
+case class Equalization(dspType: HardType[SFix], vecSize:Int) extends Component {
+
   val complexType = HardType(ComplexNumber(dspType))
+  val iteration = 12
+  val period = 2 * iteration + 3 * 16 + 3 + 2
+  require(period <= 80)
 
   val preambleIn = slave Flow Vec(complexType, vecSize) // preambles after smooth
   val dataIn = slave Flow Vec(complexType, vecSize) // data before equalization
@@ -29,13 +82,12 @@ case class Equalization(dspType: HardType[SFix]) extends Component {
   val dspQuarter = Vec(SFLike(0.25, dspType()), vecSize)
 
   val tk, xk, temp0, temp1, temp2, temp3 = Reg(Vec(dspType(), vecSize)) // registers
-  val dsp0s = Seq.fill(vecSize)(DSP48(dspType))
-  val dsp1s = Seq.fill(vecSize)(DSP48(dspType))
 
-  (dsp0s ++ dsp1s).foreach { dsp => // default value, will
-    Seq(dsp.x, dsp.y, dsp.z, dsp.mode).foreach(_.allowOverride)
-    dsp.idle()
-  }
+  val dsp0, dsp1 = VecMult(dspType, vecSize)
+  val addSub0, addSub1 = VecAddSub(dspType, vecSize)
+
+  Seq(addSub0, addSub1).foreach(_.init())
+  Seq(dsp0, dsp1).foreach(_.init())
 
   dataOut.payload.zip(temp2.zip(temp3)).foreach { case (out, (real, imag)) =>
     out.real := real
@@ -43,81 +95,92 @@ case class Equalization(dspType: HardType[SFix]) extends Component {
   }
   dataOut.valid := RegNext(dataIn.valid)
 
-  def driveDSP(xs: Vec[SFix], ys: Vec[SFix], rets: Vec[SFix], dspIndex: Int, order: String): Unit = {
-    val dsps = if (dspIndex == 0) dsp0s else dsp1s
-    xs.zip(ys).zip(rets).zip(dsps).foreach { case (((x, y), ret), dsp) =>
-      order match {
-        case "mult" => dsp.mult(x, y, ret)
-        case "add" => dsp.add(x, y, ret)
-        case "sub" => dsp.sub(x, y, ret)
-      }
-    }
-  }
+  val mult0: (Vec[SFix], Vec[SFix], Vec[SFix]) => Unit = dsp0.mult
+  val mult1: (Vec[SFix], Vec[SFix], Vec[SFix]) => Unit = dsp1.mult
+  val add0: (Vec[SFix], Vec[SFix], Vec[SFix]) => Unit = addSub0.add
+  val add1: (Vec[SFix], Vec[SFix], Vec[SFix]) => Unit = addSub1.add
+  val sub0: (Vec[SFix], Vec[SFix], Vec[SFix]) => Unit = addSub0.sub
+  val sub1: (Vec[SFix], Vec[SFix], Vec[SFix]) => Unit = addSub1.sub
 
-  val mult0: (Vec[SFix], Vec[SFix], Vec[SFix]) => Unit = driveDSP(_, _, _, 0, "mult")
-  val mult1: (Vec[SFix], Vec[SFix], Vec[SFix]) => Unit = driveDSP(_, _, _, 1, "mult")
-  val add0: (Vec[SFix], Vec[SFix], Vec[SFix]) => Unit = driveDSP(_, _, _, 0, "add")
-  val add1: (Vec[SFix], Vec[SFix], Vec[SFix]) => Unit = driveDSP(_, _, _, 1, "add")
-  val sub0: (Vec[SFix], Vec[SFix], Vec[SFix]) => Unit = driveDSP(_, _, _, 0, "sub")
-
-  val counter = CounterFreeRun(76)
+  // TODO: remove this in final version
+  val counter = Counter(period)
   counter.value.simPublic()
 
-  switch(counter.value) {
-    var i = 0
+  val dbcCounter = Counter(2)
+  dbcCounter.value.simPublic()
+  val complexMultCounter = Counter(3)
+  complexMultCounter.value.simPublic()
 
-    def exec(block: => Unit) = {
-      is(U(i))(block)
-      i += 1
+  val fsm = new StateMachine {
+    val GETENERGY0 = StateEntryPoint()
+    val GETENERGY1, GETENERGY2, GETFACTOR0, GETFACTOR1 = new State()
+    val DBC = new StateDelay(iteration * 2)
+    val EQUALIZE = new StateDelay(48)
+
+    //  state transition logic
+    val ordered = Seq(GETENERGY0, GETENERGY1, GETENERGY2, DBC, GETFACTOR0, GETFACTOR1, EQUALIZE)
+    ordered.zip(ordered.tail :+ GETENERGY0).foreach { case (prev, next) =>
+      prev match {
+        case delay: StateDelay => delay.whenCompleted(goto(next))
+        case _ => prev.whenIsActive(goto(next))
+      }
+      prev.whenIsActive(counter.increment())
     }
 
-    exec {
+    // state behavior
+    GETENERGY0.whenIsActive {
       mult0(preambleReal, preambleReal, tk) // real^2
       mult1(preambleImag, preambleImag, xk) // imag^2
       temp0 := preambleReal
       temp1 := preambleImag
     }
-    exec {
-      sub0(dspZero, temp1, temp1)
-      add1(xk, tk, tk) // now, tk = energy
+
+    GETENERGY1.whenIsActive {
+      add0(tk, xk, tk) // now, tk = energy
+      sub1(dspZero, temp1, temp1)
     }
-    exec {
+
+    GETENERGY2.whenIsActive {
       mult0(tk, dspQuarter, tk)
       xk := dspOne // now, xk = 1
     }
-    (0 until 10).foreach { i => // towords 1 / energy
-      exec(sub0(dspTwo, tk, temp2))
-      exec {
-        mult0(xk, temp2, xk)
-        mult1(tk, temp2, tk)
-      }
+
+    DBC.whenIsActive { // towards 1 / energy
+      dbcCounter.increment()
+      when(!dbcCounter.value.lsb)(sub0(dspTwo, tk, temp2))
+        .otherwise {
+          mult0(tk, temp2, tk)
+          mult1(xk, temp2, xk)
+        }
     } // after this, xk = 1 / energy
-    exec {
-      mult0(xk, temp0, xk)
-      mult1(xk, temp1, tk)
+
+    GETFACTOR0.whenIsActive {
+      mult0(xk, temp1, tk)
+      mult1(xk, temp0, xk)
     }
-    exec {
-      mult0(xk, dspQuarter, xk) // xk = factor.real
-      mult1(tk, dspQuarter, tk) // tk = factor.imag
+
+    GETFACTOR1.whenIsActive {
+      mult0(tk, dspQuarter, tk) // tk = factor.imag
+      mult1(xk, dspQuarter, xk) // xk = factor.real
     }
-    (0 until 16).foreach { i => // data* factor, (a+bj) * (c+dj)
-      exec {
-        mult0(dataReal, xk, temp0) // ac
-        mult1(dataImag, tk, temp1) // bd
-        temp2 := dataReal
-        temp3 := dataImag
+
+    EQUALIZE.whenIsActive { // data* factor, (a+bj) * (c+dj)
+      complexMultCounter.increment()
+      when(complexMultCounter.value === U(0)) {
+        mult0(xk, dataReal, temp0) // ac
+        mult1(tk, dataImag, temp1) // bd
+        temp2 := dataImag
+        temp3 := dataReal
       }
-      exec {
-        mult0(temp2, tk, temp2) // ad
-        mult1(temp3, xk, temp3) // bc
-      }
-      exec {
-        sub0(temp0, temp1, temp2) // result.real
-        add1(temp2, temp3, temp3) // result.imag
-      }
+        .elsewhen(complexMultCounter.value === U(1)) {
+          mult0(xk, temp2, temp2) // bc
+          mult1(tk, temp3, temp3) // ab
+        }
+        .otherwise {
+          sub0(temp0, temp1, temp2) // result.real
+          add1(temp2, temp3, temp3) // result.imag
+        }
     }
-    println(s"cycles count: $i")
-    default() // do nothing
   }
 }
 
@@ -131,11 +194,10 @@ case class FreqEqualizer(golden: Seq[Int], iteration: Int) extends Component {
 
 }
 
-object FreqEqualizer {
+object Equalization {
   def main(args: Array[String]): Unit = {
-    //    VivadoSynth(Smooth(Seq.fill(vecSize)(-1), HardType(SFix(7 exp, 18 bits))))
 
-    SimConfig.withWave.compile(Equalization(SFix(7 exp, 18 bits))).doSim { dut =>
+    SimConfig.withWave.compile(Equalization(SFix(7 exp, 18 bits), 1)).doSim { dut =>
       val dutResult = ArrayBuffer[Seq[BComplex]]()
       val dataIn = ChainsawRand.nextComplex()
       val preamble = ChainsawRand.nextComplex()
@@ -145,7 +207,7 @@ object FreqEqualizer {
 
       dut.clockDomain.waitSampling()
       (0 until 100).foreach { _ =>
-        if (dut.counter.value.toInt == 75) {
+        if (dut.counter.value.toInt == dut.period - 1) {
           dut.clockDomain.waitSampling()
           dutResult += dut.dataOut.payload.map(_.toComplex)
         }
@@ -155,9 +217,10 @@ object FreqEqualizer {
       println(s"preamble: $preamble")
       println(dataIn / preamble)
       println(dutResult.head.head)
+      assert(abs(dataIn / preamble - dutResult.head.head) < 1E-1)
     }
 
-    VivadoSynth(Equalization(HardType(SFix(7 exp, 18 bits))))
+    VivadoSynth(Equalization(HardType(SFix(7 exp, 18 bits)), 256))
 
   }
 }
