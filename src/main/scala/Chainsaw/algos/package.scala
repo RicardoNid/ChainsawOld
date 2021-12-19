@@ -8,9 +8,12 @@ package object algos {
 
   case class definition() extends scala.annotation.StaticAnnotation
 
+  /** the improved algorithm which reduce the strength of the definition version
+   * @param original * @param original the "definition algo" to who it is equivalent
+   */
   case class fastAlgo(original:String) extends scala.annotation.StaticAnnotation
 
-  /**
+  /** the binary algorithm which pointed out the hardware datapath of the definition version
    * @param original the "definition algo" to who it is equivalent
    */
   case class hardAlgo(original: String) extends scala.annotation.StaticAnnotation
@@ -32,8 +35,7 @@ package object algos {
       new DenseVector(r ++ l)
     }
 
-    def ~=(that: DenseVector[BComplex]) = {
-      val epsilon = 1E-4
+    def ~=(that: DenseVector[BComplex], epsilon:Double = 1E-4) = {
       abs(dv - that).forall(_ < epsilon)
     }
 

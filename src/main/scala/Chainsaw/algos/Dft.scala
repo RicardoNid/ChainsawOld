@@ -52,6 +52,7 @@ object Dft {
    *
    * @param data0 a real-valued
    * @param data1 another sequence with same properties
+   * @see ''Fast Algorithms for Signal Processing'' Chap5.1
    */
   @fastAlgo("dft")
   def rvdftByDouble(data0: DenseVector[Double], data1: DenseVector[Double]): (DenseVector[BComplex], DenseVector[BComplex]) = {
@@ -63,18 +64,19 @@ object Dft {
   }
 
   /** improve the performance of hermitian symmetric idft by doubling
+   *
    * @param data0 a hermitian symmetric sequence
    * @param data1 another sequence with same properties
+   * @see ''Fast Algorithms for Signal Processing'' Chap5.1
    */
   @fastAlgo("dft")
-  def rvidftByDouble(data0: DenseVector[BComplex], data1: DenseVector[BComplex]): (DenseVector[Double], DenseVector[Double]) ={
+  def rvidftByDouble(data0: DenseVector[BComplex], data1: DenseVector[BComplex]): (DenseVector[Double], DenseVector[Double]) = {
     val dataIn = data0 + (data1 *:* i)
     val dataOut = idft(dataIn)
     val out0 = dataOut.map(_.real)
     val out1 = dataOut.map(_.imag)
     (out0, out1)
   }
-
 
 
   /** radix-2 fft

@@ -28,6 +28,21 @@ package object Chainsaw extends RealFactory {
   /*
   * following methods are designed for Real type*/
 
+  case class coreHardware() extends scala.annotation.StaticAnnotation
+
+
+  // TODO: extract the features of the following annotations and implement them in traits
+  /** indicating that a module is fully-pipelined, thus, it requires no control at all, its behaviors is fully described by its latency
+   *
+   */
+  case class fullyPipelined() extends scala.annotation.StaticAnnotation
+
+  /** indicating that a module is periodic, thus, it is controlled by an inner counter which is driven by dataIn.fire,
+   * its behaviors is fully described by its latency and period
+   *
+   */
+  case class partiallyPipelined() extends scala.annotation.StaticAnnotation
+
   import org.slf4j.{LoggerFactory, Logger}
 
   val logger = LoggerFactory.getLogger("Chainsaw logger")

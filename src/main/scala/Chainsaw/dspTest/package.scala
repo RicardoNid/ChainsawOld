@@ -267,10 +267,10 @@ package object dspTest {
     def setMonitor[D](Container: ArrayBuffer[D], name: String = ""): SimThread = forkWhenValid {
       //      println(s"sampling $name at ${simTime()}")
       dc.payload match {
-        case vec: Vec[_] => Container ++= peekWhatever(vec)
+        case vec: Vec[_] => Container += peekWhatever(vec)
         case fragment: Fragment[_] =>
           fragment.fragment match {
-            case vec: Vec[_] => Container ++= peekWhatever(vec)
+            case vec: Vec[_] => Container += peekWhatever(vec)
             case _ => Container += peekWhatever(fragment.fragment)
           }
         case _ => Container += peekWhatever(dc.payload)

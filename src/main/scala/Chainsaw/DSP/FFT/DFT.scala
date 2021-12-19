@@ -6,6 +6,14 @@ import spinal.lib._
 
 import scala.math.sqrt
 
+/** implement dft(without decomposition) by "best practice" of given length, including radix2,4,8 and winograd dft
+ *
+ * @param N         length of dft/idft
+ * @param inverse   dft/idft
+ * @param dataType  hard type of datapath
+ * @param coeffType hard type of coeffs
+ * @see TODO: add references
+ */
 case class DFT(N: Int, inverse: Boolean = false,
                dataType: HardType[SFix], coeffType: HardType[SFix]) extends Component {
 
@@ -81,12 +89,17 @@ case class DFT(N: Int, inverse: Boolean = false,
         val D7 = CDelayed(5) + CDelayed(7)
         RegNext(Vec(Seq(D0, D1, D2, D3, D4, D5, D6, D7)))
       } else {
-        throw new IllegalArgumentException("not implemented parameters")
+        throw new IllegalArgumentException(s"$N - point DFT has not been implemented yet")
       }
     }
     // for 3, 5, 7, 9, use Rader-Winograd DFT
   }
 
   dataOut.zip(ret).foreach { case (out, ret) => out := ret.truncated(HardType(out.real)) }
+
   def latency = LatencyAnalysis(dataIn(0).real.raw, dataOut(0).real.raw).intValue()
+}
+
+object DFT {
+
 }

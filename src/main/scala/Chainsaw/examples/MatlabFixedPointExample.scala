@@ -30,7 +30,7 @@ object MatlabFixedPointExample {
         dut.clockDomain.forkStimulus(2)
         dut.clockDomain.waitSampling()
 
-        dut.dataIn.zip(data).foreach{ case (port, data) =>
+        dut.dataIn.payload.zip(data).foreach{ case (port, data) =>
           port.real.raw #= data.real.toInt
           port.imag.raw #= data.imag.toInt
         }

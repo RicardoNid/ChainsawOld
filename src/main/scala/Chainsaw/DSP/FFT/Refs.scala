@@ -9,18 +9,18 @@ object Refs {
   val eng = AsyncEng.get()
 
   def FFT(input: Array[BComplex]): Array[BComplex] = {
-    val ret = Try(eng.feval[Array[BComplex]]("fft", input.map(_.toMComplex)))
+    val ret = Try(eng.feval[Array[MComplex]]("fft", input.map(_.toMComplex)))
     ret match {
       case Failure(exception) => eng.feval[Array[Double]]("fft", input).map(new BComplex(_, 0))
-      case Success(value) => value
+      case Success(value) => value.map(_.toBComplex)
     }
   }
 
   def IFFT(input: Array[BComplex]): Array[BComplex] = {
-    val ret = Try(eng.feval[Array[BComplex]]("ifft", input))
+    val ret = Try(eng.feval[Array[MComplex]]("ifft", input))
     ret match {
       case Failure(exception) => eng.feval[Array[Double]]("ifft", input).map(new BComplex(_, 0))
-      case Success(value) => value
+      case Success(value) => value.map(_.toBComplex)
     }
   }
 
