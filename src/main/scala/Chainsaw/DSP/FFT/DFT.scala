@@ -89,7 +89,7 @@ case class DFT(N: Int, inverse: Boolean = false,
         val D7 = CDelayed(5) + CDelayed(7)
         RegNext(Vec(Seq(D0, D1, D2, D3, D4, D5, D6, D7)))
       } else {
-        throw new IllegalArgumentException(s"$N - point DFT has not been implemented yet")
+        throw new IllegalArgumentException(s"$N - point ${if(!inverse) "" else "inverse "}DFT has not been implemented yet")
       }
     }
     // for 3, 5, 7, 9, use Rader-Winograd DFT

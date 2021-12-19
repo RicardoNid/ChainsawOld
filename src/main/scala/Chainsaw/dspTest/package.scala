@@ -129,13 +129,25 @@ package object dspTest {
   (dut: Component, testCases: Seq[Di], dataIn: DataCarrier[Ti], dataOut: DataCarrier[To], latency: Int = 0): ArrayBuffer[Do] = {
     // init
     dataIn.clear()
+    dataOut match {
+      case stream: Stream[_] => stream.ready #= true
+      case _ =>  // do nothing
+    }
     dut.clockDomain.waitSampling()
     // set monitor
     val dutResult = ArrayBuffer[Do]()
     dataOut.setMonitor(dutResult)
     // poke stimulus
-    testCases.indices.foreach { i =>
-      dataIn.poke(testCases(i), lastWhen = i == (testCases.length - 1))
+    var i = 0
+    while (i < testCases.size){
+      val canPoke = dataIn match {
+        case stream: Stream[_] => stream.ready.toBoolean
+        case _ => true
+      }
+      if(canPoke) {
+        dataIn.poke(testCases(i), lastWhen = i == (testCases.length - 1))
+        i += 1
+      }
       dut.clockDomain.waitSampling()
     }
     // wait for result
@@ -148,6 +160,7 @@ package object dspTest {
   (name: String, dut: => Component with DSPTestable[Ti, To], testCases: Seq[Di], golden: Seq[Do], initLength: Int = 0): ArrayBuffer[Do] = {
 
     val logger: Logger = LoggerFactory.getLogger(s"dsptest-${name}")
+
 
     val dutResult = ArrayBuffer[Do]()
     SimConfig.withWave
@@ -162,6 +175,7 @@ package object dspTest {
 
       import dut.{clockDomain, dataIn, dataOut, latency}
       dataIn.halt()
+      dataOut.halt()
       clockDomain.forkStimulus(2)
       // TODO: for folded design of factor N, N - 1 idle cycles should be inserted to set the global counter to 0
       //      clockDomain.waitSampling(3)

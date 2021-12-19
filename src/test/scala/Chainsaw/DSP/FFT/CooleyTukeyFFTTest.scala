@@ -13,7 +13,11 @@ import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
-
+import breeze.linalg._
+import breeze.math._
+import breeze.numerics._
+import breeze.numerics.constants._
+import breeze.signal._
 import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
@@ -23,11 +27,10 @@ import scala.collection.mutable.ArrayBuffer
 
 class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
 
-  val dataType = HardType(SFix(8 exp, -15 exp))
-  val coeffType = HardType(SFix(1 exp, -14 exp))
-
+  /** the fully-parameterized fft/ifft testbench
+   */
   def testFFTHardware(testSize: Int,
-                      testLength: Int, factors: Seq[Int],
+                      testLength: Int, factors: Seq[Int], period: Int = 1,
                       inverse: Boolean = false, realSequence: Boolean = false,
                       dataType: HardType[SFix], coeffType: HardType[SFix],
                       epsilon: Double = 1E-2) = {
@@ -42,11 +45,14 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
     }
     val goldens: Seq[DenseVector[BComplex]] = if (!inverse) testCases.map(Dft.dft(_)) else testCases.map(Dft.idft(_))
 
-    SimConfig.withWave.compile(
-      CooleyTukeyFFT(N = testLength, factors = factors, inverse = inverse, dataType, coeffType))
+
+    SimConfig.withWave.compile {
+      CooleyTukeyFFT(N = testLength, factors = factors, inverse = inverse, dataType, coeffType)
+    }
       .doSim { dut =>
 
         dut.clockDomain.forkStimulus(2)
+        dut.dataIn.clear()
         dut.clockDomain.waitSampling()
 
         // TODO: eliminate the inconsistency of the input and output type
@@ -65,53 +71,6 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
           assert(golden ~= (dut.asDv, epsilon), max(abs(diff)))
         }
       }
-  }
-
-  def testCooleyTukeyFFTHardware(testLength: Int, factors: Seq[Int], inverse: Boolean = false,
-                                 epsilon: Double = 1E-2, realSequence: Boolean = false) = {
-    SimConfig.withWave.compile(CooleyTukeyFFT(N = testLength, factors = factors, inverse = inverse, dataType, coeffType)).doSim { dut =>
-
-      val testComplex: Array[BComplex] =
-        if (!realSequence) (0 until testLength).map(_ => ChainsawRand.nextComplex(-1.0, 1.0)).toArray
-        else if (realSequence && !inverse) (0 until testLength).map(_ => (ChainsawRand.nextDouble() - 0.5) * 2).map(new BComplex(_, 0.0)).toArray
-        else {
-          val zero = new BComplex(0.0, 0.0)
-          val valid = (1 until testLength / 2).map(_ => ChainsawRand.nextComplex(-1.0, 1.0))
-          val conjed = valid.map(_.conjugate).reverse
-          (zero +: valid :+ zero) ++ conjed
-        }.toArray
-
-      import dut.{clockDomain, dataIn, dataOut}
-      clockDomain.forkStimulus(2)
-      dataIn.valid #= false
-      clockDomain.waitSampling()
-
-      val dutResult = ArrayBuffer[BComplex]()
-      val monitor = fork {
-        while (true) {
-          if (dataOut.valid.toBoolean) {
-            dutResult ++= dataOut.payload.map(complex => new BComplex(complex.real.toDouble, complex.imag.toDouble))
-          }
-          clockDomain.waitSampling()
-        }
-      }
-
-      dataIn.payload.zip(testComplex).foreach { case (port, complex) =>
-        dataIn.valid #= true
-        port.real #= complex.real
-        port.imag #= complex.imag
-      }
-      clockDomain.waitSampling()
-      dataIn.valid #= false
-
-      clockDomain.waitSampling(dut.latency + 1)
-
-      val golden = if (!inverse) dft(testComplex.toSeq.asDv) else idft(testComplex.toSeq.asDv).map(_ * testLength)
-
-      val diff = golden - dutResult.asDv
-      assert(dutResult.nonEmpty)
-      assert(golden ~= (dutResult.asDv, epsilon), max(abs(diff)))
-    }
   }
 
   def testCooleyTukeyBackToBackHardware(testLength: Int, pF: Int,
@@ -165,41 +124,48 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
     }
   }
 
-  def testRadixR(factors: Seq[Int], inverse: Boolean, epsilon: Double, realSequence: Boolean = false) =
-    testCooleyTukeyFFTHardware(factors.product, factors, inverse, epsilon, realSequence)
+  // the simple test we use in this file
+  // you can specify length, factors, inverse, and epsilon
+  val dataType = HardType(SFix(8 exp, -15 exp))
+  val coeffType = HardType(SFix(1 exp, -14 exp))
+  val epsilon = 1E-2
+  val simpleTest: (Int, Seq[Int], Boolean, Double) => Unit = testFFTHardware(10, _, _, 1, _, false, dataType, coeffType, _)
 
-  "test fft" should "work" in {
-    testFFTHardware(10, 16, Seq(2,2,2,2), false, false, dataType, coeffType)
+  def simpleRadixRTest(length: Int, radix: Int, inverse: Boolean, epsilon: Double): Unit = {
+    require(isPowR(length, radix))
+    val stages = log(radix.toDouble, length.toDouble).toInt
+    val factors = Seq.fill(stages)(radix)
+    printlnGreen(factors.mkString(" "))
+    simpleTest(length, factors, inverse, epsilon)
   }
 
-  "radix-r FFT and IFFT" should "pass the following tests" in {
-
-    // FFT
-    testRadixR(Seq.fill(6)(2), false, 0.1) // radix-2
-    printlnGreen(s"radix-2 FFT passed")
-    testRadixR(Seq.fill(3)(4), false, 0.1) // radix-4
-    printlnGreen(s"radix-4 FFT passed")
-    testRadixR(Seq.fill(2)(8), false, 0.1) // radix-8
-    printlnGreen(s"radix-8 FFT passed")
-    // IFFT
-    testRadixR(Seq.fill(6)(2), true, 0.5) // radix-2
-    printlnGreen(s"radix-2 IFFT passed")
-    testRadixR(Seq.fill(3)(4), true, 0.5) // radix-4
-    printlnGreen(s"radix-4 IFFT passed")
-    //    testRadixR(Seq.fill(2)(8), true) // radix-8
-    //    printlnGreen(s"radix-8 IFFT passed")
-
+  it should "work for radix-2, 4, 8 fft" in {
+    val testFft: Int => Unit = simpleRadixRTest(64, _, false, 0.1)
+    val testIfft: Int => Unit = simpleRadixRTest(64, _, true, 0.5)
+    Seq(2, 4, 8).foreach { radix =>
+      testFft(radix)
+      if (i != 8) testIfft(radix) // skip radix-8 inverse
+      logger.info(s"radix-$radix fft/ifft passed")
+    }
   }
 
-  "radix-r,real-valued FFT and hermitian symmetric IFFT" should "pass the following tests" in {
-    // real-valued FFT / hermitian symmetric IFFT
-    testRadixR(Seq.fill(6)(2), inverse = true, epsilon = 0.5, realSequence = true)
-    printlnGreen(s"radix-2 hermitian symmetric IFFT passed")
-  }
+  val backToBackTest: (Int, Seq[Int], Int, Boolean, Double) => Unit = testFFTHardware(10, _, _, _, _, false, dataType, coeffType, _)
 
-  "other Cooley-Tukey FFTs" should "pass the following tests" in {
-    //    testCooleyTukeyFFTHardware(75, 16, 16, Seq(3, 5, 5))
-    printlnGreen(s"75-point as 3*5*5 passed")
+  it should "work when folded by \"back to back\" architecture " in {
+    testCooleyTukeyBackToBackHardware(16, 4, Seq(4), Seq(4), inverse = false)
+    printlnGreen(s"16-point FFT as 4*4 back to back passed")
+    testCooleyTukeyBackToBackHardware(16, 4, Seq(4), Seq(4), inverse = true)
+    printlnGreen(s"16-point IFFT as 4*4 back to back passed")
+
+    testCooleyTukeyBackToBackHardware(32, 8, Seq(4, 2), Seq(4), inverse = false, epsilon = 0.2)
+    printlnGreen(s"32-point IFFT as 8*4 back to back passed")
+    testCooleyTukeyBackToBackHardware(32, 8, Seq(4, 2), Seq(4), inverse = true, epsilon = 0.2)
+    printlnGreen(s"32-point FFT as 8*4 back to back passed")
+
+    testCooleyTukeyBackToBackHardware(64, 8, Seq(4, 2), Seq(4, 2), inverse = false, epsilon = 0.5)
+    printlnGreen(s"64-point FFT as 8*8 back to back passed")
+    testCooleyTukeyBackToBackHardware(64, 8, Seq(4, 2), Seq(4, 2), inverse = true, epsilon = 0.5)
+    printlnGreen(s"64-point IFFT as 8*8 back to back passed")
   }
 
   "back-to-back Cooley-Tukey FFTs" should "pass the following tests" in {

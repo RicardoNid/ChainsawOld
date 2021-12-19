@@ -1,96 +1,129 @@
 package Chainsaw.DSP.interleave
 
+import Chainsaw._
+import Chainsaw.dspTest._
 import spinal.core._
-import spinal.core.sim._
 import spinal.lib._
-import spinal.sim._
 import spinal.lib.fsm._
-import Chainsaw._
-import Chainsaw.Real
-import Chainsaw._
-import spinal.core._
-import spinal.lib._
 
-import scala.language.postfixOps
-
-/** High-throughput general interlever that implements matrix interleaving with any given parameters
+/** implement the matrix interleave function in a parallel way, data input row by row and output column by column
  *
- * @param row   the semantic is the same as row of Matlab matintrlv
- * @param col   the semantic is the same as row of Matlab matintrlv
- *              for matrix interleaver, the de-interleaver is an interleaver that exchange the original row and col
- * @param pFIn  data number per cycle of input, determines the throughput
- * @param pFOut data number per cycle of output, determines the throughput
+ * @param row      number of rows, it is also the parallelism of output
+ * @param col      number of columns, it is also the parallelism of output
+ * @param dataType hard type of an 'element'
+ * @see ''Matlab doc: matintrlv''
  */
+case class MatIntrlv[T <: Data](row: Int, col: Int, dataType: HardType[T])
+  extends Component with DSPTestable[Vec[T], Vec[T]] {
 
-// XDH: basically, this implementation is the same as [[https://ieeexplore.ieee.org/document/6732285]], though I proposed it all by myself
-// XDH: you should refactor this ans MatintrlvCore according to the paper formally, and test it
-// this should be a important component of your general permutation module
+  logger.info(s"implementing a $row * $col MatIntrlv of ${dataType.getBitsWidth}-bits-width elements")
+  override val dataIn: Stream[Vec[T]] = slave Stream Vec(dataType(), col)
+  override val dataOut: Stream[Vec[T]] = master Stream Vec(dataType(), row)
+  override val latency = row max col
 
-// TODO: implement reset/initialization logic
-// TODO: implement coloring algo
-case class MatIntrlv[T <: Data](row: Int, col: Int, pFIn: Int, pFOut: Int, dataType: HardType[T]) extends Component {
+  // we need a 'square' matrix to contain all data, when row != col, there exists redundant space
+  // besides, for depth, we use a power of 2, which will introduce redundant space sometimes, but
+  // it is suitable for FPGAs
+  // it simplifies the control logic
+  val ramCount = row max col
+  val addrWidth: Int = log2Up(row max col)
+  val ramDepth = 1 << addrWidth
+  // ping-pong was implemented by using different address range of the same dual-port ram
+  val rams: Seq[Mem[T]] = Seq.fill(ramCount)(Mem(dataType(), ramDepth << 1))
 
-  val mode =
-    if (pFIn == col && pFOut == row) 0
-    else if (pFIn == pFOut && pFIn % row == 0 && pFIn % col == 0 && (row * col) % pFIn == 0) 1
-    else if (pFIn == row && pFOut == col || (pFIn == col && pFOut == row)) 2
-    else 3
+  // 0 for ping(lower addr), 1 for pong(higher addr)
+  val readPointer: Bool = RegInit(False)
+  val writePointer: Bool = RegInit(False)
 
-  val dataIn = slave Stream Vec(dataType, pFIn)
-  val dataOut = master Stream Vec(dataType, pFOut)
+  // counters which are driven by fires, they control the rotation of data / generation of address
+  val counterIn: Counter = Counter(row)
+  val counterOut: Counter = Counter(col)
 
-  var latency = 0
+  // the datapath:
+  // dataIn:  in -> padded -> shifted -> write in natural addrs -> mem
+  // dataOut: mem -> read by generated addrs -> shifted -> (remapped) -> padded -> out
 
-  mode match {
-    case 0 => // directly using the core
-      val core = MatIntrlvCore(row, col, dataType)
-      core.dataIn << dataIn
-      core.dataOut >> dataOut
-      latency = row max col
+  // write logic
+  // while writing data, we rotate the input vector to match the ports
 
-    case 1 => // packing + core
-      // parameters for packing
-      val packRow = pFIn / col
-      val packCol = pFIn / row
-      val packSize = packRow * packCol // (intersection size of input and output)
-      val squareSize = pFIn / packSize
+  // padding are used to simplify rotation logics, they will be pruned by synthesizer
+  val zero = dataType().getZero
+  val dataInPadded: Vec[T] = Vec(dataIn.payload.padTo(ramCount, zero))
+  val dataInShifted: Vec[T] = cloneOf(dataInPadded)
 
-      val packType = HardType(Bits(packSize * widthOf(dataType) bits))
+  // as rotate left of vec is not implemented by SpinalHDL, we implement this
+  def connectRotateLeft(i: Int): Unit = {
+    val shifted = dataInPadded.takeRight(ramCount - i) ++ dataInPadded.take(i)
+    dataInShifted := Vec(shifted)
+  }
 
-      val core = MatIntrlvCore(squareSize, squareSize, packType)
-      latency = squareSize
+  switch(counterIn.value) {
+    (0 until row).foreach(i => is(U(i))(connectRotateLeft(i))) // rotate to match the ports
+    if (!isPow2(row)) default(dataInShifted.assignDontCare()) // when default is needed
+  }
 
-      // packing input
-      val dataInRearranged: Seq[T] = Algos.matIntrlv(dataIn.payload, packRow, col)
-      val dataInPacked = Vec(dataInRearranged.grouped(packSize).toSeq.map(_.asBits()))
-      val dataOutPacked = cloneOf(dataInPacked)
+  // write ports
+  rams.zip(dataInShifted).foreach { case (ram, data) =>
+    ram.write(
+      address = writePointer.asUInt @@ counterIn.value.resize(addrWidth), // using write pointer as the MSB
+      data = data, enable = dataIn.fire)
+  }
 
-      // connecting the core
-      core.dataIn.valid := dataIn.valid
-      dataIn.ready := core.dataIn.ready
+  // read logic
+  // while reading data, we rotate the addresses to get proper address
 
-      core.dataIn.payload := dataInPacked
-      dataOutPacked := core.dataOut.payload
+  // read address generation
+  // TODO: implement this cycle by cycle
+  val readAddrs = Vec(UInt(addrWidth bits), ramCount)
+  readAddrs := Vec((0 +: (1 until ramCount).reverse) // initial state
+    .map(i => U(i, addrWidth bits)))
+    .rotateRight(counterOut.value)
 
-      dataOut.valid := core.dataOut.valid
-      core.dataOut.ready := dataOut.ready
+  // read ports
+  val dataOutShifted: Vec[T] = Vec(
+    rams.zip(readAddrs).map { case (ram, addr) => // zip ports with addrs
+      ram.readAsync(
+        address = readPointer.asUInt @@ addr,
+        readUnderWrite = writeFirst) // using read pointer as MSB
+    }.padTo(ramCount, zero))
+  val dataRemapped = Vec(dataOutShifted.head +: dataOutShifted.tail.reverse)
+  val dataOutPadded = cloneOf(dataRemapped)
 
-      // unpacking output
-      (0 until row / packRow).foreach { packId =>
-        (0 until packCol).foreach { packColId =>
-          (0 until packRow).foreach { packRowId =>
-            val id = packColId * row + packId * packRow + packRowId
-            val idInPack = packColId * packRow + packRowId
-            dataOut.payload(id).assignFromBits(dataOutPacked(packId).subdivideIn(packSize slices)(idInPack))
-          }
-        }
-      }
+  // reverse of RotateLeft
+  def connectRotateRight(i: Int): Unit = {
+    val shifted = dataRemapped.takeRight(i) ++ dataRemapped.take(ramCount - i)
+    dataOutPadded := Vec(shifted)
+  }
+
+  // while reading data, we still need to rotate the output vector to match the ports
+  switch(counterOut.value) {
+    (0 until col).foreach(i => is(U(i))(connectRotateRight(i)))
+    if (!isPow2(col)) default(dataOutPadded.assignDontCare())
+  }
+
+  dataOut.payload := Vec(dataOutPadded.take(row)) // drop the padded part
+
+  // ping-pong state machine
+  val fsm: StateMachine = new StateMachine {
+
+    when(dataIn.fire)(counterIn.increment())
+    when(dataOut.fire)(counterOut.increment())
+
+    when(counterIn.willOverflow)(writePointer := ~writePointer)
+    when(counterOut.willOverflow)(readPointer := ~readPointer)
+
+    val EMPTY = StateEntryPoint()
+    val HALF, FULL = State()
+
+    EMPTY.whenIsActive(when(counterIn.willOverflow)(goto(HALF)))
+    FULL.whenIsActive(when(counterOut.willOverflow)(goto(HALF)))
+    HALF.whenIsActive {
+      when(counterIn.willOverflow && counterOut.willOverflow)(goto(HALF))
+        .elsewhen(counterIn.willOverflow)(goto(FULL))
+        .elsewhen(counterOut.willOverflow)(goto(EMPTY))
+    }
+
+    dataIn.ready := isActive(EMPTY) || isActive(HALF)
+    dataOut.valid := isActive(FULL) || isActive(HALF)
   }
 }
-
-object InterleaverFTN extends App {
-  //  VivadoSynth(new MatIntrlv(32, 128, 256, pFOut = 256, HardType(Bits(1 bits))), name = "Interleaver")
-//  VivadoSynth(MatIntrlv(64 * 8, 256, 1024, 1024, HardType(Bits(1 bits))), name = "superInterleave")
-  VivadoSynth(MatIntrlv(64, 256, 1024, 1024, HardType(Bits(1 bits))), name = "superInterleave")
-}
-

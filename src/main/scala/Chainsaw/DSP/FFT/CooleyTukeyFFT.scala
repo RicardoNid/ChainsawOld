@@ -24,7 +24,7 @@ case class CooleyTukeyFFT(N: Int = 256, factors: Seq[Int], inverse: Boolean = fa
   override val dataIn = slave Flow Vec(complexDataType(), N)
   override val dataOut = master Flow Vec(complexDataType(), N)
 
-  val getDft: Int => DFT = DFT(_, inverse,dataType,coeffType)
+  val getDft: Int => DFT = DFT(_, inverse, dataType, coeffType)
 
   // using DFT as building blocks
   def block(input: Seq[ComplexNumber]): Seq[ComplexNumber] = {
@@ -50,20 +50,23 @@ case class CooleyTukeyBackToBack(
                                   factors1: Seq[Int] = Seq(4, 4, 2), factors2: Seq[Int] = Seq(4, 2),
                                   inverse: Boolean = false,
                                   dataType: HardType[SFix], coeffType: HardType[SFix])
-  extends Component {
+  extends Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
 
   val complexDataType = HardType(ComplexNumber(dataType))
+  override val dataIn = slave Stream Vec(complexDataType, pF)
+  override val dataOut = master Stream Vec(complexDataType, pF)
+
   val N1 = pF
   val N2 = N / pF
 
+  // components
   val core1 = CooleyTukeyFFT(N1, factors1, inverse, dataType, coeffType)
   val core2s = Seq.fill(N1 / N2)(CooleyTukeyFFT(N2, factors2, inverse, dataType, coeffType))
-  val inter0 = DSP.interleave.MatIntrlv(N1, N2, pF, pF, complexDataType)
-  val inter1 = DSP.interleave.MatIntrlv(N2, N1, pF, pF, complexDataType)
-  val inter2 = DSP.interleave.MatIntrlv(N1, N2, pF, pF, complexDataType)
+  val inter0 = DSP.interleave.AdaptiveMatIntrlv(N1, N2, pF, pF, complexDataType)
+  val inter1 = DSP.interleave.AdaptiveMatIntrlv(N2, N1, pF, pF, complexDataType)
+  val inter2 = DSP.interleave.AdaptiveMatIntrlv(N1, N2, pF, pF, complexDataType)
 
-  val dataIn = slave Stream Vec(complexDataType, pF)
-  val dataOut = master Stream Vec(complexDataType, pF)
+  override val latency = inter0.latency + core1.latency + inter1.latency + core2s.head.latency + +inter2.latency
 
   //  val twiddleFactors: Seq[Seq[MComplex]] = Algos.cooleyTukeyCoeffIndices(N1, N2).map(_.map(i => if (inverse) WNnk(N, -i) else WNnk(N, i)))
   val twiddleFactors: Seq[Seq[BComplex]] = Algos.cooleyTukeyCoeffIndices(N2, N1).map(_.map(i => if (inverse) WNnk(N, -i) else WNnk(N, i)))
@@ -94,16 +97,7 @@ case class CooleyTukeyBackToBack(
 
   println(LatencyAnalysis(dataIn.payload(0).real.raw, dataOut.payload(0).real.raw))
 
-  def latency = inter0.latency + core1.latency + inter1.latency + core2s.head.latency + +inter2.latency
+
 
   printlnYellow(s"CooleyTukey BackToBack $N1 * $N2, latency = $latency")
-}
-
-object CooleyTukeyFFT extends App {
-  // length = 256, throughput = 1/8
-  val dataType = HardType(SFix(4 exp, -11 exp))
-  val coeffType = HardType(SFix(1 exp, -11 exp))
-  VivadoSynth(new CooleyTukeyBackToBack(512, 256, Seq(4, 4, 4, 2), Seq(2), inverse = true, dataType, coeffType))
-  //    VivadoSynth(CooleyTukeyFFT(512, Seq.fill(7)(2), false, SFix(1 exp, -6 exp), SFix(1 exp, -6 exp)))
-  //  VivadoSynth(new CooleyTukeyFFT(N = 256, dataWidth = 16, coeffWidth = 16, factors = Seq.fill(4)(4), inverse = true), name = "radix4IFFT256")
 }

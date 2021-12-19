@@ -84,7 +84,6 @@ object Algos extends App {
     cooleyTukeyFFT(input, buildFactors(Seq(radix)))
   }
 
-
   def CyclicConv(input: Seq[BComplex], coeff: Seq[BComplex], L: Int): Seq[BComplex] = {
     require(L >= input.size && L >= coeff.size)
     // TODO: expand this for different size relationship
