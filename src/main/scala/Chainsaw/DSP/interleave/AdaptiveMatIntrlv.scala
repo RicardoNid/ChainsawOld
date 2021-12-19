@@ -8,6 +8,7 @@ import spinal.lib.fsm._
 import Chainsaw._
 import Chainsaw.Real
 import Chainsaw._
+import Chainsaw.dspTest.DSPTestable
 import spinal.core._
 import spinal.lib._
 
@@ -26,7 +27,8 @@ import scala.language.postfixOps
 case class AdaptiveMatIntrlv[T <: Data](
                                          row: Int, col: Int,
                                          pFIn: Int, pFOut: Int,
-                                         dataType: HardType[T]) extends Component {
+                                         dataType: HardType[T])
+  extends Component with DSPTestable[Vec[T], Vec[T]] {
 
   val mode =
     if (pFIn == col && pFOut == row) 0
@@ -34,18 +36,17 @@ case class AdaptiveMatIntrlv[T <: Data](
     else if (pFIn == row && pFOut == col || (pFIn == col && pFOut == row)) 2
     else 3
 
-  val dataIn = slave Stream Vec(dataType, pFIn)
-  val dataOut = master Stream Vec(dataType, pFOut)
+  logger.info(s"implementing a $row * $col adaptive matIntrlv of ${dataType.getBitsWidth}-bits-width elements by mode $mode")
 
-  var latency = 0
+  override val dataIn = slave Stream Vec(dataType, pFIn)
+  override val dataOut = master Stream Vec(dataType, pFOut)
 
-  mode match {
+  val core = mode match {
     case 0 => // directly using the core
       val core = MatIntrlv(row, col, dataType)
       core.dataIn << dataIn
       core.dataOut >> dataOut
-      latency = core.latency
-
+      core
     case 1 => // packing + core
       // parameters for packing
       val packRow = pFIn / col
@@ -56,7 +57,6 @@ case class AdaptiveMatIntrlv[T <: Data](
       val packType = HardType(Bits(packSize * widthOf(dataType) bits))
 
       val core = MatIntrlv(squareSize, squareSize, packType)
-      latency = squareSize
 
       // packing input
       val dataInRearranged: Seq[T] = Algos.matIntrlv(dataIn.payload, packRow, col)
@@ -83,12 +83,9 @@ case class AdaptiveMatIntrlv[T <: Data](
           }
         }
       }
+      core
+    case _ => throw new IllegalArgumentException(s"mode $mode has not been implemented yet")
   }
-}
 
-object InterleaverFTN extends App {
-  //  VivadoSynth(new MatIntrlv(32, 128, 256, pFOut = 256, HardType(Bits(1 bits))), name = "Interleaver")
-  //  VivadoSynth(MatIntrlv(64 * 8, 256, 1024, 1024, HardType(Bits(1 bits))), name = "superInterleave")
-  VivadoSynth(AdaptiveMatIntrlv(64, 256, 1024, 1024, HardType(Bits(1 bits))), name = "superInterleave")
+  override val latency = core.latency
 }
-

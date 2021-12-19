@@ -4,14 +4,7 @@ import Chainsaw._
 import Chainsaw.dspTest._
 import org.scalatest.flatspec.AnyFlatSpec
 import spinal.core._
-import spinal.core._
-import spinal.core.sim._
 import spinal.lib._
-import spinal.lib.fsm._
-
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
 
 class MatIntrlvTest extends AnyFlatSpec {
 
@@ -47,7 +40,7 @@ class MatIntrlvTest extends AnyFlatSpec {
   it should "synth" in {
     VivadoSynth(
       new Component with DSPTestable[Vec[UInt], Vec[UInt]] {
-        val core = MatIntrlv(128,128,HardType(UInt(18 bits)))
+        val core = MatIntrlv(128, 128, HardType(UInt(18 bits)))
         override val dataIn = slave(cloneOf(core.dataIn))
         override val dataOut = master(cloneOf(core.dataOut))
         override val latency = core.latency + 2

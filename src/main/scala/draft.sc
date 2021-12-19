@@ -4,4 +4,4 @@ import breeze.numerics._
 import breeze.numerics.constants._
 import breeze.signal._
 
-log(2.0,8.0)
+Seq(1,2,3,4).splitAt(2)
