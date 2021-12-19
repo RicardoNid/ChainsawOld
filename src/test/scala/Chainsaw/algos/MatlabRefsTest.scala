@@ -7,7 +7,7 @@ import Chainsaw.matlabIO.{MComplex, eng}
 import breeze.linalg.DenseVector
 import org.scalatest.flatspec.AnyFlatSpec
 
-class MatlabRefsTest extends AnyFlatSpec {
+class TMatlabRefsTest extends AnyFlatSpec {
 
   val As = (0 until 100).map(_ => ChainsawRand.nextComplexDV(10))
   val Bs = (0 until 100).map(_ => ChainsawRand.nextComplexDV(8))

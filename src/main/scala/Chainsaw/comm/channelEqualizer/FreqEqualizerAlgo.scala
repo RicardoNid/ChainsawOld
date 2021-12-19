@@ -115,6 +115,7 @@ object FreqEqualizerAlgo {
 
       val dutResult = ArrayBuffer[Seq[BComplex]]()
       dut.clockDomain.forkStimulus(2)
+      dut.dataIn.valid #= true
       dut.clockDomain.waitSampling()
       dut.dataIn.payload.zip(preamble(0).toArray).foreach { case (port, complex) => port #= complex }
       dut.clockDomain.waitSampling()
@@ -135,7 +136,7 @@ object FreqEqualizerAlgo {
 
     }
 
-    VivadoSynth(Smooth(golden.toArray.toSeq.map(_.toInt), HardType(SFix(7 exp, 18 bits)), 256), "Smooth256")
+//    VivadoSynth(Smooth(golden.toArray.toSeq.map(_.toInt), HardType(SFix(7 exp, 18 bits)), 256), "Smooth256")
 
   }
 }

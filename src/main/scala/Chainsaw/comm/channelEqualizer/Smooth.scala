@@ -23,7 +23,7 @@ case class Smooth(golden: Seq[Int], dspType: HardType[SFix], vecSize: Int) exten
   val complexType = HardType(ComplexNumber(dspType))
   val dspZero = dspType().getZero
 
-  val dataIn = slave Flow Vec(complexType, vecSize) // preambles
+  val dataIn = slave Stream Vec(complexType, vecSize) // preambles
   val dataOut = master Flow Vec(complexType, vecSize) // preambles after smooth
   val inReal = Vec(dataIn.payload.map(_.real))
   val inImag = Vec(dataIn.payload.map(_.imag))
@@ -39,13 +39,22 @@ case class Smooth(golden: Seq[Int], dspType: HardType[SFix], vecSize: Int) exten
   val counterSize = counter.getBitsWidth
 
   val fsm = new StateMachine {
+
     val GETAVERAGE0 = StateEntryPoint()
     val GETAVERAGE1, GETAVERAGE2, GOLDEN, PREPARE = new State()
     val SMOOTH = new StateDelay(16)
     val smoothCounter = spinal.lib.Counter(16)
     val ordered = Seq(GETAVERAGE0, GETAVERAGE1, GETAVERAGE2, GOLDEN, PREPARE, SMOOTH)
+
+    dataIn.ready := isActive(GETAVERAGE0) || isActive(GETAVERAGE1)
+    val last = Bool()
+    last := False
+    SMOOTH.whenCompleted(last := True)
+    dataOut.valid := RegNext(last)
+
     ordered.zip(ordered.tail :+ GETAVERAGE0).foreach { case (prev, next) =>
       prev match {
+        case entry: State with EntryPoint => entry.whenIsActive(when(dataIn.fire)(goto(next))) // starts when fire
         case delay: StateDelay => delay.whenCompleted(goto(next))
         case _ => prev.whenIsActive(goto(next))
       }
@@ -91,7 +100,6 @@ case class Smooth(golden: Seq[Int], dspType: HardType[SFix], vecSize: Int) exten
     out.real := (real >> 4).truncated
     out.imag := (imag >> 4).truncated
   }
-  dataOut.valid := RegNext(dataIn.valid)
 }
 
 

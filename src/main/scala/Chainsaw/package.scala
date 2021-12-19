@@ -1,3 +1,4 @@
+import Chainsaw.examples.JsonExample.temp
 import Chainsaw.matlabIO._
 import org.scalatest.Tag
 import spinal.core._
@@ -7,7 +8,7 @@ import spinal.lib._
 import spinal.sim._
 import xilinx.{IMPL, VivadoFlow, VivadoTask}
 
-import java.io.File
+import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Path, Paths}
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
@@ -15,7 +16,11 @@ import scala.math._
 import scala.sys.process.Process
 import scala.util.{Failure, Random, Success, Try}
 import breeze.linalg.DenseVector
+import org.json4s.NoTypeHints
+import org.json4s.jackson.Serialization
+import org.json4s.jackson.Serialization.{write,read}
 
+import scala.io.Source
 import scala.reflect.ClassTag
 
 package object Chainsaw extends RealFactory {
@@ -542,11 +547,12 @@ package object Chainsaw extends RealFactory {
   def toWordsHexString(value: BigInt, w: Int, e: Int): String =
     toWords(value, w, e).map(_.toString(16).padToLeft(w / 4, '0') + " ").flatten.mkString("")
 
-  def SFLike(value:Double, sf: SFix) ={
+  def SFLike(value: Double, sf: SFix) = {
     val ret = cloneOf(sf)
     ret := value
     ret
   }
 
+  def toComplexType(fixType:HardType[SFix]) = HardType(ComplexNumber(fixType))
 }
 

@@ -8,7 +8,7 @@ package object algos {
 
   case class definition() extends scala.annotation.StaticAnnotation
 
-  case class fastAlgo() extends scala.annotation.StaticAnnotation
+  case class fastAlgo(original:String) extends scala.annotation.StaticAnnotation
 
   /**
    * @param original the "definition algo" to who it is equivalent

@@ -1,3 +1,7 @@
+organization := "seit311"
+name := "chainsaw"
+version := "0.1"
+
 scalaVersion := "2.11.12"
 
 // 编译器选项
@@ -52,6 +56,7 @@ libraryDependencies ++= Seq(
 
 // https://mvnrepository.com/artifact/com.alibaba/fastjson
 //libraryDependencies += "com.alibaba" % "fastjson" % "1.2.78"
+libraryDependencies += "org.json4s" %% "json4s-jackson" % "4.0.3"
 
 
 //oshi

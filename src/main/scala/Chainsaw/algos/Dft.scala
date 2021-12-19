@@ -39,23 +39,59 @@ object Dft {
   @definition
   def dft(data: DenseVector[BComplex], inverse: Boolean = false): DenseVector[BComplex] = {
     val N = data.length
-    val omega = exp(-(2 * Pi / N) * i)
+    val omega = exp((2 * Pi / N) * i)
     genericDft(data, omega, inverse)
   }
 
+  val idft: DenseVector[BComplex] => DenseVector[BComplex] = dft(_, inverse = true)
+
+  def fftSymmetricOf(data: DenseVector[BComplex]) =
+    new DenseVector((data(0) +: data.toArray.tail.reverse).map(_.conjugate))
+
+  /** improve the performance of real-valued dft by doubling
+   *
+   * @param data0 a real-valued
+   * @param data1 another sequence with same properties
+   */
+  @fastAlgo("dft")
+  def rvdftByDouble(data0: DenseVector[Double], data1: DenseVector[Double]): (DenseVector[BComplex], DenseVector[BComplex]) = {
+    val dataIn = new DenseVector(data0.toArray.zip(data1.toArray).map { case (real, imag) => BComplex(real, imag) })
+    val dataOut = dft(dataIn)
+    val out0 = (dataOut + fftSymmetricOf(dataOut)) / BComplex(2.0, 0.0)
+    val out1 = (dataOut - fftSymmetricOf(dataOut)) / BComplex(0.0, 2.0)
+    (out0, out1)
+  }
+
+  /** improve the performance of hermitian symmetric idft by doubling
+   * @param data0 a hermitian symmetric sequence
+   * @param data1 another sequence with same properties
+   */
+  @fastAlgo("dft")
+  def rvidftByDouble(data0: DenseVector[BComplex], data1: DenseVector[BComplex]): (DenseVector[Double], DenseVector[Double]) ={
+    val dataIn = data0 + (data1 *:* i)
+    val dataOut = idft(dataIn)
+    val out0 = dataOut.map(_.real)
+    val out1 = dataOut.map(_.imag)
+    (out0, out1)
+  }
+
+
+
   /** radix-2 fft
+   *
    * @param DIT decimation-in-time/decimation-in-frequency
    */
-  @fastAlgo
+  @fastAlgo("genericDft")
   def genericR2Fft[T](data: DenseVector[T], omega: T, inverse: Boolean = false, DIT: Boolean = false)
-                     (implicit semiring: Semiring[T], classTag: ClassTag[T]):DenseVector[T]= ??? // TODO
+                     (implicit semiring: Semiring[T], classTag: ClassTag[T]): DenseVector[T] = ??? // TODO
 
   /** the data path of real-valued fft
+   *
    * @see ''Pipelined Architectures for Real-Valued FFT and Hermitian-Symmetric IFFT With Real Datapaths'' [[https://www.semanticscholar.org/paper/Pipelined-Architectures-for-Real-Valued-FFT-and-Salehi-Amirfattahi/d67de58011d0c403682a55471f5adec702acdf0c]]
    * @param omega
    */
   @hardAlgo("dft")
-  def r2rvfft(data:DenseVector[Double], inverse:Boolean){
+  def r2rvfft(data: DenseVector[Double], inverse: Boolean) {
 
   }
 }
