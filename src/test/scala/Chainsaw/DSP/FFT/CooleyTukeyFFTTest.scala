@@ -20,7 +20,7 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
                       testLength: Int, factors: Seq[Int], parallelism: Int = 1,
                       inverse: Boolean = false, realSequence: Boolean = false,
                       dataType: HardType[SFix], coeffType: HardType[SFix],
-                      epsilon: Double = 1E-2) = {
+                      epsilon: Double = 1E-2): Unit = {
 
     // generate factors
     require(testLength % parallelism.abs == 0 && parallelism <= 1)
@@ -43,32 +43,30 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
     SimConfig.withWave.compile {
       if (parallelism == 1) CooleyTukeyFFT(N = testLength, factors = factors, inverse = inverse, dataType, coeffType)
       else CooleyTukeyBackToBack(testLength, parallelFactor, factors1, factors2, inverse, dataType, coeffType)
-    }
-      .doSim { dut =>
+    }.doSim { dut =>
 
-        dut.clockDomain.forkStimulus(2)
-        dut.dataIn.clear()
-        dut.clockDomain.waitSampling()
+      dut.clockDomain.forkStimulus(2)
+      dut.dataIn.clear()
+      dut.clockDomain.waitSampling()
 
-        val groupedTestCases = testCases.map(_.toArray.toSeq.grouped(parallelFactor).toSeq).flatten
-        val groupedGoldens = goldens.map(_.toArray.toSeq.grouped(parallelFactor).toSeq).flatten
+      val groupedTestCases = testCases.map(_.toArray.toSeq.grouped(parallelFactor).toSeq).flatten
+      val groupedGoldens = goldens.map(_.toArray.toSeq.grouped(parallelFactor).toSeq).flatten
 
-        // TODO: eliminate the inconsistency of the input and output type
-        val dutResults: Seq[Seq[BComplex]] = flowPeekPoke(
-          dut = dut,
-          testCases = groupedTestCases,
-          dataIn = dut.dataIn,
-          dataOut = dut.dataOut,
-          latency = dut.latency
-        )
+      val dutResults: Seq[Seq[BComplex]] = flowPeekPoke(
+        dut = dut,
+        testCases = groupedTestCases,
+        dataIn = dut.dataIn,
+        dataOut = dut.dataOut,
+        latency = dut.latency
+      )
 
-        groupedGoldens.zip(dutResults).map { case (golden, dut) =>
-          val diff = golden.asDv - dut.asDv
-          println(golden)
-          println(dut.asDv)
-          assert(golden.asDv ~= (dut.asDv, epsilon), max(abs(diff)))
-        }
+      groupedGoldens.zip(dutResults).map { case (golden, dut) =>
+        val diff = golden.asDv - dut.asDv
+        println(golden)
+        println(dut.asDv)
+        assert(golden.asDv ~= (dut.asDv, epsilon), max(abs(diff)))
       }
+    }
   }
 
   // the simple test we use in this file
@@ -117,6 +115,52 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
         core.dataOut.m2sPipe() >> dataOut
       }
     )
+  }
+
+  it should "work with P2S2P" in {
+    val testCases = (0 until 10).map(_ => ChainsawRand.nextComplexDV(64))
+    val goldens: Seq[DenseVector[BComplex]] = testCases.map(Dft.dft(_))
+
+    SimConfig.withWave.compile {
+      new Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
+
+        import DSP.{P2S, S2P}
+
+        val complexType = HardType(ComplexNumber(dataType))
+        val p2s = P2S(64, 32, complexType)
+        val s2p = S2P(32, 64, complexType)
+        val core = CooleyTukeyBackToBack(64, 32, Seq(4, 4, 2), Seq(2), inverse = false, dataType, coeffType)
+        override val dataIn = slave Stream Vec(complexType(), 64)
+        override val dataOut = master Stream Vec(complexType(), 64)
+        override val latency = core.latency
+
+        dataIn >> p2s.dataIn
+        p2s.dataOut >> core.dataIn
+        core.dataOut >> s2p.dataIn
+        s2p.dataOut >> dataOut
+      }
+
+    }.doSim { dut =>
+
+      dut.clockDomain.forkStimulus(2)
+      dut.dataIn.clear()
+      dut.clockDomain.waitSampling()
+
+      val dutResults: Seq[Seq[BComplex]] = flowPeekPoke(
+        dut = dut,
+        testCases = testCases.map(_.toArray.toSeq),
+        dataIn = dut.dataIn,
+        dataOut = dut.dataOut,
+        latency = dut.latency
+      )
+
+      goldens.zip(dutResults).map { case (golden, dut) =>
+        val diff = golden - dut.asDv
+        println(golden)
+        println(dut.asDv)
+        assert(golden ~= (dut.asDv, epsilon), max(abs(diff)))
+      }
+    }
   }
 
 
