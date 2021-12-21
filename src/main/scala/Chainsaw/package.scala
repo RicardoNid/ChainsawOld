@@ -350,7 +350,9 @@ package object Chainsaw extends RealFactory {
 
     def nextBigInt(bitLength: Int) = BigInt(rand.nextString(bitLength).map(_ % 2).mkString(""), 2)
 
-    def nextBinaryString(bitLength: Int): String = rand.nextString(bitLength).map(_ % 2).mkString("")
+    def nextBits(bitLength:Int): Seq[Int] = rand.nextString(bitLength).map(_ % 2)
+
+    def nextBinaryString(bitLength: Int): String = nextBits(bitLength).mkString("")
 
     def nextComplexDV(size: Int, dist: Rand[Double] = Rand.uniform): DenseVector[BComplex] = {
       val a = DenseVector.rand[Double](size, dist)

@@ -8,7 +8,7 @@ import spinal.core.sim._
 
 class ViterbiForwardingTest extends AnyFlatSpec {
 
-  val (trellis, testCases, golden) = Refs.getTestData
+  val (trellis, testCases, golden) = Refs.getTestData802_11n(128)
 
   def runSim() = {
     var dutResults = Seq[BigInt]()

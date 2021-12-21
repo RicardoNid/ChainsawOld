@@ -6,13 +6,15 @@ import spinal.core._
 import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, Map, Queue, Stack}
 
+
+
 object Algos {
 
   /** General Viterbi Algo without traceback(save the paths)
    *
    * @param observed observed sequence of output symbols with noise
    * @param trellis  trellis with input symbol type: Int and output symbol type: T
-   * @param metric   metric that defines the difference between an expected output symbol and an observed output symbol
+   * @param metric   metric that defines the distance between an expected output symbol and an observed output symbol
    * @tparam T type of output symbols, could be int(hard) or double(soft)
    */
   def viterbi[T](observed: Array[T], trellis: Trellis[T], metric: (T, T) => Double): Array[Int] = {
@@ -38,13 +40,13 @@ object Algos {
         val prevPaths = prevData.map(_._1).map(paths(_))
         val prevOutputSymbols = prevData.map(_._2)
 
-        val survivior = prevPaths.zip(prevOutputSymbols).map { case (path, output) =>
+        val survivor = prevPaths.zip(prevOutputSymbols).map { case (path, output) =>
           val increment = metric(output, currentObserved)
           val discrepancy = path.discrepancy + increment
           (path, discrepancy)
         }.minBy(_._2)
 
-        Path(survivior._1.states :+ currentState, survivior._2)
+        Path(survivor._1.states :+ currentState, survivor._2)
       }
       // converge
       while (paths.forall(_.head == paths.head.head)) {

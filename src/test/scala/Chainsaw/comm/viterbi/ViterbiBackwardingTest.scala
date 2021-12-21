@@ -14,7 +14,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class ViterbiBackwardingTest extends AnyFlatSpec {
 
-  val (trellis, forwardingTestcases, golden) = Refs.getTestData
+  val (trellis, forwardingTestcases, golden) = Refs.getTestData802_11n(128)
   val testCase: mutable.Stack[Seq[Double]] = Algos.viterbiForwarding(forwardingTestcases, trellis, Algos.Hamming)
   val testCaseCopy = Algos.viterbiForwarding(forwardingTestcases, trellis, Algos.Hamming)
 

@@ -4,11 +4,10 @@ import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
-
 import Chainsaw._
+import Chainsaw.algos.TerminationMode.{TAILBITING, TERMINATION, TRUNCATION, TerminationMode}
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
-
 import breeze.linalg.DenseVector
 
 object MatlabRefs {
@@ -51,8 +50,30 @@ object MatlabRefs {
     new DenseVector(ret.map(_.toInt))
   }
 
-  def main(args: Array[String]): Unit = {
+  def poly2trellis(constLen: Int, codeGen: Array[Int]) = {
+    eng.feval[MStruct]("poly2trellis", Array(constLen.toDouble), codeGen.map(_.toDouble))
+  }
 
+  def vitdecHard(data: DenseVector[Int], trellis: MStruct, tblen: Int, mode: TerminationMode) = {
+    val modeName = mode match {
+      case TRUNCATION => "trunc"
+      case TERMINATION => "term"
+      case TAILBITING => ""
+    }
+    val ret = eng.feval[Array[Double]]("vitdec", data.toArray.map(_.toDouble), trellis, Array(tblen.toDouble), modeName, "hard")
+    new DenseVector(ret.map(_.toInt))
+  }
+
+  def convenc(data: DenseVector[Int], trellis: MStruct) = {
+    val ret = eng.feval[Array[Double]]("convenc", data.toArray.map(_.toDouble), trellis).map(_.toInt)
+    new DenseVector(ret)
+  }
+
+  def main(args: Array[String]): Unit = {
+    val trellis = poly2trellis(7, Array(171, 133))
+    val dataIn = ChainsawRand.nextBits(128)
+    val coded = vitdecHard(new DenseVector(dataIn.toArray), trellis, 42, TerminationMode.TRUNCATION)
+    println(coded)
   }
 
 }

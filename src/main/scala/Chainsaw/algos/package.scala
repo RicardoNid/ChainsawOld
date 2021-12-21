@@ -18,6 +18,8 @@ package object algos {
    */
   case class hardAlgo(original: String) extends scala.annotation.StaticAnnotation
 
+  case class matlab() extends scala.annotation.StaticAnnotation
+
   case class Modulo(modulo: Int)
 
   // TODO: generic

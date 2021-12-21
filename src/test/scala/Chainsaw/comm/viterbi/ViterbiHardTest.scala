@@ -13,12 +13,13 @@ import scala.collection.mutable.ArrayBuffer
 
 class ViterbiHardTest extends AnyFlatSpec {
 
-  val (trellis, testCases, golden) = Refs.getTestData
+  val groupLength = 100
+  val (trellis, testCases, golden) = Refs.getTestData802_11n(groupLength)
   val temp = Algos.viterbiForwarding(testCases, trellis, Algos.Hamming).head.zipWithIndex.minBy(_._1)._2
 
   def runSim() = {
     var dutResult = Seq[BigInt]()
-    SimConfig.withWave.compile(ViterbiHard(trellis, 100, temp)).doSim { dut =>
+    SimConfig.withWave.compile(ViterbiHard(trellis, groupLength, temp)).doSim { dut =>
       import dut.{clockDomain, dataIn, dataOut}
       clockDomain.forkStimulus(2)
       dutResult = flowPeekPoke(dut, testCases.map(BigInt(_)), dataIn, dataOut, dut.latency).asInstanceOf[Seq[BigInt]]
@@ -31,8 +32,6 @@ class ViterbiHardTest extends AnyFlatSpec {
     assert(golden.reverse.mkString("") == dutResults.mkString(""))
   }
 
-  it should "synth correctly" in {
-    VivadoSynth(ViterbiHard(trellis, 100, temp))
-  }
+  it should "synth for FTN" in VivadoSynth(ViterbiHard(trellis, groupLength, temp))
 
 }
