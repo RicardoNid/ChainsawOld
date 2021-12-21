@@ -28,7 +28,12 @@ class DftTest extends AnyFlatSpec {
   }
 
   it should "idft" in {
-
+    As.foreach { data =>
+      val N = BComplex(data.length.toDouble, 0.0)
+      val mine = Dft.idft(Dft.dft(data)) / N
+      val golden = data
+      assert(mine ~= golden, s"\nmine  : $mine  \ngolden: $golden")
+    }
   }
 
   it should "genericDft" in {
@@ -44,6 +49,8 @@ class DftTest extends AnyFlatSpec {
 
       val mine = Dft.rvdftByDouble(data0, data1)
       val golden = (Dft.dft(data0AsComplex), Dft.dft(data1AsComplex))
+      println(mine._1)
+      println(golden._1)
       assert((mine._1 ~= golden._1) && (mine._2 ~= golden._2), s"\nmine  : $mine  \ngolden: $golden")
     }
   }

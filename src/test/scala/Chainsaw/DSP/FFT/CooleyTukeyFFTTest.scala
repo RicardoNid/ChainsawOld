@@ -16,6 +16,7 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
 
   /** the fully-parameterized fft/ifft testbench
    */
+  // TODO: should not test real valued ones in this method as it has a different interface
   def testFFTHardware(testSize: Int,
                       testLength: Int, factors: Seq[Int], parallelism: Int = 1,
                       inverse: Boolean = false, realSequence: Boolean = false,

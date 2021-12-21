@@ -9,7 +9,7 @@ case class S2P[T <: Data](s: Int, p: Int, dataType: HardType[T])
   require(p % s == 0)
   override val dataIn = slave Stream Vec(dataType(), s)
   override val dataOut = master Stream Vec(dataType(), p)
-  override val latency = 0
+  override val latency = p / s - 1
 
   val counter = Counter(p / s)
   when(counter =/= counter.getZero || dataIn.fire)(counter.increment())
@@ -20,11 +20,11 @@ case class S2P[T <: Data](s: Int, p: Int, dataType: HardType[T])
   dataOut.valid := counter.value === U(p / s - 1)
 
   switch(counter.value) {
-    (0 until p / s - 1).foreach(i => is(U(i)){
+    (0 until p / s - 1).foreach(i => is(U(i)) {
       buffers(i) := dataIn.payload
       dataOut.payload.assignDontCare()
     })
-    is(U(p / s - 1)) (dataOut.payload := Vec(buffers.map(_.toSeq).reduce(_ ++ _) ++ dataIn.payload))
+    is(U(p / s - 1))(dataOut.payload := Vec(buffers.map(_.toSeq).reduce(_ ++ _) ++ dataIn.payload))
     if (!isPow2(p / s)) default(dataOut.payload.assignDontCare())
   }
 }

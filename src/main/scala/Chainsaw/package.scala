@@ -1,3 +1,4 @@
+import Chainsaw.dspTest.DSPTestable
 import Chainsaw.examples.JsonExample.temp
 import Chainsaw.matlabIO._
 import org.scalatest.Tag
@@ -18,7 +19,7 @@ import scala.util.{Failure, Random, Success, Try}
 import breeze.linalg.DenseVector
 import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
-import org.json4s.jackson.Serialization.{write,read}
+import org.json4s.jackson.Serialization.{read, write}
 
 import scala.io.Source
 import scala.reflect.ClassTag
@@ -32,6 +33,7 @@ package object Chainsaw extends RealFactory {
 
 
   // TODO: extract the features of the following annotations and implement them in traits
+
   /** indicating that a module is fully-pipelined, thus, it requires no control at all, its behaviors is fully described by its latency
    *
    */
@@ -568,6 +570,6 @@ package object Chainsaw extends RealFactory {
     ret
   }
 
-  def toComplexType(fixType:HardType[SFix]) = HardType(ComplexNumber(fixType))
+  def toComplexType(fixType: HardType[SFix]) = HardType(ComplexNumber(fixType))
 }
 

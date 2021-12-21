@@ -43,6 +43,7 @@ object Dft {
     genericDft(data, omega, inverse)
   }
 
+  // !attention! we assume a default 1/N scaling for idft, which means that, idft(dft(x)) = N * x, rather than x
   val idft: DenseVector[BComplex] => DenseVector[BComplex] = dft(_, inverse = true)
 
   def fftSymmetricOf(data: DenseVector[BComplex]) =
@@ -69,10 +70,12 @@ object Dft {
    * @param data1 another sequence with same properties
    * @see ''Fast Algorithms for Signal Processing'' Chap5.1
    */
-  @fastAlgo("dft")
+  @fastAlgo("idft")
   def rvidftByDouble(data0: DenseVector[BComplex], data1: DenseVector[BComplex]): (DenseVector[Double], DenseVector[Double]) = {
     val dataIn = data0 + (data1 *:* i)
+    println(s"after pre $dataIn")
     val dataOut = idft(dataIn)
+    println(s"after idft $dataOut")
     val out0 = dataOut.map(_.real)
     val out1 = dataOut.map(_.imag)
     (out0, out1)

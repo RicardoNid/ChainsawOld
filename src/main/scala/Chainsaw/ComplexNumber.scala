@@ -21,6 +21,8 @@ case class ComplexNumber(peak: Int, resolution: Int) extends Bundle {
 
   def multiplyI = ComplexNumber(-imag, real)
 
+  def divideI = ComplexNumber(imag, -real)
+
   def conj = ComplexNumber(real, - imag)
 
   def *(that: SFix) = {

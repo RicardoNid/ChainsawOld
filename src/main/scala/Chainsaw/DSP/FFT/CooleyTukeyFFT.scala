@@ -56,7 +56,7 @@ case class CooleyTukeyBackToBack(
 
   logger.info(s"implementing a $N-point folded ${if (inverse) "ifft" else "fft"} module at parallel factor = $pF")
 
-  val complexDataType = HardType(ComplexNumber(dataType))
+  val complexDataType = toComplexType(dataType)
   override val dataIn = slave Stream Vec(complexDataType, pF)
   override val dataOut = master Stream Vec(complexDataType, pF)
 
@@ -99,3 +99,6 @@ case class CooleyTukeyBackToBack(
   inter2.dataIn.valid := core2s.head.dataOut.valid
   inter2.dataOut >> dataOut // inter2 -> outer
 }
+
+
+
