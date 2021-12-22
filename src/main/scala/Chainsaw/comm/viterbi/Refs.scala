@@ -20,7 +20,7 @@ object Refs {
   def getTestData802_11n(groupLength:Int) = {
     val constLen = 7
     val codeGen = Array(177, 131)
-    val trellis = Trellis.poly2trellis(constLen, codeGen)
+    val trellis = VitTrellis.poly2trellis(constLen, codeGen)
     val trellisM = Refs.poly2trellisM(constLen, codeGen)
 
     val inputData = (0 until groupLength - constLen + 1).map(_ => ChainsawRand.nextInt(trellis.numInputSymbols)) ++ Seq.fill(constLen - 1)(0)

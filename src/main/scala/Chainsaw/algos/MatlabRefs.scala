@@ -5,7 +5,7 @@ import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
 import Chainsaw._
-import Chainsaw.algos.TerminationMode.{TAILBITING, TERMINATION, TRUNCATION, TerminationMode}
+import Chainsaw.algos.TerminationMode._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 import breeze.linalg.DenseVector
@@ -58,7 +58,6 @@ object MatlabRefs {
     val modeName = mode match {
       case TRUNCATION => "trunc"
       case TERMINATION => "term"
-      case TAILBITING => ""
     }
     val ret = eng.feval[Array[Double]]("vitdec", data.toArray.map(_.toDouble), trellis, Array(tblen.toDouble), modeName, "hard")
     new DenseVector(ret.map(_.toInt))

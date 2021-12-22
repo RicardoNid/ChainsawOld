@@ -13,7 +13,7 @@ import Chainsaw.matlabIO._
  * @param trellis
  * @param groupLength
  */
-case class ViterbiHard(trellis: Trellis[Int], groupLength: Int, temp: Int) extends Component {
+case class ViterbiHard(trellis: VitTrellis[Int], groupLength: Int, temp: Int) extends Component {
 
   // submodules
   val forward = ViterbiForwarding(trellis) // ACS

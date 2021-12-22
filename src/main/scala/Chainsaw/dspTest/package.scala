@@ -131,7 +131,7 @@ package object dspTest {
     dataIn.clear()
     dataOut match {
       case stream: Stream[_] => stream.ready #= true
-      case _ =>  // do nothing
+      case _ => // do nothing
     }
     dut.clockDomain.waitSampling()
     // set monitor
@@ -139,12 +139,12 @@ package object dspTest {
     dataOut.setMonitor(dutResult)
     // poke stimulus
     var i = 0
-    while (i < testCases.size){
+    while (i < testCases.size) {
       val canPoke = dataIn match {
         case stream: Stream[_] => stream.ready.toBoolean
         case _ => true
       }
-      if(canPoke) {
+      if (canPoke) {
         dataIn.poke(testCases(i), lastWhen = i == (testCases.length - 1))
         i += 1
       }
@@ -189,6 +189,7 @@ package object dspTest {
 
         val difference = dutResult.diff(innerGolden)
         assert(difference.isEmpty, difference.mkString(" "))
+        assert(dutResult.zip(innerGolden).forall { case (a, b) => a == b })
       }
     }
     dutResult

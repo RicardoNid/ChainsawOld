@@ -1,5 +1,6 @@
 package Chainsaw.algos
 
+import breeze.linalg.min
 import breeze.math.Semiring
 
 object AlgebraicStructures {
@@ -18,6 +19,23 @@ object AlgebraicStructures {
     override def ==(a: ZInt, b: ZInt) = a.value == b.value
 
     override def !=(a: ZInt, b: ZInt) = a.value != b.value
+  }
+
+  case class MPInt(value:Int)
+
+  case class MinPlus(max:Int) extends Semiring[MPInt] {
+
+    override def zero = MPInt(max) // min(x, max) = x
+
+    override def one = MPInt(0) // x + 0 = x
+
+    override def +(a: MPInt, b: MPInt) = MPInt(min(a.value, b.value))
+
+    override def *(a: MPInt, b: MPInt) = MPInt(a.value + b.value)
+
+    override def ==(a: MPInt, b: MPInt) = a.value == b.value
+
+    override def !=(a: MPInt, b: MPInt) = a.value != b.value
   }
 }
 

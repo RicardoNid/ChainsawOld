@@ -22,14 +22,26 @@ case class Trellis[T](nextStateLogic: DenseMatrix[Int], outputLogic: DenseMatrix
   val numStates = nextStateLogic.rows
   val numInputSymbols = nextStateLogic.cols
   val numOutputSymbols = outputLogic.toArray.distinct.size
+  val numTransitions = numStates * numInputSymbols
 
-  // methods
-  def getTransitionsTo(state: Int) = {
+  // pre-built table, A(nextState) = transition
+  val transitionsTo: Seq[Seq[StateTransition[T]]] = (0 until numStates).map{ state =>
     val indices = nextStateLogic.findAll(_ == state)
     indices.map(tuple => StateTransition(tuple._1, state, tuple._2, outputLogic(tuple._1, tuple._2)))
   }
 
+  // pre-built table, A(prevState, nextState) = transition
+  val transitionsMap: Map[(Int, Int), StateTransition[T]] = transitionsTo.flatten.map(
+    transition => (transition.prevState, transition.nextState) -> transition).toMap
 
+  val transitions = transitionsMap.values.toSeq
+
+  // methods
+  def getPrevStatesTo(state:Int) = nextStateLogic.findAll(_ == state).map(_._1)
+
+  def getTransitionsTo(state: Int) = transitionsTo(state)
+
+  def getTransition(prevState:Int, nextState:Int) = transitionsMap(prevState, nextState)
 }
 
 object Trellis {

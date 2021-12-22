@@ -12,10 +12,10 @@ class ViterbiAlgosTest extends AnyFlatSpec {
   // 801.11n standard
   val constLen = 7
   val codeGen = Array(177, 131)
-  val trellis = Trellis.poly2trellis(constLen, codeGen)
+  val trellis = VitTrellis.poly2trellis(constLen, codeGen)
   val trellisM = Refs.poly2trellisM(constLen, codeGen)
 
-  type ViterbiAlgo = (Array[Int], Trellis[Int], (Int, Int) => Double) => Array[Int] // rxSymbols, trellis, metric => txSymbols
+  type ViterbiAlgo = (Array[Int], VitTrellis[Int], (Int, Int) => Double) => Array[Int] // rxSymbols, trellis, metric => txSymbols
 
   def testHardDecision(algo: ViterbiAlgo, groupLength: Int) = {
 

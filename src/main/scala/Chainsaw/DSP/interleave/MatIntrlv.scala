@@ -73,12 +73,6 @@ case class MatIntrlv[T <: Data](row: Int, col: Int, dataType: HardType[T])
   // while reading data, we rotate the addresses to get proper address
 
   // read address generation
-  // TODO: implement this cycle by cycle
-
-  //    val readAddrs = Vec(UInt(addrWidth bits), ramCount)
-  //    readAddrs := Vec((0 +: (1 until ramCount).reverse) // initial state
-  //      .map(i => U(i, addrWidth bits)))
-  //      .rotateRight(counterOut.value)
   val initValues = Vec((0 +: (1 until ramCount).reverse).map(U(_, addrWidth bits)))
   val readAddrs = RegInit(initValues)
   when(dataOut.fire){

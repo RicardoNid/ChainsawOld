@@ -5,7 +5,7 @@ import spinal.core._
 import spinal.lib._
 
 // ACS part of Viterbi
-case class ViterbiForwarding(trellis: Trellis[Int]) extends Component {
+case class ViterbiForwarding(trellis: VitTrellis[Int]) extends Component {
 
   import trellis._
 
@@ -76,7 +76,7 @@ case class ViterbiForwarding(trellis: Trellis[Int]) extends Component {
 
 object ViterbiForwarding {
   def main(args: Array[String]): Unit = {
-    val trellis = Trellis.poly2trellis(7, Array(177, 131))
+    val trellis = VitTrellis.poly2trellis(7, Array(177, 131))
     //    GenRTL(ViterbiForwarding(trellis))
     VivadoSynth(ViterbiForwarding(trellis), name = "viterbiForwarding")
   }

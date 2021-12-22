@@ -12,7 +12,7 @@ import scala.collection.mutable.{ArrayBuffer, Map}
  * @see for trellis''Coding Theory'' Chap3.2.2
  * @see we adopt the symbols (n,k,m) used in ''Coding Theory'' Chap3.1.2
  */
-case class Trellis[T](numInputSymbols: Int, numOutputSymbols: Int, numStates: Int, nextStates: Array[Array[Int]], outputs: Array[Array[T]]) {
+case class VitTrellis[T](numInputSymbols: Int, numOutputSymbols: Int, numStates: Int, nextStates: Array[Array[Int]], outputs: Array[Array[T]]) {
 
   require(nextStates.length == numStates && nextStates.head.length == numInputSymbols)
   require(outputs.length == numStates && outputs.head.length == numInputSymbols)
@@ -30,13 +30,13 @@ case class Trellis[T](numInputSymbols: Int, numOutputSymbols: Int, numStates: In
   }
 }
 
-object Trellis {
+object VitTrellis {
 
   /** Generate trellis from config of convenc
    */
   def poly2trellis(constLen: Int, codeGen: Array[Int]) = {
     val matlabTrellis = Refs.poly2trellisM(constLen: Int, codeGen: Array[Int])
-    Trellis(
+    VitTrellis(
       numInputSymbols = matlabTrellis.get("numInputSymbols").asInstanceOf[Double].toInt,
       numOutputSymbols = matlabTrellis.get("numOutputSymbols").asInstanceOf[Double].toInt,
       numStates = matlabTrellis.get("numStates").asInstanceOf[Double].toInt,

@@ -26,7 +26,7 @@ object MinplusMatrix {
 
   val max = Double.MaxValue / 3
 
-  def trellis2Minplus(trellis: Trellis[Int], metric: (Int, Int) => Double) = {
+  def trellis2Minplus(trellis: VitTrellis[Int], metric: (Int, Int) => Double) = {
     import trellis._
     (0 until numOutputSymbols).map { observed =>
       val values = Array.tabulate(numStates, numStates) { (prev, next) =>
@@ -45,7 +45,7 @@ object MinplusMatrix {
 
   def main(args: Array[String]): Unit = {
 
-    val trellis = Trellis.poly2trellis(3, Array(7, 6))
+    val trellis = VitTrellis.poly2trellis(3, Array(7, 6))
     val matrices = trellis2Minplus(trellis, Algos.Hamming)
     println(matrices.mkString("\n\n"))
 

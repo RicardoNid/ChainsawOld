@@ -17,7 +17,7 @@ object Algos {
    * @param metric   metric that defines the distance between an expected output symbol and an observed output symbol
    * @tparam T type of output symbols, could be int(hard) or double(soft)
    */
-  def viterbi[T](observed: Array[T], trellis: Trellis[T], metric: (T, T) => Double): Array[Int] = {
+  def viterbi[T](observed: Array[T], trellis: VitTrellis[T], metric: (T, T) => Double): Array[Int] = {
 
     import trellis._
 
@@ -60,7 +60,7 @@ object Algos {
   /** General Viterbi Algo with traceback(write discrepancy)
    *
    */
-  def viterbiTraceback[T](observed: Array[T], trellis: Trellis[T], metric: (T, T) => Double,
+  def viterbiTraceback[T](observed: Array[T], trellis: VitTrellis[T], metric: (T, T) => Double,
                           stateStart: Int = 0) = {
 
     import trellis._
@@ -116,7 +116,7 @@ object Algos {
    *
    * @param P parallel factor
    */
-  def viterbiParallel(observed: Array[Int], trellis: Trellis[Int], metric: (Int, Int) => Double,
+  def viterbiParallel(observed: Array[Int], trellis: VitTrellis[Int], metric: (Int, Int) => Double,
                       stateStart: Int = 0, P: Int) = {
     val N = observed.length
     require(N % P == 0)
@@ -138,7 +138,7 @@ object Algos {
   /** General Viterbi Algo with traceback(write discrepancy)
    *
    */
-  def viterbiTracebackMinplus(observed: Array[Int], trellis: Trellis[Int], metric: (Int, Int) => Double, stateStart: Int = 0) = {
+  def viterbiTracebackMinplus(observed: Array[Int], trellis: VitTrellis[Int], metric: (Int, Int) => Double, stateStart: Int = 0) = {
 
     import trellis._
     val records = viterbiForwarding(observed, trellis, metric, stateStart)
@@ -146,7 +146,7 @@ object Algos {
 
   }
 
-  def viterbiForwarding(observed: Array[Int], trellis: Trellis[Int], metric: (Int, Int) => Double, stateStart: Int = 0): Stack[Seq[Double]] = {
+  def viterbiForwarding(observed: Array[Int], trellis: VitTrellis[Int], metric: (Int, Int) => Double, stateStart: Int = 0): Stack[Seq[Double]] = {
 
     import trellis._
 
@@ -170,7 +170,7 @@ object Algos {
     records
   }
 
-  def viterbiBackwarding(records:Stack[Seq[Double]], trellis: Trellis[Int]): Array[Int] = {
+  def viterbiBackwarding(records:Stack[Seq[Double]], trellis: VitTrellis[Int]): Array[Int] = {
 
     import trellis._
 

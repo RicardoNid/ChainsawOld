@@ -4,7 +4,7 @@ import Chainsaw._
 import spinal.core._
 import spinal.lib._
 
-case class ViterbiBackwarding(trellis: Trellis[Int]) extends Component {
+case class ViterbiBackwarding(trellis: VitTrellis[Int]) extends Component {
 
   import trellis._
 
@@ -57,7 +57,7 @@ case class ViterbiBackwarding(trellis: Trellis[Int]) extends Component {
 
 object ViterbiBackwarding {
   def main(args: Array[String]): Unit = {
-    val trellis = Trellis.poly2trellis(7, Array(177, 131))
+    val trellis = VitTrellis.poly2trellis(7, Array(177, 131))
     VivadoSynth(ViterbiBackwarding(trellis))
     //    VivadoImpl(ViterbiBackwarding(trellis))
   }
