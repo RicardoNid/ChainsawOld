@@ -1,20 +1,21 @@
 package Chainsaw
 
+import Chainsaw.dspTest.TestMetric.TestMetric
+import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
-import spinal.lib.fsm._
-import Chainsaw._
-import Chainsaw.DFG._
-import Chainsaw.matlabIO._
-import org.slf4j.{Logger, LoggerFactory}
 import spinal.sim.SimThread
 
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 
 package object dspTest {
+
+  object TestMetric extends Enumeration {
+    type TestMetric = Value
+    val SAME, PERMUTATION, APPROXIMATE = Value
+  }
 
   def setMonitor[T <: BaseType](trigger: Bool, target: T, Container: ArrayBuffer[BigInt]) = fork {
     while (true) {
@@ -157,7 +158,10 @@ package object dspTest {
   }
 
   def doFlowPeekPokeTest[Do, Di, Ti <: Data, To <: Data]
-  (name: String, dut: => Component with DSPTestable[Ti, To], testCases: Seq[Di], golden: Seq[Do], initLength: Int = 0): ArrayBuffer[Do] = {
+  (name: String, dut: => Component with DSPTestable[Ti, To],
+   testCases: Seq[Di], golden: Seq[Do],
+   initLength: Int = 0,
+   testMetric: TestMetric = TestMetric.SAME, epsilon: Double = 1E-4): ArrayBuffer[Do] = {
 
     val logger: Logger = LoggerFactory.getLogger(s"dsptest-${name}")
 
@@ -171,7 +175,7 @@ package object dspTest {
         case vec: Vec[_] => vec.size
         case _ => 1
       }
-      val innerGolden = golden.drop(initLength * outputSize)
+      val innerGolden: Seq[Do] = golden.drop(initLength * outputSize)
 
       import dut.{clockDomain, dataIn, dataOut, latency}
       dataIn.halt()
@@ -183,13 +187,34 @@ package object dspTest {
 
       if (innerGolden != null) {
         val printSize = (dutResult ++ innerGolden).map(_.toString.size).max
-        logger.info(s"testing result:" +
-          s"\nyours : ${dutResult.map(_.toString.padTo(printSize, ' ')).mkString(" ")}" +
-          s"\ngolden: ${innerGolden.map(_.toString.padTo(printSize, ' ')).mkString(" ")}")
+//        logger.info(s"testing result:" +
+//          s"\nyours : ${dutResult.map(_.toString.padTo(printSize, ' ')).mkString(" ")}" +
+//          s"\ngolden: ${innerGolden.map(_.toString.padTo(printSize, ' ')).mkString(" ")}")
 
-        val difference = dutResult.diff(innerGolden)
-        assert(difference.isEmpty, difference.mkString(" "))
-        assert(dutResult.zip(innerGolden).forall { case (a, b) => a == b })
+        logger.info(s"testing result:" +
+          s"\nyours : ${dutResult.head}" +
+          s"\ngolden: ${innerGolden.head}")
+
+        def shouldAll(metric: (Do, Do) => Boolean) = dutResult.zip(innerGolden).forall { case (a, b) => metric(a, b) }
+
+        val condition: Boolean = testMetric match {
+          case Chainsaw.dspTest.TestMetric.SAME => shouldAll(_ == _)
+          // TODO: close, but not exactly the definition of permuataion
+          case Chainsaw.dspTest.TestMetric.PERMUTATION => dutResult.diff(innerGolden).isEmpty && dutResult.size == innerGolden.size
+          case Chainsaw.dspTest.TestMetric.APPROXIMATE => dutResult.head match {
+            case _: Seq[BComplex] => dutResult.asInstanceOf[ArrayBuffer[Seq[BComplex]]].flatten
+              .zip(innerGolden.asInstanceOf[Seq[Seq[BComplex]]].flatten)
+              .forall { case (a, b) => (a.modulus - b.modulus).abs < epsilon }
+            case _: BComplex => dutResult.asInstanceOf[ArrayBuffer[BComplex]]
+              .zip(innerGolden.asInstanceOf[Seq[BComplex]])
+              .forall { case (a, b) => (a.modulus - b.modulus).abs < epsilon }
+            case _: Double => dutResult.asInstanceOf[ArrayBuffer[Double]]
+              .zip(innerGolden.asInstanceOf[Seq[Double]])
+              .forall { case (a, b) => (a - b).abs < epsilon }
+            case _ => throw new IllegalArgumentException(s"'approximation' is not defined for ${dutResult.head.getClass}")
+          }
+        }
+        assert(condition)
       }
     }
     dutResult

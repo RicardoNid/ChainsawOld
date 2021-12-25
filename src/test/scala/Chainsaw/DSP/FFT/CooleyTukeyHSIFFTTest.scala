@@ -48,7 +48,7 @@ class CooleyTukeyHSIFFTTest extends AnyFlatSpec {
 
       assert(dutResults.nonEmpty)
       goldens.zip(dutResults).map { case (golden, dut) =>
-        val dutAsComponent = dut.map(BComplex(_, 0.0)).asDv
+        val dutAsComponent = dut.map(BComplex(_, 0.0)).toDv
         val diff = golden - dutAsComponent
         println(s"yours $dutAsComponent")
         println(s"golden $golden")

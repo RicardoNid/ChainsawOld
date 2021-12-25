@@ -50,4 +50,18 @@ class MatIntrlvTest extends AnyFlatSpec {
     )
   }
 
+  it should "synth for FTN" in {
+    VivadoSynth(
+      new Component with DSPTestable[Vec[Bits], Vec[Bits]] {
+        val core = AdaptiveMatIntrlv(256, 512, 512, 512, HardType(Bits(1 bits)))
+        override val dataIn = slave(cloneOf(core.dataIn))
+        override val dataOut = master(cloneOf(core.dataOut))
+        override val latency = core.latency + 2
+        dataIn.m2sPipe() >> core.dataIn
+        core.dataOut.m2sPipe() >> dataOut
+      }
+    )
+
+    VivadoSynth(AdaptiveMatIntrlv(256, 512, 512, 512, HardType(Bits(1 bits))))
+  }
 }

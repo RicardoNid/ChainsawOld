@@ -15,7 +15,7 @@ object Qam {
   def getSymbols(modulationOrder: Int) = {
     require(isPow2(modulationOrder))
     require(modulationOrder <= 256, "modulation order higher than 256 has not been supported yet")
-    require(modulationOrder != 32 && modulationOrder != 128, "modulation order 32 & 128 has not been supported yet")
+//    require(modulationOrder != 32 && modulationOrder != 128, "modulation order 32 & 128 has not been supported yet")
 
     val bits = log2Up(modulationOrder)
 
@@ -37,7 +37,7 @@ object Qam {
       case modulationOrder => genSymbols(modulationOrder)
     }
 
-    rawData.grouped(2).map(pair => BComplex(pair(0), pair(1))).toSeq.asDv
+    rawData.grouped(2).map(pair => BComplex(pair(0), pair(1))).toSeq.toDv
   }
 
   /** get rms of modulated symbols of QAM2<->QAM256, in gray code order by default

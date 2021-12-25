@@ -62,10 +62,10 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
       )
 
       groupedGoldens.zip(dutResults).map { case (golden, dut) =>
-        val diff = golden.asDv - dut.asDv
+        val diff = golden.toDv - dut.toDv
         println(golden)
-        println(dut.asDv)
-        assert(golden.asDv ~= (dut.asDv, epsilon), max(abs(diff)))
+        println(dut.toDv)
+        assert(golden.toDv ~= (dut.toDv, epsilon), max(abs(diff)))
       }
     }
   }
@@ -156,10 +156,10 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
       )
 
       goldens.zip(dutResults).map { case (golden, dut) =>
-        val diff = golden - dut.asDv
+        val diff = golden - dut.toDv
         println(golden)
-        println(dut.asDv)
-        assert(golden ~= (dut.asDv, epsilon), max(abs(diff)))
+        println(dut.toDv)
+        assert(golden ~= (dut.toDv, epsilon), max(abs(diff)))
       }
     }
   }

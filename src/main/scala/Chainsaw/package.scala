@@ -16,10 +16,11 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math._
 import scala.sys.process.Process
 import scala.util.{Failure, Random, Success, Try}
-import breeze.linalg.DenseVector
+import breeze.linalg.{DenseVector, DenseMatrix}
 import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
 import org.json4s.jackson.Serialization.{read, write}
+
 
 import scala.io.Source
 import scala.reflect.ClassTag
@@ -314,7 +315,11 @@ package object Chainsaw extends RealFactory {
 
     def approximatelyEquals(that: Seq[T], approEquals: (T, T) => Boolean) = seq.zip(that).forall { case (t, t1) => approEquals(t, t1) }
 
-    def asDv(implicit tag: ClassTag[T]) = new DenseVector(seq.toArray)
+    def toDv(implicit tag: ClassTag[T]) = new DenseVector(seq.toArray)
+  }
+
+  implicit class DvUtil[T](dv: DenseVector[T]) {
+    def toSeq(implicit tag: ClassTag[T]): Seq[T] = dv.toArray.toSeq
   }
   //  implicit def Seq2Vec[T <: Data](seq: Seq[T]): Vec[T] = Vec(seq)
 
@@ -350,7 +355,7 @@ package object Chainsaw extends RealFactory {
 
     def nextBigInt(bitLength: Int) = BigInt(rand.nextString(bitLength).map(_ % 2).mkString(""), 2)
 
-    def nextBits(bitLength:Int): Seq[Int] = rand.nextString(bitLength).map(_ % 2)
+    def nextBits(bitLength: Int): Seq[Int] = rand.nextString(bitLength).map(_ % 2)
 
     def nextBinaryString(bitLength: Int): String = nextBits(bitLength).mkString("")
 
@@ -431,7 +436,7 @@ package object Chainsaw extends RealFactory {
     val targetDirectory = s"./elaboWorkspace/$name"
     if (!Files.exists(Paths.get("./elaboWorkspace"))) doCmd("mkdir elaboWorkspace")
     new File(targetDirectory).mkdir()
-    val report: SpinalReport[T] = SpinalConfig(netlistFileName = s"$name.sv", targetDirectory = targetDirectory).generateSystemVerilog(gen)
+    val report: SpinalReport[T] = SpinalConfig(netlistFileName = s"$name.v", targetDirectory = targetDirectory).generateVerilog(gen)
     logger.info(report.rtlSourcesPaths
       .map(Paths.get(_))
       .map(path => if (path.isAbsolute) path else path.toAbsolutePath)
@@ -460,11 +465,32 @@ package object Chainsaw extends RealFactory {
     report
   }
 
-  def VivadoSynth[T <: Component](sourcePath: String): Unit = {
+  def VivadoSynth(sourcePath: String): Unit = {
     val report = VivadoFlow(design = Chainsaw.examples.ZyboDesign0(), "temp", s"$synthWorkspace/temp", designPath = sourcePath).doit()
     report.printArea()
     report.printFMax()
   }
+
+  def VivadoSynthForTiming[Ti <: Data, To <: Data](gen: => Component with DSPTestable[Ti, To]) =
+    VivadoSynth(
+      new Component {
+        val core = gen
+        val dataIn = in(cloneOf(core.dataIn.payload))
+        val dataOut = out(cloneOf(core.dataOut.payload))
+
+        logger.info(s"synth for timing, " +
+          s"${core.dataIn.payload.getBitsWidth + core.dataOut.payload.getBitsWidth} extra regs added")
+
+        core.dataIn.valid := True
+        core.dataOut match {
+          case stream: Stream[_] => stream.ready := True
+          case _ =>
+        }
+
+        core.dataIn.payload := RegNext(dataIn)
+        dataOut := RegNext(core.dataOut.payload)
+      }
+    )
 
   def VivadoImpl[T <: Component](gen: => T, name: String = "temp", xdcPath: String = "") = {
     val report = VivadoFlow(design = gen, name, s"$synthWorkspace/$name", vivadoTask = VivadoTask(taskType = IMPL)).doit()
@@ -573,5 +599,23 @@ package object Chainsaw extends RealFactory {
   }
 
   def toComplexType(fixType: HardType[SFix]) = HardType(ComplexNumber(fixType))
+
+  implicit class ArrayMatrixUtil[T](array2D: Array[Array[T]])(implicit tag: ClassTag[T]) {
+
+    def rows = array2D.length
+
+    def columns = array2D.head.length
+
+    def transposed = Array.tabulate(columns, rows)((j, i) => array2D(i)(j))
+
+    def toDM = new DenseMatrix[T](array2D.rows, array2D.columns, array2D.transpose.flatten)
+  }
+
+  implicit class DMUtil[T](dm: DenseMatrix[T])(implicit tag: ClassTag[T]) {
+
+    def toRowMajoredArray = dm.t.toArray
+
+    def to2DArray = toRowMajoredArray.grouped(dm.cols).toArray
+  }
 }
 

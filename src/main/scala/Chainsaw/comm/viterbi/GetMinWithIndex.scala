@@ -13,7 +13,7 @@ case class GetMinWithIndex() extends Component with DSPTestable[Vec[UInt], Vec[U
     else {
       val (data0, data1) = data.splitAt(N / 2)
       val ret = data0.zip(data1).map { case (left, right) =>
-        val bit = right.takeHigh(width).asUInt < left.takeHigh(width).asUInt
+        val bit = right.takeHigh(width).asUInt <= left.takeHigh(width).asUInt
         Mux(bit, right, left) @@ bit
       }
       getMinWithIndex(ret, width)

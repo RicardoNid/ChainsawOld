@@ -35,6 +35,6 @@ class R2RVFFTTest extends AnyFlatSpec with Matchers {
     clockDomain.waitSampling(dut.latency)
 
     println(s"latency = ${dut.latency}")
-    println(dft(testCase.map(BComplex(_)).asDv))
+    println(dft(testCase.map(BComplex(_)).toDv))
   }
 }

@@ -43,7 +43,7 @@ object Dct {
   /** implement dct1D by dft
    * @see ''Fast Algorithms for Signal Processing'', Theorem 3.5.1, Corollary 3.5.2
    */
-  @fastAlgo
+  @fastAlgo("dct1D")
   def dct1DByDft(data: DenseVector[Double], method: Int): DenseVector[Double] = {
     val N = data.length
 

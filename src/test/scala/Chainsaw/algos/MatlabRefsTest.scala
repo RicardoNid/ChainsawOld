@@ -35,7 +35,7 @@ class TMatlabRefsTest extends AnyFlatSpec {
   "qammod" should "work" in {
     Seq(2, 3, 4, 6, 8).foreach { i =>
       val modulationOrder = 1 << i
-      val bits: DenseVector[Int] = (0 until 100).map(_ => ChainsawRand.nextInt(modulationOrder)).asDv
+      val bits: DenseVector[Int] = (0 until 100).map(_ => ChainsawRand.nextInt(modulationOrder)).toDv
       val breeze = Qam.qammod(bits, modulationOrder)
       val matlab = MatlabRefs.qammod(bits, modulationOrder)
       assert(breeze ~= matlab, s"\nbreeze: $breeze\nmatlab: $matlab")
@@ -45,7 +45,7 @@ class TMatlabRefsTest extends AnyFlatSpec {
   "qamdemod" should "work" in {
     Seq(2, 3, 4, 6, 8).foreach { i =>
       val modulationOrder = 1 << i
-      val symbols = (0 until 100).map(_ => ChainsawRand.nextComplex(-1, 1)).asDv
+      val symbols = (0 until 100).map(_ => ChainsawRand.nextComplex(-1, 1)).toDv
       val breeze = Qam.qamdemod(symbols, modulationOrder)
       val matlab = MatlabRefs.qamdemod(symbols, modulationOrder)
       assert(breeze.equals(matlab), s"\nbreeze: $breeze\nmatlab: $matlab")

@@ -7,8 +7,9 @@ import spinal.core._
 import spinal.lib._
 
 import scala.annotation.tailrec
+import scala.language.postfixOps
 
-case class ViterbiHardware(trellis: Trellis[Int], length: Int, parallelism:Int = 1,
+case class ViterbiHardware(trellis: Trellis[Int], length: Int,
                            readAsync: Boolean = true, disWidth: Int = -1) extends Component with DSPTestable[UInt, UInt] {
 
   // dataTypes and constants
@@ -120,7 +121,7 @@ case class ViterbiHardware(trellis: Trellis[Int], length: Int, parallelism:Int =
 
   override val dataIn = slave Stream outputSymbolType()
   override val dataOut = master Stream inputSymbolType()
-  override val latency = length * 2 + 1
+  override val latency = length * 2 + 1 // TODO: verify
 
   val forward = ACS()
   val backward = TB()
@@ -149,3 +150,4 @@ case class ViterbiHardware(trellis: Trellis[Int], length: Int, parallelism:Int =
   stackOfReverse.dataIn.payload := backward.dataOut
   stackOfReverse.dataOut >> dataOut
 }
+

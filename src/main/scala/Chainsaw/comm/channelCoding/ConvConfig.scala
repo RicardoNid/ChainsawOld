@@ -7,9 +7,9 @@ import spinal.core._
  *
  * @param codeGens a n*k 2-dimensional array of generator polynomial
  * @param radix    the radix of generator polynomial
- * @see ''Coding Theory'' Chap3.1
+ * @see we adopt symbols of ''Coding Theory'' Chap3.1
  */
-case class ConvConfig(codeGens: Array[Array[Int]], radix: Int = 10) {
+case class ConvConfig(codeGens: Array[Array[Int]], radix: Int = 8) {
   val n: Int = codeGens.length // number of input bits
   val k: Int = codeGens.head.length // number of output bits
   val decimalCodeGens: Array[Array[BigInt]] = codeGens.map(_.map(value => BigInt(value.toString, radix)))

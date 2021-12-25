@@ -7,7 +7,7 @@ object Multiplication {
 
   /** complex multiplication which use 3 mults and 5 adds(rather than 4 and 2)
    */
-  @fastAlgo
+  @fastAlgo("complexMult")
   def complexMult(x: BComplex, y: BComplex) = {
 
     val pre = new DenseMatrix(2, 3, Array(1, 0, 0, 1, 1, 1).map(_.toDouble))

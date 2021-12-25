@@ -69,7 +69,7 @@ object Keccak {
 
   def keccakF(state: Array[Bits]): Array[Bits] = {
     require(state.forall(_.getBitsWidth == 64) && state.size == 25)
-    val statex: Array[Bits] =(state.grouped(5).toArray).transpose.flatten
+    val statex: Array[Bits] =(state.grouped(5).toArray).transposed.flatten
     //val statex: Array[Bits] =Array.tabulate(5,5)((x, y)=>stateT(y)(x)).flatten
     val AForEachRound = ArrayBuffer[Array[Bits]](statex)
 
@@ -81,10 +81,10 @@ object Keccak {
       val A4 = chi(A3)
       val A5 = iota(A4, kState(i))
       val ret = A5.flatten
-      A5.transpose.flatten.zipWithIndex.foreach{ case (bits, j) => bits.setName(s"round_${i}_${j}")}
+      A5.transposed.flatten.zipWithIndex.foreach{ case (bits, j) => bits.setName(s"round_${i}_${j}")}
       AForEachRound += A5.flatten
     }
-    AForEachRound.last.grouped(5).toArray.transpose.flatten
+    AForEachRound.last.grouped(5).toArray.transposed.flatten
   }
 
   //Absorb

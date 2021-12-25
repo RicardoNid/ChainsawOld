@@ -37,9 +37,9 @@ object Ntt {
 
   def intt(data: DenseVector[Int])(implicit zp: Zp): DenseVector[Int] = ntt(data, inverse = true)
 
-  @fastAlgo
+  @fastAlgo("cconv")
   def cconvByNtt(a: DenseVector[Int], b: DenseVector[Int])(implicit zp: Zp): DenseVector[Int] = intt(ntt(a) *:* ntt(b))
 
-  @fastAlgo
+  @fastAlgo("")
   def multByNtt(a: BigInt, b: BigInt): BigInt = ??? // TODO
 }

@@ -41,8 +41,8 @@ class CooleyTukeyRVFFTTest extends AnyFlatSpec {
 
       assert(dutResults.nonEmpty)
       goldens.zip(dutResults).map { case (golden, dut) =>
-        val diff = golden - dut.asDv
-        assert(golden ~= (dut.asDv, epsilon), max(abs(diff)))
+        val diff = golden - dut.toDv
+        assert(golden ~= (dut.toDv, epsilon), max(abs(diff)))
       }
 
     }

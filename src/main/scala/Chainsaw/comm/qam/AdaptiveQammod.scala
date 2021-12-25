@@ -1,25 +1,28 @@
 package Chainsaw.comm.qam
 
 import Chainsaw._
-import Chainsaw.matlabIO._
+import Chainsaw.dspTest.DSPTestable
 import spinal.core._
 import spinal.lib._
+
 import scala.math.sqrt
 
 /**
- * @param bitAlloc      the list of symOrder for each segment
- * @param symbolType    to specify the format of output QAM symbols as fixed point complex number
+ * @param bitAlloc
+ * @param powAlloc
  * @param gray          symbol order, binary when false, gray when true
- * @param customSymbols when you need to specify custom QAM values(different from Matlab)
+ * @param customSymbols custom QAM values for each symOrder
  */
-case class QAMMod(bitAlloc: Seq[Int], powAlloc: Seq[Double], symbolType: HardType[ComplexNumber],
-                  gray: Boolean = true, customSymbols: Map[Int, Seq[BComplex]] = Map[Int, Seq[BComplex]]()) extends Component {
+case class AdaptiveQammod(bitAlloc: Seq[Int], powAlloc: Seq[Double],
+                          dataType: HardType[SFix],
+                          gray: Boolean = true, customSymbols: Map[Int, Seq[BComplex]] = Map[Int, Seq[BComplex]]())
+  extends Component with DSPTestable[Bits, Vec[ComplexNumber]] {
 
-  val fixedType = HardType(symbolType().real)
-  val dataIn = slave Flow Bits(bitAlloc.sum bits)
-  val dataOut = master Flow Vec(symbolType, bitAlloc.size)
+  val complexType = toComplexType(dataType)
+  override val dataIn = slave Stream Bits(bitAlloc.sum bits)
+  override val dataOut = master Stream Vec(complexType, bitAlloc.size)
 
-  // segments for extracting valid inputs
+  // extraction
   val filteredIndices = bitAlloc.zipWithIndex.filter(_._1 != 0).map(_._2)
   val starts = filteredIndices.map(i => bitAlloc.take(i).sum)
   val ends = filteredIndices.map(i => bitAlloc.take(i + 1).sum)
@@ -29,32 +32,34 @@ case class QAMMod(bitAlloc: Seq[Int], powAlloc: Seq[Double], symbolType: HardTyp
   // because of powerAlloc, every segment has a different lookup table for QAM mapping
   // take custom value if provided, take Matlab value if not
   val possibleBits = 1 to bitAlloc.max
-  val QAMValues = possibleBits.map(i => customSymbols.getOrElse(i, Refs.getQAMValues(i).toSeq).toArray)
-  val rmsValues = possibleBits.map(Refs.getQAMRms)
+  val QAMValues = possibleBits.map(i => customSymbols.getOrElse(i, algos.Qam.getSymbols(1 << i).toSeq).toArray)
+  val rmsValues = possibleBits.map(i => algos.Qam.getRms(1 << i))
   // LUTs, values determined by bitAllocated, rms and powAllocated
   val QAMLUTs = bitAlloc.filter(_ != 0).zipWithIndex.map { case (bitAllocated, i) =>
     val LUTValues = QAMValues(bitAllocated - 1).map(_ / rmsValues(bitAllocated - 1)).map(_ * sqrt(powAlloc(i)))
-    Mem(LUTValues.map(CN(_, fixedType)))
+    Mem(LUTValues.map(CN(_, dataType)))
   }
 
   // using the input as address, reading the output from LUT(ROM)
-  dataOut.payload.foreach(_ := ComplexNumber(0.0, 0.0, fixedType))
+  dataOut.payload.foreach(_ := ComplexNumber(0.0, 0.0, dataType))
   dataOut.payload.foreach(_.allowOverride)
   bitAlloc.filter(_ != 0).indices.foreach { i =>
     dataOut.payload(i) := QAMLUTs(i).readSync(dataIn.payload(segments(i)).asUInt)
   }
 
-  dataOut.valid := RegNext(dataIn.valid, init = False)
+  dataIn.ready := True
+  override val latency = 1
+  dataOut.valid := Delay(dataIn.valid, latency, init = False)
 }
 
-object QAMMod {
+object AdaptiveQammod {
 
   def main(args: Array[String]): Unit = {
     val bitAlloc = Seq.fill(256)(4)
     val powerAlloc = Seq.fill(256)(1.0)
-    val symbolType = HardType(ComplexNumber(1, -14))
-    GenRTL(QAMMod(bitAlloc, powerAlloc, symbolType))
-    VivadoSynth(QAMMod(bitAlloc, powerAlloc, symbolType))
+    val dataType = HardType(SFix(1 exp, -14 exp))
+    GenRTL(AdaptiveQammod(bitAlloc, powerAlloc, dataType))
+    VivadoSynth(AdaptiveQammod(bitAlloc, powerAlloc, dataType))
   }
 }
 

@@ -4,7 +4,8 @@ import Chainsaw._
 import Chainsaw.algos.TerminationMode._
 import Chainsaw.comm.viterbi.ViterbiHardware
 import Chainsaw.dspTest._
-import breeze.linalg._
+import Chainsaw.matlabIO._
+import breeze.linalg.{DenseMatrix, DenseVector}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ViterbiTest extends AnyFlatSpec {
@@ -73,8 +74,23 @@ class ViterbiTest extends AnyFlatSpec {
     )
   }
 
+  it should "work on real task" in {
+    val testCases = eng.load("~/FTN326/reference/beforeVit", "beforeVit").asInstanceOf[Array[Double]]
+    val goldens = eng.load("~/FTN326/reference/afterVit", "afterVit").asInstanceOf[Array[Double]]
+
+    val testCase = Viterbi.bits2Symbols(new DenseVector(testCases.map(_.toInt)), 2).toArray.map(BigInt(_))
+    val golden = goldens.map(_.toInt).map(BigInt(_))
+    doFlowPeekPokeTest(
+      name = "testViterbiHardware",
+      dut = ViterbiHardware(trellis, testLength, readAsync = false, disWidth = 6),
+      testCases = testCase,
+      golden = golden
+    )
+
+  }
+
   it should "synth" in {
-//    VivadoSynth(ViterbiHardware(trellis, 128), s"VitdecForFtnUsingLUT")
+    //    VivadoSynth(ViterbiHardware(trellis, 128), s"VitdecForFtnUsingLUT")
     VivadoSynth(ViterbiHardware(trellis, 128, readAsync = false, disWidth = 4), s"VitdecForFtnUsingBRAM")
   }
 
