@@ -13,22 +13,22 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
-case class Tx(bitAlloc: Array[Int], powAlloc: Array[Double],
+case class Tx(bitAlloc: Array[Int], powAlloc: Array[Double], bitMask: Array[Int],
               qamPositions: Array[Int], qamRemapPositions: Array[Int])
-  extends Component with DSPTestable[Bits, Vec[ComplexNumber]] {
+  extends Component with DSPTestable[Bits, Vec[SFix]] {
 
   val unitType = HardType(SFix(2 exp, -15 exp))
   val unitComplexType = toComplexType(unitType)
-  val dataType = HardType(SFix(7 exp, -8 exp))
+  val dataType = HardType(SFix(7 exp, -15 exp))
   val complexType = toComplexType(dataType)
 
   val convenc = comm.channelCoding.Convenc128FTN()
   val interleave = DSP.interleave.AdaptiveMatIntrlv(256, 64, 256, 256, HardType(Bool()))
   val s2p = DSP.S2P(256, 1024, HardType(Bool()))
   val qammod = comm.qam.AdaptiveQammod(bitAlloc, powAlloc, unitType)
-  val p2s = DSP.P2S(256, 64, unitComplexType)
-  // TODO: using a hermitian symmetric module
-  //  val ifft = DSP.FFT.CooleyTukeyBackToBack(512, 64, Seq(4, 4, 4), Seq(4, 2), inverse = true, dataType, dataType)
+  val p2s = DSP.P2S(512, 128, complexType)
+  val ifft = DSP.FFT.CooleyTukeyBackToBack(512, 128, Seq(4, 4, 4, 2), Seq(4), true, dataType, unitType)
+
 
   def bools2bits(stream: Stream[Vec[Bool]]) = {
     val ret = Stream(Bits(stream.payload.length bits))
@@ -46,7 +46,7 @@ case class Tx(bitAlloc: Array[Int], powAlloc: Array[Double],
     ret
   }
 
-  def bitRemap(stream: Stream[Bits]) = {
+  def doBitRemap(stream: Stream[Bits]) = {
     val before = stream.payload.asBools.reverse
     val remapped = (0 until 1024).map { i =>
       val index = qamRemapPositions.indexOf(i)
@@ -59,16 +59,53 @@ case class Tx(bitAlloc: Array[Int], powAlloc: Array[Double],
     ret
   }
 
+  def doBitMask(stream: Stream[Vec[ComplexNumber]]) = {
+    val masked = stream.payload.zip(bitMask).map { case (data, mask) => if (mask == 1) data else stream.payload.head.getZero }
+    val ret = Stream(Vec(unitComplexType(), 256))
+    ret.payload := Vec(masked)
+    ret.valid := stream.valid
+    stream.ready := ret.valid
+    ret
+  }
+
+  def ifftPre(stream: Stream[Vec[ComplexNumber]]) = {
+    val before = stream.payload
+    val zero = complexType().getZero
+    val hs = (0 until 512).map {
+      case 0 => zero
+      case 256 => zero
+      case i => if (i < 256) before(i).truncated(dataType) else before(512 - i).conj.truncated(dataType)
+    }
+    val ret = Stream(cloneOf(Vec(hs)))
+    ret.payload := Vec(hs)
+    ret.valid := stream.valid
+    stream.ready := ret.valid
+    ret
+  }
+
+  def ifftPost(stream: Stream[Vec[ComplexNumber]]) = {
+    val carrierNum = bitMask.sum
+    val before = stream.payload
+    val ret = Stream(Vec(dataType(), 128))
+    // FIXME: it is not necessary for real implementation to use zero
+    ret.payload := Vec(before.map(_.real))
+    ret.valid := stream.valid
+    stream.ready := ret.valid
+    ret
+  }
+
   override val dataIn = slave(cloneOf(convenc.dataIn))
-  override val dataOut = master Stream Vec(toComplexType(unitType()), 64)
-  override val latency = Seq(convenc, interleave, s2p, qammod, p2s).map(_.latency).sum
+  override val dataOut = master Stream Vec(dataType(), 128)
+  // FIXME: part of the latency is wrong
+  override val latency = Seq(convenc, interleave, s2p, qammod, p2s, ifft).map(_.latency).sum + 20
 
   dataIn >> convenc.dataIn
   bits2bool(convenc.dataOut) >> interleave.dataIn
   interleave.dataOut >> s2p.dataIn
-  bitRemap(bools2bits(s2p.dataOut)) >> qammod.dataIn
-  qammod.dataOut >> p2s.dataIn
-  p2s.dataOut >> dataOut
+  doBitRemap(bools2bits(s2p.dataOut)) >> qammod.dataIn
+  ifftPre(doBitMask(qammod.dataOut)) >> p2s.dataIn
+  p2s.dataOut >> ifft.dataIn
+  ifftPost(ifft.dataOut) >> dataOut
 
   logger.info(s"Tx generated, latency = $latency")
 

@@ -36,7 +36,7 @@ case class AdaptiveMatIntrlv[T <: Data](
     else if (pFIn == row && pFOut == col || (pFIn == col && pFOut == row)) 2
     else 3
 
-  logger.info(s"implementing a $row * $col adaptive matIntrlv of ${dataType.getBitsWidth}-bits-width elements by mode $mode")
+  logger.info(s"implementing a $row * $col adaptive matIntrlv at parallelism ($pFIn, $pFOut) of ${dataType.getBitsWidth}-bits-width elements by mode $mode")
 
   override val dataIn = slave Stream Vec(dataType, pFIn)
   override val dataOut = master Stream Vec(dataType, pFOut)

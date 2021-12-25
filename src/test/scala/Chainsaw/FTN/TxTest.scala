@@ -17,12 +17,15 @@ class TxTest extends AnyFlatSpec {
 
   val bitAlloc = loadFTN[Array[Double]]("bitAlloc").map(_.toInt)
   logger.info(s"bitAlloc: ${bitAlloc.mkString(" ")}")
+  val bitMask = loadFTN[Array[Double]]("bitMask").map(_.toInt)
+  logger.info(s"bitMask: ${bitMask.mkString(" ")}")
   val powAlloc = loadFTN[Array[Double]]("powAlloc").map(pow => pow * pow)
   logger.info(s"powAlloc: ${powAlloc.mkString(" ")}")
   val qamPositions = loadFTN[Array[Double]]("QAMPositions").map(_.toInt)
   logger.info(s"qam position: ${qamPositions.mkString(" ")}")
   val qamRemapPositions = loadFTN[Array[Double]]("QAMRemapPositions").map(_.toInt)
   logger.info(s"qamRemap position: ${qamRemapPositions.mkString(" ")}")
+
   val bits = eng.load[Array[Array[Double]]]("~/FTN326/bitsAllFrame.mat", "bitsAllFrame")
     .transpose.flatten.map(_.toInt)
 
@@ -32,10 +35,16 @@ class TxTest extends AnyFlatSpec {
   val interleaved = eng.load[Array[Array[Double]]]("~/FTN326/interleavedBitsAllFrame.mat", "interleavedBitsAllFrame")
     .transpose.flatten.map(_.toInt)
 
-  val ret = eng.load[Array[Array[MComplex]]]("~/FTN326/mappedSymbolsAllFrame.mat", "mappedSymbolsAllFrame")
-    .transpose.flatten.map(_.toBComplex)
+  //  val ret = eng.load[Array[Array[MComplex]]]("~/FTN326/mappedSymbolsAllFrame.mat", "mappedSymbolsAllFrame")
+  //    .transpose.flatten.map(_.toBComplex)
 
-  def printHex(string: String) = BigInt(string,2).toString(16)
+  val ret = eng.load[Array[Array[Double]]]("~/FTN326/modulatedSymbolsAllFrame.mat", "modulatedSymbolsAllFrame")
+    .transpose.flatten.map(_ * 512.0)
+
+  logger.info(s"max & min: ${ret.max}, ${ret.min}")
+
+
+  def printHex(string: String) = BigInt(string, 2).toString(16)
 
   printlnGreen(printHex(bits.slice(128, 256).mkString("")))
   printlnGreen("coded")
@@ -43,14 +52,14 @@ class TxTest extends AnyFlatSpec {
   printlnGreen(printHex(interleaved.slice(256, 512).mkString("")))
 
   val testCases: Seq[BigInt] = bits.grouped(128).toSeq.map(bit128 => BigInt(bit128.mkString(""), 2))
-  val goldens: Seq[Seq[BComplex]] = ret.toSeq.grouped(64).toSeq
+  val goldens: Seq[Seq[Double]] = ret.toSeq.grouped(128).toSeq
 
-    doFlowPeekPokeTest(
-      name = "testTx", dut = Tx(bitAlloc, powAlloc, qamPositions, qamRemapPositions),
-      testCases = testCases,
-      golden = goldens,
-      initLength = 0,
-      testMetric = TestMetric.APPROXIMATE,
-      epsilon = 1E-2
-    )
+  doFlowPeekPokeTest(
+    name = "testTx", dut = Tx(bitAlloc, powAlloc, bitMask, qamPositions, qamRemapPositions),
+    testCases = testCases ++ testCases,
+    golden = goldens ++ goldens,
+    initLength = 0,
+    testMetric = TestMetric.APPROXIMATE,
+    epsilon = 1
+  )
 }

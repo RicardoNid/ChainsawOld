@@ -15,6 +15,9 @@ import Chainsaw.dspTest._
  */
 case class RVPreprocess(N: Int, dataType: HardType[SFix])
   extends Component with DSPTestable[Vec[SFix], Vec[ComplexNumber]] {
+
+  // TODO: implement folded version for pre/post module so extra latency for P2S/S2P could be removed
+
   val complexType = HardType(ComplexNumber(dataType()))
   override val dataIn = slave Stream Vec(dataType(), N)
   override val dataOut = master Stream Vec(complexType(), N)

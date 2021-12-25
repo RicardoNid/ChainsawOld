@@ -9,27 +9,44 @@ import spinal.lib.{master, slave}
 /** implement real-valued fft by doubling
  */
 // TODO: different parallelism
-case class CooleyTukeyRVFFT(N: Int, factors: Seq[Int],
+case class CooleyTukeyRVFFT(N: Int, factors1: Seq[Int], factors2: Seq[Int],
                             dataType: HardType[SFix], coeffType: HardType[SFix])
   extends Component with DSPTestable[Vec[SFix], Vec[ComplexNumber]] {
-  require(factors.last == 2)
+
+  val pF = factors1.product * 2
+  require(N % pF == 0)
 
   val complexType = toComplexType(dataType)
-  override val dataIn = slave Stream Vec(dataType(), N)
-  override val dataOut = master Stream Vec(complexType(), N)
+  override val dataIn = slave Stream Vec(dataType(), pF)
+  override val dataOut = master Stream Vec(complexType(), pF)
 
   val pre = RVPreprocess(N, dataType)
-  val p2s = P2S(N, N / 2, complexType)
-  val core = CooleyTukeyBackToBack(N, N / 2, factors.init, Seq(2), false, dataType, coeffType)
-  val s2p = S2P(N / 2, N, complexType)
+  val p2s0 = P2S(N, pF / 2, complexType)
+  val core = CooleyTukeyBackToBack(N, pF / 2, factors1, factors2, false, dataType, coeffType)
+  val s2p1 = S2P(pF / 2, N, complexType)
   val post = RVPostprocess(N, dataType)
 
-  override val latency = Seq(pre, p2s, core, s2p, post).map(_.latency).sum
+  override val latency = Seq(pre, p2s0, core, s2p1, post).map(_.latency).sum
 
-  dataIn >> pre.dataIn
-  pre.dataOut >> p2s.dataIn
-  p2s.dataOut >> core.dataIn
-  core.dataOut >> s2p.dataIn
-  s2p.dataOut >> post.dataIn
-  post.dataOut >> dataOut
+  if (pF == N) {
+    dataIn >> pre.dataIn
+    pre.dataOut >> p2s0.dataIn
+    p2s0.dataOut >> core.dataIn
+    core.dataOut >> s2p1.dataIn
+    s2p1.dataOut >> post.dataIn
+    post.dataOut >> dataOut
+  } else {
+    throw new IllegalArgumentException("folded RVFFT is not prepared as pre & post are not designed for folded situation")
+    //    val s2p0 = S2P(pF, N, dataType)
+    //    val p2s1 = P2S(N, pF, complexType)
+    //
+    //    dataIn >> s2p0.dataIn
+    //    s2p0.dataOut >> pre.dataIn
+    //    pre.dataOut >> p2s0.dataIn
+    //    p2s0.dataOut >> core.dataIn
+    //    core.dataOut >> s2p1.dataIn
+    //    s2p1.dataOut >> post.dataIn
+    //    post.dataOut >> p2s1.dataIn
+    //    p2s1.dataOut >> dataOut
+  }
 }
