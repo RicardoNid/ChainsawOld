@@ -193,7 +193,8 @@ package object dspTest {
         //          s"\ngolden: ${innerGolden.map(_.toString.padTo(printSize, ' ')).mkString(" ")}")
 
         (0 until dutResult.length).foreach { i =>
-          logger.info(s"testing result $i:" +
+          if (i % 4 == 0) println()
+          println(s"testing result $i:" +
             s"\nyours : ${dutResult(i)}" +
             s"\ngolden: ${innerGolden(i)}" +
             s"\ndiff: ${dutResult(i).asInstanceOf[Seq[Double]].zip(innerGolden(i).asInstanceOf[Seq[Double]]).map { case (a, b) => a - b }}")
