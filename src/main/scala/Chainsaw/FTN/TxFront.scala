@@ -13,7 +13,7 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
-case class TxFront(bitAlloc: Array[Int], powAlloc: Array[Double],
+case class TxFront(bitAlloc: Array[Int], powAlloc: Array[Double], bitMask: Array[Int],
               qamPositions: Array[Int], qamRemapPositions: Array[Int])
   extends Component with DSPTestable[Bits, Vec[ComplexNumber]] {
 
@@ -59,6 +59,15 @@ case class TxFront(bitAlloc: Array[Int], powAlloc: Array[Double],
     ret
   }
 
+  def doBitMask(stream: Stream[Vec[ComplexNumber]]) = {
+    val masked = stream.payload.zip(bitMask).map { case (data, mask) => if (mask == 1) data else stream.payload.head.getZero }
+    val ret = Stream(Vec(unitComplexType(), 256))
+    ret.payload := Vec(masked)
+    ret.valid := stream.valid
+    stream.ready := ret.valid
+    ret
+  }
+
   override val dataIn = slave(cloneOf(convenc.dataIn))
   override val dataOut = master Stream Vec(toComplexType(unitType()), 64)
   override val latency = Seq(convenc, interleave, s2p, qammod, p2s).map(_.latency).sum
@@ -67,7 +76,7 @@ case class TxFront(bitAlloc: Array[Int], powAlloc: Array[Double],
   bits2bool(convenc.dataOut) >> interleave.dataIn
   interleave.dataOut >> s2p.dataIn
   bitRemap(bools2bits(s2p.dataOut)) >> qammod.dataIn
-  qammod.dataOut >> p2s.dataIn
+  doBitMask(qammod.dataOut) >> p2s.dataIn
   p2s.dataOut >> dataOut
 
   logger.info(s"Tx generated, latency = $latency")
@@ -79,9 +88,4 @@ case class TxFront(bitAlloc: Array[Int], powAlloc: Array[Double],
   Seq(interleaveOut, s2pIn, s2pOut).foreach(_.simPublic())
 }
 
-object Tx {
-  def main(args: Array[String]): Unit = {
-    //    GenRTL(Tx())
-  }
-}
 

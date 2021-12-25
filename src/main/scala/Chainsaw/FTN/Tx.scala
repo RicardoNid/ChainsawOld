@@ -84,7 +84,6 @@ case class Tx(bitAlloc: Array[Int], powAlloc: Array[Double], bitMask: Array[Int]
   }
 
   def ifftPost(stream: Stream[Vec[ComplexNumber]]) = {
-    val carrierNum = bitMask.sum
     val before = stream.payload
     val ret = Stream(Vec(dataType(), 128))
     // FIXME: it is not necessary for real implementation to use zero
