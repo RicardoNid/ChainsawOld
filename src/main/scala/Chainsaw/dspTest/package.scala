@@ -194,10 +194,18 @@ package object dspTest {
 
         (0 until dutResult.length).foreach { i =>
           if (i % 4 == 0) println()
-          println(s"testing result $i:" +
-            s"\nyours : ${dutResult(i)}" +
-            s"\ngolden: ${innerGolden(i)}" +
-            s"\ndiff: ${dutResult(i).asInstanceOf[Seq[Double]].zip(innerGolden(i).asInstanceOf[Seq[Double]]).map { case (a, b) => a - b }}"
+          println(s"testing result $i:"
+
+            //            + s"\nyours : ${dutResult(i)}"
+            //            + s"\ngolden: ${innerGolden(i)}"
+
+            //            + s"\nyours : ${dutResult(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}, sum = ${dutResult(i).asInstanceOf[Seq[BComplex]].map(_.real).sum * 2}"
+            //            + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}, sum = ${innerGolden(i).asInstanceOf[Seq[BComplex]].map(_.real).sum * 2}"
+            //            + s"\ndiff: ${dutResult(i).asInstanceOf[Seq[BComplex]].zip(innerGolden(i).asInstanceOf[Seq[BComplex]]).map { case (a, b) => (a.real - b.real).abs + (a.imag - b.imag).abs }.sum}"
+
+            + s"\nyours : ${dutResult(i).asInstanceOf[Seq[Double]].map(_.toString).mkString(" ")}"
+            + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[Double]].map(_.toString).mkString(" ")}"
+            + s"\ndiff: ${dutResult(i).asInstanceOf[Seq[Double]].zip(innerGolden(i).asInstanceOf[Seq[Double]]).map { case (a, b) => (a - b).abs }.sum}"
           )
         }
 
@@ -209,12 +217,13 @@ package object dspTest {
           case Chainsaw.dspTest.TestMetric.PERMUTATION => dutResult.diff(innerGolden).isEmpty && dutResult.size == innerGolden.size
           case Chainsaw.dspTest.TestMetric.APPROXIMATE => dutResult.head match {
             // FIXME: case 0 and 1 can't be viewed differently because of type erasure, it always fall on case 0
-            case _: Seq[BComplex] => dutResult.asInstanceOf[ArrayBuffer[Seq[BComplex]]].flatten
-              .zip(innerGolden.asInstanceOf[Seq[Seq[BComplex]]].flatten)
-              .forall { case (a, b) => (a.modulus - b.modulus).abs < epsilon }
+            // TODO: this frame work should always be 2-D
             case _: Seq[Double] => dutResult.asInstanceOf[ArrayBuffer[Seq[Double]]].flatten
               .zip(innerGolden.asInstanceOf[Seq[Seq[Double]]].flatten)
               .forall { case (a, b) => (a - b).abs < epsilon }
+            case _: Seq[BComplex] => dutResult.asInstanceOf[ArrayBuffer[Seq[BComplex]]].flatten
+              .zip(innerGolden.asInstanceOf[Seq[Seq[BComplex]]].flatten)
+              .forall { case (a, b) => (a.real - b.real).abs < epsilon && (a.imag - b.imag).abs < epsilon }
             case _: BComplex => dutResult.asInstanceOf[ArrayBuffer[BComplex]]
               .zip(innerGolden.asInstanceOf[Seq[BComplex]])
               .forall { case (a, b) => (a.modulus - b.modulus).abs < epsilon }

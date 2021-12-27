@@ -34,10 +34,20 @@ class AdaptiveQammodTest extends AnyFunSuite {
     val powAlloc = DenseVector.rand[Double](parallelism).toSeq
 
     val data = (0 until testSize).map(_ => bitAlloc.map(bit => ChainsawRand.nextInt(1 << bit)))
-    val testCases = data.map(d => BigInt(d.zip(bitAlloc).map { case (bit, size) => bit.toBinaryString.padToLeft(size, '0') }.mkString(""), 2))
-    val goldens = data.map(d => d.zip(bitAlloc.zip(powAlloc)).map { case (bit, (size, pow)) =>
-      algos.Qam.qammod(DenseVector(size), 1 << size)(0) * BComplex(sqrt(pow), 0.0) })
+    println(data.mkString(" "))
 
-    doFlowPeekPokeTest("testAdaptiveQAM", AdaptiveQammod(bitAlloc, powAlloc, dataType), testCases, goldens, testMetric = TestMetric.APPROXIMATE, epsilon = 1E-4)
+    val testCases = data.map(d =>
+      BigInt(d.zip(bitAlloc).map { case (bit, size) =>
+        bit.toBinaryString.padToLeft(size, '0')
+      }.mkString(""), 2))
+
+    val goldens = data.map(d => d.zip(bitAlloc.zip(powAlloc)).map { case (bit, (size, pow)) =>
+      algos.Qam.qammod(DenseVector(bit), 1 << size)(0) * BComplex(sqrt(pow), 0.0)
+    })
+
+    doFlowPeekPokeTest(
+      "testAdaptiveQAM", AdaptiveQammod(bitAlloc, powAlloc, dataType),
+      testCases, goldens,
+      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-4)
   }
 }

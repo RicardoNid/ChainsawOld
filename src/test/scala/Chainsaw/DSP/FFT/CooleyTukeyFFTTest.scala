@@ -40,7 +40,6 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
     }
     val goldens: Seq[DenseVector[BComplex]] = if (!inverse) testCases.map(Dft.dft(_)) else testCases.map(Dft.idft(_))
 
-
     SimConfig.withWave.compile {
       if (parallelism == 1) CooleyTukeyFFT(N = testLength, factors = factors, inverse = inverse, dataType, coeffType)
       else CooleyTukeyBackToBack(testLength, parallelFactor, factors1, factors2, inverse, dataType, coeffType)

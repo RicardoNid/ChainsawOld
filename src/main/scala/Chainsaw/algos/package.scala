@@ -38,7 +38,7 @@ package object algos {
     }
 
     def ~=(that: DenseVector[BComplex], epsilon:Double = 1E-4) = {
-      abs(dv - that).forall(_ < epsilon)
+      (dv - that).forall(complex => complex.real < epsilon && complex.imag < epsilon)
     }
 
     def toMatlab: Array[MComplex] = dv.toArray.map(_.toMComplex)
