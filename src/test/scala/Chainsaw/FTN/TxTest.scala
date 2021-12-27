@@ -9,17 +9,6 @@ import scala.reflect.ClassTag
 
 class TxTest extends AnyFlatSpec {
 
-  def loadFTN1d[T](name: String) = eng.load[Array[T]](s"~/FTN326/$name.mat", name)
-  
-  def loadFTN2d[T](name: String)(implicit tag: ClassTag[T]) =
-    eng.load[Array[Array[T]]](s"~/FTN326/$name.mat", name).transpose.flatten
-  
-  val bitAlloc = loadFTN1d[Double]("bitAlloc").map(_.toInt)
-  val bitMask = loadFTN1d[Double]("bitMask").map(_.toInt)
-  val powAlloc = loadFTN1d[Double]("powAlloc").map(pow => pow * pow)
-  val qamPositions = loadFTN1d[Double]("QAMPositions").map(_.toInt).map(_ - 1)
-  val qamRemapPositions = loadFTN1d[Double]("QAMRemapPositions").map(_.toInt).map(_ - 1)
-  
   val bits = loadFTN2d[Double]("bitsAllFrame").map(_.toInt)
   val coded = loadFTN2d[Double]("codedBitsAllFrame").map(_.toInt)
   val interleaved = loadFTN2d[Double]("interleavedBitsAllFrame").map(_.toInt)
@@ -38,7 +27,7 @@ class TxTest extends AnyFlatSpec {
 
   "Tx" should "work" in {
     doFlowPeekPokeTest(
-      name = "testTx", dut = Tx(bitAlloc, powAlloc, bitMask, qamPositions, qamRemapPositions),
+      name = "testTx", dut = Tx(channelInfo),
       testCases = testCases ++ testCases,
       golden = goldens ++ goldens,
       initLength = 0,
@@ -48,6 +37,7 @@ class TxTest extends AnyFlatSpec {
   }
 
   it should "synth" in {
-    VivadoSynth(Tx(bitAlloc, powAlloc, bitMask, qamPositions, qamRemapPositions))
+    VivadoSynth(Tx(channelInfo), "Tx")
+    //    VivadoSynth(DSP.FFT.CooleyTukeyBackToBack(512, 128, Seq(4,4,4,2), Seq(4), true, dataType, unitType), "TxIfft")
   }
 }

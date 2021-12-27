@@ -32,7 +32,7 @@ class CooleyTukeyRVFFTTest extends AnyFlatSpec {
     )
   }
 
-  val dataType = HardType(SFix(8 exp, -15 exp))
+  val dataType = HardType(SFix(7 exp, -8 exp))
   val coeffType = HardType(SFix(1 exp, -14 exp))
   val simpleTest: (Int, Seq[Int], Seq[Int]) => Unit = testRVFFTHardware(10, _, _, _, dataType, coeffType, 1E-2)
 
@@ -46,6 +46,10 @@ class CooleyTukeyRVFFTTest extends AnyFlatSpec {
   it should "work for folded situation" in {
     Seq(32, 64).zip(Seq(5, 6))
       .foreach { case (n, stage) => simpleTest(n, Seq.fill(stage - 2)(2), Seq(2, 2)) }
+  }
+
+  it should "synth for FTN" in {
+    VivadoSynth(CooleyTukeyRVFFT(512, Seq(4, 4, 4, 4), Seq(2), dataType, coeffType))
   }
 
 }

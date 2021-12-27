@@ -16,7 +16,8 @@ import scala.collection.mutable.ArrayBuffer
  */
 case class QAMDemod(symbolType: HardType[ComplexNumber],
                     bitsAllocated: Int,
-                    powerFactor: Double = 1.0) extends Component with DSPTestable[ComplexNumber, Bits] {
+                    powerFactor: Double = 1.0)
+  extends Component with DSPTestable[ComplexNumber, Bits] {
 
   require(bitsAllocated > 0 && bitsAllocated <= 8)
   require(bitsAllocated != 5 && bitsAllocated != 7, s"QAM32/QAM128 are not supported as they can't fit the arch we use")

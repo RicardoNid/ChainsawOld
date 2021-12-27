@@ -140,14 +140,19 @@ package object dspTest {
     dataOut.setMonitor(dutResult)
     // poke stimulus
     var i = 0
+    var cantPokePeriod = 0
     while (i < testCases.size) {
       val canPoke = dataIn match {
         case stream: Stream[_] => stream.ready.toBoolean
         case _ => true
       }
+      if (cantPokePeriod > 1024) throw new IllegalStateException("simulation terminated as dut is not ready for over 1024 cycles")
       if (canPoke) {
         dataIn.poke(testCases(i), lastWhen = i == (testCases.length - 1))
         i += 1
+        cantPokePeriod = 0
+      } else {
+        cantPokePeriod += 1
       }
       dut.clockDomain.waitSampling()
     }
@@ -164,7 +169,6 @@ package object dspTest {
    testMetric: TestMetric = TestMetric.SAME, epsilon: Double = 1E-4): ArrayBuffer[Do] = {
 
     val logger: Logger = LoggerFactory.getLogger(s"dsptest-${name}")
-
 
     val dutResult = ArrayBuffer[Do]()
     SimConfig.withWave
@@ -188,26 +192,24 @@ package object dspTest {
       if (innerGolden != null) {
         val printSize = (dutResult ++ innerGolden).map(_.toString.size).max
 
-        //        logger.info(s"testing result:" +
-        //          s"\nyours : ${dutResult.map(_.toString.padTo(printSize, ' ')).mkString(" ")}" +
-        //          s"\ngolden: ${innerGolden.map(_.toString.padTo(printSize, ' ')).mkString(" ")}")
+        val printContent = dutResult.head match {
+          case seq: Seq[_] => seq.head match {
+            case _: BComplex => (0 until dutResult.length).map(i => s"testing result $i:"
+              + s"\nyours : ${dutResult(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}, sum = ${dutResult(i).asInstanceOf[Seq[BComplex]].map(_.real).sum * 2}"
+              + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}, sum = ${innerGolden(i).asInstanceOf[Seq[BComplex]].map(_.real).sum * 2}"
+              + s"\ndiff: ${dutResult(i).asInstanceOf[Seq[BComplex]].zip(innerGolden(i).asInstanceOf[Seq[BComplex]]).map { case (a, b) => (a.real - b.real).abs + (a.imag - b.imag).abs }.sum}").mkString("\n")
+            case _: Double => (0 until dutResult.length).map(i => s"testing result $i:"
+              + s"\nyours : ${dutResult(i).asInstanceOf[Seq[Double]].map(_.toString).mkString(" ")}"
+              + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[Double]].map(_.toString).mkString(" ")}"
+              + s"\ndiff: ${dutResult(i).asInstanceOf[Seq[Double]].zip(innerGolden(i).asInstanceOf[Seq[Double]]).map { case (a, b) => (a - b).abs }.sum}").mkString("\n")
+          }
 
-        (0 until dutResult.length).foreach { i =>
-          if (i % 4 == 0) println()
-          println(s"testing result $i:"
-
-            //            + s"\nyours : ${dutResult(i)}"
-            //            + s"\ngolden: ${innerGolden(i)}"
-
-            //            + s"\nyours : ${dutResult(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}, sum = ${dutResult(i).asInstanceOf[Seq[BComplex]].map(_.real).sum * 2}"
-            //            + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}, sum = ${innerGolden(i).asInstanceOf[Seq[BComplex]].map(_.real).sum * 2}"
-            //            + s"\ndiff: ${dutResult(i).asInstanceOf[Seq[BComplex]].zip(innerGolden(i).asInstanceOf[Seq[BComplex]]).map { case (a, b) => (a.real - b.real).abs + (a.imag - b.imag).abs }.sum}"
-
-            + s"\nyours : ${dutResult(i).asInstanceOf[Seq[Double]].map(_.toString).mkString(" ")}"
-            + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[Double]].map(_.toString).mkString(" ")}"
-            + s"\ndiff: ${dutResult(i).asInstanceOf[Seq[Double]].zip(innerGolden(i).asInstanceOf[Seq[Double]]).map { case (a, b) => (a - b).abs }.sum}"
-          )
+          case _ => s"testing result:" +
+            s"\nyours : ${dutResult.map(_.toString.padTo(printSize, ' ')).mkString(" ")}" +
+            s"\ngolden: ${innerGolden.map(_.toString.padTo(printSize, ' ')).mkString(" ")}"
         }
+
+        logger.info(printContent)
 
         def shouldAll(metric: (Do, Do) => Boolean) = dutResult.zip(innerGolden).forall { case (a, b) => metric(a, b) }
 
@@ -218,12 +220,14 @@ package object dspTest {
           case Chainsaw.dspTest.TestMetric.APPROXIMATE => dutResult.head match {
             // FIXME: case 0 and 1 can't be viewed differently because of type erasure, it always fall on case 0
             // TODO: this frame work should always be 2-D
-            case _: Seq[Double] => dutResult.asInstanceOf[ArrayBuffer[Seq[Double]]].flatten
-              .zip(innerGolden.asInstanceOf[Seq[Seq[Double]]].flatten)
-              .forall { case (a, b) => (a - b).abs < epsilon }
-            case _: Seq[BComplex] => dutResult.asInstanceOf[ArrayBuffer[Seq[BComplex]]].flatten
-              .zip(innerGolden.asInstanceOf[Seq[Seq[BComplex]]].flatten)
-              .forall { case (a, b) => (a.real - b.real).abs < epsilon && (a.imag - b.imag).abs < epsilon }
+            case seq: Seq[_] => seq.head match {
+              case _: Double => dutResult.asInstanceOf[ArrayBuffer[Seq[Double]]].flatten
+                .zip(innerGolden.asInstanceOf[Seq[Seq[Double]]].flatten)
+                .forall { case (a, b) => (a - b).abs < epsilon }
+              case _: BComplex => dutResult.asInstanceOf[ArrayBuffer[Seq[BComplex]]].flatten
+                .zip(innerGolden.asInstanceOf[Seq[Seq[BComplex]]].flatten)
+                .forall { case (a, b) => (a.real - b.real).abs < epsilon && (a.imag - b.imag).abs < epsilon }
+            }
             case _: BComplex => dutResult.asInstanceOf[ArrayBuffer[BComplex]]
               .zip(innerGolden.asInstanceOf[Seq[BComplex]])
               .forall { case (a, b) => (a.modulus - b.modulus).abs < epsilon }
