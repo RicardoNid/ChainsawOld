@@ -598,6 +598,12 @@ package object Chainsaw extends RealFactory {
     ret
   }
 
+  def SFLike(value: Double, hardType: HardType[SFix]) = {
+    val ret = cloneOf(hardType())
+    ret := value
+    ret
+  }
+
   def toComplexType(fixType: HardType[SFix]) = HardType(ComplexNumber(fixType))
 
   implicit class ArrayMatrixUtil[T](array2D: Array[Array[T]])(implicit tag: ClassTag[T]) {

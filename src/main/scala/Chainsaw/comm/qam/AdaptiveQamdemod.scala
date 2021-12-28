@@ -29,6 +29,11 @@ case class AdaptiveQamdemod(bitAlloc: Seq[Int], powAlloc: Seq[Double], symbolTyp
                             gray: Boolean = true, customSymbols: Map[Int, Seq[BComplex]] = Map[Int, Seq[BComplex]]())
   extends Component with DSPTestable[Vec[ComplexNumber], Bits] {
 
+  logger.info(s"instantiating adaptive qamdemod")
+  logger.info(s"bitAlloc for adaptive qamdemod: ${bitAlloc.mkString(" ")}")
+  logger.info(s"powAlloc for adaptive qamdemod: ${powAlloc.mkString(" ")}")
+
+
   val fixedType = HardType(symbolType().real)
 
   //  val energyIn = in Vec(symbolType, bitAlloc.size) // energy value of channels from channel estimator
@@ -43,9 +48,6 @@ case class AdaptiveQamdemod(bitAlloc: Seq[Int], powAlloc: Seq[Double], symbolTyp
 
   val demods = bitAlloc.zip(powAlloc).map { case (bit, pow) => QAMDemod(symbolType, bit, sqrt(pow)) }
   override val latency = demods.map(_.latency).max
-
-  logger.info(s"bitAlloc for adaptive qamdemod: ${bitAlloc.mkString(" ")}")
-  logger.info(s"powAlloc for adaptive qamdemod: ${powAlloc.mkString(" ")}")
 
   segments.zipWithIndex.zip(demods).foreach { case ((seg, i), core) =>
     core.dataIn.payload := dataIn.payload(i)

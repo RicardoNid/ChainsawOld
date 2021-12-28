@@ -29,24 +29,32 @@ package object FTN {
 
   def bits2bools(in: Bits) = Vec(in.asBools.reverse)
 
-  // full precision for DSP slice
+  // for qam symbols and twiddle factors
   val unitType = HardType(SFix(2 exp, -15 exp))
   val unitComplexType = toComplexType(unitType)
-  val dataType = HardType(SFix(8 exp, -15 exp))
-  val dataComplexType = toComplexType(dataType)
-  // to avoid "Way too big signal"
+  // for ifft calculation
+  val ifftType = HardType(SFix(8 exp, -15 exp))
+  val ifftComplexType = toComplexType(ifftType)
+  // for qam symbols and twiddle factors FIXME: use full precision and avoid "Way too big signal"
   val rxUnitType = HardType(SFix(2 exp, -13 exp))
   val rxUnitComplexType = toComplexType(unitType)
-  val rxDataType = HardType(SFix(12 exp, -3 exp))
-  val rxDataComplexType = toComplexType(dataType)
+  // for fft calculation
+  val fftType = HardType(SFix(12 exp, -3 exp))
+  val fftComplexType = toComplexType(ifftType)
+  // for equalizer computation
+  val equalizerType = HardType(SFix(6 exp, - 11 exp))
+  val equalizerComplexType = toComplexType(equalizerType)
+  val equalizerWidth = 256
+  val equalizerVecType = HardType(Vec(equalizerType(), equalizerWidth))
+  val equalizerComplexVecType = HardType(Vec(ComplexNumber(equalizerType), equalizerWidth))
 
-  def zero = dataType().getZero
+  def zero = ifftType().getZero
 
-  def rxZero = rxDataType().getZero
+  def rxZero = fftType().getZero
 
-  def complexZero = dataComplexType().getZero
+  def complexZero = ifftComplexType().getZero
 
-  def rxComplexZero = rxDataComplexType().getZero
+  def rxComplexZero = fftComplexType().getZero
 
   def loadFTN1d[T](name: String) = eng.load[Array[T]](s"~/FTN326/$name.mat", name)
 
@@ -60,4 +68,6 @@ package object FTN {
 
     ChannelInfo(bitAlloc, powAlloc, bitMask)
   }
+
+
 }

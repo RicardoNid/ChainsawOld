@@ -42,7 +42,7 @@ class RxTest extends AnyFlatSpec {
     )
   }
 
-  "Rx" should "work correctly on qamdemod" in {
+  it should "work correctly on qamdemod" in {
     doFlowPeekPokeTest(
       dut = Rx1(channelInfo), name = "testRx",
       testCases = testCases, golden = deMappedGolden,
@@ -53,8 +53,8 @@ class RxTest extends AnyFlatSpec {
 
   it should "work correctly on interleave" in {
     doFlowPeekPokeTest(
-      dut = Rx1(channelInfo), name = "testRx",
-      testCases = testCases, golden = deMappedGolden,
+      dut = Rx2(channelInfo), name = "testRx",
+      testCases = testCases, golden = deInterleavedGolden,
       initLength = 0,
       testMetric = TestMetric.SAME
     )

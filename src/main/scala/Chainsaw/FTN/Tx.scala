@@ -23,7 +23,7 @@ case class Tx(channelInfo: ChannelInfo)
   def ifftPre(in: Vec[ComplexNumber]) = Vec((0 until 512).map {
     case 0 => complexZero
     case 256 => complexZero
-    case i => if (i < 256) in(i).truncated(dataType) else in(512 - i).conj.truncated(dataType)
+    case i => if (i < 256) in(i).truncated(ifftType) else in(512 - i).conj.truncated(ifftType)
   })
 
   def ifftPost(in: Vec[ComplexNumber]) = Vec(in.map(_.real))
@@ -33,13 +33,13 @@ case class Tx(channelInfo: ChannelInfo)
   val interleave = DSP.interleave.AdaptiveMatIntrlv(256, 64, 256, 256, HardType(Bool()))
   val s2p = DSP.S2P(256, 1024, HardType(Bool()))
   val qammod = comm.qam.AdaptiveQammod(bitAlloc, powAlloc, unitType)
-  val p2s = DSP.P2S(512, 128, dataComplexType)
-  val ifft = DSP.FFT.CooleyTukeyBackToBack(512, 128, Seq(4,4,4,2), Seq(4), true, dataType, unitType)
+  val p2s = DSP.P2S(512, 128, ifftComplexType)
+  val ifft = DSP.FFT.CooleyTukeyBackToBack(512, 128, Seq(4,4,4,2), Seq(4), true, ifftType, unitType)
 
   // FIXME: part of the latency is wrong
   override val dataIn = slave(cloneOf(convenc.dataIn))
   override val latency = Seq(convenc, interleave, s2p, qammod, p2s, ifft).map(_.latency).sum + 20
-  override val dataOut = master Stream Vec(dataType(), 128)
+  override val dataOut = master Stream Vec(ifftType(), 128)
 
   // connecting modules and transformations
   dataIn >> convenc.dataIn

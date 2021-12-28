@@ -9,7 +9,6 @@ import spinal.sim.SimThread
 
 import scala.collection.mutable.ArrayBuffer
 
-
 package object dspTest {
 
   object TestMetric extends Enumeration {
@@ -31,35 +30,34 @@ package object dspTest {
     }
   }
 
-  /** poke data of whatever type(bool, int, double, complex), not type-safe(won't be found by linter)
-   */
-  def pokeWhatever[D](port: Data, data: D): Unit = { // TODO: check whether it works for SInt
+  def pokeScalar(port: Data, data: Any) = {
     port match {
       case bool: Bool => bool #= data.asInstanceOf[Boolean]
       case bitVector: BitVector => bitVector #= data.asInstanceOf[BigInt]
       case sfix: SFix => sfix #= data.asInstanceOf[Double]
       case complexNumber: ComplexNumber => complexNumber #= data.asInstanceOf[BComplex]
-      case vec: Vec[_] =>
-        vec.head match {
-          case bool: Bool => vec.asInstanceOf[Vec[Bool]].zip(data.asInstanceOf[Seq[Boolean]]).foreach { case (port, int) => port #= int }
-          case bitVector: BitVector => vec.asInstanceOf[Vec[BitVector]].zip(data.asInstanceOf[Seq[BigInt]]).foreach { case (port, int) => port #= int }
-          case sfix: SFix => vec.asInstanceOf[Vec[SFix]].zip(data.asInstanceOf[Seq[Double]]).foreach { case (port, int) => port #= int }
-          case complexNumber: ComplexNumber => vec.asInstanceOf[Vec[ComplexNumber]].zip(data.asInstanceOf[Seq[BComplex]]).foreach { case (port, int) => port #= int }
-        }
-      case fragment: Fragment[_] =>
-        fragment.fragment match {
-          case bool: Bool => bool #= data.asInstanceOf[Boolean]
-          case bitVector: BitVector => bitVector #= data.asInstanceOf[BigInt]
-          case sfix: SFix => sfix #= data.asInstanceOf[Double]
-          case complexNumber: ComplexNumber => complexNumber #= data.asInstanceOf[BComplex]
-          case vec: Vec[_] =>
-            vec.head match {
-              case bool: Bool => vec.asInstanceOf[Vec[Bool]].zip(data.asInstanceOf[Seq[Boolean]]).foreach { case (port, int) => port #= int }
-              case bitVector: BitVector => vec.asInstanceOf[Vec[BitVector]].zip(data.asInstanceOf[Seq[BigInt]]).foreach { case (port, int) => port #= int }
-              case sfix: SFix => vec.asInstanceOf[Vec[SFix]].zip(data.asInstanceOf[Seq[Double]]).foreach { case (port, int) => port #= int }
-              case complexNumber: ComplexNumber => vec.asInstanceOf[Vec[ComplexNumber]].zip(data.asInstanceOf[Seq[BComplex]]).foreach { case (port, int) => port #= int }
-            }
-        }
+    }
+  }
+
+  def pokeVec[D <: Data](vec: Vec[D], data: Any) = {
+    vec.head match {
+      case _: Bool => vec.asInstanceOf[Vec[Bool]].zip(data.asInstanceOf[Seq[Boolean]]).foreach { case (port, int) => port #= int }
+      case _: BitVector => vec.asInstanceOf[Vec[BitVector]].zip(data.asInstanceOf[Seq[BigInt]]).foreach { case (port, int) => port #= int }
+      case _: SFix => vec.asInstanceOf[Vec[SFix]].zip(data.asInstanceOf[Seq[Double]]).foreach { case (port, int) => port #= int }
+      case _: ComplexNumber => vec.asInstanceOf[Vec[ComplexNumber]].zip(data.asInstanceOf[Seq[BComplex]]).foreach { case (port, int) => port #= int }
+    }
+  }
+
+  /** poke data of whatever type(bool, int, double, complex), not type-safe(won't be found by linter)
+   */
+  def pokeWhatever(port: Data, data: Any): Unit = { // TODO: check whether it works for SInt
+    port match {
+      case fragment: Fragment[_] => fragment.fragment match {
+        case vec: Vec[_] => pokeVec(vec, data)
+        case scalar => pokeScalar(scalar, data)
+      }
+      case vec: Vec[_] => pokeVec(vec, data)
+      case scalar => pokeScalar(scalar, data)
     }
   }
 
@@ -168,7 +166,7 @@ package object dspTest {
    initLength: Int = 0,
    testMetric: TestMetric = TestMetric.SAME, epsilon: Double = 1E-4): ArrayBuffer[Do] = {
 
-    val logger: Logger = LoggerFactory.getLogger(s"dsptest-${name}")
+    val logger: Logger = LoggerFactory.getLogger(s"dsptest-$name")
 
     val dutResult = ArrayBuffer[Do]()
     SimConfig.withWave
@@ -189,24 +187,34 @@ package object dspTest {
       //      clockDomain.waitSampling(3)
       dutResult ++= flowPeekPoke(dut, testCases, dataIn, dataOut, latency).drop(initLength * outputSize)
 
-      if (innerGolden != null) {
-        val printSize = (dutResult ++ innerGolden).map(_.toString.size).max
+      def scalar2string(scalar: Any) = scalar match {
+        case bigInt: BigInt => bigInt.toString(16)
+        case double: Double => double.toString()
+        case complex: BComplex => complex.toString(6)
+      }
 
+      if (innerGolden != null) {
         val printContent = dutResult.head match {
           case seq: Seq[_] => seq.head match {
-            case _: BComplex => (0 until dutResult.length).map(i => s"testing result $i:"
+            case _: BComplex => dutResult.indices.map(i => s"testing result $i:"
               + s"\nyours : ${dutResult(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}, sum = ${dutResult(i).asInstanceOf[Seq[BComplex]].map(_.real).sum * 2}"
               + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}, sum = ${innerGolden(i).asInstanceOf[Seq[BComplex]].map(_.real).sum * 2}"
               + s"\ndiff: ${dutResult(i).asInstanceOf[Seq[BComplex]].zip(innerGolden(i).asInstanceOf[Seq[BComplex]]).map { case (a, b) => (a.real - b.real).abs + (a.imag - b.imag).abs }.sum}").mkString("\n")
-            case _: Double => (0 until dutResult.length).map(i => s"testing result $i:"
+            case _: Double => dutResult.indices.map(i => s"testing result $i:"
               + s"\nyours : ${dutResult(i).asInstanceOf[Seq[Double]].map(_.toString).mkString(" ")}"
               + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[Double]].map(_.toString).mkString(" ")}"
               + s"\ndiff: ${dutResult(i).asInstanceOf[Seq[Double]].zip(innerGolden(i).asInstanceOf[Seq[Double]]).map { case (a, b) => (a - b).abs }.sum}").mkString("\n")
           }
 
-          case _ => s"testing result:" +
-            s"\nyours : ${dutResult.map(_.toString.padTo(printSize, ' ')).mkString(" ")}" +
-            s"\ngolden: ${innerGolden.map(_.toString.padTo(printSize, ' ')).mkString(" ")}"
+          case _ =>
+            val printSize = (dutResult ++ innerGolden).map(scalar2string).map(_.length).max
+            val yourString = dutResult.map(scalar2string).map(_.padTo(printSize, ' ')).mkString(" ")
+            val goldenString = golden.map(scalar2string).map(_.padTo(printSize, ' ')).mkString(" ")
+            val diffString = yourString.zip(goldenString).map { case (a, b) => if (a == b) ' ' else 'x' }.mkString("")
+            s"testing result:" +
+              s"\nyours : $yourString" +
+              s"\ngolden: $goldenString" +
+              s"\ndiff  : $diffString"
         }
 
         logger.info(printContent)
@@ -251,7 +259,7 @@ package object dspTest {
    */
   implicit class DataCarrierUtil[T <: Data](dc: DataCarrier[T]) {
 
-    def halt() = {
+    def halt(): Unit = {
       if (dc.valid.isInput) { // as slave
         dc.valid #= false
 
@@ -271,7 +279,7 @@ package object dspTest {
       }
     }
 
-    def clear() = {
+    def clear(): Unit = {
       if (dc.valid.isInput) { // as slave
         dc.valid #= false
         dc.payload match {
@@ -289,7 +297,7 @@ package object dspTest {
     }
 
     // poke stimulus for all kinds of DataCarrier
-    def poke[D](data: D, lastWhen: Boolean = false) = {
+    def poke[D](data: D, lastWhen: Boolean = false): Unit = {
 
       // deal with control signals
       dc.valid #= true
@@ -302,7 +310,7 @@ package object dspTest {
       pokeWhatever(dc.payload, data)
     }
 
-    def pokeRandom(lastWhen: Boolean = false) = {
+    def pokeRandom(lastWhen: Boolean = false): Unit = {
       {
 
         // deal with control signals

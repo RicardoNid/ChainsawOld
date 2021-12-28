@@ -14,9 +14,9 @@ class RxPrototype(channelInfo: ChannelInfo) extends Component {
   import channelInfo._
 
   // modules
-  val fft = DSP.FFT.CooleyTukeyRVFFT(512, Seq(4, 4, 4, 4), Seq(2), rxDataType, rxUnitType)
+  val fft = DSP.FFT.CooleyTukeyRVFFT(512, Seq(4, 4, 4, 4), Seq(2), fftType, rxUnitType)
   val qamdemod = comm.qam.AdaptiveQamdemod(bitAlloc, powAlloc, rxUnitComplexType)
-  val deinterleave = DSP.interleave.AdaptiveMatIntrlv(64, 256, 1024, 1024, Bool())
+  val deinterleave = DSP.interleave.AdaptiveMatIntrlv(64, 256, 1024, 1024, HardType(Bool()))
 
   fft.dataOut.allowOverride
   qamdemod.dataOut.allowOverride
@@ -34,9 +34,6 @@ class RxPrototype(channelInfo: ChannelInfo) extends Component {
       if (index == -1) False else bools(qamRemapPositions(index))
     }.reverse.asBits()
   }
-
-  "933771362704735702773860004759351385837801159830509240352958303961088"
-  "502412216030325466059233435293203885775800714220882464499664787865600"
 
   dataIn.t(fftPre) >> fft.dataIn
   fft.dataOut.t(fftPost) >> qamdemod.dataIn
@@ -58,7 +55,7 @@ case class Rx1(channelInfo: ChannelInfo)
   extends RxPrototype(channelInfo) with DSPTestable[Vec[SFix], Bits] {
 
   override val dataOut = master(cloneOf(qamdemod.dataOut))
-  override val latency = fft.latency + qamdemod.latency
+  override val latency = fft.latency + qamdemod.latency + 2
 
   qamdemod.dataOut.t(bitRemap) >> dataOut
 }
@@ -67,7 +64,16 @@ case class Rx2(channelInfo: ChannelInfo)
   extends RxPrototype(channelInfo) with DSPTestable[Vec[SFix], Bits] {
 
   override val dataOut = master(cloneOf(qamdemod.dataOut))
-  override val latency = fft.latency + qamdemod.latency + deinterleave.latency + 1
+  override val latency = fft.latency + qamdemod.latency + deinterleave.latency + 2
 
-  qamdemod.dataOut.t(bitRemap) >> dataOut
+  deinterleave.dataOut.t(bools2bits) >> dataOut
+}
+
+case class Rx3(channelInfo: ChannelInfo)
+  extends RxPrototype(channelInfo) with DSPTestable[Vec[SFix], Bits] {
+
+  override val dataOut = master(cloneOf(qamdemod.dataOut))
+  override val latency = fft.latency + qamdemod.latency + deinterleave.latency + 2
+
+  deinterleave.dataOut.t(bools2bits) >> dataOut
 }
