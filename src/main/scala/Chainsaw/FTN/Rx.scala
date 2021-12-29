@@ -15,10 +15,12 @@ class RxPrototype(channelInfo: ChannelInfo) extends Component {
 
   // modules
   val fft = DSP.FFT.CooleyTukeyRVFFT(512, Seq(4, 4, 4, 4), Seq(2), fftType, rxUnitType)
+  val equalizer = EqualizerFTN(preambleSymbols)
   val qamdemod = comm.qam.AdaptiveQamdemod(bitAlloc, powAlloc, rxUnitComplexType)
   val deinterleave = DSP.interleave.AdaptiveMatIntrlv(64, 256, 1024, 1024, HardType(Bool()))
 
   fft.dataOut.allowOverride
+  equalizer.dataOut.allowOverride
   qamdemod.dataOut.allowOverride
 
   val dataIn = slave(cloneOf(fft.dataIn))
@@ -35,10 +37,11 @@ class RxPrototype(channelInfo: ChannelInfo) extends Component {
     }.reverse.asBits()
   }
 
+  // connection
   dataIn.t(fftPre) >> fft.dataIn
-  fft.dataOut.t(fftPost) >> qamdemod.dataIn
+  fft.dataOut.t(fftPost) >> equalizer.dataIn
+  equalizer.dataIn >> qamdemod.dataIn
   qamdemod.dataOut.t(bitRemap).t(bits2bools) >> deinterleave.dataIn
-
 }
 
 case class Rx0(channelInfo: ChannelInfo)

@@ -1,6 +1,7 @@
 package Chainsaw.FTN
 
 import Chainsaw._
+import Chainsaw.dspTest.DSPTestable
 import spinal.core._
 import spinal.lib._
 
@@ -11,17 +12,20 @@ import spinal.lib._
  * @param unitType
  * @param vecSize
  */
-case class EqualizerFTN(golden: Seq[Int]) extends Component {
+case class EqualizerFTN(golden: Array[Int]) extends
+  Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
 
-  // ao avoid "way too big signal"
+  // to avoid "way too big signal"
   val smallVecType = HardType(Vec(equalizerComplexType, 256 / 4))
 
-  val dataIn = slave Stream equalizerComplexVecType()
-  val dataOut = master Stream equalizerComplexVecType()
-
+  override val dataIn = slave Stream equalizerComplexVecType()
+  override val dataOut = master Stream equalizerComplexVecType()
   val splitter = SplitterFTN()
+
   val smooth = SmootherFTN(golden)
   val equal = EqualizationFTN()
+
+  override val latency = smooth.latency + equal.latency
 
   val preambleFIFOs = (0 until 4).map(_ => StreamFifo(smallVecType(), 1))
   val dataFIFOs = (0 until 4).map(_ => StreamFifo(smallVecType(), 16))
@@ -54,7 +58,10 @@ case class EqualizerFTN(golden: Seq[Int]) extends Component {
   four2one(postPreambleFIFOs, equal.preambleIn)
   four2one(dataFIFOs, equal.dataIn)
 
-  equal.dataOut >> dataOut
+  def doBitMask(in: Vec[ComplexNumber]) =
+    Vec(channelInfo.bitMask.zip(in).map { case (mask, data) => if (mask == 1) data else data.getZero })
+
+  equal.dataOut.t(doBitMask) >> dataOut
 }
 
 

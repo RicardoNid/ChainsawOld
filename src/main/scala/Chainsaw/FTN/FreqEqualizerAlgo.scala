@@ -25,7 +25,7 @@ object FreqEqualizerAlgo {
     val dataIn = new DenseMatrix(16, 256, dataFromMatlab.flatten.map(_.toBComplex))
     val data: Seq[DenseVector[BComplex]] = (0 until 16).map(i => dataIn(i, ::).t)
 
-    val factorsFromMatlab = eng.load("~/FTN326/reference/ChanEquCoreOutput.mat", "ChanEquCoreOutput").asInstanceOf[Array[MComplex]]
+    val factorsFromMatlab: Array[MComplex] = eng.load("~/FTN326/reference/ChanEquCoreOutput.mat", "ChanEquCoreOutput").asInstanceOf[Array[MComplex]]
     val goldenFactors = new DenseVector(factorsFromMatlab.map(_.toBComplex))
 
     val symbolsFromMatlab = eng.load("~/FTN326/reference/PreambleMappedSymbols", "PreambleMappedSymbols").asInstanceOf[Array[Double]]

@@ -221,6 +221,7 @@ package object dspTest {
 
         def shouldAll(metric: (Do, Do) => Boolean) = dutResult.zip(innerGolden).forall { case (a, b) => metric(a, b) }
 
+        assert(dutResult.length == innerGolden.length)
         val condition: Boolean = testMetric match {
           case Chainsaw.dspTest.TestMetric.SAME => shouldAll(_ == _)
           // TODO: close, but not exactly the definition of permuataion
