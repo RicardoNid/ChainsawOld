@@ -1,13 +1,30 @@
 package Chainsaw.FTN
 
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
+import Chainsaw.DSP.S2P
 import Chainsaw._
-import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
+import spinal.core._
+import spinal.lib._
+
+case class RxFront()
+  extends Component with DSPTestable[Vec[SFix], Vec[ComplexNumber]] {
+
+  val fft = DSP.FFT.CooleyTukeyRVFFT(512, Seq(4, 4, 4), Seq(4, 2), fftType, rxUnitType)
+  val s2p = S2P(128, 512, fftComplexType)
+  val equalizer = EqualizerFTN(preambleSymbols)
+
+  override val dataIn = slave(cloneOf(fft.dataIn))
+  override val dataOut = master(cloneOf(equalizer.dataOut))
+  override val latency = fft.latency + s2p.latency + equalizer.latency
+
+  def fftPost(in: Vec[ComplexNumber]) =
+    Vec(in.take(in.length / 2).map(_ >> 9).map(_.truncated(equalizerType)))
+
+  dataIn >> fft.dataIn
+  fft.dataOut >> s2p.dataIn
+  s2p.dataOut.t(fftPost) >> equalizer.dataIn
+  equalizer.dataOut >> dataOut
+}
 
 class RxPrototype(channelInfo: ChannelInfo) extends Component {
 

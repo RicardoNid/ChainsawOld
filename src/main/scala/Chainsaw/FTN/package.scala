@@ -31,7 +31,7 @@ package object FTN {
   val rxUnitComplexType = toComplexType(unitType)
   // for fft calculation
   val fftType = HardType(SFix(12 exp, -3 exp))
-  val fftComplexType = toComplexType(ifftType)
+  val fftComplexType = toComplexType(fftType)
   // for equalizer computation
   val equalizerType = HardType(SFix(6 exp, - 11 exp))
   val equalizerComplexType = toComplexType(equalizerType)
@@ -72,7 +72,7 @@ package object FTN {
   val deCoded = loadFTN2d[Double]("debitsAllFrame").map(_.toInt)
 
   val modulateGolden: Seq[Seq[Double]] = modulated.grouped(450).map(_.toSeq.padTo(512, 0.0)).toSeq
-  val preambleModulatedGolden: Seq[Seq[Double]] = preambleModulated.grouped(256).map(_.toSeq).toSeq
+  val preambleModulatedGolden: Seq[Seq[Double]] = preambleModulated.grouped(512).map(_.toSeq).toSeq
   val deModulatedGolden: Seq[Seq[BComplex]] = deModulated.grouped(256).map(_.toSeq).toSeq
   val equalizedGolden: Seq[Seq[BComplex]] = equalized.grouped(256).map(_.toSeq).toSeq
   val deMappedGolden: Seq[BigInt] = deMapped.grouped(1024).toSeq.map(bit1024 => BigInt(bit1024.mkString(""), 2))

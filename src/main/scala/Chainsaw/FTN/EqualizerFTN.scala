@@ -15,7 +15,6 @@ import spinal.lib._
 case class EqualizerFTN(golden: Array[Int]) extends
   Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
 
-  // to avoid "way too big signal"
   val smallVecType = HardType(Vec(equalizerComplexType, 256 / 4))
 
   override val dataIn = slave Stream equalizerComplexVecType()
@@ -25,38 +24,23 @@ case class EqualizerFTN(golden: Array[Int]) extends
   val smooth = SmootherFTN(golden)
   val equal = EqualizationFTN()
 
-  override val latency = smooth.latency + equal.latency
+  override val latency = smooth.latency + equal.latency + 2
 
-  val preambleFIFOs = (0 until 4).map(_ => StreamFifo(smallVecType(), 1))
-  val dataFIFOs = (0 until 4).map(_ => StreamFifo(smallVecType(), 16))
-  val postPreambleFIFOs = (0 until 4).map(_ => StreamFifo(smallVecType(), 1))
+  val preambleFIFO = BigStreamFifo(equalizerComplexVecType(), 2)
+  val dataFIFO = BigStreamFifo(equalizerComplexVecType(), 16)
+  val postPreambleFIFO = BigStreamFifo(equalizerComplexVecType(), 1)
 
   dataIn >> splitter.dataIn
 
-  def one2four(in: Stream[Vec[ComplexNumber]], outs: Seq[StreamFifo[Vec[ComplexNumber]]]) = {
-    outs.zipWithIndex.foreach { case (out, i) =>
-      out.io.push.valid := in.valid
-      out.io.push.payload := Vec(in.payload.slice(i * equalizerWidth / 4, (i + 1) * equalizerWidth / 4))
-    }
-    in.ready := outs.map(_.io.push.ready).reduce(_ && _)
-  }
+  splitter.preambleOut >> preambleFIFO.io.push
+  splitter.dataOut >> dataFIFO.io.push
 
-  def four2one(ins: Seq[StreamFifo[Vec[ComplexNumber]]], out: Stream[Vec[ComplexNumber]]) = {
-    ins.zipWithIndex.foreach { case (in, i) =>
-      out.payload.slice(i * equalizerWidth / 4, (i + 1) * equalizerWidth / 4).zip(in.io.pop.payload).foreach { case (outData, inData) => outData := inData }
-      in.io.pop.ready := out.ready
-    }
-    out.valid := ins.map(_.io.pop.valid).reduce(_ && _)
-  }
+  // equal and smooth need burst transfer
+  preambleFIFO.io.pop >> smooth.dataIn
+  smooth.dataOut >> postPreambleFIFO.io.push
 
-  one2four(splitter.preambleOut, preambleFIFOs)
-  one2four(splitter.dataOut, dataFIFOs)
-
-  four2one(preambleFIFOs, smooth.dataIn)
-  one2four(smooth.dataOut, postPreambleFIFOs)
-
-  four2one(postPreambleFIFOs, equal.preambleIn)
-  four2one(dataFIFOs, equal.dataIn)
+  postPreambleFIFO.io.pop >> equal.preambleIn
+  dataFIFO.io.pop >> equal.dataIn
 
   def doBitMask(in: Vec[ComplexNumber]) =
     Vec(channelInfo.bitMask.zip(in).map { case (mask, data) => if (mask == 1) data else data.getZero })

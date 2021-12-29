@@ -35,10 +35,6 @@ case class SmootherFTN(golden: Seq[Int])
   val latency = 3 + 1 + 1 + 16
   println(s"smooth FTN period: $latency")
 
-  val counter = spinal.lib.Counter(latency)
-  counter.value.simPublic()
-  val counterSize = counter.getBitsWidth
-
   val fsm = new StateMachine {
 
     val GETAVERAGE0 = StateEntryPoint()
@@ -60,7 +56,6 @@ case class SmootherFTN(golden: Seq[Int])
         case delay: StateDelay => delay.whenCompleted(goto(next))
         case _ => prev.whenIsActive(goto(next))
       }
-      prev.whenIsActive(counter.increment())
     }
     GETAVERAGE0.whenIsActive {
       reg0 := inReal

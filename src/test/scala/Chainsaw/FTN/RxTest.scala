@@ -7,7 +7,28 @@ class RxTest extends AnyFlatSpec {
 
   val testSize = 1
   val data = (0 until testSize).flatMap(_ => modulateGolden)
-  val dataWithPreamble = (0 until testSize).flatMap(_ => preambleModulatedGolden ++ modulateGolden)
+
+  val dataWithPreamble = {
+    val frame = (preambleModulatedGolden ++ modulateGolden).flatten.grouped(128).toSeq
+    (0 until testSize).flatMap(_ => frame)
+  }
+
+  "data loading" should "be correct" in {
+    val realSymbolLength = (preambleModulatedGolden ++ modulateGolden).flatten.length
+    assert(realSymbolLength == 18 * 512 * testSize)
+    val frameLength = dataWithPreamble.length
+    assert(frameLength == 18 * testSize * 4)
+  }
+
+  "RxFront" should "work correctly" in {
+    val goldens = (0 until testSize).flatMap(_ => equalizedGolden)
+    doFlowPeekPokeTest(
+      dut = RxFront(), name = "testRxFront",
+      testCases = dataWithPreamble, golden = goldens,
+      initLength = 0,
+      testMetric = TestMetric.APPROXIMATE, epsilon = 5E-2
+    )
+  }
 
   // simulations
   "Rx" should "work correctly on fft" in {
