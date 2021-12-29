@@ -1,11 +1,9 @@
 package Chainsaw.FTN
 
 import Chainsaw._
-import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
+import Chainsaw.matlabIO._
 import org.scalatest.flatspec.AnyFlatSpec
-
-import scala.reflect.ClassTag
 
 class TxTest extends AnyFlatSpec {
 
@@ -32,7 +30,7 @@ class TxTest extends AnyFlatSpec {
       golden = goldens ++ goldens,
       initLength = 0,
       testMetric = TestMetric.APPROXIMATE,
-      epsilon = 1E-2
+      epsilon = 1E-1
     )
   }
 

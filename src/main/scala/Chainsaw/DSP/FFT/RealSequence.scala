@@ -15,9 +15,6 @@ import Chainsaw.dspTest._
  */
 case class RVPreprocess(N: Int, dataType: HardType[SFix])
   extends Component with DSPTestable[Vec[SFix], Vec[ComplexNumber]] {
-
-  // TODO: implement folded version for pre/post module so extra latency for P2S/S2P could be removed
-
   val complexType = HardType(ComplexNumber(dataType()))
   override val dataIn = slave Stream Vec(dataType(), N)
   override val dataOut = master Stream Vec(complexType(), N)
@@ -27,11 +24,12 @@ case class RVPreprocess(N: Int, dataType: HardType[SFix])
   when(dataIn.fire)(STEP0 := ~STEP0)
   val STEP1 = ~STEP0
 
-  val dataRegs = RegNextWhen(dataIn.payload, STEP0)
-
   dataIn.ready := True
-  dataOut.valid := STEP1
-  dataOut.payload.zip(dataRegs).foreach { case (complex, fix) => complex.real := fix }
+  dataOut.valid := STEP1 && dataIn.fire
+
+  val dataRead = RegNextWhen(dataIn.payload, STEP0)
+
+  dataOut.payload.zip(dataRead).foreach { case (complex, fix) => complex.real := fix }
   dataOut.payload.zip(dataIn.payload).foreach { case (complex, fix) => complex.imag := fix }
 }
 
@@ -42,22 +40,22 @@ case class RVPreprocess(N: Int, dataType: HardType[SFix])
  *
  * @see [[algos.Dft.rvdftByDouble]]
  */
-case class RVPostprocess(N: Int, dataType: HardType[SFix])
+case class RVPostprocess(N: Int, dataType: HardType[SFix], fold: Int = 1)
   extends Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
   val complexType = HardType(ComplexNumber(dataType()))
   override val dataIn = slave Stream Vec(complexType(), N)
   override val dataOut = master Stream Vec(complexType(), N)
-  override val latency = 2
+  override val latency = 1
+
+  def symmetricOf(data: Vec[ComplexNumber]) = (data.head +: data.tail.reverse).map(_.conj)
 
   val STEP0 = RegInit(True) // at step 0, get and store data, while calculating output0
-  when(dataIn.fire || ~STEP0)(STEP0 := ~STEP0)
   val STEP1 = ~STEP0
+  when(dataIn.fire || STEP1)(STEP0 := ~STEP0)
 
   val data = dataIn.payload
   val dataRegs = RegNextWhen(data, STEP0)
   val outputRegs = Reg(cloneOf(dataOut.payload))
-
-  def symmetricOf(data: Vec[ComplexNumber]) = (data.head +: data.tail.reverse).map(_.conj)
 
   val dataSymmetric = symmetricOf(data)
   val dataRegSymmetric = symmetricOf(dataRegs)
@@ -89,9 +87,9 @@ case class HSPreprocess(N: Int, dataType: HardType[SFix])
   val dataRegs = RegNextWhen(dataIn.payload, STEP0)
 
   dataIn.ready := True
-  dataOut.valid := STEP1
+  dataOut.valid := STEP1 && dataIn.fire
   dataOut.payload.zip((dataRegs).zip(dataIn.payload))
-    .foreach { case (ret, (a, b)) => ret := a + b.multiplyI}
+    .foreach { case (ret, (a, b)) => ret := a + b.multiplyI }
 }
 
 
@@ -115,7 +113,7 @@ case class HSPostprocess(N: Int, dataType: HardType[SFix])
   val imagRegs = RegNextWhen(Vec(data.map(_.imag)), STEP0)
 
   when(STEP0)(dataOut.payload := dataReal)
-   .otherwise(dataOut.payload := imagRegs)
+    .otherwise(dataOut.payload := imagRegs)
 
   dataIn.ready := STEP0
   dataOut.valid := dataIn.fire || ~STEP0

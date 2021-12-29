@@ -84,7 +84,7 @@ case class EqualizationFTN()
     dataIn.ready := isActive(EQUALIZE) && complexMultCounter.value === U(0)
 
     val produce = False
-    dataOut.valid := RegNext(produce, init = True)
+    dataOut.valid := RegNext(produce, init = False)
 
     // state behavior
     GETENERGY0.whenIsActive {

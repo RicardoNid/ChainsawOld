@@ -6,28 +6,52 @@ import Chainsaw.dspTest._
 import spinal.core._
 import spinal.lib._
 
-case class CooleyTukeyHSIFFT(N: Int, factors: Seq[Int],
-                               dataType: HardType[SFix], coeffType: HardType[SFix])
+case class CooleyTukeyHSIFFT(N: Int, factors1: Seq[Int], factors2: Seq[Int],
+                             dataType: HardType[SFix], coeffType: HardType[SFix])
   extends Component with DSPTestable[Vec[ComplexNumber], Vec[SFix]] {
-  require(factors.last == 2)
+
+  val pF = factors1.product * 2
+  val fold = factors2.product / 2
+  require(N % pF == 0)
 
   val complexType = toComplexType(dataType)
-  override val dataIn = slave Stream Vec(complexType(), N)
-  override val dataOut = master Stream Vec(dataType(), N)
+  override val dataIn = slave Stream Vec(complexType(), pF)
+  override val dataOut = master Stream Vec(dataType(), pF)
 
   val pre = HSPreprocess(N, dataType)
-  val p2s = P2S(N, N / 2, complexType)
-  val core = CooleyTukeyBackToBack(N, N / 2, factors.init, Seq(2), true, dataType, coeffType)
-  val s2p = S2P(N / 2, N, complexType)
+  val p2s0 = P2S(N, pF / 2, complexType)
+  val core = CooleyTukeyBackToBack(N, pF / 2, factors1, factors2, true, dataType, coeffType)
+  val s2p1 = S2P(pF / 2, N, complexType)
   val post = HSPostprocess(N, dataType)
 
-  override val latency = Seq(pre, p2s, core, s2p, post).map(_.latency).sum
+  var tempLatency = 0
+  if (fold == 1) {
+    dataIn >> pre.dataIn
+    pre.dataOut >> p2s0.dataIn
+    p2s0.dataOut >> core.dataIn
+    core.dataOut >> s2p1.dataIn
+    s2p1.dataOut >> post.dataIn
+    post.dataOut >> dataOut
+    tempLatency = Seq(p2s0, pre, core, s2p1, post).map(_.latency).sum
+  }
+  else {
+    val s2p0 = S2P(pF, N, complexType)
+    val p2s1 = P2S(N, pF, dataType)
+    val fifo = BigStreamFifo(Vec(dataType(), N), 2)
 
-  dataIn >> pre.dataIn
-  pre.dataOut >> p2s.dataIn
-  p2s.dataOut >> core.dataIn
-  core.dataOut >> s2p.dataIn
-  s2p.dataOut >> post.dataIn
-  post.dataOut >> dataOut
+    dataIn >> s2p0.dataIn
+    s2p0.dataOut >> pre.dataIn
+    pre.dataOut >> p2s0.dataIn
+    p2s0.dataOut >> core.dataIn
+    core.dataOut >> s2p1.dataIn
+    s2p1.dataOut >> post.dataIn
+    post.dataOut >> fifo.io.push
+    fifo.io.pop >> p2s1.dataIn
+    p2s1.dataOut >> dataOut
+    tempLatency = Seq(s2p0, pre, p2s0, core, s2p1, post, p2s1).map(_.latency).sum + (fold - 1) + 2 // 2 for fifo, extra fold - 1 for pre
+  }
+
+  override val latency = tempLatency
+  logger.info(s"implementing a $N-point hermitian symmetric ifft, folded by $fold, latency = $latency")
 
 }

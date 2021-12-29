@@ -4,7 +4,6 @@ import Chainsaw._
 import Chainsaw.dspTest._
 import breeze.linalg._
 import org.scalatest.flatspec.AnyFlatSpec
-import spinal.core._
 
 import scala.math.sqrt
 

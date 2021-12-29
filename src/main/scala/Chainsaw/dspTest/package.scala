@@ -193,6 +193,8 @@ package object dspTest {
         case complex: BComplex => complex.toString(6)
       }
 
+      assert(dutResult.length == innerGolden.length, s"your result size = ${dutResult.length}, golden length = ${innerGolden.length}")
+
       if (innerGolden != null) {
         val printContent = dutResult.head match {
           case seq: Seq[_] => seq.head match {
@@ -221,7 +223,6 @@ package object dspTest {
 
         def shouldAll(metric: (Do, Do) => Boolean) = dutResult.zip(innerGolden).forall { case (a, b) => metric(a, b) }
 
-        assert(dutResult.length == innerGolden.length)
         val condition: Boolean = testMetric match {
           case Chainsaw.dspTest.TestMetric.SAME => shouldAll(_ == _)
           // TODO: close, but not exactly the definition of permuataion

@@ -5,6 +5,14 @@ import Chainsaw.{ComplexNumber, toComplexType}
 import Chainsaw.DSP.{P2S, S2P}
 import spinal.core.{Component, HardType, SFix, Vec}
 import spinal.lib.{master, slave}
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.lib.fsm._
+
+import Chainsaw._
+import Chainsaw.matlabIO._
+import Chainsaw.dspTest._
 
 /** implement real-valued fft by doubling
  */
@@ -14,6 +22,7 @@ case class CooleyTukeyRVFFT(N: Int, factors1: Seq[Int], factors2: Seq[Int],
   extends Component with DSPTestable[Vec[SFix], Vec[ComplexNumber]] {
 
   val pF = factors1.product * 2
+  val fold = factors2.product / 2
   require(N % pF == 0)
 
   val complexType = toComplexType(dataType)
@@ -26,8 +35,7 @@ case class CooleyTukeyRVFFT(N: Int, factors1: Seq[Int], factors2: Seq[Int],
   val s2p1 = S2P(pF / 2, N, complexType)
   val post = RVPostprocess(N, dataType)
 
-  override val latency = Seq(pre, p2s0, core, s2p1, post).map(_.latency).sum
-
+  var tempLatency = 0
   if (pF == N) {
     dataIn >> pre.dataIn
     pre.dataOut >> p2s0.dataIn
@@ -35,18 +43,24 @@ case class CooleyTukeyRVFFT(N: Int, factors1: Seq[Int], factors2: Seq[Int],
     core.dataOut >> s2p1.dataIn
     s2p1.dataOut >> post.dataIn
     post.dataOut >> dataOut
+    tempLatency = Seq(p2s0, pre, core, s2p1, post).map(_.latency).sum
   } else {
-    throw new IllegalArgumentException("folded RVFFT is not prepared as pre & post are not designed for folded situation")
-    //    val s2p0 = S2P(pF, N, dataType)
-    //    val p2s1 = P2S(N, pF, complexType)
-    //
-    //    dataIn >> s2p0.dataIn
-    //    s2p0.dataOut >> pre.dataIn
-    //    pre.dataOut >> p2s0.dataIn
-    //    p2s0.dataOut >> core.dataIn
-    //    core.dataOut >> s2p1.dataIn
-    //    s2p1.dataOut >> post.dataIn
-    //    post.dataOut >> p2s1.dataIn
-    //    p2s1.dataOut >> dataOut
+    val s2p0 = S2P(pF, N, dataType)
+    val p2s1 = P2S(N, pF, complexType)
+    val fifo = BigStreamFifo(Vec(complexType(), N), 2)
+
+    dataIn >> s2p0.dataIn
+    s2p0.dataOut >> pre.dataIn
+    pre.dataOut >> p2s0.dataIn
+    p2s0.dataOut >> core.dataIn
+    core.dataOut >> s2p1.dataIn
+    s2p1.dataOut >> post.dataIn
+    post.dataOut >> fifo.io.push
+    fifo.io.pop >> p2s1.dataIn
+    p2s1.dataOut >> dataOut
+    tempLatency = Seq(s2p0, pre, p2s0, core, s2p1, post, p2s1).map(_.latency).sum + (fold - 1) + 2 // 2 for fifo, extra fold - 1 for pre
   }
+
+  override val latency = tempLatency
+  logger.info(s"implementing a $N-point real valued fft, folded by $fold, latency = $latency")
 }

@@ -34,12 +34,13 @@ case class Tx(channelInfo: ChannelInfo)
   val s2p = DSP.S2P(256, 1024, HardType(Bool()))
   val qammod = comm.qam.AdaptiveQammod(bitAlloc, powAlloc, unitType)
   val p2s = DSP.P2S(512, 128, ifftComplexType)
-  val ifft = DSP.FFT.CooleyTukeyBackToBack(512, 128, Seq(4,4,4,2), Seq(4), true, ifftType, unitType)
+  //  val ifft = DSP.FFT.CooleyTukeyBackToBack(512, 128, Seq(4,4,4,2), Seq(4), true, ifftType, unitType)
+  val ifft = DSP.FFT.CooleyTukeyHSIFFT(512, Seq(4, 4, 4), Seq(4, 2), ifftType, unitType)
 
   // FIXME: part of the latency is wrong
   override val dataIn = slave(cloneOf(convenc.dataIn))
-  override val latency = Seq(convenc, interleave, s2p, qammod, p2s, ifft).map(_.latency).sum + 20
   override val dataOut = master Stream Vec(ifftType(), 128)
+  override val latency = Seq(convenc, interleave, s2p, qammod, p2s, ifft).map(_.latency).sum
 
   // connecting modules and transformations
   dataIn >> convenc.dataIn
@@ -48,7 +49,8 @@ case class Tx(channelInfo: ChannelInfo)
   s2p.dataOut.t(bools2bits).t(bitRemap) >> qammod.dataIn
   qammod.dataOut.t(doBitMask).t(ifftPre) >> p2s.dataIn
   p2s.dataOut >> ifft.dataIn
-  ifft.dataOut.t(ifftPost) >> dataOut
+  //  ifft.dataOut.t(ifftPost) >> dataOut
+  ifft.dataOut >> dataOut
 
   logger.info(s"Tx generated, latency = $latency")
 }

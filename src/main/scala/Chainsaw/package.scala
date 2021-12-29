@@ -422,9 +422,14 @@ package object Chainsaw extends RealFactory {
     def asBoolsKeepOrder: Seq[Bool] = bits.asBools.reverse
   }
 
-  implicit class StreamUtil[T <: Data](stream: Stream[T]) {
-    def >=>(that: Stream[T]): Unit = {
-
+  implicit class StreamUtil[Ti <: Data](stream: Stream[Ti]) {
+    def t[To <: Data](transform: Ti => To) = {
+      val ret = transform(stream.payload)
+      val retStream = Stream(cloneOf(ret))
+      retStream.payload := ret
+      retStream.valid := stream.valid
+      stream.ready := retStream.ready
+      retStream
     }
   }
 

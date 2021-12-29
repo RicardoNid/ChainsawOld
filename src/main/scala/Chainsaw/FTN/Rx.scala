@@ -17,17 +17,21 @@ class RxPrototype(channelInfo: ChannelInfo) extends Component {
   val fft = DSP.FFT.CooleyTukeyRVFFT(512, Seq(4, 4, 4, 4), Seq(2), fftType, rxUnitType)
   val equalizer = EqualizerFTN(preambleSymbols)
   val qamdemod = comm.qam.AdaptiveQamdemod(bitAlloc, powAlloc, rxUnitComplexType)
-  val deinterleave = DSP.interleave.AdaptiveMatIntrlv(64, 256, 1024, 1024, HardType(Bool()))
+  val deInterleave = DSP.interleave.AdaptiveMatIntrlv(64, 256, 1024, 1024, HardType(Bool()))
 
   fft.dataOut.allowOverride
   equalizer.dataOut.allowOverride
   qamdemod.dataOut.allowOverride
+  deInterleave.dataOut.allowOverride
 
   val dataIn = slave(cloneOf(fft.dataIn))
 
   // transformations
-  def fftPre(in:Vec[SFix]) = Vec(in.zipWithIndex.map{ case (fix, i) => if (i < (bitMask.sum + 1) * 2) fix else rxZero})
-  def fftPost(in:Vec[ComplexNumber]) = Vec(in.take(in.length / 2).map(_ >> 9).map(_.truncated(rxUnitType)))
+  def fftPre(in: Vec[SFix]) = Vec(in.zipWithIndex.map { case (fix, i) => if (i < (bitMask.sum + 1) * 2) fix else rxZero })
+
+  def fftPost(in: Vec[ComplexNumber]) = Vec(in.take(in.length / 2).map(_ >> 9).map(_.truncated(equalizerType)))
+
+  def equalizerPost(in: Vec[ComplexNumber]) = Vec(in.map(_.truncated(rxUnitType)))
 
   def bitRemap(in: Bits) = {
     val bools = in.asBools.reverse
@@ -40,43 +44,53 @@ class RxPrototype(channelInfo: ChannelInfo) extends Component {
   // connection
   dataIn.t(fftPre) >> fft.dataIn
   fft.dataOut.t(fftPost) >> equalizer.dataIn
-  equalizer.dataIn >> qamdemod.dataIn
-  qamdemod.dataOut.t(bitRemap).t(bits2bools) >> deinterleave.dataIn
+  equalizer.dataOut.t(equalizerPost) >> qamdemod.dataIn
+  qamdemod.dataOut.t(bitRemap).t(bits2bools) >> deInterleave.dataIn
+
+  val components = Seq(fft, equalizer, qamdemod, deInterleave)
 }
 
 case class Rx0(channelInfo: ChannelInfo)
   extends RxPrototype(channelInfo) with DSPTestable[Vec[SFix], Vec[ComplexNumber]] {
 
-  override val dataOut = master Stream Vec(rxUnitComplexType(), 256)
-  override val latency = fft.latency
+  override val dataOut = master Stream Vec(toComplexType(equalizerType), 256)
+  override val latency = components.take(1).map(_.latency).sum
 
-  logger.info(s"latency = ${fft.latency}")
   fft.dataOut.t(fftPost) >> dataOut
 }
 
 case class Rx1(channelInfo: ChannelInfo)
-  extends RxPrototype(channelInfo) with DSPTestable[Vec[SFix], Bits] {
+  extends RxPrototype(channelInfo) with DSPTestable[Vec[SFix], Vec[ComplexNumber]] {
 
-  override val dataOut = master(cloneOf(qamdemod.dataOut))
-  override val latency = fft.latency + qamdemod.latency + 2
+  override val dataOut = master Stream Vec(rxUnitComplexType, 256)
+  override val latency = components.take(2).map(_.latency).sum
 
-  qamdemod.dataOut.t(bitRemap) >> dataOut
+  equalizer.dataOut.t(equalizerPost) >> dataOut
 }
 
 case class Rx2(channelInfo: ChannelInfo)
   extends RxPrototype(channelInfo) with DSPTestable[Vec[SFix], Bits] {
 
   override val dataOut = master(cloneOf(qamdemod.dataOut))
-  override val latency = fft.latency + qamdemod.latency + deinterleave.latency + 2
+  override val latency = components.take(3).map(_.latency).sum
 
-  deinterleave.dataOut.t(bools2bits) >> dataOut
+  qamdemod.dataOut.t(bitRemap) >> dataOut
 }
 
 case class Rx3(channelInfo: ChannelInfo)
   extends RxPrototype(channelInfo) with DSPTestable[Vec[SFix], Bits] {
 
   override val dataOut = master(cloneOf(qamdemod.dataOut))
-  override val latency = fft.latency + qamdemod.latency + deinterleave.latency + 2
+  override val latency = components.take(4).map(_.latency).sum
 
-  deinterleave.dataOut.t(bools2bits) >> dataOut
+  deInterleave.dataOut.t(bools2bits) >> dataOut
+}
+
+case class Rx4(channelInfo: ChannelInfo)
+  extends RxPrototype(channelInfo) with DSPTestable[Vec[SFix], Bits] {
+
+  override val dataOut = master(cloneOf(qamdemod.dataOut))
+  override val latency = fft.latency + qamdemod.latency + deInterleave.latency + 2
+
+  deInterleave.dataOut.t(bools2bits) >> dataOut
 }
