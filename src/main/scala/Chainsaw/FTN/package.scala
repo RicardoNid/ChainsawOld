@@ -1,5 +1,6 @@
 package Chainsaw
 
+import Chainsaw.algos.{MatlabRefs, Trellis}
 import Chainsaw.matlabIO._
 import spinal.core._
 import spinal.lib._
@@ -13,18 +14,11 @@ package object FTN {
     val qamRemapPositions = loadFTN1d[Double]("QAMRemapPositions").map(_.toInt).map(_ - 1)
   }
 
-  // transformations
-
-
-  def bools2bits(in: Vec[Bool]) = in.reverse.asBits()
-
-  def bits2bools(in: Bits) = Vec(in.asBools.reverse)
-
   // for qam symbols and twiddle factors
-  val unitType = HardType(SFix(2 exp, -15 exp))
+  val unitType = HardType(SFix(2 exp, -13 exp))
   val unitComplexType = toComplexType(unitType)
   // for ifft calculation
-  val ifftType = HardType(SFix(8 exp, -15 exp))
+  val ifftType = HardType(SFix(8 exp, -7 exp))
   val ifftComplexType = toComplexType(ifftType)
   // for qam symbols and twiddle factors FIXME: use full precision and avoid "Way too big signal"
   val rxUnitType = HardType(SFix(2 exp, -13 exp))
@@ -77,4 +71,21 @@ package object FTN {
   val equalizedGolden: Seq[Seq[BComplex]] = equalized.grouped(256).map(_.toSeq).toSeq
   val deMappedGolden: Seq[BigInt] = deMapped.grouped(1024).toSeq.map(bit1024 => BigInt(bit1024.mkString(""), 2))
   val deInterleavedGolden: Seq[BigInt] = deMapped.grouped(1024).toSeq.map(bit1024 => BigInt(bit1024.mkString(""), 2))
+
+  val matlabTrellis = MatlabRefs.poly2trellis(7, Array(171, 133))
+  val trellis = Trellis.fromMatlab(matlabTrellis)
+
+  // common transformations
+  def bools2bits(in: Vec[Bool]) = in.reverse.asBits()
+
+  def bits2bools(in: Bits) = Vec(in.asBools.reverse)
+
+  def ifftPre(in: Vec[ComplexNumber]) = Vec((0 until 512).map {
+    case 0 => complexZero
+    case 256 => complexZero
+    case i => if (i < 256) in(i).truncated(ifftType) else in(512 - i).conj.truncated(ifftType)
+  })
+
+  def doBitMask(in: Vec[ComplexNumber]) =
+    Vec(in.zip(channelInfo.bitMask).map { case (data, mask) => if (mask == 1) data else in.head.getZero })
 }

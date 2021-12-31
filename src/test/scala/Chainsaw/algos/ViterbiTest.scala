@@ -40,7 +40,8 @@ class ViterbiTest extends AnyFlatSpec {
   @matlab
   def testViterbiAlgo(algo: viterbiHardAlgo): Unit = {
     val codedSymbols: Seq[DenseVector[Int]] = coded.map(Viterbi.bits2Symbols(_, 2))
-    val pollutedSymbols = polluted.map(Viterbi.bits2Symbols(_, 2))
+    val pollutedSymbols: Seq[DenseVector[Int]] = polluted.map(Viterbi.bits2Symbols(_, 2))
+
     val symbols = Seq(codedSymbols, pollutedSymbols)
     val yours = Seq.tabulate(2, 2)((i, j) => symbols(i).map(algo(_, trellis, Metrics.Hamming, modes(j)))).flatten
 
@@ -56,42 +57,63 @@ class ViterbiTest extends AnyFlatSpec {
 
   it should "viterbiTraceback" in testViterbiAlgo(Viterbi.viterbiTraceback[Int])
 
-  it should "work on hardware by termination mode" in {
+  "viterbiTraceback" should "work the same as matlab" in {
+    val pollutedSymbols: Seq[DenseVector[Int]] = FTN.loadFTN1d[Double]("iter1")
+      .grouped(256).toSeq
+      .map(doubles => new DenseVector(doubles.map(_.toInt)))
+      .map(Viterbi.bits2Symbols(_, 2))
+    val decodedSymbols = FTN.loadFTN1d[Double]("iter2")
+      .grouped(128).toSeq
+      .map(doubles => new DenseVector(doubles.map(_.toInt)))
+      .map(Viterbi.bits2Symbols(_, 1))
+
+    var diff = 0
+    pollutedSymbols.zip(decodedSymbols).zipWithIndex.foreach { case ((polluted, decoded), i) =>
+      println(s"result: $i / ${pollutedSymbols.length}")
+      val yours = Viterbi.viterbiTraceback(polluted, trellis, Metrics.Hamming, TerminationMode.TERMINATION)
+      if (yours != decoded) diff += 1
+    }
+    println(s"diff count: $diff")
+  }
+
+  "viterbi hardware" should "work on hardware by termination mode" in {
 
     GenRTL(ViterbiHardware(trellis, testLength))
 
     // run algo first, so you can generate info to compare with
-    val symbols = (coded ++ polluted).map(Viterbi.bits2Symbols(_, 2))
-    val golden = goldens(0) ++ goldens(2)
+    val symbols: Seq[DenseVector[Int]] = (coded ++ polluted).map(Viterbi.bits2Symbols(_, 2))
+    val golden: Seq[DenseVector[Int]] = goldens(0) ++ goldens(2)
     val ret = symbols.map(Viterbi.viterbiTraceback(_, trellis, Metrics.Hamming, TERMINATION))
     assert(ret.zip(golden).forall { case (a, b) => a == b })
 
     doFlowPeekPokeTest(
       name = "testViterbiHardware",
-      dut = ViterbiHardware(trellis, testLength, readAsync = false),
-      testCases = symbols.flatMap(_.toArray.map(BigInt(_))),
-      golden = golden.flatMap(_.toArray.map(BigInt(_)))
+      dut = ViterbiHardware(trellis, testLength, readAsync = false, disWidth = 4),
+      testCases = symbols.flatMap(_.toArray.map(BigInt(_))).map(data => Seq.fill(1)(data)),
+      golden = golden.flatMap(_.toArray.map(BigInt(_))).map(data => Seq.fill(1)(data))
     )
   }
 
-  it should "work on real task" in {
-    val testCases = eng.load("~/FTN326/reference/beforeVit", "beforeVit").asInstanceOf[Array[Double]]
-    val goldens = eng.load("~/FTN326/reference/afterVit", "afterVit").asInstanceOf[Array[Double]]
+  it should "work for FTN" in {
+    val testCases: Array[Double] = FTN.loadFTN1d[Double]("iter1")
+    val goldens: Array[Double] = FTN.loadFTN1d[Double]("iter2")
 
-    val testCase = Viterbi.bits2Symbols(new DenseVector(testCases.map(_.toInt)), 2).toArray.map(BigInt(_))
-    val golden = goldens.map(_.toInt).map(BigInt(_))
+    val parallelism = 1
+    val testCase: Array[Seq[BigInt]] = Viterbi.bits2Symbols(new DenseVector(testCases.map(_.toInt)), 2)
+      .toArray.map(BigInt(_)).map(data => Seq.fill(parallelism)(data))
+    val golden: Array[Seq[BigInt]] = goldens.map(_.toInt).map(BigInt(_))
+      .map(data => Seq.fill(parallelism)(data))
+
     doFlowPeekPokeTest(
       name = "testViterbiHardware",
-      dut = ViterbiHardware(trellis, testLength, readAsync = false, disWidth = 6),
+      dut = ViterbiHardware(trellis, testLength, parallelism, readAsync = false, disWidth = 4),
       testCases = testCase,
       golden = golden
     )
-
   }
 
-  it should "synth" in {
-    //    VivadoSynth(ViterbiHardware(trellis, 128), s"VitdecForFtnUsingLUT")
-    VivadoSynth(ViterbiHardware(trellis, 128, readAsync = false, disWidth = 4), s"VitdecForFtnUsingBRAM")
-  }
+  it should "synth for parallel situation" in VivadoSynthForTiming(
+    ViterbiHardware(trellis, 128, 1, readAsync = false, disWidth = 4),
+    s"Vitdec512ForFtnUsingBRAM")
 
 }

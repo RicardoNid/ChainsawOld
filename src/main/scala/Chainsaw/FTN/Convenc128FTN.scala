@@ -1,4 +1,4 @@
-package Chainsaw.comm.channelCoding
+package Chainsaw.FTN
 
 import Chainsaw._
 import Chainsaw.dspTest._

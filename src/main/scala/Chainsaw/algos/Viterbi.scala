@@ -4,6 +4,7 @@ import Chainsaw._
 import breeze.linalg._
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
 object TerminationMode extends Enumeration {
@@ -94,12 +95,12 @@ object Viterbi {
                           mode: TerminationMode = TERMINATION)(implicit tag: ClassTag[T]) = {
 
     val allStates = 0 until trellis.numStates
-    val allTransitions: Seq[(Int, Int)] = allStates.flatMap(state => trellis.getPrevStatesTo(state).map((_, state)))
     // we maintain the discrepancies only, not all information of paths(states and inputs)
-    val inf = Int.MaxValue
+    val inf = 8
     var currentMinimums: Seq[Double] = 0.0 +: Seq.fill(trellis.numStates - 1)(inf.toDouble)
     val selectionRecords = allStates.map(pair => pair -> mutable.Stack[Int]()).toMap
 
+    val disRange = ArrayBuffer[Double]()
     // iterating on received symbols and build records
     val rxQueue = mutable.Queue(rxSymbols.toArray: _*)
     while (rxQueue.nonEmpty) {
@@ -114,18 +115,19 @@ object Viterbi {
           // record discrepancies on each transitions for tracing back
           current + increment
         }
-        val minTransition = discrepanciesOneState.zip(transitionsToOneState).minBy(_._1)._2
+        //        val minTransition = discrepanciesOneState.zip(transitionsToOneState).minBy(_._1)._2
+        val minTransition = discrepanciesOneState.zip(transitionsToOneState).sortBy(_._2.nextState).minBy(_._1)._2
         selectionRecords(minTransition.nextState).push(minTransition.prevState) // in hardware, we only record the branch
         discrepanciesOneState.min
       }
       currentMinimums = newDis
-
-      //      println(currentMinimums.map(_.toInt).map(int => if(int > 16) "i" else int.toString).mkString("")) // monitoring discrepancies
-      //      println()
+      disRange += currentMinimums.max - currentMinimums.min
+      if (currentMinimums.forall(value => value >= 16 && value < 32)) currentMinimums = currentMinimums.map(_ - 16.0)
     }
 
     println(s"max in records: ${currentMinimums.max}")
     println(s"min in records: ${currentMinimums.min}")
+    println(s"disRange max: ${disRange.max}")
 
     // tracing back
 

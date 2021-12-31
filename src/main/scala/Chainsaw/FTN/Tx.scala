@@ -18,18 +18,12 @@ case class Tx(channelInfo: ChannelInfo)
     }.reverse.asBits()
   }
 
-  def doBitMask(in: Vec[ComplexNumber]) = Vec(in.zip(bitMask).map { case (data, mask) => if (mask == 1) data else complexZero })
 
-  def ifftPre(in: Vec[ComplexNumber]) = Vec((0 until 512).map {
-    case 0 => complexZero
-    case 256 => complexZero
-    case i => if (i < 256) in(i).truncated(ifftType) else in(512 - i).conj.truncated(ifftType)
-  })
 
   def ifftPost(in: Vec[ComplexNumber]) = Vec(in.map(_.real))
 
   // definitions of modules
-  val convenc = comm.channelCoding.Convenc128FTN()
+  val convenc = Convenc128FTN()
   val interleave = DSP.interleave.AdaptiveMatIntrlv(256, 64, 256, 256, HardType(Bool()))
   val s2p = DSP.S2P(256, 1024, HardType(Bool()))
   val qammod = comm.qam.AdaptiveQammod(bitAlloc, powAlloc, unitType)

@@ -20,6 +20,8 @@ case class BigStreamFifo[T <: Data](dataType: HardType[Vec[T]], depth: Int) exte
   require(vecWidth % subFifoNum == 0, s"vec width $vecWidth, sub fifo number $subFifoNum")
   val subVecWidth = vecWidth / subFifoNum
 
+  logger.info(s"your fifo is divided into $subFifoNum sub fifos to avoid way too big signal")
+
   val elementType = HardType(dataType().head)
 
   val subFifos = Seq.fill(subFifoNum)(StreamFifo(Vec(elementType, vecWidth / subFifoNum), depth))

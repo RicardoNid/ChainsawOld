@@ -395,6 +395,12 @@ package object Chainsaw extends RealFactory {
     def isPositive = ~sf.raw.msb
 
     def isNegative = sf.raw.msb
+
+    def truncated(dataType: HardType[SFix]) = {
+      val ret = dataType()
+      ret := sf.truncated
+      ret
+    }
   }
 
   implicit class VecUtil[T <: Data](vec: Vec[T]) {
@@ -476,7 +482,8 @@ package object Chainsaw extends RealFactory {
     report.printFMax()
   }
 
-  def VivadoSynthForTiming[Ti <: Data, To <: Data](gen: => Component with DSPTestable[Ti, To]) =
+  def VivadoSynthForTiming[Ti <: Data, To <: Data]
+  (gen: => Component with DSPTestable[Ti, To], name: String = "temp") =
     VivadoSynth(
       new Component {
         val core = gen
@@ -494,7 +501,8 @@ package object Chainsaw extends RealFactory {
 
         core.dataIn.payload := RegNext(dataIn)
         dataOut := RegNext(core.dataOut.payload)
-      }
+      },
+      name
     )
 
   def VivadoImpl[T <: Component](gen: => T, name: String = "temp", xdcPath: String = "") = {

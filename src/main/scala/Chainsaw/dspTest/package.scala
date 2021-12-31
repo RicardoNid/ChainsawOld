@@ -198,30 +198,46 @@ package object dspTest {
       if (innerGolden != null) {
         val printContent = dutResult.head match {
           case seq: Seq[_] => seq.head match {
-            case _: BComplex => dutResult.indices.map(i => s"testing result $i:"
+            case _: BComplex => dutResult.indices.take(10).map(i => s"testing result $i:"
               + s"\nyours : ${dutResult(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}, sum = ${dutResult(i).asInstanceOf[Seq[BComplex]].map(_.real).sum * 2}"
               + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}, sum = ${innerGolden(i).asInstanceOf[Seq[BComplex]].map(_.real).sum * 2}"
-              + s"\ndiff: ${dutResult(i).asInstanceOf[Seq[BComplex]].zip(innerGolden(i).asInstanceOf[Seq[BComplex]]).map { case (a, b) => (a.real - b.real).abs + (a.imag - b.imag).abs }.sum}").mkString("\n")
+              + s"\ndiff  : ${
+              dutResult(i).asInstanceOf[Seq[BComplex]].zip(innerGolden(i).asInstanceOf[Seq[BComplex]])
+                .map { case (a, b) => (a.real - b.real).abs + (a.imag - b.imag).abs }
+                .map(real => if(real > epsilon) real else 0.0)
+                .map(_.toString.take(16).padTo(16, ' ')).mkString(" ")
+            }"
+            ).mkString("\n")
             case _: Double => dutResult.indices.map(i => s"testing result $i:"
               + s"\nyours : ${dutResult(i).asInstanceOf[Seq[Double]].map(_.toString).mkString(" ")}"
               + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[Double]].map(_.toString).mkString(" ")}"
-              + s"\ndiff: ${dutResult(i).asInstanceOf[Seq[Double]].zip(innerGolden(i).asInstanceOf[Seq[Double]]).map { case (a, b) => (a - b).abs }.sum}").mkString("\n")
+              + s"\ndiff  : ${
+              dutResult(i).asInstanceOf[Seq[Double]].zip(innerGolden(i).asInstanceOf[Seq[Double]])
+                .map { case (a, b) => (a - b).abs }.map(_.toString.padTo(6, ' ')).mkString(" ")
+            }").mkString("\n")
+            case _: BigInt =>
+              dutResult.indices.map(i => s"testing result $i:" +
+                s"\nyours : ${dutResult(i).asInstanceOf[Seq[BigInt]].map(_.toString(16)).mkString(" ")}" +
+                s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[BigInt]].map(_.toString(16)).mkString(" ")}").mkString("\n")
           }
 
           case _ =>
             val printSize = (dutResult ++ innerGolden).map(scalar2string).map(_.length).max
-            val yourString = dutResult.map(scalar2string).map(_.padTo(printSize, ' ')).mkString(" ")
-            val goldenString = golden.map(scalar2string).map(_.padTo(printSize, ' ')).mkString(" ")
-            val diffString = yourString.zip(goldenString).map { case (a, b) => if (a == b) ' ' else 'x' }.mkString("")
-            s"testing result:" +
-              s"\nyours : $yourString" +
-              s"\ngolden: $goldenString" +
-              s"\ndiff  : $diffString"
+            dutResult.indices.map { i =>
+              val yourString = scalar2string(dutResult(i)).padToLeft(printSize, ' ')
+              val goldenString = scalar2string(golden(i)).padToLeft(printSize, ' ')
+              val diffString = yourString.zip(goldenString).map { case (a, b) => if (a == b) ' ' else 'x' }.mkString("")
+              s"testing result $i: \nyours :$yourString \ngolden:$goldenString \ndiff  :$diffString"
+            }.mkString("\n")
         }
 
         logger.info(printContent)
 
-        def shouldAll(metric: (Do, Do) => Boolean) = dutResult.zip(innerGolden).forall { case (a, b) => metric(a, b) }
+        def shouldAll(metric: (Do, Do) => Boolean) = {
+          val diff = dutResult.zip(innerGolden).filterNot { case (a, b) => metric(a, b) }
+          logger.warn(s"diff: ${diff.length} / ${dutResult.length}")
+          diff.isEmpty
+        }
 
         val condition: Boolean = testMetric match {
           case Chainsaw.dspTest.TestMetric.SAME => shouldAll(_ == _)

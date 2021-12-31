@@ -34,7 +34,6 @@ case class AdaptiveQammod(bitAlloc: Seq[Int], powAlloc: Seq[Double], dataType: H
   val starts = filteredBitAlloc.indices.map(i => filteredBitAlloc.take(i).sum)
   val ends = filteredBitAlloc.indices.map(i => filteredBitAlloc.take(i + 1).sum)
   val segments = ends.zip(starts).map { case (end, start) => bitAlloc.sum - 1 - start downto bitAlloc.sum - end }
-  printlnGreen(segments.mkString(" "))
   val segmentValues = segments.map(dataIn.payload(_).asUInt)
 
   // build the LUTs
