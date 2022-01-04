@@ -24,10 +24,10 @@ case class EqualizerFTN(golden: Array[Int]) extends
   val smooth = SmootherFTN(golden)
   val equal = EqualizationFTN()
 
-  override val latency = smooth.latency + equal.latency + 2
+  override val latency = smooth.latency + equal.latency + 2 // 2 for
 
   val preambleFIFO = BigStreamFifo(equalizerComplexVecType(), 2)
-  val dataFIFO = BigStreamFifo(equalizerComplexVecType(), 16)
+  val dataFIFO = BigStreamFifo(equalizerComplexVecType(), 32)
   val postPreambleFIFO = BigStreamFifo(equalizerComplexVecType(), 1)
 
   dataIn >> splitter.dataIn

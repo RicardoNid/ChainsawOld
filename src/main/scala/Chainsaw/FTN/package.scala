@@ -57,20 +57,19 @@ package object FTN {
   // loading data for test
   val preambleSymbols = loadFTN1d[Double]("PreambleMappedSymbols").map(_.toInt)
 
-  val modulated = loadFTN2d[Double]("recvModulatedSymbolsAllFrame").map(_ * 512.0)
-  val preambleModulated = loadFTN2d[Double]("recvPreambleModulatedSymbols").map(_ * 512.0)
-  val deModulated = loadFTN2d[MComplex]("deModulatedSymbolsAllFrame").map(_.toBComplex)
-  val equalized = loadFTN2d[MComplex]("equalizedSymbolsAllFrame").map(_.toBComplex)
-  val deMapped = loadFTN2d[Double]("deMappedBitsAllFrame").map(_.toInt)
-  val deInterleaved = loadFTN2d[Double]("deInterleavedBitsAllFrame").map(_.toInt)
-  val deCoded = loadFTN2d[Double]("debitsAllFrame").map(_.toInt)
+  // data for RxFront
+  val rxModulated = loadFTN1d[Double]("rxModulated").map(_ * 512.0)
+  val rxMapped = loadFTN1d[MComplex]("rxMapped").map(_.toBComplex)
+  val rxEqualized = loadFTN1d[MComplex]("rxEqualized").map(_.toBComplex)
 
-  val modulateGolden: Seq[Seq[Double]] = modulated.grouped(450).map(_.toSeq.padTo(512, 0.0)).toSeq
-  val preambleModulatedGolden: Seq[Seq[Double]] = preambleModulated.grouped(512).map(_.toSeq).toSeq
-  val deModulatedGolden: Seq[Seq[BComplex]] = deModulated.grouped(256).map(_.toSeq).toSeq
-  val equalizedGolden: Seq[Seq[BComplex]] = equalized.grouped(256).map(_.toSeq).toSeq
-  val deMappedGolden: Seq[BigInt] = deMapped.grouped(1024).toSeq.map(bit1024 => BigInt(bit1024.mkString(""), 2))
-  val deInterleavedGolden: Seq[BigInt] = deMapped.grouped(1024).toSeq.map(bit1024 => BigInt(bit1024.mkString(""), 2))
+  val rxModulateGolden: Seq[Seq[Double]] = {
+    val (preamble, data) = rxModulated.splitAt(1024)
+    preamble.grouped(512).map(_.toSeq).toSeq ++ data.grouped(450).map(_.toSeq.padTo(512, 0.0)).toSeq
+  }
+  val rxMappedGolden: Seq[Seq[BComplex]] = rxMapped.grouped(256).map(_.toSeq).toSeq
+  val rxEqualizedGolden: Seq[Seq[BComplex]] = rxEqualized.grouped(256).map(_.toSeq).toSeq
+
+  //
 
   val matlabTrellis = MatlabRefs.poly2trellis(7, Array(171, 133))
   val trellis = Trellis.fromMatlab(matlabTrellis)

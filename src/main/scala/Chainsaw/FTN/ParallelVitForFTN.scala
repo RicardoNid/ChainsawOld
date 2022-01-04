@@ -35,9 +35,9 @@ case class ParallelVitFTN(parallelism: Int, parallelismForTest: Int = -1)
   def uints2bools(in: Vec[UInt]) = Vec(in.map(_.asBool))
 
   dataIn.t(bits2bools) >> superInterleave.dataIn
-  superInterleave.dataOut.t(bitRemapBeforeVit).t(cut) >> vitdec.dataIn
+  superInterleave.dataOut.t(bitRemapBeforeVit).t(cut).m2sPipe() >> vitdec.dataIn
   vitdec.dataOut.t(pad).t(uints2bools) >> superDeInterleave.dataIn
   superDeInterleave.dataOut.t(bools2bits) >> dataOut
 
-  override val latency = Seq(superInterleave, superDeInterleave, vitdec).map(_.latency).sum
+  override val latency = Seq(superInterleave, superDeInterleave, vitdec).map(_.latency).sum + 1 // for m2s pipe
 }

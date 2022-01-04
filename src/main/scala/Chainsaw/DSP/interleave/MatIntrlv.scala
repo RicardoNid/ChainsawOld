@@ -16,10 +16,10 @@ import spinal.lib.fsm._
 case class MatIntrlv[T <: Data](row: Int, col: Int, dataType: HardType[T])
   extends Component with DSPTestable[Vec[T], Vec[T]] {
 
-  logger.info(s"implementing a $row * $col MatIntrlv of ${dataType.getBitsWidth}-bits-width elements")
   override val dataIn: Stream[Vec[T]] = slave Stream Vec(dataType(), col)
   override val dataOut: Stream[Vec[T]] = master Stream Vec(dataType(), row)
-  override val latency = row max col
+  override val latency = row // caution: the valid input length may differ from the valid output, latency means the gap between their heads
+  logger.info(s"implementing a $row * $col MatIntrlv of ${dataType.getBitsWidth}-bits-width elements, latency = $latency")
 
   // we need a 'square' matrix to contain all data, when row != col, there exists redundant space
   // besides, for depth, we use a power of 2, which will introduce redundant space sometimes, but

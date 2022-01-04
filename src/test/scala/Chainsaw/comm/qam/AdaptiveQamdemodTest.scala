@@ -15,7 +15,7 @@ class AdaptiveQamdemodTest extends AnyFlatSpec {
     val bitAlloc = FTN.channelInfo.bitAlloc
     val powAlloc = FTN.channelInfo.powAlloc
 
-    val testCases: Seq[Seq[BComplex]] = FTN.equalizedGolden
+    val testCases: Seq[Seq[BComplex]] = FTN.rxEqualizedGolden
     val goldens = testCases
       .map(vec => vec.zip(bitAlloc.zip(powAlloc))
         .map { case (complex, (bit, pow)) =>

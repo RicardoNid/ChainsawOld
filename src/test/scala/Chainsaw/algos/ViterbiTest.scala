@@ -113,7 +113,7 @@ class ViterbiTest extends AnyFlatSpec {
   }
 
   it should "synth for parallel situation" in VivadoSynthForTiming(
-    ViterbiHardware(trellis, 128, 1, readAsync = false, disWidth = 4),
+    ViterbiHardware(trellis, 128, 16, readAsync = false, disWidth = 4),
     s"Vitdec512ForFtnUsingBRAM")
 
 }

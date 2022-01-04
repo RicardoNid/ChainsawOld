@@ -3,6 +3,7 @@ package Chainsaw.comm.viterbi
 import Chainsaw.algos.Metrics.Hamming
 import Chainsaw.algos.Trellis
 import Chainsaw.dspTest.DSPTestable
+import Chainsaw.logger
 import spinal.core._
 import spinal.lib.{Counter, Delay, master, slave}
 
@@ -58,7 +59,8 @@ case class ViterbiHardware(trellis: Trellis[Int], length: Int, copies: Int = 1,
 
     // ACS
     val initDis = zero +: Seq.fill(trellis.numStates - 1)(inf)
-    val currentDisRegs = initDis.map(RegInit(_)) // this is the only "state" of ACS
+    //    val currentDisRegs = initDis.map(RegInit(_)) // this is the only "state" of ACS
+    val currentDisRegs = Seq.fill(trellis.numStates)(Reg(UInt(discrepancyWidth bits))) // this is the only "state" of ACS
     // adding current and increment
     val sums = transitions.map { transition =>
       val inc = hammingIn(transition.output) // get hamming distance from ROMs
@@ -111,7 +113,7 @@ case class ViterbiHardware(trellis: Trellis[Int], length: Int, copies: Int = 1,
       require(min.getBitsWidth == discrepancyWidth + inputWidth)
       val temp = min.takeHigh(discrepancyWidth).asUInt
       val discrepancy =
-        if(useReduction == 2) reduceLogic2(reduce2, temp)
+        if (useReduction == 2) reduceLogic2(reduce2, temp)
         else if (useReduction == 1) reduceLogic1(reduce1, temp)
         else temp
       val prevStateOrder = min.takeLow(min.getBitsWidth - discrepancyWidth).asUInt
@@ -127,7 +129,7 @@ case class ViterbiHardware(trellis: Trellis[Int], length: Int, copies: Int = 1,
     val dataIn = in Vec(inputSymbolType(), trellis.numStates)
     val dataOut = out(inputSymbolType())
 
-    val currentState = RegInit(stateType().getZero)
+    val currentState = Reg(stateType().getZero)
     val order = dataIn(currentState)
 
     val prevState = currentState.takeLow(stateWidth - inputWidth).asUInt @@ order
@@ -140,7 +142,8 @@ case class ViterbiHardware(trellis: Trellis[Int], length: Int, copies: Int = 1,
 
   override val dataIn = slave Stream Vec(outputSymbolType(), copies)
   override val dataOut = master Stream Vec(inputSymbolType(), copies)
-  override val latency = length * 2 + (if (readAsync) 0 else 2)
+  override val latency = length * 2 + (if (readAsync) 1 else 3)
+  logger.info(s"implementing a vitdec at of length $length containing $copies copies, latency = $latency")
 
   val forwards = Seq.fill(copies)(ACS())
   val backwards = Seq.fill(copies)(TB())

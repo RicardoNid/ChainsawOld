@@ -28,7 +28,7 @@ class QAMDeModTest extends AnyFlatSpec {
     SimConfig.withWave.compile(AdaptiveQamdemod(bitAlloc, powAlloc, HardType(ComplexNumber(3, -14)))).doSim { dut =>
       import dut.{clockDomain, dataIn, dataOut}
       clockDomain.forkStimulus(2)
-      dutResults = flowPeekPoke(dut, Seq(testCase), dataIn, dataOut, 1)
+      dutResults = flowPeekPoke(dut, Seq(testCase), dataIn, dataOut, 1)._2
     }
 
     val golden: Array[Int] = testCase.zip(powAlloc.zip(bitAlloc)).map { case (complex, (pow, bit)) => Refs.qamdemod(complex / sqrt(pow) * Refs.getQAMRms(bit), bit, true) }.toArray

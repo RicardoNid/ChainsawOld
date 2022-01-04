@@ -58,7 +58,7 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
         dataIn = dut.dataIn,
         dataOut = dut.dataOut,
         latency = dut.latency
-      )
+      )._2
 
       groupedGoldens.zip(dutResults).map { case (golden, dut) =>
         val diff = golden.toDv - dut.toDv
@@ -152,7 +152,7 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
         dataIn = dut.dataIn,
         dataOut = dut.dataOut,
         latency = dut.latency
-      )
+      )._2
 
       goldens.zip(dutResults).map { case (golden, dut) =>
         val diff = golden - dut.toDv

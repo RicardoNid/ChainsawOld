@@ -3,7 +3,7 @@ import Chainsaw.examples.JsonExample.temp
 import Chainsaw.matlabIO._
 import org.scalatest.Tag
 import spinal.core._
-import spinal.core.internals.BaseNode
+import spinal.core.internals.{BaseNode, DeclarationStatement, GraphUtils, PhaseContext, PhaseNetlist}
 import spinal.core.sim._
 import spinal.lib._
 import spinal.sim._
@@ -16,11 +16,11 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math._
 import scala.sys.process.Process
 import scala.util.{Failure, Random, Success, Try}
-import breeze.linalg.{DenseVector, DenseMatrix}
+import breeze.linalg.{DenseMatrix, DenseVector}
+import org.apache.commons.io.FileUtils
 import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
 import org.json4s.jackson.Serialization.{read, write}
-
 
 import scala.io.Source
 import scala.reflect.ClassTag
@@ -636,5 +636,6 @@ package object Chainsaw extends RealFactory {
 
     def to2DArray = toRowMajoredArray.grouped(dm.cols).toArray
   }
+
 }
 

@@ -26,14 +26,12 @@ case class SmootherFTN(golden: Seq[Int])
 
   val dataIn = slave Stream equalizerComplexVecType // preambles
   val dataOut = master Stream equalizerComplexVecType // preambles after smooth
+  val latency = 3 + 1 + 1 + 16
   val inReal = Vec(dataIn.payload.map(_.real))
   val inImag = Vec(dataIn.payload.map(_.imag))
 
   val reg0, reg1 = Reg(equalizerVecType)
   val srl0, srl1 = Reg(Vec(equalizerType, equalizerWidth + 15))
-
-  val latency = 3 + 1 + 1 + 16
-  println(s"smooth FTN period: $latency")
 
   val fsm = new StateMachine {
 

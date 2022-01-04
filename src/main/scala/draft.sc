@@ -12,19 +12,6 @@ import breeze.numerics._
 import breeze.numerics.constants._
 import breeze.signal._
 
-import java.io.{File, PrintWriter, StringWriter}
-
-val amplitude = 8.0
-
-val x = (0 until 1000)
-  .map(sin(_))
-  .map(_ * amplitude + amplitude)
-  .map(round(_))
-  .map(BigInt(_).toString(16).padToLeft(2, '0'))
-  .mkString(" ")
-
-val sinFile = "/data/sin.txt"
-val pw = new PrintWriter(new File(sinFile))
-pw.write(x)
-pw.close()
+val temp = Seq(1,2,3,4)
+temp.splitAt(3)
 

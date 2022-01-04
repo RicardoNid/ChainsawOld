@@ -36,7 +36,7 @@ class QAMDemodTest extends AnyFlatSpec {
     SimConfig.withWave.compile(QAMDemod(symbolType, bitsAllocated, powerFactor)).doSim { dut =>
       import dut.{clockDomain, dataIn, dataOut}
       clockDomain.forkStimulus(2)
-      dutResults = flowPeekPoke(dut, testCases.map(_ * powerFactor), dataIn, dataOut, 1)
+      dutResults = flowPeekPoke(dut, testCases.map(_ * powerFactor), dataIn, dataOut, 1)._2
     }
 
     // analyse result

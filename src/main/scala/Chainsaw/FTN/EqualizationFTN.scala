@@ -10,7 +10,6 @@ import spinal.lib.fsm._
 case class EqualizationFTN()
   extends Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]]{
 
-  println(s"equalization FTN period: $latency")
   require(latency <= 80)
 
   val preambleIn = slave Stream equalizerComplexVecType() // preambles after smooth

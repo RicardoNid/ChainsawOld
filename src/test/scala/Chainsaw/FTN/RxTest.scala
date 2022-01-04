@@ -4,32 +4,26 @@ import Chainsaw._
 import Chainsaw.dspTest._
 import Chainsaw.matlabIO._
 import org.scalatest.flatspec.AnyFlatSpec
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
 
 class RxTest extends AnyFlatSpec {
 
-  val testSize = 8
-  val data = (0 until testSize).flatMap(_ => modulateGolden)
+  val testSize = 8 // number of frames used for test
+  val parallelismForTest = 128
+  require(parallelismForTest % 4 == 0)
 
   val dataWithPreamble = {
-    val frame = (preambleModulatedGolden ++ modulateGolden).flatten.grouped(128).toSeq
+    val frame = rxModulateGolden.flatten.grouped(128).toSeq
     (0 until testSize).flatMap(_ => frame)
   }
 
-  val realSymbolLength = (preambleModulatedGolden ++ modulateGolden).flatten.length
+  val realSymbolLength = rxModulateGolden.flatten.length
   assert(realSymbolLength == 18 * 512)
   val frameLength = dataWithPreamble.length
   assert(frameLength == 18 * 4 * testSize)
 
   def boolSeq2BigInt(in: Seq[Int]) = BigInt(in.mkString(""), 2)
 
+  // loading data for test
   val iterIn: Seq[Seq[BComplex]] = loadFTN1d[MComplex]("iterIn").map(_.toBComplex).toSeq.grouped(256).toSeq // symbol
   val iter0: Seq[BigInt] = loadFTN1d[Double]("iter0").map(_.toInt).toSeq.grouped(1024).toSeq.map(boolSeq2BigInt) // after qamdemod
   val iter1: Seq[BigInt] = loadFTN1d[Double]("iter1").map(_.toInt).toSeq.grouped(1024).toSeq.map(boolSeq2BigInt) // after deInterleave
@@ -44,20 +38,22 @@ class RxTest extends AnyFlatSpec {
 
   Seq(iterIn, iter0, iter1, iter2, iter3, iter4, iter5, iter6, iter7).foreach(seq => assert(seq.length == 16))
 
-  val parallelismForTest = 4
-  require(parallelismForTest % 4 == 0)
+
+
+  "RxFront" should "show the data" in {
+    println(dataWithPreamble.head.mkString(" "))
+    println(rxMappedGolden.head)
+    println(rxEqualizedGolden.head)
+  }
 
   "RxFront" should "work correctly" in {
-    val goldens = (0 until testSize).flatMap(_ => equalizedGolden)
+    val goldens = (0 until testSize).flatMap(_ => rxEqualizedGolden)
     doFlowPeekPokeTest(
       dut = RxFront(), name = "testRxFront",
       testCases = dataWithPreamble, golden = goldens,
-      initLength = 0,
       testMetric = TestMetric.APPROXIMATE, epsilon = 1E-1
     )
   }
-
-  it should "synth" in VivadoSynthForTiming(RxFront())
 
   "Rx" should "work correctly on qamdemod and deInterleave" in {
     val data = (0 until testSize).flatMap(_ => iterIn)
@@ -69,20 +65,7 @@ class RxTest extends AnyFlatSpec {
     )
   }
 
-  it should "work correctly on smaller vitdec" in {
-    val parallelism = 512
-
-    val data: Seq[BigInt] = (0 until testSize).flatMap(_ => iter1)
-    val goldens = (0 until testSize).flatMap(_ => iter2)
-      .zipWithIndex.map { case (big, i) => if (i < parallelismForTest / 4) big else BigInt(0) }
-    doFlowPeekPokeTest(
-      dut = ParallelVitFTN(parallelism, parallelismForTest), name = "testVit",
-      testCases = data, golden = goldens,
-      testMetric = TestMetric.SAME
-    )
-  }
-
-  "Rx" should "work correctly on vitdec" in {
+  it should "work correctly on vitdec" in {
     val data = (0 until testSize).flatMap(_ => iter1)
     val goldens = (0 until testSize).flatMap(_ => iter2)
       .zipWithIndex.map { case (big, i) => if (i < parallelismForTest / 4) big else BigInt(0) }
@@ -93,7 +76,7 @@ class RxTest extends AnyFlatSpec {
     )
   }
 
-  "Rx" should "work correctly on convenc" in {
+  it should "work correctly on convenc" in {
     val data = (0 until testSize).flatMap(_ => iter2)
     val goldens = (0 until testSize).flatMap(_ => iter3)
     doFlowPeekPokeTest(
@@ -107,9 +90,10 @@ class RxTest extends AnyFlatSpec {
     val data = (0 until testSize).flatMap(_ => iter3)
     val goldens = (0 until testSize).flatMap(_ => iter5)
     doFlowPeekPokeTest(
-      dut = new Rx3, name = "testRx2",
+      dut = new Rx3, name = "testRx3",
       testCases = data, golden = goldens,
-      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-1
+      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-1,
+      verbose = false
     )
   }
 
@@ -117,9 +101,10 @@ class RxTest extends AnyFlatSpec {
     val data = (0 until testSize).flatMap(_ => iter5)
     val goldens = (0 until testSize).flatMap(_ => iter7)
     doFlowPeekPokeTest(
-      dut = new Rx4, name = "testRx3",
+      dut = new Rx4, name = "testRx4",
       testCases = data, golden = goldens,
-      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-1
+      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-1,
+      verbose = false
     )
   }
 
@@ -129,6 +114,17 @@ class RxTest extends AnyFlatSpec {
       .zipWithIndex.map { case (big, i) => if (i < parallelismForTest / 4) big else BigInt(0) }
     doFlowPeekPokeTest(
       dut = new Rx0to2(parallelismForTest), name = "testRx0to2",
+      testCases = data, golden = goldens,
+      testMetric = TestMetric.SAME
+    )
+  }
+
+  it should "work correctly on stage 0 to 1" in {
+    val data = (0 until testSize).flatMap(_ => iterIn)
+    val goldens = (0 until testSize).flatMap(_ => iter2)
+      .zipWithIndex.map { case (big, i) => if (i < parallelismForTest / 4) big else BigInt(0) }
+    doFlowPeekPokeTest(
+      dut = new Rx0to1(parallelismForTest), name = "testRx0to1",
       testCases = data, golden = goldens,
       testMetric = TestMetric.SAME
     )
@@ -144,32 +140,26 @@ class RxTest extends AnyFlatSpec {
     )
   }
 
-  it should "synth for the whole loop" in {
-    VivadoSynthForTiming(new RxWhole, "RxLoop")
+  it should "work with iteration on last round" in {
+    val data = dataWithPreamble
+    val goldens = (0 until testSize).flatMap(_ => iter2)
+//      .zipWithIndex.map { case (big, i) => if (i < parallelismForTest / 4) big else BigInt(0) }
+    println(data.length)
+    doFlowPeekPokeTest(
+      dut = Rx(parallelismForTest), name = "testRxWithIteration",
+      testCases = data, golden = goldens,
+      testMetric = TestMetric.SAME
+    )
   }
 
-  it should "synth for all the components in RxLoop" in {
-    import channelInfo._
-    VivadoSynthForTiming(comm.qam.AdaptiveQamdemod(bitAlloc, powAlloc, rxUnitComplexType), "qamdemodRx")
-    VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(64, 256, 1024, 1024, HardType(Bool())), "interleaveRx")
-    VivadoSynthForTiming(Convenc512FTN(), "convencRx")
-    VivadoSynthForTiming(comm.qam.AdaptiveQammod(bitAlloc, powAlloc, unitType), "qammodRx")
-    VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(256, 64, 1024, 1024, HardType(Bool())), "interleaveRx")
-    // most resource-consuming parts
-    VivadoSynthForTiming(DSP.FFT.CooleyTukeyHSIFFT(512, Seq(4, 4, 4, 4), Seq(2), ifftType, rxUnitType), "fftRx")
-    VivadoSynthForTiming(DSP.FFT.CooleyTukeyRVFFT(512, Seq(4, 4, 4, 4), Seq(2), fftType, rxUnitType), "ifftRx")
-  }
-
-  it should "synth for all components in RxFront" in {
-    VivadoSynthForTiming(EqualizerFTN(preambleSymbols), name = "equalizerRxFront")
-    VivadoSynthForTiming(DSP.FFT.CooleyTukeyRVFFT(512, Seq(4, 4, 4), Seq(4, 2), fftType, rxUnitType), name = "fftRxFront")
-  }
-
-  it should "synth for sub modules of important components" in {
-    val parallelism = 512
-    VivadoSynthForTiming(ParallelVitFTN(512, 512), "vitdecRx")
-    VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(parallelism, 256, 2 * parallelism, 2 * parallelism, Bool), "interleaveForParallelVit")
-    VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(128, parallelism, parallelism, parallelism, Bool), "deInterleaveForParallelVit")
-    VivadoSynthForTiming(comm.viterbi.ViterbiHardware(trellis = trellis, length = 128, copies = parallelism, readAsync = false, disWidth = 5), "parallelVit")
+  it should "work with iteration for all" in {
+    val data = dataWithPreamble
+    val goldens = (0 until testSize).flatMap(_ => iter2)
+      .zipWithIndex.map { case (big, i) => if (i < parallelismForTest / 4) big else BigInt(0) }
+    doFlowPeekPokeTest(
+      dut = Rx(parallelismForTest), name = "testRxWithIteration",
+      testCases = data, golden = goldens,
+      testMetric = TestMetric.SAME
+    )
   }
 }

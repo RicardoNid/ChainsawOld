@@ -102,7 +102,7 @@ case class HSPostprocess(N: Int, dataType: HardType[SFix])
   val complexType = HardType(ComplexNumber(dataType()))
   override val dataIn = slave Stream Vec(complexType(), N)
   override val dataOut = master Stream Vec(dataType(), N)
-  override val latency = 1
+  override val latency = 0
 
   val STEP0 = RegInit(True) // at step 0, get and store data, while calculating output0
   when(dataIn.fire || ~STEP0)(STEP0 := ~STEP0)
