@@ -7,8 +7,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class RxTest extends AnyFlatSpec {
 
-  val testSize = 8 // number of frames used for test
-  val parallelismForTest = 128
+  val testSize = 128 // number of frames used for test
+  val parallelismForTest = 512
   require(parallelismForTest % 4 == 0)
 
   val dataWithPreamble = {
@@ -37,8 +37,6 @@ class RxTest extends AnyFlatSpec {
   val iter7 = loadFTN1d[MComplex]("iter7").map(_.toBComplex).toSeq.grouped(256).toSeq // after fft
 
   Seq(iterIn, iter0, iter1, iter2, iter3, iter4, iter5, iter6, iter7).foreach(seq => assert(seq.length == 16))
-
-
 
   "RxFront" should "show the data" in {
     println(dataWithPreamble.head.mkString(" "))

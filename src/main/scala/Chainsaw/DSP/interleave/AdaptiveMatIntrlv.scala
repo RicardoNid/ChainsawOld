@@ -61,28 +61,27 @@ case class AdaptiveMatIntrlv[T <: Data](
       // packing input
       val dataInRearranged: Seq[T] = Algos.matIntrlv(dataIn.payload, packRow, col)
       val dataInPacked = Vec(dataInRearranged.grouped(packSize).toSeq.map(_.asBits()))
-      val dataOutPacked = cloneOf(dataInPacked)
 
       // connecting the core
       core.dataIn.valid := dataIn.valid
       dataIn.ready := core.dataIn.ready
-
       core.dataIn.payload := dataInPacked
-      dataOutPacked := core.dataOut.payload
 
-      dataOut.valid := core.dataOut.valid
-      core.dataOut.ready := dataOut.ready
-
-      // unpacking output
-      (0 until row / packRow).foreach { packId =>
-        (0 until packCol).foreach { packColId =>
-          (0 until packRow).foreach { packRowId =>
-            val id = packColId * row + packId * packRow + packRowId
-            val idInPack = packColId * packRow + packRowId
-            dataOut.payload(id).assignFromBits(dataOutPacked(packId).subdivideIn(packSize slices)(idInPack))
+      def unpack(in : Vec[Bits]) = {
+        val ret = cloneOf(dataOut.payload)
+        (0 until row / packRow).foreach { packId =>
+          (0 until packCol).foreach { packColId =>
+            (0 until packRow).foreach { packRowId =>
+              val id = packColId * row + packId * packRow + packRowId
+              val idInPack = packColId * packRow + packRowId
+              ret(id).assignFromBits(in(packId).subdivideIn(packSize slices)(idInPack))
+            }
           }
         }
+        ret
       }
+
+      core.dataOut.t(unpack) >> dataOut
       core
     case _ => throw new IllegalArgumentException(s"mode $mode has not been implemented yet")
   }

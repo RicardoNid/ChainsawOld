@@ -31,9 +31,9 @@ class MatIntrlvTest extends AnyFlatSpec {
     )
   }
 
-  it should "work" in {
-    def testRand() = testMatIntrlv(10, ChainsawRand.nextInt(20), ChainsawRand.nextInt(20))
-    // test the interleaver using different sizes
+  it should "work for different sizes" in {
+    def testRand() =
+      testMatIntrlv(10, ChainsawRand.nextInt(20), ChainsawRand.nextInt(20))
     (0 until 10).foreach(_ => testRand())
   }
 

@@ -4,7 +4,7 @@ import spinal.core._
 
 case class VivadoTask(
                        verilogPostProcess: String => String = (s: String) => s,
-                       frequencyTarget: HertzNumber = 307.2 MHz,
+                       frequencyTarget: HertzNumber = 288 MHz,
                        taskType: TaskType = SYNTH,
                        genSchematic: Boolean = true,
                        reportUtil: Boolean = true,

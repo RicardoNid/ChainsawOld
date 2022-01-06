@@ -53,5 +53,4 @@ case class CooleyTukeyHSIFFT(N: Int, factors1: Seq[Int], factors2: Seq[Int],
 
   override val latency = tempLatency
   logger.info(s"implementing a $N-point hermitian symmetric ifft, folded by $fold, latency = $latency")
-
 }

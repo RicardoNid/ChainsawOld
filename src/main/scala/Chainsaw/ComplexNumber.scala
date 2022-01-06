@@ -4,7 +4,20 @@ import spinal.core._
 import Chainsaw._
 import Chainsaw.matlabIO._
 
-/**
+import scala.language.postfixOps
+
+/** configuration of complex multiplication
+ *
+ * @param fast       use 3 real multiplications and 5 real additions(rather than 4 & 4)
+ * @param pipeline   number of pipelining stages
+ * @param resultType hard type of result, this can be utilized to reduce addition cost, it takes the dataType of the product by default
+ */
+case class ComplexMultConfig(fast: Boolean = true, pipeline: Int = 3, resultType: HardType[SFix] = null) {
+  require(pipeline >= 0 && pipeline <= 3)
+}
+
+/** complex number type based on SFix
+ *
  * @param R real part of the complex number
  * @param I imaginary part of the complex number
  */
@@ -19,11 +32,12 @@ case class ComplexNumber(peak: Int, resolution: Int) extends Bundle {
 
   def unary_-(): ComplexNumber = ComplexNumber(-real, -imag)
 
+  // nontrivial computations
   def multiplyI = ComplexNumber(-imag, real)
 
   def divideI = ComplexNumber(imag, -real)
 
-  def conj = ComplexNumber(real, - imag)
+  def conj = ComplexNumber(real, -imag)
 
   def *(that: SFix) = {
     val R = real * that
@@ -32,21 +46,26 @@ case class ComplexNumber(peak: Int, resolution: Int) extends Bundle {
     ComplexNumber(R, I)
   }
 
+  def truncated(dataType: HardType[SFix]) = {
+    val retReal, retImag = dataType()
+    retReal := real.truncated
+    retImag := imag.truncated
+    ComplexNumber(retReal, retImag)
+  }
+
+  def realType = HardType(this.real)
+
   def >>(that: Int) = ComplexNumber(real >> that, imag >> that)
 
   def <<(that: Int) = ComplexNumber(real << that, imag << that)
 
-  // ALGO: 6.10
-  def *(that: ComplexNumber)(implicit pipeline: Int = 0): ComplexNumber = {
+  // TODO: compare this with Xilinx complex multiplication IP
+  def *(that: ComplexNumber)
+       (implicit config: ComplexMultConfig): ComplexNumber = {
 
     ComplexNumber(this.real * that.real - this.imag * that.imag, this.real * that.imag + this.imag * that.real)
 
-    //    require(pipelined >= 0 && pipelined <= 3)
-    // original, directly from algo 6.10
-    //        val E = real - imag
-    //        val Z = that.real * E
-    //        val R = ((that.real - that.imag) * imag + Z).truncated
-    //        val I = ((that.real + that.imag) * real - Z).truncated
+    val pipeline = config.pipeline
 
     implicit class sfixPipeline(sf: SFix) {
       def pipelined(implicit doPipeline: Boolean) = if (doPipeline) RegNext(sf) else sf
@@ -61,26 +80,18 @@ case class ComplexNumber(peak: Int, resolution: Int) extends Bundle {
     val D = A.pipelined * real.pipelined
     val E = B.pipelined * that.real.pipelined
     val F = C.pipelined * imag.pipelined
+    Seq(D, E, F).foreach(_.addAttribute("use_dsp", "yes"))
+    val Seq(dt, et, ft) = Seq(D, E, F).map(value => if (config.resultType == null) value else value.truncated(config.resultType))
     // stage 2
     doPipeline = pipeline > 0
-    val I = D.pipelined - E.pipelined
-    val R = E.pipelined + F.pipelined
-    Seq(A, B, C).foreach(_.addAttribute("use_dsp", "no"))
-    Seq(D, E, F).foreach(_.addAttribute("use_dsp", "yes"))
-    Seq(R, I).foreach(_.addAttribute("use_dsp", "no"))
+    val I = dt.pipelined - et.pipelined
+    val R = et.pipelined + ft.pipelined
+    Seq(I,R).foreach(_.addAttribute("use_dsp", "no")) // or, e would be generated twice and 4 dsps would be consumed
+
     // final
     doPipeline = pipeline > 1
     ComplexNumber(R.pipelined, I.pipelined)
   }
-
-  def truncated(dataType: HardType[SFix]) = {
-    val retReal, retImag = dataType()
-    retReal := real.truncated
-    retImag := imag.truncated
-    ComplexNumber(retReal, retImag)
-  }
-
-//  override def clone() = ComplexNumber(real, imag)
 }
 
 object ComplexNumber {
@@ -109,7 +120,8 @@ object ComplexNumber {
 
 object CN {
   def apply(complex: BComplex, dataType: HardType[SFix]): ComplexNumber = {
-    def toSF(value:Double) = SF(value, dataType().maxExp exp, dataType().minExp exp)
+    def toSF(value: Double) = SF(value, dataType().maxExp exp, dataType().minExp exp)
+
     ComplexNumber(toSF(complex.real), toSF(complex.imag))
   }
 }

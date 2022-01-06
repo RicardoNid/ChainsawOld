@@ -18,7 +18,7 @@ package object FTN {
   val unitType = HardType(SFix(2 exp, -13 exp))
   val unitComplexType = toComplexType(unitType)
   // for ifft calculation
-  val ifftType = HardType(SFix(8 exp, -7 exp))
+  val ifftType = HardType(SFix(7 exp, -8 exp))
   val ifftComplexType = toComplexType(ifftType)
   // for qam symbols and twiddle factors FIXME: use full precision and avoid "Way too big signal"
   val rxUnitType = HardType(SFix(2 exp, -13 exp))

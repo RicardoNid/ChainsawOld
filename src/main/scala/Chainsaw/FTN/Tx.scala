@@ -18,8 +18,6 @@ case class Tx(channelInfo: ChannelInfo)
     }.reverse.asBits()
   }
 
-
-
   def ifftPost(in: Vec[ComplexNumber]) = Vec(in.map(_.real))
 
   // definitions of modules
@@ -31,7 +29,6 @@ case class Tx(channelInfo: ChannelInfo)
   //  val ifft = DSP.FFT.CooleyTukeyBackToBack(512, 128, Seq(4,4,4,2), Seq(4), true, ifftType, unitType)
   val ifft = DSP.FFT.CooleyTukeyHSIFFT(512, Seq(4, 4, 4), Seq(4, 2), ifftType, unitType)
 
-  // FIXME: part of the latency is wrong
   override val dataIn = slave(cloneOf(convenc.dataIn))
   override val dataOut = master Stream Vec(ifftType(), 128)
   override val latency = Seq(convenc, interleave, s2p, qammod, p2s, ifft).map(_.latency).sum

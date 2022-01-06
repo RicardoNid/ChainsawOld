@@ -637,5 +637,6 @@ package object Chainsaw extends RealFactory {
     def to2DArray = toRowMajoredArray.grouped(dm.cols).toArray
   }
 
+  implicit var cmultConfig = ComplexMultConfig() // configuration of complex multiplication
 }
 

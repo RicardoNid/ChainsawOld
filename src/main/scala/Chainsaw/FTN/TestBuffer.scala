@@ -11,12 +11,18 @@ import Chainsaw.dspTest._
 
 case class TestBuffer() extends Component {
 
-  val dataIn = in Bits (768 bits)
-  val counter = CounterFreeRun(16)
+  val dataIn = slave Stream Bits(768 bits)
+  val dataOut = master Stream Bits(768 bits)
 
-  val ram = Mem(cloneOf(dataIn), 16)
-  ram.write(counter.value, dataIn)
+  val clockConfig = ClockDomainConfig(resetKind = SYNC, resetActiveLevel = LOW)
+  val ioClock = ClockDomain.external("io", clockConfig, frequency = FixedFrequency(230.4 MHz))
+  val baseClock = ClockDomain.external("base", clockConfig, frequency = FixedFrequency(288 MHz))
 
+  val dataType = HardType(Bits(768 bits))
+  val asyncFifo = StreamFifoCC(dataType, 128, ioClock, baseClock)
+
+  dataIn >> asyncFifo.io.push
+  asyncFifo.io.pop >> dataOut
 }
 
 object TestBuffer extends App {

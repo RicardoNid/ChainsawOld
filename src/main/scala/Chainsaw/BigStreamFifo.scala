@@ -4,7 +4,8 @@ import breeze.numerics._
 import spinal.core._
 import spinal.lib._
 
-case class BigStreamFifo[T <: Data](dataType: HardType[Vec[T]], depth: Int) extends Component {
+case class BigStreamFifo[T <: Data](dataType: HardType[Vec[T]], depth: Int)
+  extends Component {
 
   val io = new Bundle {
     val push = slave Stream dataType

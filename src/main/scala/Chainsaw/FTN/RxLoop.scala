@@ -20,7 +20,9 @@ class RxLoop(stage: Seq[Int], actualParallelismOnVit: Int = 512) extends Compone
   val convencs = if (stage.contains(2)) Convenc512FTN() else null
   val qammod = if (stage.contains(3)) comm.qam.AdaptiveQammod(bitAlloc, powAlloc, unitType) else null
   val interleave = if (stage.contains(3)) DSP.interleave.AdaptiveMatIntrlv(256, 64, 1024, 1024, HardType(Bool())) else null
+  cmultConfig = ComplexMultConfig(true, 3, ifftType)
   val ifft = if (stage.contains(4)) DSP.FFT.CooleyTukeyHSIFFT(512, Seq(4, 4, 4, 4), Seq(2), ifftType, rxUnitType) else null
+  cmultConfig = ComplexMultConfig(true, 3, fftType)
   val fft = if (stage.contains(4)) DSP.FFT.CooleyTukeyRVFFT(512, Seq(4, 4, 4, 4), Seq(2), fftType, rxUnitType) else null
 
   // transformations

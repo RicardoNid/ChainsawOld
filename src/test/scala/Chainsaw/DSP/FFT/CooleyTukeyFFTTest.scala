@@ -11,7 +11,6 @@ import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 
-
 class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
 
   /** the fully-parameterized fft/ifft testbench

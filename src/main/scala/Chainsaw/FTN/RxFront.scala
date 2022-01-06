@@ -8,6 +8,7 @@ import spinal.lib._
 case class RxFront()
   extends Component with DSPTestable[Vec[SFix], Vec[ComplexNumber]] {
 
+  cmultConfig = ComplexMultConfig(true, 3, fftType)
   val fft = DSP.FFT.CooleyTukeyRVFFT(512, Seq(4, 4, 4), Seq(4, 2), fftType, rxUnitType)
   val s2p = DSP.S2P(128, 512, fftComplexType)
   val fifo = BigStreamFifo(equalizerComplexVecType, 18)

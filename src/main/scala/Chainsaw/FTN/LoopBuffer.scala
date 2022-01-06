@@ -28,10 +28,11 @@ case class LoopBuffer[T <: Data]
   val dataHead = dataType()
   val dataBuffer = BigMem(dataType, loopLength)
   dataBuffer.write(loopCounter, dataHead)
-  val dataTail = dataBuffer.readAsync(loopCounter.valueNext)
+  val dataTail = dataBuffer.readSync(loopCounter.valueNext)
 
   val iterationHead = iterationType()
   val iterationBuffer = Mem(iterationType, loopLength)
+  iterationBuffer.addAttribute("ram_style", "block")
   iterationBuffer.init(Seq.fill(loopLength)(U(0, iterationWidth bits)))
   iterationBuffer.write(loopCounter, iterationHead)
   val iterationTail = iterationBuffer.readAsync(loopCounter.valueNext)
@@ -45,7 +46,7 @@ case class LoopBuffer[T <: Data]
   val doNothing = !(getNew || getOld)
 
   // datapath
-  dataHead := Mux(getNew, dataIn.payload, RegNext(dataTail))
+  dataHead := Mux(getNew, dataIn.payload, dataTail)
 
   when(getNew)(iterationHead := U(1, iterationWidth bits))
     .elsewhen(getOld)(iterationHead := Mux(RegNext(full), U(0, iterationWidth bits), RegNext(iterationTail) + U(1, iterationWidth bits)))
@@ -53,7 +54,7 @@ case class LoopBuffer[T <: Data]
 
   // interface
   dataIn.ready := getNew
-  dataOut.payload := RegNext(dataTail)
+  dataOut.payload := dataTail
   dataOut.valid := RegNextWhen(True, frameCounter.willOverflow && start && empty, False)
 
   val iterLast = out(RegNextWhen(full, frameCounter.willOverflow, False)) // true "valid"

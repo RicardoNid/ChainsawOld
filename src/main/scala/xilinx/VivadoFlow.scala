@@ -163,7 +163,7 @@ class VivadoFlow[T <: Component](
     writeFile("doit.tcl", getScript(vivadoConfig, spinalReport.rtlSourcesPaths))
     writeFile("doit.xdc", getXdc)
 
-    doCmd(s"$vivadoPath/vivado -nojournal -log doit.log -mode batch -source doit.tcl", workspacePath)
+    doCmd(s"$vivadoPath/vivado -stack 2000 -nojournal -log doit.log -mode batch -source doit.tcl", workspacePath)
 
 
     new VivadoReport(workspacePath, xilinxDeviceFamily, frequencyTarget)
