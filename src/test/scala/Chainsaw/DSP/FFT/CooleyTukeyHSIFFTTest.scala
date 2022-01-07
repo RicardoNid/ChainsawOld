@@ -20,14 +20,18 @@ class CooleyTukeyHSIFFTTest extends AnyFlatSpec {
     // generate testcases according to requirement
     val normalizedData = (0 until testSize).map(_ => ChainsawRand.nextComplexDV(testLength))
     val reals: Seq[DenseVector[BComplex]] = normalizedData.map(vec => vec.map(complex => BComplex(complex.real, 0.0)))
-    val testCases: Seq[DenseVector[BComplex]] = reals.map(Dft.dft(_))
+    val testCases: Seq[DenseVector[BComplex]] = reals.map { real =>
+      val ret = Dft.dft(real)
+      ret(0) = BComplex(0.0, 0.0) // fot FTN
+      ret(testLength / 2) = BComplex(0.0, 0.0)
+      ret
+    }
     val goldens: Seq[DenseVector[BComplex]] = testCases.map(Dft.idft(_)) // in fact, goldens = reals *:* N
 
     doFlowPeekPokeTest(
       name = "testHSIFFT", dut = CooleyTukeyHSIFFT(testLength, factors1, factors2, dataType, coeffType),
       testCases = testCases.map(_.toArray.toSeq.grouped(factors1.product * 2)).flatten,
       golden = goldens.map(_.toArray.toSeq.map(_.real).grouped(factors1.product * 2)).flatten,
-      initLength = 0,
       testMetric = TestMetric.APPROXIMATE, epsilon = 1E-2
     )
   }

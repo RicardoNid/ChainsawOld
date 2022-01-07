@@ -7,7 +7,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class RxTest extends AnyFlatSpec {
 
-  val testSize = 128 // number of frames used for test
+  val testSize = 1 // number of frames used for test
   val parallelismForTest = 512
   require(parallelismForTest % 4 == 0)
 
@@ -20,6 +20,8 @@ class RxTest extends AnyFlatSpec {
   assert(realSymbolLength == 18 * 512)
   val frameLength = dataWithPreamble.length
   assert(frameLength == 18 * 4 * testSize)
+
+  logger.info(s"max & min: ${dataWithPreamble.flatten.max}, ${dataWithPreamble.flatten.min}")
 
   def boolSeq2BigInt(in: Seq[Int]) = BigInt(in.mkString(""), 2)
 
@@ -36,7 +38,13 @@ class RxTest extends AnyFlatSpec {
   val iter6 = loadFTN1d[Double]("iter6").toSeq.grouped(512).toSeq // after ifft
   val iter7 = loadFTN1d[MComplex]("iter7").map(_.toBComplex).toSeq.grouped(256).toSeq // after fft
 
+  logger.info(s"data before ifft, max: ${iter5.flatten.map(_.real).max max iter5.flatten.map(_.imag).max}")
+  logger.info(s"data before fft, max: ${iter6.flatten.max}")
+  logger.info(s"data after fft, max: ${iter7.flatten.map(_.real).max max iter7.flatten.map(_.imag).max}")
+
   Seq(iterIn, iter0, iter1, iter2, iter3, iter4, iter5, iter6, iter7).foreach(seq => assert(seq.length == 16))
+
+  "Data" should "be loaded" in {}
 
   "RxFront" should "show the data" in {
     println(dataWithPreamble.head.mkString(" "))
@@ -101,8 +109,7 @@ class RxTest extends AnyFlatSpec {
     doFlowPeekPokeTest(
       dut = new Rx4, name = "testRx4",
       testCases = data, golden = goldens,
-      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-1,
-      verbose = false
+      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-1
     )
   }
 
@@ -141,7 +148,7 @@ class RxTest extends AnyFlatSpec {
   it should "work with iteration on last round" in {
     val data = dataWithPreamble
     val goldens = (0 until testSize).flatMap(_ => iter2)
-//      .zipWithIndex.map { case (big, i) => if (i < parallelismForTest / 4) big else BigInt(0) }
+    //      .zipWithIndex.map { case (big, i) => if (i < parallelismForTest / 4) big else BigInt(0) }
     println(data.length)
     doFlowPeekPokeTest(
       dut = Rx(parallelismForTest), name = "testRxWithIteration",

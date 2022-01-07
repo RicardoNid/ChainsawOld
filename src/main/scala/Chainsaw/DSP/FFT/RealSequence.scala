@@ -88,7 +88,7 @@ case class HSPreprocess(N: Int, dataType: HardType[SFix])
 
   dataIn.ready := True
   dataOut.valid := STEP1 && dataIn.fire
-  dataOut.payload.zip((dataRegs).zip(dataIn.payload))
+  dataOut.payload.zip(dataRegs.zip(dataIn.payload))
     .foreach { case (ret, (a, b)) => ret := a + b.multiplyI }
 }
 

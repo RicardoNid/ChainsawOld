@@ -18,7 +18,8 @@ import Chainsaw.dspTest._
  */
 // TODO: different parallelism
 case class CooleyTukeyRVFFT(N: Int, factors1: Seq[Int], factors2: Seq[Int],
-                            dataType: HardType[SFix], coeffType: HardType[SFix])
+                            dataType: HardType[SFix], coeffType: HardType[SFix],
+                            shifts1:Seq[Int] = null, shifts2:Seq[Int] = null)
   extends Component with DSPTestable[Vec[SFix], Vec[ComplexNumber]] {
 
   val pF = factors1.product * 2
@@ -27,13 +28,18 @@ case class CooleyTukeyRVFFT(N: Int, factors1: Seq[Int], factors2: Seq[Int],
 
   val complexType = toComplexType(dataType)
   override val dataIn = slave Stream Vec(dataType(), pF)
-  override val dataOut = master Stream Vec(complexType(), pF)
 
   val pre = RVPreprocess(N, dataType)
   val p2s0 = P2S(N, pF / 2, complexType)
-  val core = CooleyTukeyBackToBack(N, pF / 2, factors1, factors2, false, dataType, coeffType)
-  val s2p1 = S2P(pF / 2, N, complexType)
-  val post = RVPostprocess(N, dataType)
+  val core = CooleyTukeyBackToBack(N, pF / 2, factors1, factors2, false, dataType, coeffType, shifts1, shifts2)
+
+  val retDataType = core.retDataType
+  val retComplexDataType = toComplexType(retDataType)
+
+  val s2p1 = S2P(pF / 2, N, retComplexDataType)
+  val post = RVPostprocess(N, retDataType)
+
+  override val dataOut = master Stream Vec(retComplexDataType, pF)
 
   var tempLatency = 0
   if (pF == N) {
@@ -46,8 +52,8 @@ case class CooleyTukeyRVFFT(N: Int, factors1: Seq[Int], factors2: Seq[Int],
     tempLatency = Seq(p2s0, pre, core, s2p1, post).map(_.latency).sum
   } else {
     val s2p0 = S2P(pF, N, dataType)
-    val p2s1 = P2S(N, pF, complexType)
-    val fifo = BigStreamFifo(Vec(complexType(), N), 2)
+    val p2s1 = P2S(N, pF, retComplexDataType)
+    val fifo = BigStreamFifo(Vec(retComplexDataType, N), 2)
 
     dataIn >> s2p0.dataIn
     s2p0.dataOut >> pre.dataIn

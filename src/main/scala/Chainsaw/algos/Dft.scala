@@ -99,4 +99,8 @@ object Dft {
   def r2rvfft(data: DenseVector[Double], inverse: Boolean) {
 
   }
+
+  @fastAlgo("genericDft")
+  def genericCtFft[T](data: DenseVector[T], omega: T, inverse: Boolean = false, DIT: Boolean = false, factors:Seq[Int])
+                     (implicit semiring: Semiring[T], classTag: ClassTag[T]): DenseVector[T] = ???
 }

@@ -31,7 +31,7 @@ class RxSynthTest extends AnyFlatSpec {
 
   it should "synth for all components in RxFront" in {
     VivadoSynthForTiming(EqualizerFTN(preambleSymbols), name = "equalizerRxFront")
-    VivadoSynthForTiming(DSP.FFT.CooleyTukeyRVFFT(512, Seq(4, 4, 4), Seq(4, 2), fftType, rxUnitType), name = "fftRxFront")
+    VivadoSynthForTiming(DSP.FFT.CooleyTukeyRVFFT(512, Seq(4, 4, 4), Seq(4, 2), fftType, unitType), name = "fftRxFront")
   }
 
   it should "synth for sub modules of vitdec" in {
@@ -43,10 +43,8 @@ class RxSynthTest extends AnyFlatSpec {
   }
 
   it should "synth for sub modules of ifft/fft" in {
-    cmultConfig = ComplexMultConfig(true, 3, ifftType)
-    VivadoSynthForTiming(DSP.FFT.CooleyTukeyHSIFFT(512, Seq(4, 4, 4, 4), Seq(2), ifftType, rxUnitType), "fftRx")
-    cmultConfig = ComplexMultConfig(true, 3, fftType)
-    VivadoSynthForTiming(DSP.FFT.CooleyTukeyRVFFT(512, Seq(4, 4, 4, 4), Seq(2), fftType, rxUnitType), "ifftRx")
+    VivadoSynthForTiming(DSP.FFT.CooleyTukeyHSIFFT(512, Seq(4, 4, 4, 4), Seq(2), ifftType, unitType), "fftRx")
+    VivadoSynthForTiming(DSP.FFT.CooleyTukeyRVFFT(512, Seq(4, 4, 4, 4), Seq(2), fftType, unitType), "ifftRx")
 
     import DSP.FFT._
     val N = 512
@@ -54,14 +52,12 @@ class RxSynthTest extends AnyFlatSpec {
     val factors2 = Seq(2)
     val pF = factors1.product * 2
 
-    cmultConfig = ComplexMultConfig(true, 3, ifftType)
     VivadoSynthForTiming(HSPreprocess(N, ifftType), "ifftRxPre")
-    VivadoSynthForTiming(CooleyTukeyBackToBack(N, pF / 2, factors1, factors2, true, ifftType, rxUnitType), "ifftRxCore")
+    VivadoSynthForTiming(CooleyTukeyBackToBack(N, pF / 2, factors1, factors2, true, ifftType, unitType), "ifftRxCore")
     VivadoSynthForTiming(HSPostprocess(N, ifftType), "ifftRxPost")
 
-    cmultConfig = ComplexMultConfig(true, 3, fftType)
     VivadoSynthForTiming(RVPreprocess(N, fftType), "fftRxPre")
-    VivadoSynthForTiming(CooleyTukeyBackToBack(N, pF / 2, factors1, factors2, false, fftType, rxUnitType), "fftRxCore")
+    VivadoSynthForTiming(CooleyTukeyBackToBack(N, pF / 2, factors1, factors2, false, fftType, unitType), "fftRxCore")
     VivadoSynthForTiming(RVPostprocess(N, fftType), "fftRxPost")
   }
 
@@ -70,7 +66,7 @@ class RxSynthTest extends AnyFlatSpec {
   "RxFull" should "synth successfully" in VivadoSynth(RxFull(512), "RxFull")
 
   it should "synth for its memories" in {
-    val fdeType = HardType(Vec(rxUnitComplexType, 256))
+    val fdeType = HardType(Vec(unitComplexType, 256))
     val loopLength = 608
     val frameLength = 16
     val iteration = 5

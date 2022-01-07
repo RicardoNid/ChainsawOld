@@ -21,7 +21,8 @@ case class ComplexMult()
 }
 
 object ComplexMult extends App {
+  cmultConfig = ComplexMultConfig(true, 3, ProdWidthMode.PROD)
   VivadoSynthForTiming(ComplexMult(), "complexMultNotTruncated") // 4 dsp
-  cmultConfig = ComplexMultConfig(true, 3, ComplexNumber(7, -8).realType)
+  cmultConfig = ComplexMultConfig(true, 3, ProdWidthMode.SAME)
   VivadoSynthForTiming(ComplexMult(), "complexMultTruncated") // 3 dsp
 }

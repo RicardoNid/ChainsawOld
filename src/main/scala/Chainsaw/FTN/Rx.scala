@@ -10,7 +10,7 @@ case class Rx(actual: Int)
     with DSPTestable[Vec[SFix], Bits] {
 
   val dataInType = HardType(Vec(fftType, 128))
-  val fdeType = HardType(Vec(rxUnitComplexType, 256))
+  val fdeType = HardType(Vec(unitComplexType, 256))
   val loopLength = 608
   val frameLength = 16
   val iteration = 5
@@ -47,7 +47,7 @@ case class RxFull(actual: Int)
     with DSPTestable[Vec[SFix], Bits] {
 
   val dataInType = HardType(Vec(fftType, 128))
-  val fdeType = HardType(Vec(rxUnitComplexType, 256))
+  val fdeType = HardType(Vec(unitComplexType, 256))
   val loopLength = 608
   val frameLength = 16
   val iteration = 5

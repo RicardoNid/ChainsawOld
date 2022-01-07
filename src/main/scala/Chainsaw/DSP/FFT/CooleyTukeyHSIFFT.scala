@@ -7,7 +7,8 @@ import spinal.core._
 import spinal.lib._
 
 case class CooleyTukeyHSIFFT(N: Int, factors1: Seq[Int], factors2: Seq[Int],
-                             dataType: HardType[SFix], coeffType: HardType[SFix])
+                             dataType: HardType[SFix], coeffType: HardType[SFix],
+                             shifts1: Seq[Int] = null, shifts2: Seq[Int] = null)
   extends Component with DSPTestable[Vec[ComplexNumber], Vec[SFix]] {
 
   val pF = factors1.product * 2
@@ -16,13 +17,17 @@ case class CooleyTukeyHSIFFT(N: Int, factors1: Seq[Int], factors2: Seq[Int],
 
   val complexType = toComplexType(dataType)
   override val dataIn = slave Stream Vec(complexType(), pF)
-  override val dataOut = master Stream Vec(dataType(), pF)
 
   val pre = HSPreprocess(N, dataType)
   val p2s0 = P2S(N, pF / 2, complexType)
-  val core = CooleyTukeyBackToBack(N, pF / 2, factors1, factors2, true, dataType, coeffType)
-  val s2p1 = S2P(pF / 2, N, complexType)
-  val post = HSPostprocess(N, dataType)
+  val core = CooleyTukeyBackToBack(N, pF / 2, factors1, factors2, true, dataType, coeffType, shifts1, shifts2)
+  val retDataType = core.retDataType
+  val retComplexDataType = toComplexType(retDataType)
+
+  val s2p1 = S2P(pF / 2, N, retComplexDataType)
+  val post = HSPostprocess(N, retDataType)
+
+  override val dataOut = master Stream Vec(retDataType, pF)
 
   var tempLatency = 0
   if (fold == 1) {
@@ -36,8 +41,8 @@ case class CooleyTukeyHSIFFT(N: Int, factors1: Seq[Int], factors2: Seq[Int],
   }
   else {
     val s2p0 = S2P(pF, N, complexType)
-    val p2s1 = P2S(N, pF, dataType)
-    val fifo = BigStreamFifo(Vec(dataType(), N), 2)
+    val p2s1 = P2S(N, pF, retDataType)
+    val fifo = BigStreamFifo(Vec(retDataType, N), 2)
 
     dataIn >> s2p0.dataIn
     s2p0.dataOut >> pre.dataIn

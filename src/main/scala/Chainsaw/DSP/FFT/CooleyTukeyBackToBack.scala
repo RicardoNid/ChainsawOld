@@ -13,22 +13,29 @@ case class CooleyTukeyBackToBack(
                                   N: Int = 256, pF: Int = 32,
                                   factors1: Seq[Int] = Seq(4, 4, 2), factors2: Seq[Int] = Seq(4, 2),
                                   inverse: Boolean = false,
-                                  dataType: HardType[SFix], coeffType: HardType[SFix])
+                                  dataType: HardType[SFix], coeffType: HardType[SFix],
+                                  shifts1: Seq[Int] = null, shifts2: Seq[Int] = null)
   extends Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
 
   val complexDataType = toComplexType(dataType)
   override val dataIn = slave Stream Vec(complexDataType, pF)
-  override val dataOut = master Stream Vec(complexDataType, pF)
 
   val N1 = pF
   val N2 = N / pF
 
   // components
-  val core0 = CooleyTukeyFFT(N1, factors1, inverse, dataType, coeffType)
-  val core1s = Seq.fill(N1 / N2)(CooleyTukeyFFT(N2, factors2, inverse, dataType, coeffType))
+  val core0 = CooleyTukeyFFT(N1, factors1, inverse, dataType, coeffType, shifts1)
+  val interDataType = core0.retDataType
+  val interComplexDataType = toComplexType(interDataType)
+  val core1s = Seq.fill(N1 / N2)(CooleyTukeyFFT(N2, factors2, inverse, interDataType, coeffType, shifts2))
+  val retDataType = core1s.head.retDataType
+  val retComplexDataType = toComplexType(retDataType)
+
   val inter0 = DSP.interleave.AdaptiveMatIntrlv(N1, N2, pF, pF, complexDataType)
-  val inter1 = DSP.interleave.AdaptiveMatIntrlv(N2, N1, pF, pF, complexDataType)
-  val inter2 = DSP.interleave.AdaptiveMatIntrlv(N1, N2, pF, pF, complexDataType)
+  val inter1 = DSP.interleave.AdaptiveMatIntrlv(N2, N1, pF, pF, interComplexDataType)
+  val inter2 = DSP.interleave.AdaptiveMatIntrlv(N1, N2, pF, pF, retComplexDataType)
+
+  override val dataOut = master Stream Vec(retComplexDataType, pF)
 
   override val latency = Seq(inter0, inter1, inter2, core0, core1s.head).map(_.latency).sum + cmultConfig.pipeline
   logger.info(s"implementing a $N-point folded ${if (inverse) "ifft" else "fft"} module at parallel factor = $pF, latency = $latency")
@@ -47,7 +54,9 @@ case class CooleyTukeyBackToBack(
 
   // core1 -> multiply twiddle factor -> inter1
   inter1.dataIn.valid := Delay(core0.dataOut.valid, cmultConfig.pipeline, init = False)
-  val multiplied: Vec[ComplexNumber] = Vec(core0.dataOut.payload.zip(currentFactors).map { case (data, coeff) => (data * coeff).truncated(dataType) })
+  val multiplied: Vec[ComplexNumber] = Vec(core0.dataOut.payload
+    .zip(currentFactors)
+    .map { case (data, coeff) => (data * coeff).truncated(interDataType) })
   inter1.dataIn.payload := multiplied
 
   // inter1 -> core2s

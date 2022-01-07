@@ -220,22 +220,26 @@ package object dspTest {
                 + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}, sum = ${innerGolden(i).asInstanceOf[Seq[BComplex]].map(_.real).sum * 2}"
                 + s"\ndiff  : ${
                 dutResult(i).asInstanceOf[Seq[BComplex]].zip(innerGolden(i).asInstanceOf[Seq[BComplex]])
-                  .map { case (a, b) => (a.real - b.real).abs max (a.imag - b.imag).abs }
-                  .map(real => if (real > epsilon) real else 0.0)
-                  .map(_.toString.take(16).padTo(16, ' ')).mkString(" ")
+                  .map { case (a, b) =>
+                    val err = (a.real - b.real).abs max (a.imag - b.imag).abs
+                    if (err > epsilon) err.formatted("%16.4f") else " " * 16
+                  }.mkString(" ")
               }"
               ).mkString("\n")
               case _: Double => dutResult.zip(golden).indices.map(i => s"testing result $i:"
-                + s"\nyours : ${dutResult(i).asInstanceOf[Seq[Double]].map(_.formatted("%f8")).mkString(" ")}"
-                + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[Double]].map(_.formatted("%f8")).mkString(" ")}"
+                + s"\nyours : ${dutResult(i).asInstanceOf[Seq[Double]].map(_.formatted("%8.4f")).mkString(" ")}"
+                + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[Double]].map(_.formatted("%8.4f")).mkString(" ")}"
                 + s"\ndiff  : ${
                 dutResult(i).asInstanceOf[Seq[Double]].zip(innerGolden(i).asInstanceOf[Seq[Double]])
-                  .map { case (a, b) => if((a - b).abs > epsilon) (a-b).abs.formatted("%f8") else "        " }.mkString(" ")
+                  .map { case (a, b) => if ((a - b).abs > epsilon) (a - b).abs.formatted("%8.4f") else "        " }.mkString(" ")
               }").mkString("\n")
               case _: BigInt =>
                 dutResult.zip(golden).indices.map(i => s"testing result $i:" +
-                  s"\nyours : ${dutResult(i).asInstanceOf[Seq[BigInt]].map(_.toString(16)).mkString(" ")}" +
-                  s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[BigInt]].map(_.toString(16)).mkString(" ")}").mkString("\n")
+                  s"\nyours : ${dutResult(i).asInstanceOf[Seq[BigInt]].map(_.toString(16).padToLeft(4, ' ')).mkString(" ")}" +
+                  s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[BigInt]].map(_.toString(16).padToLeft(4, ' ')).mkString(" ")}" + s"\ndiff  : ${
+                  dutResult(i).asInstanceOf[Seq[BigInt]].zip(innerGolden(i).asInstanceOf[Seq[BigInt]])
+                    .map { case (a, b) => if ((a - b).abs > epsilon.toInt) (a - b).abs.formatted("%4d") else "    " }.mkString(" ")
+                }").mkString("\n")
             }
 
             case _ =>
@@ -271,6 +275,9 @@ package object dspTest {
                 case _: Double => dutResult.asInstanceOf[ArrayBuffer[Seq[Double]]].flatten
                   .zip(innerGolden.asInstanceOf[Seq[Seq[Double]]].flatten)
                   .forall { case (a, b) => (a - b).abs < epsilon }
+                case _: BigInt => dutResult.asInstanceOf[ArrayBuffer[Seq[BigInt]]].flatten
+                  .zip(innerGolden.asInstanceOf[Seq[Seq[BigInt]]].flatten)
+                  .forall { case (a, b) => (a - b).abs <= epsilon.toInt }
               }
               case _: BComplex => dutResult.asInstanceOf[ArrayBuffer[BComplex]]
                 .zip(innerGolden.asInstanceOf[Seq[BComplex]])
@@ -278,6 +285,9 @@ package object dspTest {
               case _: Double => dutResult.asInstanceOf[ArrayBuffer[Double]]
                 .zip(innerGolden.asInstanceOf[Seq[Double]])
                 .forall { case (a, b) => (a - b).abs < epsilon }
+              case _: BigInt => dutResult.asInstanceOf[ArrayBuffer[BigInt]]
+                .zip(innerGolden.asInstanceOf[Seq[BigInt]])
+                .forall { case (a, b) => (a - b).abs <=epsilon.toInt}
               case _ => throw new IllegalArgumentException(s"'approximation' is not defined for ${dutResult.head.getClass}")
             }
           }
