@@ -17,21 +17,20 @@ import Chainsaw.dspTest._
 /** implement real-valued fft by doubling
  */
 // TODO: different parallelism
-case class CooleyTukeyRVFFT(N: Int, factors1: Seq[Int], factors2: Seq[Int],
+case class CooleyTukeyRVFFT(N: Int, pF: Int,
                             dataType: HardType[SFix], coeffType: HardType[SFix],
-                            shifts1:Seq[Int] = null, shifts2:Seq[Int] = null)
+                            factors: Seq[Int], shifts: Seq[Int] = null)
   extends Component with DSPTestable[Vec[SFix], Vec[ComplexNumber]] {
 
-  val pF = factors1.product * 2
-  val fold = factors2.product / 2
-  require(N % pF == 0)
+  val fold = N / pF
+  logger.info(s"implementing a $N-point real valued fft, folded by $fold")
 
   val complexType = toComplexType(dataType)
   override val dataIn = slave Stream Vec(dataType(), pF)
 
   val pre = RVPreprocess(N, dataType)
   val p2s0 = P2S(N, pF / 2, complexType)
-  val core = CooleyTukeyBackToBack(N, pF / 2, factors1, factors2, false, dataType, coeffType, shifts1, shifts2)
+  val core = AdaptiveCooleyTukeyFFT(N, pF / 2, false, dataType, coeffType, factors, shifts)
 
   val retDataType = core.retDataType
   val retComplexDataType = toComplexType(retDataType)
@@ -42,7 +41,7 @@ case class CooleyTukeyRVFFT(N: Int, factors1: Seq[Int], factors2: Seq[Int],
   override val dataOut = master Stream Vec(retComplexDataType, pF)
 
   var tempLatency = 0
-  if (pF == N) {
+  if (fold == 1) {
     dataIn >> pre.dataIn
     pre.dataOut >> p2s0.dataIn
     p2s0.dataOut >> core.dataIn
@@ -68,5 +67,4 @@ case class CooleyTukeyRVFFT(N: Int, factors1: Seq[Int], factors2: Seq[Int],
   }
 
   override val latency = tempLatency
-  logger.info(s"implementing a $N-point real valued fft, folded by $fold, latency = $latency")
 }

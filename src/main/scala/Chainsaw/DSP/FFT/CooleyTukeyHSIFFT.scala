@@ -6,21 +6,22 @@ import Chainsaw.dspTest._
 import spinal.core._
 import spinal.lib._
 
-case class CooleyTukeyHSIFFT(N: Int, factors1: Seq[Int], factors2: Seq[Int],
+case class CooleyTukeyHSIFFT(N: Int, pF: Int,
                              dataType: HardType[SFix], coeffType: HardType[SFix],
-                             shifts1: Seq[Int] = null, shifts2: Seq[Int] = null)
+                             factors: Seq[Int], shifts: Seq[Int] = null)
   extends Component with DSPTestable[Vec[ComplexNumber], Vec[SFix]] {
 
-  val pF = factors1.product * 2
-  val fold = factors2.product / 2
-  require(N % pF == 0)
+  val fold = N / pF
+  logger.info(s"implementing a $N-point hermitian symmetric ifft, folded by $fold")
 
   val complexType = toComplexType(dataType)
   override val dataIn = slave Stream Vec(complexType(), pF)
 
+  // components
   val pre = HSPreprocess(N, dataType)
   val p2s0 = P2S(N, pF / 2, complexType)
-  val core = CooleyTukeyBackToBack(N, pF / 2, factors1, factors2, true, dataType, coeffType, shifts1, shifts2)
+  val core = AdaptiveCooleyTukeyFFT(N, pF / 2, true, dataType, coeffType, factors, shifts)
+
   val retDataType = core.retDataType
   val retComplexDataType = toComplexType(retDataType)
 
@@ -57,5 +58,4 @@ case class CooleyTukeyHSIFFT(N: Int, factors1: Seq[Int], factors2: Seq[Int],
   }
 
   override val latency = tempLatency
-  logger.info(s"implementing a $N-point hermitian symmetric ifft, folded by $fold, latency = $latency")
 }

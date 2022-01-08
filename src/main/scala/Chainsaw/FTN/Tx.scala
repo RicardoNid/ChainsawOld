@@ -22,15 +22,14 @@ class Tx(channelInfo: ChannelInfo)
   val convenc = Convenc128FTN()
   val interleave = DSP.interleave.AdaptiveMatIntrlv(256, 64, 256, 256, HardType(Bool()))
   val s2p = DSP.S2P(256, 1024, HardType(Bool()))
-  val qammod = comm.qam.AdaptiveQammod(bitAlloc, powAlloc, unitType)
-  val p2s = DSP.P2S(512, 128, unitComplexType)
+  val qammod = comm.qam.AdaptiveQammod(bitAlloc, powAlloc, symbolType)
+  val p2s = DSP.P2S(512, 128, symbolComplexType)
   //  cmultConfig = ComplexMultConfig(true, 3, ifftType)
-  val (shifts1, shifts2) = ifftShifts.splitAt(3)
+
   val ifft = DSP.FFT.CooleyTukeyHSIFFT(
-    N = 512,
-    factors1 = Seq(4, 4, 4), factors2 = Seq(4, 2),
-    dataType = unitType, coeffType = unitType,
-    shifts1 = shifts1, shifts2 = shifts2)
+    N = 512, pF = 128,
+    dataType = symbolType, coeffType = symbolType,
+    factors = Seq(4, 4, 4, 2), shifts = ifftShifts)
 
   // connecting modules and transformations
   convenc.dataOut.t(bits2bools) >> interleave.dataIn
@@ -71,7 +70,7 @@ case class Tx1(channelInfo: ChannelInfo)
   extends Tx(channelInfo) with DSPTestable[Bits, Vec[ComplexNumber]] {
 
   override val dataIn = slave(cloneOf(convenc.dataIn))
-  override val dataOut = master Stream Vec(unitComplexType, 256)
+  override val dataOut = master Stream Vec(symbolComplexType, 256)
   override val latency = Seq(convenc, interleave, s2p, qammod).map(_.latency).sum
 
   dataIn >> convenc.dataIn

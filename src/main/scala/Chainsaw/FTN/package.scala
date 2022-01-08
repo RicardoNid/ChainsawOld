@@ -17,30 +17,30 @@ package object FTN {
   // for qam symbols and twiddle factors
   // for qam symbols and twiddle factors FIXME: use full precision and avoid "Way too big signal"
 
-  val symbolWidth = 27
-  val unitPeak = 2
-  val ifftPeak = 7
-  val fftPeak = 11
+  val ADDAType = HardType(SInt(6 bits))
+  val coeffType = HardType(SFix(1 exp, -15 exp))
 
-  val unitType = HardType(SFix(unitPeak exp, -(symbolWidth - 1 - unitPeak) exp))
-  val unitComplexType = toComplexType(unitType)
-  // for ifft calculation
-  val ifftType = HardType(SFix(ifftPeak exp, -(symbolWidth - 1 - ifftPeak) exp))
-  val ifftComplexType = toComplexType(ifftType)
-  val ifftShifts = Seq(2, 1, 1, 1, 0)
-  // for fft calculation
-  val fftType = HardType(SFix(fftPeak exp, -(symbolWidth - 1 - fftPeak) exp))
-  val fftComplexType = toComplexType(fftType)
-  val fftShifts = Seq(2, 1, 1, 0, 0)
+  // types of symbols and fft/ifft are closely connected
+  val symbolWidth = 12
+
+  def getType(peak: Int) = HardType(SFix(peak exp, -(symbolWidth - 1 - peak) exp))
+
+  val Seq(symbolPeak, ifftPeak, fftPeak) = Seq(2, 7, 11)
+  val Seq(symbolType, ifftType, fftType) = Seq(symbolPeak, ifftPeak, fftPeak).map(getType)
+  val Seq(symbolComplexType, ifftComplexType, fftComplexType) = Seq(symbolType, ifftType, fftType).map(toComplexType)
+
+  // shifts on fft/ifft calculation stages
+  val ifftShifts = Seq(2, 2, 1, 0, 0)
+  val fftShifts = Seq(2, 2, 0, 0, 0)
 
   // for equalizer computation
-  val equalizerType = HardType(SFix(6 exp, -11 exp))
+  val equalizerType = HardType(SFix(6 exp, -11 exp)) // 6 for sum in smoother
   val equalizerComplexType = toComplexType(equalizerType)
   val equalizerWidth = 256
   val equalizerVecType = HardType(Vec(equalizerType(), equalizerWidth))
   val equalizerComplexVecType = HardType(Vec(ComplexNumber(equalizerType), equalizerWidth))
 
-  def complexZero = unitComplexType().getZero
+  def complexZero = symbolComplexType().getZero
 
   def rxComplexZero = fftComplexType().getZero
 
@@ -59,18 +59,6 @@ package object FTN {
 
   // loading data for test
   val preambleSymbols = loadFTN1d[Double]("PreambleMappedSymbols").map(_.toInt)
-
-  // data for RxFront
-  val rxModulated = loadFTN1d[Double]("rxModulated").map(_ * 512.0)
-  val rxMapped = loadFTN1d[MComplex]("rxMapped").map(_.toBComplex)
-  val rxEqualized = loadFTN1d[MComplex]("rxEqualized").map(_.toBComplex)
-
-  val rxModulateGolden: Seq[Seq[Double]] = {
-    val (preamble, data) = rxModulated.splitAt(1024)
-    preamble.grouped(512).map(_.toSeq).toSeq ++ data.grouped(450).map(_.toSeq.padTo(512, 0.0)).toSeq
-  }
-  val rxMappedGolden: Seq[Seq[BComplex]] = rxMapped.grouped(256).map(_.toSeq).toSeq
-  val rxEqualizedGolden: Seq[Seq[BComplex]] = rxEqualized.grouped(256).map(_.toSeq).toSeq
 
   val matlabTrellis = MatlabRefs.poly2trellis(7, Array(171, 133))
   val trellis = Trellis.fromMatlab(matlabTrellis)

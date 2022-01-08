@@ -1,5 +1,6 @@
 package Chainsaw.comm.qam
 
+import Chainsaw.FTN.loadFTN1d
 import Chainsaw._
 import Chainsaw.dspTest._
 import breeze.linalg._
@@ -11,11 +12,17 @@ class AdaptiveQamdemodTest extends AnyFlatSpec {
 
   "adaptiveQamdemod" should "work" in {
 
-    val symbolType = FTN.unitComplexType
+    val symbolType = FTN.symbolComplexType
     val bitAlloc = FTN.channelInfo.bitAlloc
     val powAlloc = FTN.channelInfo.powAlloc
 
-    val testCases: Seq[Seq[BComplex]] = FTN.rxEqualizedGolden
+    val rxModulated = loadFTN1d[Double]("rxModulated").map(_ * 512.0)
+    val rxModulateGolden: Seq[Seq[Double]] = {
+      val (preamble, data) = rxModulated.splitAt(1024)
+      preamble.grouped(512).map(_.toSeq).toSeq ++ data.grouped(450).map(_.toSeq.padTo(512, 0.0)).toSeq
+    }
+
+    val testCases: Seq[Seq[BComplex]] = rxModulateGolden.map(_.map(BComplex(_, 0.0)))
     val goldens = testCases
       .map(vec => vec.zip(bitAlloc.zip(powAlloc))
         .map { case (complex, (bit, pow)) =>

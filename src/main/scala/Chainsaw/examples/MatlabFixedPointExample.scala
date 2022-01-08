@@ -24,7 +24,7 @@ object MatlabFixedPointExample {
     import Chainsaw.DSP.FFT.CooleyTukeyFFT
 
     SimConfig.withWave.compile(
-      CooleyTukeyFFT(64, Seq(2,2,2,2,2,2), inverse = false, SFix(1 exp, -6 exp), SFix(1 exp, -6 exp)))
+      CooleyTukeyFFT(64, inverse = false, SFix(1 exp, -6 exp), SFix(1 exp, -6 exp), Seq(2,2,2,2,2,2)))
       .doSim{dut =>
 
         dut.clockDomain.forkStimulus(2)

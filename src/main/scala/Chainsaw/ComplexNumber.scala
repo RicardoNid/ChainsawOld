@@ -88,9 +88,9 @@ case class ComplexNumber(peak: Int, resolution: Int) extends Bundle {
     val E = B.pipelined * that.real.pipelined
     val F = C.pipelined * imag.pipelined
     Seq(D, E, F).foreach(_.addAttribute("use_dsp", "yes"))
-    val Seq(dt, et, ft) = Seq(D, E, F).map(value =>
-      if (ProdWidthMode == SAME) value.truncated(this.realType) // this would save the offset of final addition
-      else value)
+    val Seq(dt, et, ft) = Seq(D, E, F).map{value =>
+      if (config.width == SAME) {value.truncated(this.realType)} // this would save the offset of final addition
+      else value}
     // stage 2
     doPipeline = pipeline > 0
     val I = dt.pipelined - et.pipelined

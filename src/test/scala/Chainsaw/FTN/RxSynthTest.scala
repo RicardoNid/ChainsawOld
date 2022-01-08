@@ -22,16 +22,16 @@ class RxSynthTest extends AnyFlatSpec {
 
   it should "synth for small components in RxLoop" in {
     import channelInfo._
-//    VivadoSynthForTiming(comm.qam.AdaptiveQamdemod(bitAlloc, powAlloc, rxUnitComplexType), "qamdemodRx")
+    VivadoSynthForTiming(comm.qam.AdaptiveQamdemod(bitAlloc, powAlloc, symbolComplexType), "qamdemodRx")
     VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(64, 256, 1024, 1024, HardType(Bool())), "interleaveRx")
-//    VivadoSynthForTiming(Convenc512FTN(), "convencRx")
-//    VivadoSynthForTiming(comm.qam.AdaptiveQammod(bitAlloc, powAlloc, unitType), "qammodRx")
+    VivadoSynthForTiming(Convenc512FTN(), "convencRx")
+    VivadoSynthForTiming(comm.qam.AdaptiveQammod(bitAlloc, powAlloc, symbolType), "qammodRx")
     VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(256, 64, 1024, 1024, HardType(Bool())), "deInterleaveRx")
   }
 
   it should "synth for all components in RxFront" in {
     VivadoSynthForTiming(EqualizerFTN(preambleSymbols), name = "equalizerRxFront")
-    VivadoSynthForTiming(DSP.FFT.CooleyTukeyRVFFT(512, Seq(4, 4, 4), Seq(4, 2), fftType, unitType), name = "fftRxFront")
+    VivadoSynthForTiming(DSP.FFT.CooleyTukeyRVFFT(512, 128, fftType, symbolType, Seq(4, 4, 4, 4, 2), fftShifts), name = "fftRxFront")
   }
 
   it should "synth for sub modules of vitdec" in {
@@ -43,34 +43,20 @@ class RxSynthTest extends AnyFlatSpec {
   }
 
   it should "synth for sub modules of ifft/fft" in {
-    VivadoSynthForTiming(DSP.FFT.CooleyTukeyHSIFFT(512, Seq(4, 4, 4, 4), Seq(2), ifftType, unitType), "fftRx")
-    VivadoSynthForTiming(DSP.FFT.CooleyTukeyRVFFT(512, Seq(4, 4, 4, 4), Seq(2), fftType, unitType), "ifftRx")
-
-    import DSP.FFT._
-    val N = 512
-    val factors1 = Seq(4, 4, 4, 4)
-    val factors2 = Seq(2)
-    val pF = factors1.product * 2
-
-    VivadoSynthForTiming(HSPreprocess(N, ifftType), "ifftRxPre")
-    VivadoSynthForTiming(CooleyTukeyBackToBack(N, pF / 2, factors1, factors2, true, ifftType, unitType), "ifftRxCore")
-    VivadoSynthForTiming(HSPostprocess(N, ifftType), "ifftRxPost")
-
-    VivadoSynthForTiming(RVPreprocess(N, fftType), "fftRxPre")
-    VivadoSynthForTiming(CooleyTukeyBackToBack(N, pF / 2, factors1, factors2, false, fftType, unitType), "fftRxCore")
-    VivadoSynthForTiming(RVPostprocess(N, fftType), "fftRxPost")
+    VivadoSynthForTiming(DSP.FFT.CooleyTukeyHSIFFT(512, 512, ifftType, symbolType, Seq(4, 4, 4, 4, 2), ifftShifts), "ifftRx")
+    VivadoSynthForTiming(DSP.FFT.CooleyTukeyRVFFT(512, 512, fftType, symbolType, Seq(4, 4, 4, 4, 2), fftShifts), "fftRx")
   }
 
-  "RxFull" should "gen successfully" in GenRTL(RxFull(512), name = "RxFull")
+//  "RxFull" should "gen successfully" in GenRTL(RxFull(512), name = "RxFull")
 
-  "RxFull" should "synth successfully" in VivadoSynth(RxFull(512), "RxFull")
+//  "RxFull" should "synth successfully" in VivadoSynth(RxFull(512), "RxFull")
 
   it should "synth for its memories" in {
-    val fdeType = HardType(Vec(unitComplexType, 256))
+    val fdeType = HardType(Vec(symbolComplexType, 256))
     val loopLength = 608
     val frameLength = 16
     val iteration = 5
-//    VivadoSynth(BigStreamFifo(fdeType, 2 * frameLength))
+    //    VivadoSynth(BigStreamFifo(fdeType, 2 * frameLength))
     VivadoSynth(LoopBuffer(fdeType, loopLength, frameLength, iteration))
   }
 

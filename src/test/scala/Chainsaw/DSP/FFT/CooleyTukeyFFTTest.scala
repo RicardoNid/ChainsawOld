@@ -40,8 +40,8 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
     val goldens: Seq[DenseVector[BComplex]] = if (!inverse) testCases.map(Dft.dft(_)) else testCases.map(Dft.idft(_))
 
     SimConfig.withWave.compile {
-      if (parallelism == 1) CooleyTukeyFFT(N = testLength, factors = factors, inverse = inverse, dataType, coeffType)
-      else CooleyTukeyBackToBack(testLength, parallelFactor, factors1, factors2, inverse, dataType, coeffType)
+      if (parallelism == 1) CooleyTukeyFFT(N = testLength, inverse = inverse, dataType, coeffType, factors = factors)
+      else AdaptiveCooleyTukeyFFT(testLength, parallelFactor, inverse, dataType, coeffType, factors1, factors2)
     }.doSim { dut =>
 
       dut.clockDomain.forkStimulus(2)
@@ -106,7 +106,7 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
       new Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
         // TODO: when using 18 bits, way too big signal would appear
         val dspType = HardType(SFix(7 exp, 16 bits))
-        val core = CooleyTukeyBackToBack(512, 256, Seq(4, 4, 4, 4), Seq(2), true, dspType, dspType)
+        val core = AdaptiveCooleyTukeyFFT(512, 256, true, dspType, dspType, Seq(4, 4, 4, 4), Seq(2))
         override val dataIn = slave(cloneOf(core.dataIn))
         override val dataOut = master(cloneOf(core.dataOut))
         override val latency = core.latency + 2
@@ -128,7 +128,7 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
         val complexType = HardType(ComplexNumber(dataType))
         val p2s = P2S(64, 32, complexType)
         val s2p = S2P(32, 64, complexType)
-        val core = CooleyTukeyBackToBack(64, 32, Seq(4, 4, 2), Seq(2), inverse = false, dataType, coeffType)
+        val core = AdaptiveCooleyTukeyFFT(64, 32, inverse = false, dataType, coeffType, Seq(4, 4, 2), Seq(2))
         override val dataIn = slave Stream Vec(complexType(), 64)
         override val dataOut = master Stream Vec(complexType(), 64)
         override val latency = core.latency
@@ -162,5 +162,9 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
     }
   }
 
+  it should "synth" in VivadoSynthForTiming(
+    AdaptiveCooleyTukeyFFT(32, 8, false, HardType(SFix(2 exp, -11 exp)), HardType(SFix(2 exp, -11 exp)), Seq(4, 2), Seq(4)))
 
+  it should "synth for pipelined" in VivadoSynthForTiming(
+    CooleyTukeyFFT(8, false, HardType(SFix(2 exp, -11 exp)), HardType(SFix(2 exp, -11 exp)), Seq(4, 2)))
 }

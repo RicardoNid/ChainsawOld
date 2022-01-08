@@ -4,4 +4,5 @@ import breeze.numerics._
 import breeze.numerics.constants._
 import breeze.signal._
 
-nextPower(6, 3)
+val temp = Seq(1,2,3)
+temp.indexWhere(_ == -1)

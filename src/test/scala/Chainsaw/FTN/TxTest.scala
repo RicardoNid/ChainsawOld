@@ -50,8 +50,8 @@ class TxTest extends AnyFlatSpec {
       name = "testTx", dut = TxWhole(channelInfo),
       testCases = Seq.fill(testSize)(bits).flatten,
       golden = Seq.fill(testSize)(scaled).flatten,
-//      testMetric = TestMetric.APPROXIMATE, epsilon = 1
-      testMetric = TestMetric.SAME
+      testMetric = TestMetric.APPROXIMATE, epsilon = 1
+//      testMetric = TestMetric.SAME
     )
   }
 
@@ -61,7 +61,7 @@ class TxTest extends AnyFlatSpec {
     import channelInfo._
     VivadoSynthForTiming(Convenc128FTN(), "convencTx")
     VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(256, 64, 256, 256, HardType(Bool())), "interleaveTx")
-    VivadoSynthForTiming(comm.qam.AdaptiveQammod(bitAlloc, powAlloc, unitType), "qammodTx")
-    VivadoSynthForTiming(DSP.FFT.CooleyTukeyHSIFFT(512, Seq(4, 4, 4), Seq(4, 2), ifftType, unitType), "ifftTx")
+    VivadoSynthForTiming(comm.qam.AdaptiveQammod(bitAlloc, powAlloc, symbolType), "qammodTx")
+    VivadoSynthForTiming(DSP.FFT.CooleyTukeyHSIFFT(512, 128, ifftType, symbolType, Seq(4, 4, 4, 4, 2), ifftShifts), "ifftTx")
   }
 }

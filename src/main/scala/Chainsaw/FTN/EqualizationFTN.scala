@@ -8,7 +8,7 @@ import spinal.lib._
 import spinal.lib.fsm._
 
 case class EqualizationFTN()
-  extends Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]]{
+  extends Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
 
   require(latency <= 80)
 
@@ -25,7 +25,9 @@ case class EqualizationFTN()
   val dataImag = Vec(dataIn.payload.map(_.imag))
 
   val dspZero = Vec(equalizerType().getZero, equalizerWidth)
-  def dspConstant(constant:Double) = Vec(SFLike(constant, equalizerType), equalizerWidth)
+
+  def dspConstant(constant: Double) = Vec(SFLike(constant, equalizerType), equalizerWidth)
+
   val dspOne = dspConstant(1.0)
   val dspTwo = dspConstant(2.0)
   val dspQuarter = dspConstant(0.25)
@@ -99,7 +101,8 @@ case class EqualizationFTN()
     }
 
     GETENERGY2.whenIsActive {
-      mult0(tk, dspQuarter) // prod0 = energy after norm
+      //      mult0(tk, dspQuarter) // prod0 = energy after norm
+      mult0(tk, dspOne) // prod0 = energy after norm
       xk := dspOne // now, xk = 1
     }
 
@@ -122,8 +125,10 @@ case class EqualizationFTN()
     }
 
     GETFACTOR1.whenIsActive {
-      mult0(prod0, dspQuarter) // tk = factor.imag
-      mult1(prod1, dspQuarter) // xk = factor.real
+      //      mult0(prod0, dspQuarter) // tk = factor.imag
+      mult0(prod0, dspOne) // tk = factor.imag
+      //      mult1(prod1, dspQuarter) // xk = factor.real
+      mult1(prod1, dspOne) // xk = factor.real
     }
 
     SAVE.whenIsActive {

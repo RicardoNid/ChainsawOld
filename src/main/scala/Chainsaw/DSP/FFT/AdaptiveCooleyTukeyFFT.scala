@@ -9,12 +9,9 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
-case class CooleyTukeyBackToBack(
-                                  N: Int = 256, pF: Int = 32,
-                                  factors1: Seq[Int] = Seq(4, 4, 2), factors2: Seq[Int] = Seq(4, 2),
-                                  inverse: Boolean = false,
+case class AdaptiveCooleyTukeyFFT(N: Int, pF: Int, inverse: Boolean,
                                   dataType: HardType[SFix], coeffType: HardType[SFix],
-                                  shifts1: Seq[Int] = null, shifts2: Seq[Int] = null)
+                                  factors:Seq[Int], shifts: Seq[Int])
   extends Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
 
   val complexDataType = toComplexType(dataType)
@@ -23,11 +20,17 @@ case class CooleyTukeyBackToBack(
   val N1 = pF
   val N2 = N / pF
 
+  // splitting
+  val frontStageCount = factors.indices.map(i => factors.take(i + 1).product).indexWhere(_ == pF) + 1 // stages for "front" part
+  require(frontStageCount > 0, s"pF = $pF and factors = ${factors.mkString(" ")} is not a legal combination")
+  val (factors1, factors2) = factors.splitAt(frontStageCount)
+  val (shifts1, shifts2) = shifts.splitAt(frontStageCount)
+
   // components
-  val core0 = CooleyTukeyFFT(N1, factors1, inverse, dataType, coeffType, shifts1)
+  val core0 = CooleyTukeyFFT(N1, inverse, dataType, coeffType, factors1, shifts1)
   val interDataType = core0.retDataType
   val interComplexDataType = toComplexType(interDataType)
-  val core1s = Seq.fill(N1 / N2)(CooleyTukeyFFT(N2, factors2, inverse, interDataType, coeffType, shifts2))
+  val core1s = Seq.fill(N1 / N2)(CooleyTukeyFFT(N2, inverse, interDataType, coeffType, factors2, shifts2))
   val retDataType = core1s.head.retDataType
   val retComplexDataType = toComplexType(retDataType)
 
