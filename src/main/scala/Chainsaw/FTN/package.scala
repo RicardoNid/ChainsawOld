@@ -34,11 +34,16 @@ package object FTN {
   val fftShifts = Seq(2, 2, 0, 0, 0)
 
   // for equalizer computation
-  val equalizerType = HardType(SFix(6 exp, -11 exp)) // 6 for sum in smoother
-  val equalizerComplexType = toComplexType(equalizerType)
   val equalizerWidth = 256
-  val equalizerVecType = HardType(Vec(equalizerType(), equalizerWidth))
-  val equalizerComplexVecType = HardType(Vec(ComplexNumber(equalizerType), equalizerWidth))
+  val smootherType = HardType(SFix(6 exp, -11 exp)) // tap = 16, 2 -> 6 for accumulation
+  val smootherComplexType = toComplexType(smootherType)
+  val smootherVecType = HardType(Vec(smootherType(), equalizerWidth))
+  val smootherComplexVecType = HardType(Vec(ComplexNumber(smootherType), equalizerWidth))
+
+  val equalizationType = HardType(SFix(6 exp, -11 exp)) // tap = 16, 2 -> 6 for accumulation
+  val equalizationComplexType = toComplexType(equalizationType)
+  val equalizationVecType = HardType(Vec(equalizationType(), equalizerWidth))
+  val equalizationComplexVecType = HardType(Vec(ComplexNumber(equalizationType), equalizerWidth))
 
   def complexZero = symbolComplexType().getZero
 

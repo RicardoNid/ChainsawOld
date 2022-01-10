@@ -22,16 +22,16 @@ case class SmootherFTN(golden: Seq[Int])
 
   def adjust(vec: Vec[SFix]) = vec.zip(golden).foreach { case (reg, i) => if (i != 1) reg := -reg }
 
-  val dspZero = equalizerType().getZero
+  val dspZero = smootherType().getZero
 
-  val dataIn = slave Stream equalizerComplexVecType // preambles
-  val dataOut = master Stream equalizerComplexVecType // preambles after smooth
+  val dataIn = slave Stream smootherComplexVecType // preambles
+  val dataOut = master Stream equalizationComplexVecType // preambles after smooth
   val latency = 3 + 1 + 1 + 16
   val inReal = Vec(dataIn.payload.map(_.real))
   val inImag = Vec(dataIn.payload.map(_.imag))
 
-  val reg0, reg1 = Reg(equalizerVecType)
-  val srl0, srl1 = Reg(Vec(equalizerType, equalizerWidth + 15))
+  val reg0, reg1 = Reg(smootherVecType)
+  val srl0, srl1 = Reg(Vec(smootherType, equalizerWidth + 15))
 
   val fsm = new StateMachine {
 

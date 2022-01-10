@@ -6,8 +6,8 @@ import spinal.lib._
 
 case class SplitterFTN() extends Component {
 
-  val dataIn = slave Stream equalizerComplexVecType
-  val dataOut, preambleOut = master Stream equalizerComplexVecType
+  val dataIn = slave Stream smootherComplexVecType
+  val dataOut, preambleOut = master Stream smootherComplexVecType
 
   val counter = Counter(18, inc = dataIn.fire)
   dataIn.ready := (preambleOut.ready && counter < 2) || (dataOut.ready && counter >= 2)

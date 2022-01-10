@@ -66,6 +66,15 @@ class RxTest extends AnyFlatSpec {
     )
   }
 
+  "RxFrontFft" should "work correctly" in {
+    val goldens = (0 until testSize).flatMap(_ => rxMappedGolden)
+    doFlowPeekPokeTest(
+      dut = RxFrontFft(), name = "testRxFrontFft",
+      testCases = dataWithPreamble.map(_.map(value => BigInt(value.toInt))), golden = goldens,
+      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-1
+    )
+  }
+
   "RxFront" should "work correctly" in {
     val goldens = (0 until testSize).flatMap(_ => rxEqualizedGolden)
     doFlowPeekPokeTest(

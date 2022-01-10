@@ -12,9 +12,9 @@ case class EqualizationFTN()
 
   require(latency <= 80)
 
-  val preambleIn = slave Stream equalizerComplexVecType() // preambles after smooth
-  val dataIn = slave Stream equalizerComplexVecType() // data before equalization
-  val dataOut = master Stream equalizerComplexVecType() // data after equalization
+  val preambleIn = slave Stream equalizationComplexVecType() // preambles after smooth
+  val dataIn = slave Stream equalizationComplexVecType() // data before equalization
+  val dataOut = master Stream equalizationComplexVecType() // data after equalization
 
   val iteration = 12
   val latency = 2 * iteration + 3 * 16 + 3 + 2 + 1
@@ -24,22 +24,24 @@ case class EqualizationFTN()
   val dataReal = Vec(dataIn.payload.map(_.real))
   val dataImag = Vec(dataIn.payload.map(_.imag))
 
-  val dspZero = Vec(equalizerType().getZero, equalizerWidth)
+  val dspZero = Vec(equalizationType().getZero, equalizerWidth)
 
-  def dspConstant(constant: Double) = Vec(SFLike(constant, equalizerType), equalizerWidth)
+  def dspConstant(constant: Double) = Vec(SFLike(constant, equalizationType), equalizerWidth)
 
   val dspOne = dspConstant(1.0)
   val dspTwo = dspConstant(2.0)
-  val dspQuarter = dspConstant(0.25)
+  // TODO: DBC rely on a correct normalization such that D is within [0.5, 2) for N/D
+  // TODO: this norm factor should not be constant, but determined by number of leading 0s
+  val dspNormFactor = dspConstant(1.0)
 
-  val tk, xk, temp0, temp1, temp2 = Reg(equalizerVecType) // registers
+  val tk, xk, temp0, temp1, temp2 = Reg(equalizationVecType) // registers
 
-  val dsps = Seq.fill(2)(VecMult(equalizerVecType))
+  val dsps = Seq.fill(2)(VecMult(equalizationVecType))
   val Seq(dsp0, dsp1) = dsps
   val Seq(prod0, prod1) = dsps.map(_.rets)
   dsps.foreach(_.init())
 
-  val addSubs = Seq.fill(2)(VecAddSub(equalizerVecType))
+  val addSubs = Seq.fill(2)(VecAddSub(equalizationVecType))
   val Seq(addSub0, addSub1) = addSubs
   addSubs.foreach(_.init())
 
@@ -101,8 +103,8 @@ case class EqualizationFTN()
     }
 
     GETENERGY2.whenIsActive {
-      //      mult0(tk, dspQuarter) // prod0 = energy after norm
-      mult0(tk, dspOne) // prod0 = energy after norm
+      mult0(tk, dspNormFactor) // prod0 = energy after norm
+      //      mult0(tk, dspOne) // prod0 = energy after norm
       xk := dspOne // now, xk = 1
     }
 
@@ -125,10 +127,10 @@ case class EqualizationFTN()
     }
 
     GETFACTOR1.whenIsActive {
-      //      mult0(prod0, dspQuarter) // tk = factor.imag
-      mult0(prod0, dspOne) // tk = factor.imag
-      //      mult1(prod1, dspQuarter) // xk = factor.real
-      mult1(prod1, dspOne) // xk = factor.real
+      mult0(prod0, dspNormFactor) // tk = factor.imag
+      //      mult0(prod0, dspOne) // tk = factor.imag
+      mult1(prod1, dspNormFactor) // xk = factor.real
+      //      mult1(prod1, dspOne) // xk = factor.real
     }
 
     SAVE.whenIsActive {

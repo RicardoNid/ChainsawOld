@@ -9,16 +9,14 @@ import spinal.lib._
 
 /**
  * @param golden built-in symbols of 1/-1 for channel estimation
- * @param unitType
- * @param vecSize
  */
 case class EqualizerFTN(golden: Array[Int]) extends
   Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
 
-  val smallVecType = HardType(Vec(equalizerComplexType, 256 / 4))
+  val smallVecType = HardType(Vec(smootherComplexType, 256 / 4))
 
-  override val dataIn = slave Stream equalizerComplexVecType()
-  override val dataOut = master Stream equalizerComplexVecType()
+  override val dataIn = slave Stream smootherComplexVecType()
+  override val dataOut = master Stream equalizationComplexVecType()
   val splitter = SplitterFTN()
 
   val smooth = SmootherFTN(golden)
@@ -26,14 +24,16 @@ case class EqualizerFTN(golden: Array[Int]) extends
 
   override val latency = smooth.latency + equal.latency + 2 // 2 for
 
-  val preambleFIFO = BigStreamFifo(equalizerComplexVecType(), 2)
-  val dataFIFO = BigStreamFifo(equalizerComplexVecType(), 32)
-  val postPreambleFIFO = BigStreamFifo(equalizerComplexVecType(), 1)
+  val preambleFIFO = BigStreamFifo(smootherComplexVecType(), 2)
+  val dataFIFO = BigStreamFifo(equalizationComplexVecType, 32)
+  val postPreambleFIFO = BigStreamFifo(equalizationComplexVecType(), 1)
 
   dataIn >> splitter.dataIn
 
+  def trunc(in:Vec[ComplexNumber]) = Vec(in.map(_.truncated(equalizationType)))
+
   splitter.preambleOut >> preambleFIFO.io.push
-  splitter.dataOut >> dataFIFO.io.push
+  splitter.dataOut.t(trunc) >> dataFIFO.io.push
 
   // equal and smooth need burst transfer
   preambleFIFO.io.pop >> smooth.dataIn
