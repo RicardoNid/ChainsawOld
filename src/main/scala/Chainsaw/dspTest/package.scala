@@ -232,7 +232,7 @@ package object dspTest {
                   dutResult(i).asInstanceOf[Seq[BComplex]].zip(innerGolden(i).asInstanceOf[Seq[BComplex]])
                     .map { case (a, b) =>
                       val err = (a.real - b.real).abs max (a.imag - b.imag).abs
-                      if (err > epsilon) err.formatted("%6.4f") else " " * 4
+                      if (err > epsilon) err.formatted("%16.4f") else " " * 16
                     }.mkString(" ")
                 }"
 
