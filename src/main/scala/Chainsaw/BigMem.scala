@@ -15,6 +15,8 @@ import breeze.numerics._
 import breeze.numerics.constants._
 import breeze.signal._
 
+/** wrapper for Mem to avoid way-too-big-signal
+ */
 class BigMem[T <: Data](wordType: HardType[Vec[T]], wordCount: Int) {
 
   val bitWidth = wordType().getBitsWidth
@@ -48,7 +50,6 @@ class BigMem[T <: Data](wordType: HardType[Vec[T]], wordCount: Int) {
       subMems(i).init(divided.map(_.apply(i)))
     }
   }
-
 }
 
 object BigMem {

@@ -56,13 +56,13 @@ class RxLoop(stage: Seq[Int], actualParallelismOnVit: Int = 512) extends Compone
   def between(i: Int, j: Int)(block: => Unit) = if (stage.contains(i) && stage.contains(j)) block
 
   // connections
-  inside(0)(qamdemod.dataOut.t(bitRemapAfterQamDemod).t(bits2bools) >> deInterleave.dataIn)
-  between(0, 1)(deInterleave.dataOut.t(bools2bits) >> vitdecs.dataIn)
+  inside(0)(qamdemod.dataOut.payloadMap(bitRemapAfterQamDemod).payloadMap(bits2bools) >> deInterleave.dataIn)
+  between(0, 1)(deInterleave.dataOut.payloadMap(bools2bits) >> vitdecs.dataIn)
   between(1, 2)(vitdecs.dataOut >> convencs.dataIn) // vitdec -> convenc
-  between(2, 3)(convencs.dataOut.t(bits2bools) >> interleave.dataIn)
-  inside(3)(interleave.dataOut.t(bools2bits).t(bitRemapBeforeQammod) >> qammod.dataIn)
-  between(3, 4)(qammod.dataOut.t(doBitMask).t(ifftPre) >> ifft.dataIn)
-  inside(4)(ifft.dataOut.t(ifftPost) >> fft.dataIn)
+  between(2, 3)(convencs.dataOut.payloadMap(bits2bools) >> interleave.dataIn)
+  inside(3)(interleave.dataOut.payloadMap(bools2bits).payloadMap(bitRemapBeforeQammod) >> qammod.dataIn)
+  between(3, 4)(qammod.dataOut.payloadMap(doBitMask).payloadMap(ifftPre) >> ifft.dataIn)
+  inside(4)(ifft.dataOut.payloadMap(ifftPost) >> fft.dataIn)
 }
 
 class Rx0 extends RxLoop(Seq(0))
@@ -73,7 +73,7 @@ class Rx0 extends RxLoop(Seq(0))
   override val latency = qamdemod.latency + deInterleave.latency
 
   dataIn >> qamdemod.dataIn
-  deInterleave.dataOut.t(bools2bits) >> dataOut
+  deInterleave.dataOut.payloadMap(bools2bits) >> dataOut
 }
 
 class Rx1(actual: Int) extends RxLoop(Seq(1), actual)
@@ -105,8 +105,8 @@ class Rx3 extends RxLoop(Seq(3))
   override val dataOut = master(cloneOf(qammod.dataOut))
   override val latency = interleave.latency + qammod.latency
 
-  dataIn.t(bits2bools) >> interleave.dataIn
-  qammod.dataOut.t(doBitMask) >> dataOut
+  dataIn.payloadMap(bits2bools) >> interleave.dataIn
+  qammod.dataOut.payloadMap(doBitMask) >> dataOut
 }
 
 class Rx4 extends RxLoop(Seq(4)) // it takes 28 min for compilation and 1 s for simulation
@@ -116,8 +116,8 @@ class Rx4 extends RxLoop(Seq(4)) // it takes 28 min for compilation and 1 s for 
   override val dataOut = master Stream Vec(symbolComplexType, 256)
   override val latency = ifft.latency + fft.latency
 
-  dataIn.t(ifftPre) >> ifft.dataIn
-  fft.dataOut.t(fftPost) >> dataOut
+  dataIn.payloadMap(ifftPre) >> ifft.dataIn
+  fft.dataOut.payloadMap(fftPost) >> dataOut
 }
 
 class Rx0to1(actual: Int) extends RxLoop(Seq(0, 1), actual)
@@ -149,11 +149,11 @@ class Rx3to4() extends RxLoop(Seq(3, 4))
   override val dataOut = master Stream Vec(symbolComplexType, 256)
   override val latency = interleave.latency + qammod.latency + ifft.latency + fft.latency
 
-  dataIn.t(bits2bools) >> interleave.dataIn
-  fft.dataOut.t(fftPost) >> dataOut
+  dataIn.payloadMap(bits2bools) >> interleave.dataIn
+  fft.dataOut.payloadMap(fftPost) >> dataOut
 }
 
-class RxLoopWhole() extends RxLoop(Seq(0, 1, 2, 3, 4))
+class RxLoopWhole(actual:Int) extends RxLoop(Seq(0, 1, 2, 3, 4), actual)
   with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
 
   override val dataIn = slave Stream Vec(symbolComplexType, 256)
@@ -162,5 +162,5 @@ class RxLoopWhole() extends RxLoop(Seq(0, 1, 2, 3, 4))
     qamdemod.latency + deInterleave.latency + vitdecs.latency + convencs.latency + interleave.latency + qammod.latency + ifft.latency + fft.latency
 
   dataIn >> qamdemod.dataIn
-  fft.dataOut.t(fftPost) >> dataOut
+  fft.dataOut.payloadMap(fftPost) >> dataOut
 }

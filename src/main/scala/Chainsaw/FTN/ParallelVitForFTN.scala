@@ -13,12 +13,14 @@ case class ParallelVitFTN(parallelism: Int, parallelismForTest: Int = -1)
 
   val actualParallelism = if (parallelismForTest == -1) parallelism else parallelismForTest
 
+  // components
   val superInterleave = DSP.interleave.AdaptiveMatIntrlv(parallelism, 256, 2 * parallelism, 2 * parallelism, Bool)
   val superDeInterleave = DSP.interleave.AdaptiveMatIntrlv(128, parallelism, parallelism, parallelism, Bool)
   val vitdec = comm.viterbi.ViterbiHardware(
     trellis = trellis, length = 128,
     copies = actualParallelism, readAsync = false, disWidth = 4)
 
+  // transformation on payload
   def cut(in: Vec[UInt]) = Vec(in.take(actualParallelism))
 
   def pad(in: Vec[UInt]) = Vec(in.padTo(parallelism, in.head.getZero))
@@ -34,10 +36,16 @@ case class ParallelVitFTN(parallelism: Int, parallelismForTest: Int = -1)
 
   def uints2bools(in: Vec[UInt]) = Vec(in.map(_.asBool))
 
-  dataIn.t(bits2bools) >> superInterleave.dataIn
-  superInterleave.dataOut.t(bitRemapBeforeVit).t(cut).m2sPipe() >> vitdec.dataIn
-  vitdec.dataOut.t(pad).t(uints2bools) >> superDeInterleave.dataIn
-  superDeInterleave.dataOut.t(bools2bits) >> dataOut
-
+  // controls
   override val latency = Seq(superInterleave, superDeInterleave, vitdec).map(_.latency).sum + 1 // for m2s pipe
+  //  val trigger = Trigger(dataIn.valid, 128)
+  val valid = Delay(dataIn.valid, latency, init = False)
+  val onceValid = RegNextWhen(True, dataIn.valid, init = False)
+  val triggered = dataIn.valid || onceValid
+
+  // connection
+  dataIn.payloadMap(bits2bools).withValid(triggered) >> superInterleave.dataIn
+  superInterleave.dataOut.payloadMap(bitRemapBeforeVit).payloadMap(cut).m2sPipe() >> vitdec.dataIn
+  vitdec.dataOut.payloadMap(pad).payloadMap(uints2bools) >> superDeInterleave.dataIn
+  superDeInterleave.dataOut.payloadMap(bools2bits).withValid(valid) >> dataOut
 }

@@ -21,26 +21,32 @@ package object FTN {
   val coeffType = HardType(SFix(1 exp, -15 exp))
 
   // types of symbols and fft/ifft are closely connected
-  val symbolWidth = 12
+  val symbolWidth = 16
 
-  def getType(peak: Int) = HardType(SFix(peak exp, -(symbolWidth - 1 - peak) exp))
+  def getSymbolType(peak: Int) = HardType(SFix(peak exp, -(symbolWidth - 1 - peak) exp))
 
   val Seq(symbolPeak, ifftPeak, fftPeak) = Seq(2, 7, 11)
-  val Seq(symbolType, ifftType, fftType) = Seq(symbolPeak, ifftPeak, fftPeak).map(getType)
+  val Seq(symbolType, ifftType, fftType) = Seq(symbolPeak, ifftPeak, fftPeak).map(getSymbolType)
   val Seq(symbolComplexType, ifftComplexType, fftComplexType) = Seq(symbolType, ifftType, fftType).map(toComplexType)
 
   // shifts on fft/ifft calculation stages
+  val fftDecomposition = Seq(4, 4, 4, 4, 2) // the way we construct a 512-point fft
   val ifftShifts = Seq(2, 2, 1, 0, 0)
   val fftShifts = Seq(2, 2, 0, 0, 0)
+  val frontFftShifts = Seq(2, 2, 1, 0, 0) // this part has a wider dynamic range
 
   // for equalizer computation
+  val equalWidth = 18
+
+  def getEqualType(peak: Int) = HardType(SFix(peak exp, -(equalWidth - 1 - peak) exp))
+
   val equalizerWidth = 256
-  val smootherType = HardType(SFix(6 exp, -11 exp)) // tap = 16, 2 -> 6 for accumulation
+  val smootherType = getEqualType(6) // tap = 16, 2 -> 6 for accumulation
   val smootherComplexType = toComplexType(smootherType)
   val smootherVecType = HardType(Vec(smootherType(), equalizerWidth))
   val smootherComplexVecType = HardType(Vec(ComplexNumber(smootherType), equalizerWidth))
 
-  val equalizationType = HardType(SFix(6 exp, -11 exp)) // tap = 16, 2 -> 6 for accumulation
+  val equalizationType = getEqualType(6)
   val equalizationComplexType = toComplexType(equalizationType)
   val equalizationVecType = HardType(Vec(equalizationType(), equalizerWidth))
   val equalizationComplexVecType = HardType(Vec(ComplexNumber(equalizationType), equalizerWidth))
@@ -87,4 +93,9 @@ package object FTN {
 
   def doVecTrunc(in: Vec[ComplexNumber], retType: HardType[SFix]) =
     Vec(in.map(_.truncated(retType)))
+
+  // parameter for overall state machine
+  val loopLength = 608
+  val frameLength = 16
+  val iterationNum = 5
 }

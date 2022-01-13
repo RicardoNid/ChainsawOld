@@ -8,16 +8,16 @@ import spinal.lib._
 case class RxFront()
   extends Component with DSPTestable[Vec[SInt], Vec[ComplexNumber]] {
 
+  override val dataIn = slave Stream Vec(ADDAType, 256)
+  override val dataOut = master Stream Vec(symbolComplexType, 256)
+
   val fftInType = HardType(SFix(5 exp, -6 exp))
-  val frontFftShifts = Seq(2, 2, 1, 0, 0) // this part has a wider dynamic range
   // components
   val fft = DSP.FFT.CooleyTukeyRVFFT(512, 128, fftInType, coeffType, Seq(4, 4, 4, 4, 2), frontFftShifts)
   val s2p = DSP.S2P(128, 512, toComplexType(fft.retDataType))
   val fifo = BigStreamFifo(smootherComplexVecType, 18)
   val equalizer = EqualizerFTN(preambleSymbols)
 
-  override val dataIn = slave Stream Vec(ADDAType, 256)
-  override val dataOut = master Stream Vec(symbolComplexType, 256)
   override val latency = fft.latency + s2p.latency + equalizer.latency + 18 // 18 for fifo
 
   def doScaling(in: Vec[SInt]) = {
@@ -33,14 +33,14 @@ case class RxFront()
 
   val speedCounter = CounterFreeRun(80) // control the overall throughput of RxFront
 
-  dataIn.t(doScaling) >> fft.dataIn
+  dataIn.payloadMap(doScaling) >> fft.dataIn
   dataIn.allowOverride
   fft.dataIn.allowOverride
   dataIn.ready := speedCounter >= U(8)
   fft.dataIn.valid := (speedCounter >= U(8) && dataIn.valid)
 
   fft.dataOut >> s2p.dataIn
-  s2p.dataOut.t(fftPost) >> fifo.io.push
+  s2p.dataOut.payloadMap(fftPost) >> fifo.io.push
 
   // burst transfer
   val burstCounter = Counter(18)
@@ -50,7 +50,7 @@ case class RxFront()
   equalizer.dataIn.valid := inc
   fifo.io.pop.ready := inc
 
-  equalizer.dataOut.t(equalizerPost) >> dataOut
+  equalizer.dataOut.payloadMap(equalizerPost) >> dataOut
 }
 
 case class RxFrontFft()
@@ -77,12 +77,12 @@ case class RxFrontFft()
 
   val speedCounter = CounterFreeRun(80) // control the overall throughput of RxFront
 
-  dataIn.t(doScaling) >> fft.dataIn
+  dataIn.payloadMap(doScaling) >> fft.dataIn
   dataIn.allowOverride
   fft.dataIn.allowOverride
   dataIn.ready := speedCounter >= U(8)
   fft.dataIn.valid := (speedCounter >= U(8) && dataIn.valid)
 
   fft.dataOut >> s2p.dataIn
-  s2p.dataOut.t(fftPost) >> dataOut
+  s2p.dataOut.payloadMap(fftPost) >> dataOut
 }

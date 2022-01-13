@@ -101,7 +101,9 @@ object Viterbi {
     val selectionRecords = allStates.map(pair => pair -> mutable.Stack[Int]()).toMap
 
     val disRange = ArrayBuffer[Double]()
-    // iterating on received symbols and build records
+    val numbersOfMin = ArrayBuffer[Int]()
+
+    // forwarding: iterating on received symbols and build records
     val rxQueue = mutable.Queue(rxSymbols.toArray: _*)
     while (rxQueue.nonEmpty) {
       val currentSymbol = rxQueue.dequeue()
@@ -115,8 +117,8 @@ object Viterbi {
           // record discrepancies on each transitions for tracing back
           current + increment
         }
-        //        val minTransition = discrepanciesOneState.zip(transitionsToOneState).minBy(_._1)._2
-        val minTransition = discrepanciesOneState.zip(transitionsToOneState).sortBy(_._2.nextState).minBy(_._1)._2
+        numbersOfMin += discrepanciesOneState.count(_ == discrepanciesOneState.min)
+        val minTransition = discrepanciesOneState.zip(transitionsToOneState).sortBy(_._2.input).minBy(_._1)._2
         selectionRecords(minTransition.nextState).push(minTransition.prevState) // in hardware, we only record the branch
         discrepanciesOneState.min
       }
@@ -124,10 +126,9 @@ object Viterbi {
       disRange += currentMinimums.max - currentMinimums.min
       if (currentMinimums.forall(value => value >= 16 && value < 32)) currentMinimums = currentMinimums.map(_ - 16.0)
     }
-
-    println(s"max in records: ${currentMinimums.max}")
-    println(s"min in records: ${currentMinimums.min}")
-    println(s"disRange max: ${disRange.max}")
+    //    println(s"max in records: ${currentMinimums.max}")
+    //    println(s"min in records: ${currentMinimums.min}")
+    //    println(s"disRange max: ${disRange.max}")
 
     // tracing back
 
@@ -136,14 +137,18 @@ object Viterbi {
       case TERMINATION => 0
     }
 
+    val traceBackStates = ArrayBuffer[Int](traceBackState)
+
     val txSymbols = mutable.Queue[Int]()
     while (selectionRecords.values.head.nonEmpty) { // the first record shouldn't produce result(no transition to that)
       val prevState = selectionRecords(traceBackState).top
       txSymbols.enqueue(trellis.getTransition(prevState, traceBackState).input)
       traceBackState = selectionRecords(traceBackState).top
+      traceBackStates += traceBackState
       selectionRecords.values.foreach(_.pop())
     }
 
+    //    println(s"states: ${traceBackStates.reverse.map(_.toString.padTo(2, ' ')).mkString("<-")}")
     new DenseVector(txSymbols.reverse.toArray)
   }
 }

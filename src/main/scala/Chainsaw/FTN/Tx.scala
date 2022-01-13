@@ -32,10 +32,10 @@ class Tx(channelInfo: ChannelInfo)
     factors = Seq(4, 4, 4, 2), shifts = ifftShifts)
 
   // connecting modules and transformations
-  convenc.dataOut.t(bits2bools) >> interleave.dataIn
+  convenc.dataOut.payloadMap(bits2bools) >> interleave.dataIn
   interleave.dataOut >> s2p.dataIn
-  s2p.dataOut.t(bools2bits).t(bitRemap) >> qammod.dataIn
-  qammod.dataOut.t(doBitMask).t(ifftPre) >> p2s.dataIn
+  s2p.dataOut.payloadMap(bools2bits).payloadMap(bitRemap) >> qammod.dataIn
+  qammod.dataOut.payloadMap(doBitMask).payloadMap(ifftPre) >> p2s.dataIn
   //  p2s.dataOut.t(doVecTrunc(_, ifftType)) >> ifft.dataIn
   p2s.dataOut >> ifft.dataIn
 
@@ -63,7 +63,7 @@ case class Tx0(channelInfo: ChannelInfo)
 
   dataIn >> convenc.dataIn
   interleave.dataOut.allowOverride
-  interleave.dataOut.t(bools2bits) >> dataOut
+  interleave.dataOut.payloadMap(bools2bits) >> dataOut
 }
 
 case class Tx1(channelInfo: ChannelInfo)
@@ -75,7 +75,7 @@ case class Tx1(channelInfo: ChannelInfo)
 
   dataIn >> convenc.dataIn
   qammod.dataOut.allowOverride
-  qammod.dataOut.t(doBitMask) >> dataOut
+  qammod.dataOut.payloadMap(doBitMask) >> dataOut
 }
 
 case class Tx2(channelInfo: ChannelInfo)
@@ -98,6 +98,6 @@ case class TxWhole(channelInfo: ChannelInfo)
   override val latency = Seq(convenc, interleave, s2p, qammod, p2s, ifft).map(_.latency).sum
 
   dataIn >> convenc.dataIn
-  ifft.dataOut.t(doScaling) >> dataOut
+  ifft.dataOut.payloadMap(doScaling) >> dataOut
   logger.info(s"Tx generated, latency = $latency")
 }

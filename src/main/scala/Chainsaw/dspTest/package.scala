@@ -1,5 +1,6 @@
 package Chainsaw
 
+import Chainsaw.FTN.loadFTN1d
 import Chainsaw.dspTest.TestMetric.TestMetric
 import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
@@ -216,8 +217,8 @@ package object dspTest {
           val printContent = dutResult.head match {
             case seq: Seq[_] => seq.head match {
               case _: BComplex => dutResult.zip(golden).indices.map(i => s"testing result $i:"
-                + s"\nyours : ${dutResult(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}, sum = ${dutResult(i).asInstanceOf[Seq[BComplex]].map(_.real).sum * 2}"
-                + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}, sum = ${innerGolden(i).asInstanceOf[Seq[BComplex]].map(_.real).sum * 2}"
+                + s"\nyours : ${dutResult(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}}"
+                + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}}"
                 + s"\ndiff  : ${
                 dutResult(i).asInstanceOf[Seq[BComplex]].zip(innerGolden(i).asInstanceOf[Seq[BComplex]])
                   .map { case (a, b) =>
@@ -254,9 +255,17 @@ package object dspTest {
 
           if (verbose) logger.info(s"\n$printContent")
 
+          if (dutResult.head.isInstanceOf[BigInt]) {
+            val bits: Array[Int] = loadFTN1d[Double]("txRaw").map(_.toInt)
+            val yourRx: Seq[Int] = dutResult.take(16).asInstanceOf[Seq[BigInt]].flatMap(_.toString(2).padToLeft(512, '0').map(_.asDigit))
+            val biterr = yourRx.slice(32 * 2, 32 * 226).zip(bits.slice(32 * 2, 32 * 226))
+              .filter { case (rx, tx) => rx != tx }.length / 8192.0
+            logger.info(s"bit err of matlab is $biterr")
+          }
+
           def shouldAll(metric: (Do, Do) => Boolean) = {
             val diff = dutResult.zip(innerGolden).filterNot { case (a, b) => metric(a, b) }
-            logger.warn(s"diff: ${diff.length} / ${dutResult.length}")
+            if (diff.nonEmpty) logger.warn(s"diff: ${diff.length} / ${dutResult.length}")
             diff.isEmpty
           }
 
@@ -287,7 +296,7 @@ package object dspTest {
                 .forall { case (a, b) => (a - b).abs < epsilon }
               case _: BigInt => dutResult.asInstanceOf[ArrayBuffer[BigInt]]
                 .zip(innerGolden.asInstanceOf[Seq[BigInt]])
-                .forall { case (a, b) => (a - b).abs <=epsilon.toInt}
+                .forall { case (a, b) => (a - b).abs <= epsilon.toInt }
               case _ => throw new IllegalArgumentException(s"'approximation' is not defined for ${dutResult.head.getClass}")
             }
           }

@@ -429,11 +429,19 @@ package object Chainsaw extends RealFactory {
   }
 
   implicit class StreamUtil[Ti <: Data](stream: Stream[Ti]) {
-    def t[To <: Data](transform: Ti => To) = {
+    def payloadMap[To <: Data](transform: Ti => To) = {
       val ret = transform(stream.payload)
       val retStream = Stream(cloneOf(ret))
       retStream.payload := ret
       retStream.valid := stream.valid
+      stream.ready := retStream.ready
+      retStream
+    }
+
+    def withValid[To <: Data](newValid: Bool) = {
+      val retStream = cloneOf(stream)
+      retStream.payload := stream.payload
+      retStream.valid := newValid
       stream.ready := retStream.ready
       retStream
     }

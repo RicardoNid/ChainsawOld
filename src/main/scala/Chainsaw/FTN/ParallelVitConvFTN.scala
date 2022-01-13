@@ -37,11 +37,11 @@ case class ParallelVitConvFTN(parallelism: Int, parallelismForTest: Int = -1)
 
   def uints2bools(in: Vec[UInt]) = Vec(in.reverse.asBits().asBools.reverse)
 
-  dataIn.t(bits2bools) >> superInterleave.dataIn
-  superInterleave.dataOut.t(bitRemapBeforeVit).t(cut) >> vitdec.dataIn
+  dataIn.payloadMap(bits2bools) >> superInterleave.dataIn
+  superInterleave.dataOut.payloadMap(bitRemapBeforeVit).payloadMap(cut) >> vitdec.dataIn
   vitdec.dataOut >> convenc.dataIn
-  convenc.dataOut.t(pad).t(uints2bools).t(bitRemapAfterConvenc) >> superDeInterleave.dataIn
-  superDeInterleave.dataOut.t(bools2bits) >> dataOut
+  convenc.dataOut.payloadMap(pad).payloadMap(uints2bools).payloadMap(bitRemapAfterConvenc) >> superDeInterleave.dataIn
+  superDeInterleave.dataOut.payloadMap(bools2bits) >> dataOut
 
   override val latency = Seq(superInterleave, superDeInterleave, vitdec, convenc).map(_.latency).sum
 }

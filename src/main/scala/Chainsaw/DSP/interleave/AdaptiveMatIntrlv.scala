@@ -81,7 +81,7 @@ case class AdaptiveMatIntrlv[T <: Data](
         ret
       }
 
-      core.dataOut.t(unpack) >> dataOut
+      core.dataOut.payloadMap(unpack) >> dataOut
       core
     case _ => throw new IllegalArgumentException(s"mode $mode has not been implemented yet")
   }

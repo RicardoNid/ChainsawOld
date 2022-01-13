@@ -31,7 +31,7 @@ case class BigStreamFifo[T <: Data](dataType: HardType[Vec[T]], depth: Int)
 
   io.push.ready.allowOverride
   subFifos.zipWithIndex.foreach { case (fifo, i) =>
-    io.push.t(vecSlice(_, i)) >> fifo.io.push
+    io.push.payloadMap(vecSlice(_, i)) >> fifo.io.push
     vecSlice(io.pop.payload, i) := fifo.io.pop.payload
     fifo.io.pop.ready := io.pop.ready
     fifo.io.flush := io.flush

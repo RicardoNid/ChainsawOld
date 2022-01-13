@@ -13,10 +13,10 @@ import org.scalatest.flatspec.AnyFlatSpec
 class RxSynthTest extends AnyFlatSpec {
 
   "Rx Gen" should "show the overall latency" in {
-    GenRTL(new RxLoopWhole)
+    GenRTL(new RxLoopWhole(512))
   }
 
-  "Rx synth" should "synth for the whole loop" in VivadoSynthForTiming(new RxLoopWhole, "RxLoop")
+  "Rx synth" should "synth for the whole loop" in VivadoSynthForTiming(new RxLoopWhole(512), "RxLoop")
 
   it should "synth for RxFront" in VivadoSynthForTiming(RxFront(), "RxFront")
 
@@ -49,7 +49,7 @@ class RxSynthTest extends AnyFlatSpec {
 
 //  "RxFull" should "gen successfully" in GenRTL(RxFull(512), name = "RxFull")
 
-//  "RxFull" should "synth successfully" in VivadoSynth(RxFull(512), "RxFull")
+  "RxFull" should "synth successfully" in VivadoSynth(RxFull(512), "RxFull")
 
   it should "synth for its memories" in {
     val fdeType = HardType(Vec(symbolComplexType, 256))
@@ -57,7 +57,7 @@ class RxSynthTest extends AnyFlatSpec {
     val frameLength = 16
     val iteration = 5
     //    VivadoSynth(BigStreamFifo(fdeType, 2 * frameLength))
-    VivadoSynth(LoopBuffer(fdeType, loopLength, frameLength, iteration))
+    VivadoSynth(FDEBuffer(fdeType, loopLength, frameLength, iteration))
   }
 
 }

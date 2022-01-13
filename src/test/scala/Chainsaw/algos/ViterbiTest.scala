@@ -5,7 +5,7 @@ import Chainsaw.algos.TerminationMode._
 import Chainsaw.comm.viterbi.ViterbiHardware
 import Chainsaw.dspTest._
 import Chainsaw.matlabIO._
-import breeze.linalg.{DenseMatrix, DenseVector}
+import breeze.linalg.{DenseMatrix, DenseVector, princomp}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ViterbiTest extends AnyFlatSpec {
@@ -53,11 +53,11 @@ class ViterbiTest extends AnyFlatSpec {
   }
 
   // test tasks
-  it should "viterbi" in testViterbiAlgo(Viterbi.viterbi[Int])
+  "viterbi algorithm" should "work" in testViterbiAlgo(Viterbi.viterbi[Int])
 
-  it should "viterbiTraceback" in testViterbiAlgo(Viterbi.viterbiTraceback[Int])
+  "viterbiTraceback algorithm" should "work" in testViterbiAlgo(Viterbi.viterbiTraceback[Int])
 
-  "viterbiTraceback" should "work the same as matlab" in {
+  it should "work for FTN" in {
     val pollutedSymbols: Seq[DenseVector[Int]] = FTN.loadFTN1d[Double]("iter1")
       .grouped(256).toSeq
       .map(doubles => new DenseVector(doubles.map(_.toInt)))
@@ -69,9 +69,15 @@ class ViterbiTest extends AnyFlatSpec {
 
     var diff = 0
     pollutedSymbols.zip(decodedSymbols).zipWithIndex.foreach { case ((polluted, decoded), i) =>
-      println(s"result: $i / ${pollutedSymbols.length}")
+      //      println(s"result: $i / ${pollutedSymbols.length}")
       val yours = Viterbi.viterbiTraceback(polluted, trellis, Metrics.Hamming, TerminationMode.TERMINATION)
-      if (yours != decoded) diff += 1
+      if (yours != decoded) {
+        diff += 1
+        printlnRed(s"coded:  ${polluted.toArray.mkString("   ")}")
+        printlnRed(s"matlab: ${decoded.toArray.mkString("   ")}")
+        printlnRed(s"yours:  ${yours.toArray.mkString("   ")}")
+        printlnRed(s"diff:   ${decoded.toArray.zip(yours.toArray).map { case (i, i1) => if (i == i1) ' ' else 'x' }.mkString("   ")}")
+      }
     }
     println(s"diff count: $diff")
   }
@@ -88,7 +94,7 @@ class ViterbiTest extends AnyFlatSpec {
 
     doFlowPeekPokeTest(
       name = "testViterbiHardware",
-      dut = ViterbiHardware(trellis, testLength, readAsync = false, disWidth = 4),
+      dut = ViterbiHardware(trellis, testLength, readAsync = false, disWidth = 8),
       testCases = symbols.flatMap(_.toArray.map(BigInt(_))).map(data => Seq.fill(1)(data)),
       golden = golden.flatMap(_.toArray.map(BigInt(_))).map(data => Seq.fill(1)(data))
     )
@@ -106,7 +112,7 @@ class ViterbiTest extends AnyFlatSpec {
 
     doFlowPeekPokeTest(
       name = "testViterbiHardware",
-      dut = ViterbiHardware(trellis, testLength, parallelism, readAsync = false, disWidth = 4),
+      dut = ViterbiHardware(trellis, testLength, parallelism, readAsync = false, disWidth = 8),
       testCases = testCase,
       golden = golden
     )

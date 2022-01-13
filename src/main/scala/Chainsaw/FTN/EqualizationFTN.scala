@@ -16,7 +16,7 @@ case class EqualizationFTN()
   val dataIn = slave Stream equalizationComplexVecType() // data before equalization
   val dataOut = master Stream equalizationComplexVecType() // data after equalization
 
-  val iteration = 12
+  val iteration = 13
   val latency = 2 * iteration + 3 * 16 + 3 + 2 + 1
 
   val preambleReal = Vec(preambleIn.payload.map(_.real))
@@ -104,7 +104,6 @@ case class EqualizationFTN()
 
     GETENERGY2.whenIsActive {
       mult0(tk, dspNormFactor) // prod0 = energy after norm
-      //      mult0(tk, dspOne) // prod0 = energy after norm
       xk := dspOne // now, xk = 1
     }
 
@@ -128,9 +127,7 @@ case class EqualizationFTN()
 
     GETFACTOR1.whenIsActive {
       mult0(prod0, dspNormFactor) // tk = factor.imag
-      //      mult0(prod0, dspOne) // tk = factor.imag
       mult1(prod1, dspNormFactor) // xk = factor.real
-      //      mult1(prod1, dspOne) // xk = factor.real
     }
 
     SAVE.whenIsActive {

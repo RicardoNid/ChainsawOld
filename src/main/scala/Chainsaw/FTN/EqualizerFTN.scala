@@ -33,7 +33,7 @@ case class EqualizerFTN(golden: Array[Int]) extends
   def trunc(in:Vec[ComplexNumber]) = Vec(in.map(_.truncated(equalizationType)))
 
   splitter.preambleOut >> preambleFIFO.io.push
-  splitter.dataOut.t(trunc) >> dataFIFO.io.push
+  splitter.dataOut.payloadMap(trunc) >> dataFIFO.io.push
 
   // equal and smooth need burst transfer
   preambleFIFO.io.pop >> smooth.dataIn
@@ -45,7 +45,7 @@ case class EqualizerFTN(golden: Array[Int]) extends
   def doBitMask(in: Vec[ComplexNumber]) =
     Vec(channelInfo.bitMask.zip(in).map { case (mask, data) => if (mask == 1) data else data.getZero })
 
-  equal.dataOut.t(doBitMask) >> dataOut
+  equal.dataOut.payloadMap(doBitMask) >> dataOut
 }
 
 
