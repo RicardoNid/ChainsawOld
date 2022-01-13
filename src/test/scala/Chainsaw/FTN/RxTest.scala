@@ -281,20 +281,14 @@ class RxTest extends AnyFlatSpec {
     val goldens = (0 until testSize).flatMap(_ => finalDecoded)
       .zipWithIndex.map { case (big, i) => if (i < parallelismForTest / 4) big else BigInt(0) }
 
-    doFlowPeekPokeTest(
-      dut = RxFull(parallelismForTest, 2), name = "testRxFull",
-      testCases = data, golden = goldens,
-      testMetric = TestMetric.SAME
-    )
-  }
-
-  it should "work with headless" in {
-    val data = (0 until testSize).flatMap(_ => rxEqualizedGolden)
-    val goldens = (0 until testSize).flatMap(_ => finalDecoded)
-      .zipWithIndex.map { case (big, i) => if (i < parallelismForTest / 4) big else BigInt(0) }
+//    doFlowPeekPokeTest(
+//      dut = RxFull(parallelismForTest, 2), name = "testRxFullIter_1",
+//      testCases = data, golden = goldens,
+//      testMetric = TestMetric.SAME
+//    )
 
     doFlowPeekPokeTest(
-      dut = RxFullHeadless(parallelismForTest, 5), name = "testRxFullHeadless",
+      dut = RxFull(512), name = "testRxFullIter_4",
       testCases = data, golden = goldens,
       testMetric = TestMetric.SAME
     )

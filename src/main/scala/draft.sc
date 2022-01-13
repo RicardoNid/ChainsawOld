@@ -10,6 +10,10 @@ def dbc(n:Double, d:Double) = {
   x
 }
 
-println(dbc(1, 1.6) - 1 / 1.6)
-println(dbc(1, 0.0030321) - 1 / 0.0030321)
-println(dbc(1, 0.05) - 1 / 0.05)
+import breeze.linalg._
+import breeze.math._
+import breeze.numerics._
+import breeze.numerics.constants._
+import breeze.signal._
+
+abs(Complex(1,1))
