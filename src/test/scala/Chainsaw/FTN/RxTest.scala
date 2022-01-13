@@ -54,7 +54,7 @@ class RxTest extends AnyFlatSpec {
   val iter3: Seq[BigInt] = loadFTN1d[Double]("iter3").map(_.toInt).toSeq.grouped(1024).toSeq.map(boolSeq2BigInt) // after conv
   val iter4: Seq[BigInt] = loadFTN1d[Double]("iter4").map(_.toInt).toSeq.grouped(1024).toSeq.map(boolSeq2BigInt) // after interleave
   val iter5 = loadFTN1d[MComplex]("iter5").map(_.toBComplex).toSeq.grouped(256).toSeq // after qammod
-  val iter6 = loadFTN1d[Double]("iter6").toSeq.grouped(512).toSeq // after ifft
+  val iter6 = loadFTN1d[Double]("iter6").toSeq.grouped(512).toSeq.map(_.map(_ * 512.0)) // after ifft
   val iter7 = loadFTN1d[MComplex]("iter7").map(_.toBComplex).toSeq.grouped(256).toSeq // after fft
   val diff = loadFTN1d[MComplex]("diff").map(_.toBComplex).toSeq.grouped(256).toSeq // after fft
 
@@ -90,7 +90,16 @@ class RxTest extends AnyFlatSpec {
     println(diff.map(_.mkString(" ")).mkString("\n"))
   }
 
-  "EqualizerFTN" should "work correctly" in {
+//  "RxFront" should "work correctly on fft" in {
+//    val goldens = (0 until testSize).flatMap(_ => rxMappedGolden)
+//    doFlowPeekPokeTest(
+//      dut = RxFrontFft(), name = "testRxFrontFft",
+//      testCases = dataWithPreamble, golden = goldens,
+//      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-3
+//    )
+//  }
+
+  "EqualizerFTN" should "work correctly on equalization" in {
     doFlowPeekPokeTest(
       dut = EqualizerFTN(preambleSymbols), name = "testEqualizerFTN",
       testCases = rxMappedGolden, golden = rxEqualizedGolden,
@@ -98,25 +107,16 @@ class RxTest extends AnyFlatSpec {
     )
   }
 
-  "RxFrontFft" should "work correctly" in {
-    val goldens = (0 until testSize).flatMap(_ => rxMappedGolden)
+  "RxFront" should "work correctly as a whole" in {
+    val goldens = (0 until testSize).flatMap(_ => rxEqualizedGolden)
     doFlowPeekPokeTest(
-      dut = RxFrontFft(), name = "testRxFrontFft",
+      dut = RxFront(), name = "testRxFront",
       testCases = dataWithPreamble, golden = goldens,
       testMetric = TestMetric.APPROXIMATE, epsilon = 1E-2
     )
   }
 
-  "RxFront" should "work correctly" in {
-    val goldens = (0 until testSize).flatMap(_ => rxEqualizedGolden)
-    doFlowPeekPokeTest(
-      dut = RxFront(), name = "testRxFront",
-      testCases = dataWithPreamble, golden = goldens,
-      testMetric = TestMetric.APPROXIMATE, epsilon = 5E-2
-    )
-  }
-
-  "Rx" should "work correctly on qamdemod and deInterleave" in {
+  "RxLoop" should "work correctly on qamdemod and deInterleave" in {
     val data = (0 until testSize).flatMap(_ => iterIn)
     val goldens = (0 until testSize).flatMap(_ => iter1)
     doFlowPeekPokeTest(
@@ -161,11 +161,31 @@ class RxTest extends AnyFlatSpec {
   it should "work correctly on interleave and qammod" in {
     val data = (0 until testSize).flatMap(_ => iter3)
     val goldens = (0 until testSize).flatMap(_ => iter5)
+
     doFlowPeekPokeTest(
       dut = new Rx3, name = "testRx3",
       testCases = data, golden = goldens,
-      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-1,
-      verbose = false
+      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-4)
+  }
+
+  it should "work correctly on ifft" in {
+    val data = (0 until testSize).flatMap(_ => iter5)
+    val goldens = (0 until testSize).flatMap(_ => iter6)
+    doFlowPeekPokeTest(
+      dut = new Rx4_0, name = "testRx4_0",
+      testCases = data, golden = goldens,
+      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-3 * 512.0
+    )
+  }
+
+  // to use this test, comment the line inside(4)(ifft.dataOut.payloadMap(ifftPost) >> fft.dataIn) in RxLoop
+  it should "work correctly on fft" in {
+    val data = (0 until testSize).flatMap(_ => iter6)
+    val goldens = (0 until testSize).flatMap(_ => iter7)
+    doFlowPeekPokeTest(
+      dut = new Rx4_1, name = "testRx4_1",
+      testCases = data, golden = goldens,
+      testMetric = TestMetric.APPROXIMATE, epsilon = 5E-3
     )
   }
 
@@ -175,18 +195,7 @@ class RxTest extends AnyFlatSpec {
     doFlowPeekPokeTest(
       dut = new Rx4, name = "testRx4",
       testCases = data, golden = goldens,
-      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-1
-    )
-  }
-
-  it should "work correctly on stage 0 to 2" in {
-    val data = (0 until testSize).flatMap(_ => iterIn)
-    val goldens = (0 until testSize).flatMap(_ => iter3)
-      .zipWithIndex.map { case (big, i) => if (i < parallelismForTest / 4) big else BigInt(0) }
-    doFlowPeekPokeTest(
-      dut = new Rx0to2(parallelismForTest), name = "testRx0to2",
-      testCases = data, golden = goldens,
-      testMetric = TestMetric.SAME
+      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-2
     )
   }
 
@@ -195,23 +204,45 @@ class RxTest extends AnyFlatSpec {
     val goldens = (0 until testSize).flatMap(_ => iter2)
       .zipWithIndex.map { case (big, i) => if (i < parallelismForTest / 4) big else BigInt(0) }
     doFlowPeekPokeTest(
-      dut = new Rx0to1(parallelismForTest), name = "testRx0to1",
+      dut = new Rx0to1(parallelismForTest), name = "testRxLoopUntilConvenc",
       testCases = data, golden = goldens,
       testMetric = TestMetric.SAME
     )
   }
 
-  it should "work correctly on stage 3 to 4" in {
-    val data = (0 until testSize).flatMap(_ => iter3)
-    val goldens = (0 until testSize).flatMap(_ => iter7)
+  it should "be able to decode good symbols" in {
+    val data = (0 until testSize).flatMap(_ => loadFTN1d[MComplex]("txMapped").map(_.toBComplex).grouped(256).toSeq.map(_.toSeq))
+    val goldens = (0 until testSize).flatMap(_ => finalDecoded)
+      .zipWithIndex.map { case (big, i) => if (i < parallelismForTest / 4) big else BigInt(0) }
     doFlowPeekPokeTest(
-      dut = new Rx3to4, name = "testRx3to4",
+      dut = new Rx0to1(parallelismForTest), name = "testRxLoopUntilConvenc",
       testCases = data, golden = goldens,
-      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-1
+      testMetric = TestMetric.SAME
     )
   }
 
-  it should "work correctly on RxLoop" in {
+  it should "work correctly on stage 0 to 2" in {
+    val data = (0 until testSize).flatMap(_ => iterIn)
+    val goldens = (0 until testSize).flatMap(_ => iter3)
+      .zipWithIndex.map { case (big, i) => if (i < parallelismForTest / 4) big else BigInt(0) }
+    doFlowPeekPokeTest(
+      dut = new Rx0to2(parallelismForTest), name = "testRxLoopUntilInterleave",
+      testCases = data, golden = goldens,
+      testMetric = TestMetric.SAME
+    )
+  }
+
+  it should "work correctly on stage 0 to 3" in {
+    val data = (0 until testSize).flatMap(_ => iterIn)
+    val goldens = (0 until testSize).flatMap(_ => iter5)
+    doFlowPeekPokeTest(
+      dut = new Rx0to3(parallelismForTest), name = "testRxLoopUntilIfft",
+      testCases = data, golden = goldens,
+      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-2
+    )
+  }
+
+  it should "work correctly on as a whole" in {
     val data = (0 until testSize).flatMap(_ => iterIn)
     val goldens = (0 until testSize).flatMap(_ => iter7)
       .zipWithIndex.map { case (big, i) => if (i < parallelismForTest / 4) big else BigInt(0) }
@@ -222,7 +253,7 @@ class RxTest extends AnyFlatSpec {
     )
   }
 
-  it should "work correctly with fde buffer" in {
+  "RxFull" should "work correctly until vitdec" in {
     val data = dataWithPreamble
     val goldens = (0 until testSize).flatMap(_ => iter1)
     doFlowPeekPokeTest(
@@ -232,22 +263,20 @@ class RxTest extends AnyFlatSpec {
     )
   }
 
-  it should "work correctly for the first iteration" in {
+  it should "work correctly until the end of the first iteration" in {
     val data = dataWithPreamble
     val goldens = (0 until testSize).flatMap(_ => iter7)
       .zipWithIndex.map { case (big, i) => if (i < parallelismForTest / 4) big else BigInt(0) }
     doFlowPeekPokeTest(
-      dut = RxFrontEvenMore(parallelismForTest), name = "testRxLoopWithFde",
+      dut = RxFullUntilQamdemod(parallelismForTest), name = "testRxLoopWithFde",
       testCases = data, golden = goldens,
-      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-1
+      testMetric = TestMetric.APPROXIMATE, epsilon = 1E-2
     )
   }
 
-  it should "gen for full Rx" in {
-    GenRTL(RxFull(512))
-  }
+  it should "gen for full Rx" in GenRTL(RxFull(512))
 
-  it should "work with iteration for all" in {
+  it should "work with all iterations" in {
     val data = dataWithPreamble
     val goldens = (0 until testSize).flatMap(_ => finalDecoded)
       .zipWithIndex.map { case (big, i) => if (i < parallelismForTest / 4) big else BigInt(0) }

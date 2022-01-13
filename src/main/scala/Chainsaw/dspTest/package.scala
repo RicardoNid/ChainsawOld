@@ -1,12 +1,20 @@
 package Chainsaw
 
-import Chainsaw.FTN.loadFTN1d
+import Chainsaw.FTN.{loadFTN1d, symbolType}
 import Chainsaw.dspTest.TestMetric.TestMetric
 import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 import spinal.sim.SimThread
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.lib.fsm._
+import Chainsaw._
+import Chainsaw.matlabIO._
+import Chainsaw.dspTest._
+import breeze.numerics.abs
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -216,17 +224,27 @@ package object dspTest {
         if (innerGolden != null) {
           val printContent = dutResult.head match {
             case seq: Seq[_] => seq.head match {
-              case _: BComplex => dutResult.zip(golden).indices.map(i => s"testing result $i:"
-                + s"\nyours : ${dutResult(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}}"
-                + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}}"
-                + s"\ndiff  : ${
-                dutResult(i).asInstanceOf[Seq[BComplex]].zip(innerGolden(i).asInstanceOf[Seq[BComplex]])
-                  .map { case (a, b) =>
-                    val err = (a.real - b.real).abs max (a.imag - b.imag).abs
-                    if (err > epsilon) err.formatted("%16.4f") else " " * 16
-                  }.mkString(" ")
-              }"
-              ).mkString("\n")
+              case _: BComplex =>
+                dutResult.zip(golden).indices.map(i => s"testing result $i:"
+                  + s"\nyours : ${dutResult(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}}"
+                  + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[BComplex]].map(_.toString(6)).mkString(" ")}}"
+                  + s"\ndiff  : ${
+                  dutResult(i).asInstanceOf[Seq[BComplex]].zip(innerGolden(i).asInstanceOf[Seq[BComplex]])
+                    .map { case (a, b) =>
+                      val err = (a.real - b.real).abs max (a.imag - b.imag).abs
+                      if (err > epsilon) err.formatted("%6.4f") else " " * 4
+                    }.mkString(" ")
+                }"
+
+                ).mkString("\n") + // + distribution
+                  dutResult.zip(golden).indices.map { i =>
+                    dutResult(i).asInstanceOf[Seq[BComplex]].zip(innerGolden(i).asInstanceOf[Seq[BComplex]])
+                      .map { case (a, b) =>
+                        val err = (a.real - b.real).abs max (a.imag - b.imag).abs
+                        if (err > epsilon) 'x' else ' '
+                      }.mkString("")
+                  }.mkString("\n")
+
               case _: Double => dutResult.zip(golden).indices.map(i => s"testing result $i:"
                 + s"\nyours : ${dutResult(i).asInstanceOf[Seq[Double]].map(_.formatted("%8.4f")).mkString(" ")}"
                 + s"\ngolden: ${innerGolden(i).asInstanceOf[Seq[Double]].map(_.formatted("%8.4f")).mkString(" ")}"
@@ -255,12 +273,25 @@ package object dspTest {
 
           if (verbose) logger.info(s"\n$printContent")
 
+          // for FTN
           if (dutResult.head.isInstanceOf[BigInt]) {
             val bits: Array[Int] = loadFTN1d[Double]("txRaw").map(_.toInt)
             val yourRx: Seq[Int] = dutResult.take(16).asInstanceOf[Seq[BigInt]].flatMap(_.toString(2).padToLeft(512, '0').map(_.asDigit))
             val biterr = yourRx.slice(32 * 2, 32 * 226).zip(bits.slice(32 * 2, 32 * 226))
               .filter { case (rx, tx) => rx != tx }.length / 8192.0
-            logger.info(s"bit err of matlab is $biterr")
+            logger.info(s"bit err is $biterr")
+          }
+
+          if (dutResult.head.isInstanceOf[Seq[BComplex]]) { // which means they're symbols
+            val symbols: Seq[Seq[BComplex]] = loadFTN1d[MComplex]("txMapped").map(_.toBComplex).grouped(256).toSeq.map(_.toSeq)
+            val yourSymbols: Seq[Seq[BComplex]] = dutResult.take(16).asInstanceOf[Seq[Seq[BComplex]]]
+            val symbolsDiff: Double = yourSymbols.zip(symbols).map { case (yours, tx) =>
+              yours.zip(tx).zipWithIndex
+                .filter { case (_, i) => i > 1 && i < 226 }
+                .map { case ((y, t), _) => abs(y - t) }.sum
+            }.sum
+
+            logger.info(s"symbol diff is $symbolsDiff")
           }
 
           def shouldAll(metric: (Do, Do) => Boolean) = {
@@ -280,7 +311,12 @@ package object dspTest {
               case seq: Seq[_] => seq.head match {
                 case _: BComplex => dutResult.asInstanceOf[ArrayBuffer[Seq[BComplex]]].flatten
                   .zip(innerGolden.asInstanceOf[Seq[Seq[BComplex]]].flatten)
-                  .forall { case (a, b) => (a.real - b.real).abs < epsilon && (a.imag - b.imag).abs < epsilon }
+                  .forall { case (a, b) =>
+                    val err = (a.real - b.real).abs max (a.imag - b.imag).abs
+                    val success = err < epsilon
+                    if (!success) logger.error(s"test fail is err $err is larger than $epsilon")
+                    success
+                  }
                 case _: Double => dutResult.asInstanceOf[ArrayBuffer[Seq[Double]]].flatten
                   .zip(innerGolden.asInstanceOf[Seq[Seq[Double]]].flatten)
                   .forall { case (a, b) => (a - b).abs < epsilon }

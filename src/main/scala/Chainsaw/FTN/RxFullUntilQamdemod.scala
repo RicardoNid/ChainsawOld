@@ -9,7 +9,7 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
-case class RxFrontEvenMore(actual: Int)
+case class RxFullUntilQamdemod(actual: Int)
   extends RxLoop(Seq(0, 1, 2, 3, 4), actual)
     with DSPTestable[Vec[SInt], Vec[ComplexNumber]] {
 
@@ -39,5 +39,7 @@ case class RxFrontEvenMore(actual: Int)
 
   fft.dataOut
     .payloadMap(fftPost)
+    .payloadMap(shiftRight(_, 9))
+    .payloadMap(truncComplex(_, symbolType))
     .withValid(fft.dataOut.valid && Delay(fdeBuffer.iterLast, loopLength - 1, init = False)) >> dataOut
 }

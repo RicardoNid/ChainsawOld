@@ -18,7 +18,6 @@ case class EqualizerFTN(golden: Array[Int]) extends
   override val dataIn = slave Stream smootherComplexVecType()
   override val dataOut = master Stream equalizationComplexVecType()
   val splitter = SplitterFTN()
-
   val smooth = SmootherFTN(golden)
   val equal = EqualizationFTN()
 

@@ -25,9 +25,6 @@ class RxLoop(stage: Seq[Int], actualParallelismOnVit: Int = 512) extends Compone
 
   // transformations
 
-  def fftPost(in: Vec[ComplexNumber]) =
-    Vec(in.take(in.length / 2).map(_ >> 9).map(_.truncated(symbolType)))
-
   def bitRemapAfterQamDemod(in: Bits) = {
     val bools = in.asBools.reverse
     (0 until 1024).map { i =>
@@ -48,6 +45,8 @@ class RxLoop(stage: Seq[Int], actualParallelismOnVit: Int = 512) extends Compone
     in(i % 2 * 512 + i / 2))
     .grouped(2).toSeq.map(_.reverse.asBits().asUInt)
   )
+
+  def fftPostInLoop(in: Vec[ComplexNumber]) = truncComplex(shiftRight(fftPost(in), 9), symbolType)
 
   def uints2bits(in: Vec[UInt]) = in.reverse.asBits()
 
@@ -117,7 +116,31 @@ class Rx4 extends RxLoop(Seq(4)) // it takes 28 min for compilation and 1 s for 
   override val latency = ifft.latency + fft.latency
 
   dataIn.payloadMap(ifftPre) >> ifft.dataIn
-  fft.dataOut.payloadMap(fftPost) >> dataOut
+  fft.dataOut.payloadMap(fftPostInLoop) >> dataOut
+}
+
+class Rx4_0 extends RxLoop(Seq(4)) // it takes 28 min for compilation and 1 s for simulation
+  with DSPTestable[Vec[ComplexNumber], Vec[SFix]] {
+
+  override val dataIn = slave(cloneOf(ifft.dataIn))
+  override val dataOut = master Stream Vec(ifftType, 512)
+  override val latency = ifft.latency
+
+  dataIn.payloadMap(ifftPre) >> ifft.dataIn
+  ifft.dataOut.allowOverride
+  ifft.dataOut.payloadMap(ifftPost) >> dataOut
+}
+
+class Rx4_1 extends RxLoop(Seq(4)) // it takes 28 min for compilation and 1 s for simulation
+  with DSPTestable[Vec[SFix], Vec[ComplexNumber]] {
+
+  override val dataIn = slave Stream Vec(ifftType, 512)
+  override val dataOut = master Stream Vec(symbolComplexType, 256)
+  override val latency = fft.latency
+
+  fft.dataIn.allowOverride
+  dataIn >> fft.dataIn
+  fft.dataOut.payloadMap(fftPostInLoop) >> dataOut
 }
 
 class Rx0to1(actual: Int) extends RxLoop(Seq(0, 1), actual)
@@ -142,18 +165,20 @@ class Rx0to2(actual: Int) extends RxLoop(Seq(0, 1, 2), actual)
   convencs.dataOut >> dataOut
 }
 
-class Rx3to4() extends RxLoop(Seq(3, 4))
-  with DSPTestable[Bits, Vec[ComplexNumber]] {
+class Rx0to3(actual: Int) extends RxLoop(Seq(0, 1, 2, 3), actual)
+  with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
 
-  override val dataIn = slave Stream Bits(1024 bits)
-  override val dataOut = master Stream Vec(symbolComplexType, 256)
-  override val latency = interleave.latency + qammod.latency + ifft.latency + fft.latency
+  override val dataIn = slave Stream Vec(symbolComplexType, 256)
+  override val dataOut = master(cloneOf(qammod.dataOut))
+  override val latency = qamdemod.latency + deInterleave.latency +
+    vitdecs.latency + convencs.latency +
+    interleave.latency + qammod.latency
 
-  dataIn.payloadMap(bits2bools) >> interleave.dataIn
-  fft.dataOut.payloadMap(fftPost) >> dataOut
+  dataIn >> qamdemod.dataIn
+  qammod.dataOut.payloadMap(doBitMask) >> dataOut
 }
 
-class RxLoopWhole(actual:Int) extends RxLoop(Seq(0, 1, 2, 3, 4), actual)
+class RxLoopWhole(actual: Int) extends RxLoop(Seq(0, 1, 2, 3, 4), actual)
   with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
 
   override val dataIn = slave Stream Vec(symbolComplexType, 256)
@@ -162,5 +187,5 @@ class RxLoopWhole(actual:Int) extends RxLoop(Seq(0, 1, 2, 3, 4), actual)
     qamdemod.latency + deInterleave.latency + vitdecs.latency + convencs.latency + interleave.latency + qammod.latency + ifft.latency + fft.latency
 
   dataIn >> qamdemod.dataIn
-  fft.dataOut.payloadMap(fftPost) >> dataOut
+  fft.dataOut.payloadMap(fftPostInLoop) >> dataOut
 }

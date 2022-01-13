@@ -36,11 +36,12 @@ case class RxFull(actual: Int, iteration: Int = iterationNum)
   val mapped: Vec[ComplexNumber] = doBitMask(qammod.dataOut.payload)
   val shortCutOutput: Vec[ComplexNumber] = BigDelay(mapped, 54)
 
-  val deModulated = doBitMask(fftPost(fft.dataOut.payload))
+  val deModulated = doBitMask(truncComplex(shiftRight(fftPost(fft.dataOut.payload), 9), symbolType))
   val fde = fdeBuffer.dataOut.payload
 
   val diff = Vec(fde.zip(deModulated.zip(shortCutOutput)).map { case (f, (a, b)) => f - (a - b) })
 
+  // show diffs
   shortCutOutput.simPublic()
   deModulated.simPublic()
   fde.simPublic()
@@ -49,8 +50,9 @@ case class RxFull(actual: Int, iteration: Int = iterationNum)
   // FDE buffer -> Qamdemod
   val initTransfer = equalizedBuffer.io.pop.valid && fdeBuffer.dataIn.ready // fdeBuffer.dataIn.ready.fire, as fire can't be accessed outside
   qamdemod.dataIn.valid := RegNext(fdeBuffer.dataOut.valid || initTransfer, init = False)
-  //  qamdemod.dataIn.payload := RegNext(Mux(fdeBuffer.dataIn.ready, equalizedBuffer.io.pop.payload, fde)) // iter = 0
-  qamdemod.dataIn.payload := RegNext(Mux(fdeBuffer.dataIn.ready, equalizedBuffer.io.pop.payload, diff)) // iter = 4
+
+  if(iteration == 1) qamdemod.dataIn.payload := RegNext(Mux(fdeBuffer.dataIn.ready, equalizedBuffer.io.pop.payload, fde)) // no iteration
+  else qamdemod.dataIn.payload := RegNext(Mux(fdeBuffer.dataIn.ready, equalizedBuffer.io.pop.payload, diff))
 
   // Viterbi -> output
   vitdecs.dataOut.allowOverride

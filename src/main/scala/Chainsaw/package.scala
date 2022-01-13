@@ -445,6 +445,15 @@ package object Chainsaw extends RealFactory {
       stream.ready := retStream.ready
       retStream
     }
+
+    def withEnable[To <: Data](enable: Bool) = {
+      val retStream = cloneOf(stream)
+      retStream.payload := stream.payload
+      retStream.valid := stream.valid && enable
+      stream.ready := retStream.ready && enable
+      retStream
+    }
+
   }
 
 

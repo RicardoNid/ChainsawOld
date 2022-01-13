@@ -25,15 +25,18 @@ package object FTN {
 
   def getSymbolType(peak: Int) = HardType(SFix(peak exp, -(symbolWidth - 1 - peak) exp))
 
-  val Seq(symbolPeak, ifftPeak, fftPeak) = Seq(2, 7, 11)
-  val Seq(symbolType, ifftType, fftType) = Seq(symbolPeak, ifftPeak, fftPeak).map(getSymbolType)
-  val Seq(symbolComplexType, ifftComplexType, fftComplexType) = Seq(symbolType, ifftType, fftType).map(toComplexType)
-
-  // shifts on fft/ifft calculation stages
+  // datapaths and datatypes for fft/ifft
   val fftDecomposition = Seq(4, 4, 4, 4, 2) // the way we construct a 512-point fft
   val ifftShifts = Seq(2, 2, 1, 0, 0)
-  val fftShifts = Seq(2, 2, 0, 0, 0)
+  val fftShifts = Seq(2, 2, 1, 0, 0)
   val frontFftShifts = Seq(2, 2, 1, 0, 0) // this part has a wider dynamic range
+
+  val Seq(symbolPeak, ifftPeak, fftPeak, addaPeak) =
+    Seq(2, 2 + ifftShifts.sum, 2 + ifftShifts.sum + fftShifts.sum, 5)
+  val Seq(symbolType, ifftType, fftType, addaFftType) =
+    Seq(symbolPeak, ifftPeak, fftPeak, addaPeak).map(getSymbolType)
+  val Seq(symbolComplexType, ifftComplexType, fftComplexType, addaFftComplexType) =
+    Seq(symbolType, ifftType, fftType, addaFftType).map(toComplexType)
 
   // for equalizer computation
   val equalWidth = 18
@@ -51,6 +54,7 @@ package object FTN {
   val equalizationVecType = HardType(Vec(equalizationType(), equalizerWidth))
   val equalizationComplexVecType = HardType(Vec(ComplexNumber(equalizationType), equalizerWidth))
 
+  //
   def complexZero = symbolComplexType().getZero
 
   def rxComplexZero = fftComplexType().getZero
@@ -79,20 +83,27 @@ package object FTN {
 
   def bits2bools(in: Bits) = Vec(in.asBools.reverse)
 
+  def truncComplex(in: Vec[ComplexNumber], dataType: HardType[SFix]) = Vec(in.map(_.truncated(dataType)))
+
+  def shiftRight(in: Vec[ComplexNumber], shift: Int) = Vec(in.map(_ >> shift))
+
+  // construct hermitian symmetric ifft input
   def ifftPre(in: Vec[ComplexNumber]) = Vec((0 until 512).map {
     case 0 => in.head.getZero
     case 256 => in.head.getZero
     case i => if (i < 256) in(i) else in(512 - i).conj
   })
 
+  // unused channel are masked by zero
   def ifftPost(in: Vec[SFix]) =
     Vec(in.zipWithIndex.map { case (fix, i) => if (i < (channelInfo.bitMask.sum + 1) * 2) fix else fix.getZero })
+
+  // only take half of the real-valued fft results
+  def fftPost(in: Vec[ComplexNumber]) = Vec(in.take(in.length / 2))
 
   def doBitMask(in: Vec[ComplexNumber]) =
     Vec(in.zip(channelInfo.bitMask).map { case (data, mask) => if (mask == 1) data else in.head.getZero })
 
-  def doVecTrunc(in: Vec[ComplexNumber], retType: HardType[SFix]) =
-    Vec(in.map(_.truncated(retType)))
 
   // parameter for overall state machine
   val loopLength = 608
