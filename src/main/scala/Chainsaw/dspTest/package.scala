@@ -1,20 +1,14 @@
 package Chainsaw
 
-import Chainsaw.FTN.{loadFTN1d, symbolType}
+import Chainsaw.FTN.loadFTN1d
 import Chainsaw.dspTest.TestMetric.TestMetric
+import Chainsaw.matlabIO._
+import breeze.numerics.abs
 import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 import spinal.sim.SimThread
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
-import breeze.numerics.abs
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -279,6 +273,7 @@ package object dspTest {
             val yourRx: Seq[Int] = dutResult.take(16).asInstanceOf[Seq[BigInt]].flatMap(_.toString(2).padToLeft(512, '0').map(_.asDigit))
             val biterr = yourRx.slice(32 * 2, 32 * 226).zip(bits.slice(32 * 2, 32 * 226))
               .filter { case (rx, tx) => rx != tx }.length / 8192.0
+            logger.info(s"txRaw: ${bits.grouped(512).toSeq.map(bits => BigInt(bits.mkString(""), 2)).mkString("\n")}")
             logger.info(s"bit err is $biterr")
           }
 
