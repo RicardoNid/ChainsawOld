@@ -130,7 +130,7 @@ case class EqualizationFTN()
       mult1(prod1, dspNormFactor) // xk = factor.real
     }
 
-    SAVE.whenIsActive {
+    SAVE.whenIsActive { // save factor
       tk := prod0
       xk := prod1
     }

@@ -11,7 +11,7 @@ class P2STest extends AnyFlatSpec {
 
   def testP2S(p: Int, s: Int) = {
     val testCases = (0 until 10).map(_ => (0 until p).map(_ => ChainsawRand.nextBigInt(8)))
-    val goldens: Seq[Seq[BigInt]] = testCases.map(_.grouped(s).toSeq).flatten
+    val goldens: Seq[Seq[BigInt]] = testCases.flatMap(_.grouped(s).toSeq)
     doFlowPeekPokeTest(s"testP2Sat${p}to${s}", P2S(p, s, HardType(UInt(8 bits))), testCases, goldens)
   }
 

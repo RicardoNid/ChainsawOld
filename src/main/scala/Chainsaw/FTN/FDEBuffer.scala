@@ -16,7 +16,7 @@ case class FDEBuffer[T <: Data]
   override val latency = loopLength
 
   require(loopLength % frameLength == 0)
-  val iterationWidth = log2Up(iteration)
+  val iterationWidth = log2Up(iteration + 1)
   val iterationType = HardType(UInt(iterationWidth bits))
 
   // components
@@ -52,5 +52,5 @@ case class FDEBuffer[T <: Data]
   dataIn.ready := getNew
   dataOut.payload := dataTail
   dataOut.valid := RegNext(!empty, init = False)
-  val iterLast = out(RegNext(full))
+  val iterLast = out(RegNext(full, init = False))
 }

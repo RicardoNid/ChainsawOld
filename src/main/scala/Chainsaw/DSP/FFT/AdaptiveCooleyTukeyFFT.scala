@@ -50,7 +50,7 @@ case class AdaptiveCooleyTukeyFFT(N: Int, pF: Int, inverse: Boolean,
   val factorCounter = Counter(N2, inc = core0.dataOut.fire)
   logger.info(s"twiddle factors num: $N1 * $N2")
   //  val currentFactors: Vec[ComplexNumber] = twiddleFactorROM.readAsync(factorCounter.value)
-  val currentFactors: Vec[ComplexNumber] = Vec(twiddleFactorROMs.map(_.readAsync(factorCounter.value)))
+  val currentFactors: Vec[ComplexNumber] = Vec(twiddleFactorROMs.map(_.readSync(factorCounter.valueNext)))
 
   dataIn >> inter0.dataIn // outer -> inter0
   inter0.dataOut.toFlow >> core0.dataIn // inter0 -> core1

@@ -13,8 +13,10 @@ class AdaptiveQamdemodTest extends AnyFlatSpec {
   "adaptiveQamdemod" should "work" in {
 
     val symbolType = FTN.symbolComplexType
-    val bitAlloc = FTN.channelInfo.bitAlloc
-    val powAlloc = FTN.channelInfo.powAlloc
+
+    val params = FTN.FtnParams(3, 226, true)
+    val bitAlloc = params.channelInfo.bitAlloc
+    val powAlloc = params.channelInfo.powAlloc
 
     val rxModulated = loadFTN1d[Double]("rxModulated").map(_ * 512.0)
     val rxModulateGolden: Seq[Seq[Double]] = {

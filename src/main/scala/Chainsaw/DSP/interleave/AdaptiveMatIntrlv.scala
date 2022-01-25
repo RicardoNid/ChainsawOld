@@ -45,7 +45,7 @@ case class AdaptiveMatIntrlv[T <: Data](
     case 0 => // directly using the core
       val core = MatIntrlv(row, col, dataType)
       core.dataIn << dataIn
-      core.dataOut >> dataOut
+      core.dataOut.m2sPipe() >> dataOut
       core
     case 1 => // packing + core
       // parameters for packing
@@ -81,12 +81,12 @@ case class AdaptiveMatIntrlv[T <: Data](
         ret
       }
 
-      core.dataOut.payloadMap(unpack) >> dataOut
+      core.dataOut.payloadMap(unpack).m2sPipe() >> dataOut
       core
     case _ => throw new IllegalArgumentException(s"mode $mode has not been implemented yet")
   }
 
-  override val latency = core.latency
+  override val latency = core.latency + 1
 
   logger.info(s"adaptive matIntrlv latency = $latency")
 }

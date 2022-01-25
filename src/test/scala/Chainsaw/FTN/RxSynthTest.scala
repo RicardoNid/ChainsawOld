@@ -12,6 +12,10 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class RxSynthTest extends AnyFlatSpec {
 
+  implicit val ftnParams: FtnParams = FtnParams(3, 226, true)
+  import ftnParams._
+  import ftnParams.channelInfo._
+
   "Rx Gen" should "show the overall latency" in {
     GenRTL(new RxLoopWhole(512))
   }
@@ -21,8 +25,7 @@ class RxSynthTest extends AnyFlatSpec {
   it should "synth for RxFront" in VivadoSynthForTiming(RxFront(), "RxFront")
 
   it should "synth for small components in RxLoop" in {
-    import channelInfo._
-    VivadoSynthForTiming(comm.qam.AdaptiveQamdemod(bitAlloc, powAlloc, symbolComplexType), "qamdemodRx")
+    VivadoSynthForTiming(comm.qam.AdaptiveQamdemod(bitAlloc , powAlloc, symbolComplexType), "qamdemodRx")
     VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(64, 256, 1024, 1024, HardType(Bool())), "interleaveRx")
     VivadoSynthForTiming(Convenc512FTN(), "convencRx")
     VivadoSynthForTiming(comm.qam.AdaptiveQammod(bitAlloc, powAlloc, symbolType), "qammodRx")
@@ -47,9 +50,9 @@ class RxSynthTest extends AnyFlatSpec {
     VivadoSynthForTiming(DSP.FFT.CooleyTukeyRVFFT(512, 512, fftType, symbolType, Seq(4, 4, 4, 4, 2), fftShifts), "fftRx")
   }
 
-//  "RxFull" should "gen successfully" in GenRTL(RxFull(512), name = "RxFull")
+  //  "RxFull" should "gen successfully" in GenRTL(RxFull(512), name = "RxFull")
 
-  "RxFull" should "synth successfully" in VivadoSynth(RxFull(512), "RxFull")
+  "RxFull" should "synth successfully" in VivadoSynth(RxFull(512, 5), "RxFull")
 
   it should "synth for its memories" in {
     val fdeType = HardType(Vec(symbolComplexType, 256))

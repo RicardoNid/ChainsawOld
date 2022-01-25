@@ -16,8 +16,10 @@ class AdaptiveQammodTest extends AnyFunSuite {
     val testSize = 10
 
     val dataType = FTN.symbolType
-    val bitAlloc = FTN.channelInfo.bitAlloc
-    val powAlloc = FTN.channelInfo.powAlloc
+
+    val params = FTN.FtnParams(3, 226, true)
+    val bitAlloc = params.channelInfo.bitAlloc
+    val powAlloc = params.channelInfo.powAlloc
 
     val data = (0 until testSize).map(_ => bitAlloc.map(bit => ChainsawRand.nextInt(1 << bit)))
 

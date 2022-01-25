@@ -4,17 +4,34 @@ import Chainsaw._
 import spinal.core._
 import spinal.lib._
 
-case class TxDataGen() extends Component {
+import scala.language.postfixOps
 
-  val bits: Seq[BigInt] = loadFTN1d[Double]("txRaw").map(_.toInt).grouped(128).toSeq.map(bit128 => BigInt(bit128.mkString(""), 2))
-  logger.info(s"dataGen period: ${bits.length}")
-  val counter = CounterFreeRun(bits.length + 16)
+case class TxDataGen(implicit ftnParams: FtnParams) extends Component {
 
-  val rom = Mem(initialContent = bits.map(B(_, 128 bits)))
+  val frameLength = 64
+  val period = frameLength + 16
+  val bitsAllFrame = ftnParams.txBitsAll
+
+  val innerCounter = CounterFreeRun(period) // 80, 7 bits
+  val outerCounter = Counter(testSize, inc = innerCounter.willOverflow)
+
+  val rom = Mem(initialContent = bitsAllFrame.map(B(_, 128 bits)))
   val dataOut = master Stream Bits(128 bits)
 
-  val valid = counter.value < U(bits.length, log2Up(bits.length + 16) bits)
-
-  dataOut.payload := Mux(valid, rom.readSync(counter.value.takeLow(6).asUInt), dataOut.payload.getZero)
+  val valid = RegNext(innerCounter.value < U(frameLength, log2Up(period) bits), init = False)
+  dataOut.payload := Mux(valid, rom.readSync(outerCounter.value @@ innerCounter.value.takeLow(6).asUInt), dataOut.payload.getZero)
   dataOut.valid := valid
+
+  //  val frameLength = 64
+  //  val period = frameLength + 16
+  //  val bits: Seq[BigInt] = ftnParams.txBitsAll
+  //  logger.info(s"dataGen period: ${bits.length}")f
+  //  val counter = CounterFreeRun(period) // 80, 7 bits
+  //
+  //  val rom = Mem(initialContent = bits.map(B(_, 128 bits)))
+  //  val dataOut = master Stream Bits(128 bits)
+  //
+  //  val valid = RegNext(counter.value < U(bits.length, log2Up(period) bits), init = False)
+  //  dataOut.payload := Mux(valid, rom.readSync(counter.value.takeLow(6).asUInt), dataOut.payload.getZero)
+  //  dataOut.valid := valid
 }

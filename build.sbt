@@ -44,6 +44,8 @@ libraryDependencies += "com.github.dwickern" %% "scala-nameof" % "3.0.0" % "prov
 //spire
 libraryDependencies += "org.typelevel" %% "spire" % "0.17.0-M1"
 
+libraryDependencies += "com.github.tototoshi" %% "scala-csv" % "1.3.10"
+
 //ai
 libraryDependencies ++= Seq(
   "ai.djl" % "model-zoo" % "0.12.0",
@@ -67,3 +69,5 @@ libraryDependencies += "net.openhft" % "affinity" % "3.21ea5"
 
 //jetbrains
 libraryDependencies += "org.jetbrains" % "annotations" % "23.0.0"
+
+libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.0.1"

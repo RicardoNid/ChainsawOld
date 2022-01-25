@@ -120,7 +120,7 @@ case class Equalization(dspType: HardType[SFix], vecSize: Int) extends Component
       mult1(prod1, dspQuarter) // xk = factor.real
     }
 
-    SAVE.whenIsActive {
+    SAVE.whenIsActive { // save factors
       tk := prod0
       xk := prod1
     }

@@ -10,7 +10,7 @@ import spinal.lib._
 /**
  * @param golden built-in symbols of 1/-1 for channel estimation
  */
-case class EqualizerFTN(golden: Array[Int]) extends
+case class EqualizerFTN(golden: Array[Int])(implicit ftnParams: FtnParams) extends
   Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
 
   val smallVecType = HardType(Vec(smootherComplexType, 256 / 4))
@@ -42,7 +42,7 @@ case class EqualizerFTN(golden: Array[Int]) extends
   dataFIFO.io.pop >> equal.dataIn
 
   def doBitMask(in: Vec[ComplexNumber]) =
-    Vec(channelInfo.bitMask.zip(in).map { case (mask, data) => if (mask == 1) data else data.getZero })
+    Vec(ftnParams.channelInfo.bitMask.zip(in).map { case (mask, data) => if (mask == 1) data else data.getZero })
 
   equal.dataOut.payloadMap(doBitMask) >> dataOut
 }

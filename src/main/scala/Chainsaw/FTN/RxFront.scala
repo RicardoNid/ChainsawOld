@@ -5,10 +5,10 @@ import Chainsaw.dspTest._
 import spinal.core._
 import spinal.lib._
 
-case class RxFront()
+case class RxFront(implicit ftnParams: FtnParams)
   extends Component with DSPTestable[Vec[SInt], Vec[ComplexNumber]] {
 
-  override val dataIn = slave Stream Vec(ADDAType, 256)
+  override val dataIn = slave Stream Vec(ADDAType, 128)
   override val dataOut = master Stream Vec(symbolComplexType, 256)
 
   // components
@@ -38,7 +38,7 @@ case class RxFront()
 
   s2p.dataOut
     .payloadMap(fftPost)
-    .payloadMap(shiftRight(_, 8))
+    .payloadMap(shiftRight(_, 9))
     .payloadMap(truncComplex(_, smootherType)) >> fifo.io.push
 
   // fifo -> equalizer burst transfer

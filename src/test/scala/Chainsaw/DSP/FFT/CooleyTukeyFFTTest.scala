@@ -13,6 +13,7 @@ import spinal.lib._
 
 class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
 
+  // TODO: fix this test as the meaning of factors and shifts changed
   /** the fully-parameterized fft/ifft testbench
    */
   // TODO: should not test real valued ones in this method as it has a different interface

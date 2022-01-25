@@ -9,9 +9,10 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
-class RxLoop(stage: Seq[Int], actualParallelismOnVit: Int = 512) extends Component {
+class RxLoop(stage: Seq[Int], actualParallelismOnVit: Int = 512)(implicit ftnParams: FtnParams)
+  extends Component {
 
-  import channelInfo._
+  import ftnParams.channelInfo._
 
   val qamdemod = if (stage.contains(0)) comm.qam.AdaptiveQamdemod(bitAlloc, powAlloc, symbolComplexType) else null
   val deInterleave = if (stage.contains(0)) DSP.interleave.AdaptiveMatIntrlv(64, 256, 1024, 1024, HardType(Bool())) else null
@@ -24,22 +25,6 @@ class RxLoop(stage: Seq[Int], actualParallelismOnVit: Int = 512) extends Compone
   val fft = if (stage.contains(4)) DSP.FFT.CooleyTukeyRVFFT(512, 512, ifftType, coeffType, Seq(4, 4, 4, 4, 2), fftShifts) else null
 
   // transformations
-
-  def bitRemapAfterQamDemod(in: Bits) = {
-    val bools = in.asBools.reverse
-    (0 until 1024).map { i =>
-      val index = qamPositions.indexOf(i)
-      if (index == -1) False else bools(qamRemapPositions(index))
-    }.reverse.asBits()
-  }
-
-  def bitRemapBeforeQammod(in: Bits) = {
-    val bools = in.asBools.reverse
-    (0 until 1024).map { i =>
-      val index = qamRemapPositions.indexOf(i)
-      if (index == -1) False else bools(qamPositions(index))
-    }.reverse.asBits()
-  }
 
   def bitRemapBeforeVitdec(in: Vec[Bool]) = Vec((0 until 1024).map(i =>
     in(i % 2 * 512 + i / 2))
@@ -64,7 +49,7 @@ class RxLoop(stage: Seq[Int], actualParallelismOnVit: Int = 512) extends Compone
   inside(4)(ifft.dataOut.payloadMap(ifftPost) >> fft.dataIn)
 }
 
-class Rx0 extends RxLoop(Seq(0))
+class Rx0(implicit ftnParams: FtnParams) extends RxLoop(Seq(0))
   with DSPTestable[Vec[ComplexNumber], Bits] {
 
   val dataIn = slave(cloneOf(qamdemod.dataIn))
@@ -75,7 +60,7 @@ class Rx0 extends RxLoop(Seq(0))
   deInterleave.dataOut.payloadMap(bools2bits) >> dataOut
 }
 
-class Rx1(actual: Int) extends RxLoop(Seq(1), actual)
+class Rx1(actual: Int)(implicit ftnParams: FtnParams) extends RxLoop(Seq(1), actual)
   with DSPTestable[Bits, Bits] {
 
   override val dataIn = slave Stream Bits(1024 bits)
@@ -86,7 +71,7 @@ class Rx1(actual: Int) extends RxLoop(Seq(1), actual)
   vitdecs.dataOut >> dataOut
 }
 
-class Rx2 extends RxLoop(Seq(2))
+class Rx2(implicit ftnParams: FtnParams) extends RxLoop(Seq(2))
   with DSPTestable[Bits, Bits] {
 
   override val dataIn = slave Stream Bits(512 bits)
@@ -97,7 +82,7 @@ class Rx2 extends RxLoop(Seq(2))
   convencs.dataOut >> dataOut
 }
 
-class Rx3 extends RxLoop(Seq(3))
+class Rx3(implicit ftnParams: FtnParams) extends RxLoop(Seq(3))
   with DSPTestable[Bits, Vec[ComplexNumber]] {
 
   override val dataIn = slave Stream Bits(1024 bits)
@@ -108,7 +93,7 @@ class Rx3 extends RxLoop(Seq(3))
   qammod.dataOut.payloadMap(doBitMask) >> dataOut
 }
 
-class Rx4 extends RxLoop(Seq(4)) // it takes 28 min for compilation and 1 s for simulation
+class Rx4(implicit ftnParams: FtnParams) extends RxLoop(Seq(4)) // it takes 28 min for compilation and 1 s for simulation
   with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
 
   override val dataIn = slave(cloneOf(ifft.dataIn))
@@ -119,7 +104,7 @@ class Rx4 extends RxLoop(Seq(4)) // it takes 28 min for compilation and 1 s for 
   fft.dataOut.payloadMap(fftPostInLoop) >> dataOut
 }
 
-class Rx4_0 extends RxLoop(Seq(4)) // it takes 28 min for compilation and 1 s for simulation
+class Rx4_0(implicit ftnParams: FtnParams) extends RxLoop(Seq(4)) // it takes 28 min for compilation and 1 s for simulation
   with DSPTestable[Vec[ComplexNumber], Vec[SFix]] {
 
   override val dataIn = slave(cloneOf(ifft.dataIn))
@@ -131,7 +116,7 @@ class Rx4_0 extends RxLoop(Seq(4)) // it takes 28 min for compilation and 1 s fo
   ifft.dataOut.payloadMap(ifftPost) >> dataOut
 }
 
-class Rx4_1 extends RxLoop(Seq(4)) // it takes 28 min for compilation and 1 s for simulation
+class Rx4_1(implicit ftnParams: FtnParams) extends RxLoop(Seq(4)) // it takes 28 min for compilation and 1 s for simulation
   with DSPTestable[Vec[SFix], Vec[ComplexNumber]] {
 
   override val dataIn = slave Stream Vec(ifftType, 512)
@@ -143,7 +128,7 @@ class Rx4_1 extends RxLoop(Seq(4)) // it takes 28 min for compilation and 1 s fo
   fft.dataOut.payloadMap(fftPostInLoop) >> dataOut
 }
 
-class Rx0to1(actual: Int) extends RxLoop(Seq(0, 1), actual)
+class Rx0to1(actual: Int)(implicit ftnParams: FtnParams) extends RxLoop(Seq(0, 1), actual)
   with DSPTestable[Vec[ComplexNumber], Bits] {
 
   override val dataIn = slave Stream Vec(symbolComplexType, 256)
@@ -154,7 +139,7 @@ class Rx0to1(actual: Int) extends RxLoop(Seq(0, 1), actual)
   vitdecs.dataOut >> dataOut
 }
 
-class Rx0to2(actual: Int) extends RxLoop(Seq(0, 1, 2), actual)
+class Rx0to2(actual: Int)(implicit ftnParams: FtnParams) extends RxLoop(Seq(0, 1, 2), actual)
   with DSPTestable[Vec[ComplexNumber], Bits] {
 
   override val dataIn = slave Stream Vec(symbolComplexType, 256)
@@ -165,7 +150,7 @@ class Rx0to2(actual: Int) extends RxLoop(Seq(0, 1, 2), actual)
   convencs.dataOut >> dataOut
 }
 
-class Rx0to3(actual: Int) extends RxLoop(Seq(0, 1, 2, 3), actual)
+class Rx0to3(actual: Int)(implicit ftnParams: FtnParams) extends RxLoop(Seq(0, 1, 2, 3), actual)
   with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
 
   override val dataIn = slave Stream Vec(symbolComplexType, 256)
@@ -178,13 +163,15 @@ class Rx0to3(actual: Int) extends RxLoop(Seq(0, 1, 2, 3), actual)
   qammod.dataOut.payloadMap(doBitMask) >> dataOut
 }
 
-class RxLoopWhole(actual: Int) extends RxLoop(Seq(0, 1, 2, 3, 4), actual)
+class RxLoopWhole(actual: Int)(implicit ftnParams: FtnParams) extends RxLoop(Seq(0, 1, 2, 3, 4), actual)
   with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
 
   override val dataIn = slave Stream Vec(symbolComplexType, 256)
   override val dataOut = master Stream Vec(symbolComplexType, 256)
   override val latency =
     qamdemod.latency + deInterleave.latency + vitdecs.latency + convencs.latency + interleave.latency + qammod.latency + ifft.latency + fft.latency
+
+  logger.info(s"latency of RxLoopWhole is $latency")
 
   dataIn >> qamdemod.dataIn
   fft.dataOut.payloadMap(fftPostInLoop) >> dataOut

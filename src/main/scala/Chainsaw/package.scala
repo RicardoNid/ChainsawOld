@@ -46,6 +46,11 @@ package object Chainsaw extends RealFactory {
    */
   case class partiallyPipelined() extends scala.annotation.StaticAnnotation
 
+  /** indicating that a module has a registered output, which would not contribute to the critical path of the module it drives
+   *
+   */
+  case class outputRegistered() extends scala.annotation.StaticAnnotation
+
   import org.slf4j.{LoggerFactory, Logger}
 
   val logger = LoggerFactory.getLogger("Chainsaw logger")

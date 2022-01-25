@@ -1,19 +1,11 @@
-def dbc(n:Double, d:Double) = {
-  // d is close to 1, n is within [0.5, 2)
-  var x = n
-  var t = d
-  (0 until 12).foreach{_ =>
-    val f = 2 - t
-    x = x * f
-    t = t * f
-  }
-  x
-}
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.lib.fsm._
 
-import breeze.linalg._
-import breeze.math._
-import breeze.numerics._
-import breeze.numerics.constants._
-import breeze.signal._
+import Chainsaw._
+import Chainsaw.matlabIO._
+import Chainsaw.dspTest._
 
-abs(Complex(1,1))
+Seq(1,2,3).slice(0,4)
+

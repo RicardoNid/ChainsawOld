@@ -5,26 +5,17 @@ import spinal.core._
 import spinal.core.sim.{SimConfig, _}
 import spinal.lib._
 
-case class TxOnBoard() extends Component {
+case class TxOnBoard(implicit ftnParams: FtnParams) extends Component {
 
   val txDataGen = TxDataGen()
-  val tx = TxWhole(channelInfo)
+  val tx = TxWhole()
+  val s2p = DSP.S2P(128,512,UInt(6 bits))
+  val txPacking = TxPacking()
 
   val dataOut = master Stream Bits(768 bits)
 
   txDataGen.dataOut >> tx.dataIn
-
-  dataOut.valid := tx.dataOut.valid
-  dataOut.payload := Mux(tx.dataOut.valid, tx.dataOut.payload.asBits, Bits(768 bits).getZero)
-
-}
-
-object TxOnBoard extends App {
-  GenRTL(TxOnBoard(), name = "TxOnBoard")
-  SimConfig.withFstWave.compile(TxOnBoard()).doSim{dut =>
-
-    dut.clockDomain.forkStimulus(2)
-    dut.clockDomain.waitSampling(500)
-  }
-
+  tx.dataOut >> s2p.dataIn
+  s2p.dataOut >> txPacking.dataIn
+  txPacking.dataOut.payloadMap(_.asBits) >> dataOut
 }
