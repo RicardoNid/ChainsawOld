@@ -28,11 +28,12 @@ case class CooleyTukeyFFT(N: Int, inverse: Boolean, // determining the transform
 
   // checking for validity
   require(factors.product == N)
-  if (shifts != null) require(shifts.length == factors.length)
+  val validShifts = if (shifts == null) factors.map(_ => 0) else shifts
+  if (validShifts != null) require(validShifts.length == factors.length)
   if (coeffType().maxExp != 1) logger.warn(s"range of fft/ifft coeffs is [-1, 1], ${coeffType().maxExp} bits for integral part is redundant")
 
   // determining shifts
-  val shiftOnStages = if (shifts == null) Seq.fill(factors.length)(0) else shifts
+  val shiftOnStages = if (validShifts == null) Seq.fill(factors.length)(0) else validShifts
 
   // I/O
   val complexDataType = toComplexType(dataType)
@@ -86,7 +87,7 @@ case class CooleyTukeyFFT(N: Int, inverse: Boolean, // determining the transform
   override val latency = factors.map(getDft(_).latency).sum + (factors.length - 1) * cmultConfig.pipeline
 
   // wrapper
-  dataOut.payload := Vec(build(dataIn.payload, factors, shifts))
+  dataOut.payload := Vec(build(dataIn.payload, factors, validShifts))
   dataOut.valid := Delay(dataIn.valid, latency, init = False)
 
   // utils for shifts

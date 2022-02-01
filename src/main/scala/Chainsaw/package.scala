@@ -7,7 +7,7 @@ import spinal.core.internals.{BaseNode, DeclarationStatement, GraphUtils, PhaseC
 import spinal.core.sim._
 import spinal.lib._
 import spinal.sim._
-import xilinx.{IMPL, VivadoFlow, VivadoTask}
+import xilinx.{IMPL, VivadoFlow}
 
 import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Path, Paths}
@@ -465,7 +465,7 @@ package object Chainsaw extends RealFactory {
   /** following methods are designed for doing synth/impl through command-line
    * for these methods, the results are exported to a default dir in this project, the sub dir can be specific by name field
    */
-  def GenRTL[T <: Component](gen: => T, print: Boolean = false, name: String = "temp") = {
+  def GenRTL[T <: Component](gen: => T, name: String = "temp") = {
     val targetDirectory = s"./elaboWorkspace/$name"
     if (!Files.exists(Paths.get("./elaboWorkspace"))) doCmd("mkdir elaboWorkspace")
     new File(targetDirectory).mkdir()
@@ -474,13 +474,14 @@ package object Chainsaw extends RealFactory {
       .map(Paths.get(_))
       .map(path => if (path.isAbsolute) path else path.toAbsolutePath)
       .mkString("\n"))
-    if (print) println(report.getRtlString())
+    logger.info(s"source files generated:\n${report.getRtlString()}")
     val succeed = report.unusedSignals.isEmpty // FIXME: this definition is terrible, but we use it currently
     succeed
   }
 
   val synthWorkspace = "/home/ltr/IdeaProjects/Chainsaw/synthWorkspace"
 
+  import xilinx._
 
   import scala.annotation.meta._
 
@@ -490,49 +491,47 @@ package object Chainsaw extends RealFactory {
   @beanSetter
   class xilinxDevice(message: String = "", since: String = "") extends scala.annotation.StaticAnnotation
 
+  def getDutForTiming[Ti <: Data, To <: Data](gen: => Component with DSPTestable[Ti, To]) =
+    new Component { // constructing dut with extra registers
+      val core = gen
+      val dataIn = in(cloneOf(core.dataIn.payload))
+      val dataOut = out(cloneOf(core.dataOut.payload))
+
+      logger.info(s"synth for timing, " +
+        s"${core.dataIn.payload.getBitsWidth + core.dataOut.payload.getBitsWidth} extra regs added")
+
+      core.dataIn.valid := True
+      core.dataOut match {
+        case stream: Stream[_] => stream.ready := True
+        case _ =>
+      }
+
+      core.dataIn.payload := RegNext(dataIn)
+      dataOut := RegNext(core.dataOut.payload)
+    }
+
 
   def VivadoSynth[T <: Component](gen: => T, name: String = "temp") = {
-    val report = VivadoFlow(design = gen, name, s"$synthWorkspace/$name").doit()
+    val report = VivadoFlow(design = gen, taskType = SYNTH, topModuleName = name, workspacePath = s"$synthWorkspace/$name").doFlow()
     report.printArea()
     report.printFMax()
     report
   }
 
-  def VivadoSynth(sourcePath: String): Unit = {
-    val report = VivadoFlow(design = Chainsaw.examples.ZyboDesign0(), "temp", s"$synthWorkspace/temp", designPath = sourcePath).doit()
-    report.printArea()
-    report.printFMax()
-  }
-
+  /** compared with VivadoSynth, this method insert registers before inputs and after outputs, which lead to more accurate timing report
+   */
   def VivadoSynthForTiming[Ti <: Data, To <: Data]
-  (gen: => Component with DSPTestable[Ti, To], name: String = "temp") =
-    VivadoSynth(
-      new Component {
-        val core = gen
-        val dataIn = in(cloneOf(core.dataIn.payload))
-        val dataOut = out(cloneOf(core.dataOut.payload))
+  (gen: => Component with DSPTestable[Ti, To], name: String = "temp") = VivadoSynth(getDutForTiming(gen), name)
 
-        logger.info(s"synth for timing, " +
-          s"${core.dataIn.payload.getBitsWidth + core.dataOut.payload.getBitsWidth} extra regs added")
-
-        core.dataIn.valid := True
-        core.dataOut match {
-          case stream: Stream[_] => stream.ready := True
-          case _ =>
-        }
-
-        core.dataIn.payload := RegNext(dataIn)
-        dataOut := RegNext(core.dataOut.payload)
-      },
-      name
-    )
-
-  def VivadoImpl[T <: Component](gen: => T, name: String = "temp", xdcPath: String = "") = {
-    val report = VivadoFlow(design = gen, name, s"$synthWorkspace/$name", vivadoTask = VivadoTask(taskType = IMPL)).doit()
+  def VivadoImpl[T <: Component](gen: => T, name: String = "temp", xdcPath: String = null) = {
+    val report = VivadoFlow(design = gen, taskType = IMPL, topModuleName = name, workspacePath = s"$synthWorkspace/$name").doFlow()
     report.printArea()
     report.printFMax()
     report
   }
+
+  def VivadoImplForTiming[Ti <: Data, To <: Data]
+  (gen: => Component with DSPTestable[Ti, To], name: String = "temp", xdcPath: String = null) = VivadoImpl(getDutForTiming(gen), name, xdcPath)
 
   val config0 = ClockDomainConfig(resetKind = ASYNC)
   val config1 = ClockDomainConfig(resetKind = SYNC)

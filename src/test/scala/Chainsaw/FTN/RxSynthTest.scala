@@ -26,10 +26,10 @@ class RxSynthTest extends AnyFlatSpec {
 
   it should "synth for small components in RxLoop" in {
     VivadoSynthForTiming(comm.qam.AdaptiveQamdemod(bitAlloc , powAlloc, symbolComplexType), "qamdemodRx")
-    VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(64, 256, 1024, 1024, HardType(Bool())), "interleaveRx")
-    VivadoSynthForTiming(Convenc512FTN(), "convencRx")
-    VivadoSynthForTiming(comm.qam.AdaptiveQammod(bitAlloc, powAlloc, symbolType), "qammodRx")
-    VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(256, 64, 1024, 1024, HardType(Bool())), "deInterleaveRx")
+//    VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(64, 256, 1024, 1024, HardType(Bool())), "interleaveRx")
+//    VivadoSynthForTiming(Convenc512FTN(), "convencRx")
+//    VivadoSynthForTiming(comm.qam.AdaptiveQammod(bitAlloc, powAlloc, symbolType), "qammodRx")
+//    VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(256, 64, 1024, 1024, HardType(Bool())), "deInterleaveRx")
   }
 
   it should "synth for all components in RxFront" in {

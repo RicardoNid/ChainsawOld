@@ -168,4 +168,7 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
 
   it should "synth for pipelined" in VivadoSynthForTiming(
     CooleyTukeyFFT(8, false, HardType(SFix(2 exp, -11 exp)), HardType(SFix(2 exp, -11 exp)), Seq(4, 2)))
+
+  it should "impl for pipelined" in VivadoImplForTiming(
+    CooleyTukeyFFT(8, inverse = false, HardType(SFix(2 exp, -11 exp)), HardType(SFix(2 exp, -11 exp)), Seq(4, 2)))
 }

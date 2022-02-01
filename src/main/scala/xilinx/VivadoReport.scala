@@ -6,9 +6,10 @@ import java.nio.file.Paths
 import scala.io.Source
 import XilinxDeviceFamily._
 
-class VivadoReport(workspacePath: String,
-                   deviceFamily: XilinxDeviceFamily,
-                   frequencyTarget: HertzNumber = null
+class VivadoReport(
+                    workspacePath: String,
+                    deviceFamily: XilinxDeviceFamily,
+                    fmax: HertzNumber = null
                   ) {
   private val report = Source.fromFile(Paths.get(workspacePath, "doit.log").toFile).getLines.mkString
 
@@ -46,7 +47,7 @@ class VivadoReport(workspacePath: String,
   val DSP = if (deviceFamily == UltraScale) getIntAfter("DSPs") else 0
   val BRAM = if (deviceFamily == UltraScale) getIntAfter("Block RAM Tile") else 0
 
-  private val targetPeriod = (if (frequencyTarget != null) frequencyTarget else 400 MHz).toTime
+  private val targetPeriod = (if (fmax != null) fmax else 400 MHz).toTime
   private val slack = getDoubleBefore("required time - arrival time") //
   val Frequency = 1.0 / (targetPeriod.toDouble - slack * 1e-9) // 1 / (T - WNS)
 

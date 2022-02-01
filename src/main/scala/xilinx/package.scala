@@ -1,4 +1,7 @@
 import spinal.core._
+import org.apache.commons.io.FileUtils
+
+import java.io.File
 
 package object xilinx {
 
@@ -8,13 +11,13 @@ package object xilinx {
 
   val XilinxClockConfig = ClockDomainConfig(resetKind = BOOT)
 
-  sealed trait TaskType
+  sealed trait VivadoTaskType
 
-  object ELABO extends TaskType
+  object ELABO extends VivadoTaskType
 
-  object SYNTH extends TaskType
+  object SYNTH extends VivadoTaskType
 
-  object IMPL extends TaskType
+  object IMPL extends VivadoTaskType
 
   object XilinxDeviceFamily extends Enumeration {
     type XilinxDeviceFamily = Value
@@ -32,13 +35,7 @@ package object xilinx {
     softResetActiveLevel = HIGH,
     clockEnableActiveLevel = HIGH)
 
-  val defaultVivadoConfig = VivadoConfig( // default vivadoConfig for linux
-    xilinxDeviceFamily = UltraScale,
-    //    xilinxDeviceFamily = Series7,
-    //    devicePart = "xczu7ev-ffvc1156-2-e", // ZCU104
-    //        devicePart = "xc7vx690tffg1761-2", // VC709
-    devicePart = "xcvu9p-flga2104-2-i", // VU9P for FTN
-    //    devicePart = "xc7z010", // ZYBO
-    processortCount = 10
-  )
+  val vu9p = XilinxDevice(UltraScale, "xcvu9p-flga2104-2-i", 288 MHz)
+  val zybo = XilinxDevice(Series7, "xc7z010", 100 MHz, constraint = FileUtils.readFileToString(new File("./src/main/resources/zybo.xdc")))
+  //  val zcu104 = XilinxDevice(Series7, "xczu7ev-ffvc1156-2-e", 200MHz)
 }
