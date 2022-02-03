@@ -17,6 +17,7 @@ case class Lfsr(poly: Seq[Int], vec: Boolean = false) extends Component {
   val guide = poly.init.reverse // using this as a guide to build lfsr of internal type
 
   val lastReg = RegInit(True) // the last reg(highest order term in the polynomial) is special
+  lastReg.addAttribute("max_fanout", 50)
 
   val inits = guide.init.map { i =>
     val head = Reg(Bool())
@@ -31,10 +32,12 @@ case class Lfsr(poly: Seq[Int], vec: Boolean = false) extends Component {
   heads.tail.zip(lasts.init).foreach { case (head, last) => head := last }
   lastReg := lasts.last
 
-  if (vec) out(Vec(heads :+ lastReg).asBits) else out(lastReg.asBits)
+  val dataOut =  if (vec) out(Vec(heads :+ lastReg).asBits) else out(lastReg.asBits)
 }
 
 object Lfsr extends App {
-  GenRTL(Lfsr(Seq(1, 1, 0, 1, 1)))
-  VivadoSynth(Lfsr(Seq(1, 1, 0, 1, 1)))
+  //  GenRTL(Lfsr(Seq(1, 1, 0, 1, 1)))
+  //  VivadoSynth(Lfsr(Seq(1, 1, 0, 1, 1)))
+  //  VivadoSynth(Lfsr(Seq.fill(500)(1)))
+  VivadoSynth(Lfsr(Seq.fill(500)(1)))
 }

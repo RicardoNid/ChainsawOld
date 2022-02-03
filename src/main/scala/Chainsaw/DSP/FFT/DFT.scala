@@ -41,6 +41,7 @@ case class DFT(N: Int, inverse: Boolean = false,
       //      else Vec(Seq(A + B, C + D.multiplyI, A - B, C - D.multiplyI).map(complex => RegNext(complex >> 2)))
       else Vec(Seq(A + B, C + D.multiplyI, A - B, C - D.multiplyI))
     }
+    // TODO: 8-point inverse implementation
     case 8 => {
       if (!inverse) {
         // stage 0

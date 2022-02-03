@@ -8,3 +8,9 @@ trait DSPTestable[Di <: Data, Do <: Data] {
   val dataOut: DataCarrier[Do]
   val latency: Int
 }
+
+trait DSPTestableVec[Di <: Data, Do <: Data] {
+  val dataIn: DataCarrier[Vec[Di]]
+  val dataOut: DataCarrier[Vec[Do]]
+  val latency: Int
+}

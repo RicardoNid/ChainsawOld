@@ -14,6 +14,7 @@ import spinal.lib._
 class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
 
   // TODO: fix this test as the meaning of factors and shifts changed
+
   /** the fully-parameterized fft/ifft testbench
    */
   // TODO: should not test real valued ones in this method as it has a different interface
@@ -170,5 +171,13 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
     CooleyTukeyFFT(8, false, HardType(SFix(2 exp, -11 exp)), HardType(SFix(2 exp, -11 exp)), Seq(4, 2)))
 
   it should "impl for pipelined" in VivadoImplForTiming(
-    CooleyTukeyFFT(8, inverse = false, HardType(SFix(2 exp, -11 exp)), HardType(SFix(2 exp, -11 exp)), Seq(4, 2)))
+    CooleyTukeyFFT(N = 16, inverse = false, HardType(SFix(2 exp, -11 exp)), HardType(SFix(2 exp, -11 exp)), Seq(4, 4)))
+
+  it should "be better than Xilinx IP" in {
+    val fp18 = HardType(SFix(1 exp, -16 exp))
+    val fp24 = HardType(SFix(6 exp, -17 exp))
+    VivadoSynth(
+      AdaptiveCooleyTukeyFFT(1024, 128, false, fp24, fp18, Seq(4, 4, 4, 2, 8), Seq(0, 0, 0, 0, 0, 0))
+    )
+  }
 }

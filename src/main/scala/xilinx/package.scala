@@ -36,6 +36,6 @@ package object xilinx {
     clockEnableActiveLevel = HIGH)
 
   val vu9p = XilinxDevice(UltraScale, "xcvu9p-flga2104-2-i", 288 MHz)
-  val zybo = XilinxDevice(Series7, "xc7z010", 100 MHz, constraint = FileUtils.readFileToString(new File("./src/main/resources/zybo.xdc")))
+  val zybo = XilinxDevice(Series7, "xc7z010", 125 MHz, constraint = FileUtils.readFileToString(new File("./src/main/resources/zybo.xdc")))
   //  val zcu104 = XilinxDevice(Series7, "xczu7ev-ffvc1156-2-e", 200MHz)
 }

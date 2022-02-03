@@ -6,7 +6,7 @@ import Chainsaw.dspTest.DSPTestable
 import spinal.core._
 import spinal.lib._
 
-/** implement fft hardware by CooleyTukey indexing method, the output is digit-reversed
+/** implement fully-paralleled fft hardware by CooleyTukey indexing method, the output is digit-reversed
  *
  * @param N           length of fft/ifft
  * @param inverse     fft/ifft

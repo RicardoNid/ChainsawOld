@@ -74,7 +74,7 @@ class VivadoFlow[T <: Component](
     if (extraRtlSources != null) extraRtlSources.foreach(script += getReadCommand(_))
 
     // read constraint sources
-    if (alterXdc != null) script += s"read_xdc $alterXdc" else script += s"read_xdc doit.xdc\n"
+    script += s"read_xdc doit.xdc\n"
 
     taskType match {
 
@@ -83,11 +83,13 @@ class VivadoFlow[T <: Component](
         script += s"write_checkpoint -force ${topModuleName}_after_synth.dcp\n"
       case IMPL =>
         script += s"synth_design -part ${xilinxDevice.part} -top ${topModuleName}\n"
+        script += s"write_checkpoint -force ${topModuleName}_after_synth.dcp\n"
         script += "opt_design\n"
         script += "place_design\n"
         script += s"write_checkpoint -force ${topModuleName}_after_place.dcp\n"
         script += "route_design\n"
         script += s"write_checkpoint -force ${topModuleName}_after_route.dcp\n"
+        script += s"write_bitstream -force ${topModuleName}.bit\n"
     }
     // util & timing can't be reported before synthesis
     script += s"report_utilization\n"
@@ -144,7 +146,7 @@ object VivadoFlow {
   def apply[T <: Component](
                              design: => T, taskType: VivadoTaskType,
                              vivadoConfig: VivadoConfig = VivadoConfig(),
-                             xilinxDevice: XilinxDevice = zybo,
+                             xilinxDevice: XilinxDevice = vu9p,
                              topModuleName: String = null, workspacePath: String = null, alterXdc: String = null, extraRtlSources: Seq[String] = null): VivadoFlow[T] =
     new VivadoFlow(design, taskType, vivadoConfig, xilinxDevice, topModuleName, workspacePath, alterXdc, extraRtlSources)
 }

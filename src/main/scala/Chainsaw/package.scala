@@ -406,6 +406,8 @@ package object Chainsaw extends RealFactory {
       ret := sf.truncated
       ret
     }
+
+    def delay(cycle: Int) = Delay(sf, cycle)
   }
 
   implicit class VecUtil[T <: Data](vec: Vec[T]) {
@@ -510,6 +512,33 @@ package object Chainsaw extends RealFactory {
       dataOut := RegNext(core.dataOut.payload)
     }
 
+  def getDutForImpl[Ti <: Data, To <: Data](gen: => Component with DSPTestable[Ti, To]) =
+    new Component { // constructing dut with extra registers
+      val core = gen
+
+      import Chainsaw.crypto.Lfsr
+
+      val inputWidth = core.dataIn.payload.getBitsWidth
+      val poly: Seq[Int] = 1 +: (0 until inputWidth - 1).map(_ => ChainsawRand.nextInt(2)) :+ 1
+      val inputGen = Lfsr(poly, vec = true)
+
+      val topOut = out Bool()
+
+      logger.info(s"synth for timing, " +
+        s"${core.dataIn.payload.getBitsWidth + core.dataOut.payload.getBitsWidth} extra regs added")
+
+      core.dataIn.valid := True
+      core.dataOut match {
+        case stream: Stream[_] => stream.ready := True
+        case _ =>
+      }
+
+      core.dataIn.payload.assignFromBits(RegNext(inputGen.dataOut))
+      val xor = (a: Bool, b: Bool) => a ^ b
+      val bridge = (a: Bool, i: Int) => if (i % 3 == 2) RegNext(a) else a
+      topOut := RegNext(core.dataOut.payload).asBits.asBools.reduceBalancedTree(xor, bridge)
+    }
+
 
   def VivadoSynth[T <: Component](gen: => T, name: String = "temp") = {
     val report = VivadoFlow(design = gen, taskType = SYNTH, topModuleName = name, workspacePath = s"$synthWorkspace/$name").doFlow()
@@ -531,7 +560,7 @@ package object Chainsaw extends RealFactory {
   }
 
   def VivadoImplForTiming[Ti <: Data, To <: Data]
-  (gen: => Component with DSPTestable[Ti, To], name: String = "temp", xdcPath: String = null) = VivadoImpl(getDutForTiming(gen), name, xdcPath)
+  (gen: => Component with DSPTestable[Ti, To], name: String = "temp", xdcPath: String = null) = VivadoImpl(getDutForImpl(gen), name, xdcPath)
 
   val config0 = ClockDomainConfig(resetKind = ASYNC)
   val config1 = ClockDomainConfig(resetKind = SYNC)

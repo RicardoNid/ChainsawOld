@@ -1,16 +1,20 @@
 package xilinx
 
 import spinal.core._
+import Chainsaw._
 
 import java.nio.file.Paths
 import scala.io.Source
 import XilinxDeviceFamily._
+
+import scala.language.postfixOps
 
 class VivadoReport(
                     workspacePath: String,
                     deviceFamily: XilinxDeviceFamily,
                     fmax: HertzNumber = null
                   ) {
+
   private val report = Source.fromFile(Paths.get(workspacePath, "doit.log").toFile).getLines.mkString
 
   private val intFind = "(\\d+,?)+".r // Regex to find int
@@ -34,29 +38,29 @@ class VivadoReport(
     }
   }
 
-  // todo : 实现7-series的报告提取
-  /* continue
+  /* TODO:
   extract more attribute from doit.log
   1.build your "XXXFind" regex according to the attribute type
   2.build a "getXXX" method to extract your pattern safely
   3.create a field of VivadoReport, implement the corresponding "printXXX" method
    */
 
-  val LUT = if (deviceFamily == UltraScale) getIntAfter("CLB LUTs\\*") else 0
-  val FF = if (deviceFamily == UltraScale) getIntAfter("CLB Registers") else 0
-  val DSP = if (deviceFamily == UltraScale) getIntAfter("DSPs") else 0
-  val BRAM = if (deviceFamily == UltraScale) getIntAfter("Block RAM Tile") else 0
+  val LUT = if (deviceFamily == UltraScale) getIntAfter("CLB LUTs\\*")
+  else getIntAfter("Slice LUTs")
 
-  private val targetPeriod = (if (fmax != null) fmax else 400 MHz).toTime
-  private val slack = getDoubleBefore("required time - arrival time") //
-  val Frequency = 1.0 / (targetPeriod.toDouble - slack * 1e-9) // 1 / (T - WNS)
+  val FF = if (deviceFamily == UltraScale) getIntAfter("CLB Registers")
+  else getIntAfter("Slice Registers")
 
+  val DSP = getIntAfter("DSPs")
+  val BRAM = getIntAfter("Block RAM Tile")
 
-  def printArea() = println(s"LUT: ${LUT}\nFF: ${FF}\nDSP: ${DSP}\nBRAM: ${BRAM}\n")
+  private val targetPeriod = fmax.toTime.toDouble
+  private val slack = getDoubleBefore("required time - arrival time") * 1e-9 //
+  val Frequency = 1.0 / (targetPeriod - slack) // 1 / (T - WNS)
 
-  def printFMax() = println(s"Frequency: ${Frequency / 1E6} MHz\n")
+  def printArea(): Unit = logger.info(s"LUT: ${LUT}\nFF: ${FF}\nDSP: ${DSP}\nBRAM: ${BRAM}\n")
+  def printFMax(): Unit = logger.info(s"fmax = 1.0 / ($targetPeriod s - $slack s) = ${Frequency / 1E6} MHz\n")
 
-  // fixme : not working now
   def getReport = Array(LUT.toString, FF.toString, DSP.toString, BRAM.toString, Frequency.toString)
 
   override def toString: String = s"LUT $LUT, FF $FF, DSP $DSP, BRAM $BRAM, Freq $Frequency"
