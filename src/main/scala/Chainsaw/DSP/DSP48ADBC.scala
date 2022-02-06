@@ -15,7 +15,7 @@ case class DSP48ADBC() extends Component {
 
   val a,b,c,d = in SFix(2 exp, -15 exp)
 
-  val ret = (((a +^ d).delay(1) * b.delay(1)).delay(1) + c.delay(2)).delay(1)
+  val ret = (((a +^ d).d(1) * b.d(1)).d(1) + c.d(2)).d(1)
   out(ret)
 }
 

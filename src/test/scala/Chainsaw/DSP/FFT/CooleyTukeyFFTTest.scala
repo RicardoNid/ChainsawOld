@@ -41,7 +41,7 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
     }
     val goldens: Seq[DenseVector[BComplex]] = if (!inverse) testCases.map(Dft.dft(_)) else testCases.map(Dft.idft(_))
 
-    SimConfig.withWave.compile {
+    SimConfig.withFstWave.compile {
       if (parallelism == 1) CooleyTukeyFFT(N = testLength, inverse = inverse, dataType, coeffType, factors = factors)
       else AdaptiveCooleyTukeyFFT(testLength, parallelFactor, inverse, dataType, coeffType, factors1, factors2)
     }.doSim { dut =>
@@ -65,6 +65,8 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
         val diff = golden.toDv - dut.toDv
         println(golden)
         println(dut.toDv)
+        //        println(golden.zip(dut).map{ case (complex, complex1) => complex - complex1}
+        //          .filter(_.abs > 0.01).mkString(" "))
         assert(golden.toDv ~= (dut.toDv, epsilon), max(abs(diff)))
       }
     }
@@ -89,7 +91,7 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
     val testIfft: Int => Unit = simpleRadixRTest(64, _, 1, inverse = true, 0.5)
     Seq(2, 4, 8).foreach { radix =>
       testFft(radix)
-      if (radix != 8) testIfft(radix) // skip radix-8 inverse
+      testIfft(radix) // skip radix-8 inverse
       logger.info(s"radix-$radix fft/ifft passed")
     }
   }
@@ -103,10 +105,16 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
     }
   }
 
+  it should "synth for 128-point" in {
+    val dataType = HardType(SFix(7 exp, 16 bits))
+    val coeffType = HardType(SFix(1 exp, 16 bits))
+    //    VivadoSynthForTiming(CooleyTukeyFFT(128, false, dataType, coeffType, Seq(4, 4, 4, 2)))
+    VivadoSynthForTiming(CooleyTukeyFFT(128, false, dataType, coeffType, Seq(8, 8, 2)))
+  }
+
   it should "synth for FTN" in {
     VivadoSynth(
       new Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
-        // TODO: when using 18 bits, way too big signal would appear
         val dspType = HardType(SFix(7 exp, 16 bits))
         val core = AdaptiveCooleyTukeyFFT(512, 256, true, dspType, dspType, Seq(4, 4, 4, 4), Seq(2))
         override val dataIn = slave(cloneOf(core.dataIn))
@@ -122,7 +130,7 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
     val testCases = (0 until 10).map(_ => ChainsawRand.nextComplexDV(64))
     val goldens: Seq[DenseVector[BComplex]] = testCases.map(Dft.dft(_))
 
-    SimConfig.withWave.compile {
+    SimConfig.withFstWave.compile {
       new Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
 
         import DSP.{P2S, S2P}

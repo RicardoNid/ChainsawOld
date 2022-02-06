@@ -1,9 +1,11 @@
 package Chainsaw.DSP.FFT
 
 import Chainsaw._
+import Chainsaw.dspTest.DSPTestable
 import spinal.core._
 import spinal.lib._
 
+import scala.language.postfixOps
 import scala.math.sqrt
 
 /** implement dft(without decomposition) by "best practice" of given length, including radix2,4,8 and winograd dft
@@ -14,9 +16,14 @@ import scala.math.sqrt
  * @param coeffType hard type of coeffs
  * @see TODO: add references
  */
-case class DFT(N: Int, inverse: Boolean = false,
-               dataType: HardType[SFix], coeffType: HardType[SFix]) extends Component {
 
+// with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]]
+
+case class DFT(N: Int, inverse: Boolean = false,
+               dataType: HardType[SFix], coeffType: HardType[SFix])
+  extends Component {
+
+  this.setDefinitionName(s"DFT_$N")
   val complexDataType = HardType(ComplexNumber(dataType().maxExp, dataType().minExp))
   val dataIn = in Vec(complexDataType(), N)
   val dataOut = out Vec(complexDataType(), N)
@@ -25,82 +32,69 @@ case class DFT(N: Int, inverse: Boolean = false,
 
   def butterfly(A: ComplexNumber, B: ComplexNumber) = Seq(A + B, A - B)
 
-  val ret = N match {
-    // for 2, 4, 8, use the given box
-    case 2 => {
-      if (!inverse) Vec(Seq(dataIn(0) + dataIn(1), dataIn(0) - dataIn(1)).map(RegNext(_)))
-      //      else Vec(Seq(dataIn(0) + dataIn(1), dataIn(0) - dataIn(1)).map(complex => RegNext(complex >> 1)))
-      else Vec(Seq(dataIn(0) + dataIn(1), (dataIn(0) - dataIn(1))))
-    }
-    case 4 => {
-      val A = RegNext(dataIn(0) + dataIn(2))
-      val B = RegNext(dataIn(1) + dataIn(3))
-      val C = RegNext(dataIn(0) - dataIn(2))
-      val D = RegNext(dataIn(1) - dataIn(3))
-      if (!inverse) Vec(Seq(A + B, C - D.multiplyI, A - B, C + D.multiplyI).map(RegNext(_)))
-      //      else Vec(Seq(A + B, C + D.multiplyI, A - B, C - D.multiplyI).map(complex => RegNext(complex >> 2)))
-      else Vec(Seq(A + B, C + D.multiplyI, A - B, C - D.multiplyI))
-    }
-    // TODO: 8-point inverse implementation
-    case 8 => {
-      if (!inverse) {
-        // stage 0
-        val zipped = dataIn.take(4).zip(dataIn.takeRight(4))
-        val A = RegNext(Vec(zipped.map { case (number, number1) => number + number1 } ++ zipped.map { case (number, number1) => number - number1 }))
-        // stage 1
-        val B = Vec(complexDataType(), 8)
-        B(0) := A(0) + A(2)
-        B(1) := A(1) + A(3)
-        B(2) := A(0) - A(2)
-        B(3) := A(1) - A(3)
-        B(4) := A(4)
-        B(5) := A(5) + A(7)
-        B(6) := A(6)
-        B(7) := A(5) - A(7)
-        val BDelayed = Delay(B, 2)
-        // stage 2
-        val C = Vec(complexDataType(), 8)
-        val CTemp = Vec(complexDataType(), 2) // for dataWidth
-
-        val sqrt2coeff = SF(1 / sqrt(2), coeffType().maxExp exp, coeffType().minExp exp)
-        CTemp(0).real := (RegNext(B(5)) * sqrt2coeff).real.truncated
-        CTemp(0).imag := (RegNext(B(5)) * sqrt2coeff).imag.truncated
-        CTemp(1).real := (RegNext(B(7)) * sqrt2coeff).real.truncated
-        CTemp(1).imag := (RegNext(B(7)) * sqrt2coeff).imag.truncated
-
-        val CTempDelayed = RegNext(CTemp)
-
-        C(0) := BDelayed(0) + BDelayed(1)
-        C(1) := BDelayed(0) - BDelayed(1)
-        C(2) := BDelayed(2) - BDelayed(3).multiplyI
-        C(3) := BDelayed(2) + BDelayed(3).multiplyI
-        C(4) := BDelayed(4) - CTempDelayed(0).multiplyI
-        C(5) := BDelayed(4) + CTempDelayed(0).multiplyI
-        C(6) := -BDelayed(6).multiplyI + CTempDelayed(1)
-        C(7) := BDelayed(6).multiplyI + CTempDelayed(1)
-        val CDelayed = RegNext(C)
-        // stage 3
-        val D0 = CDelayed(0)
-        val D1 = CDelayed(4) + CDelayed(6)
-        val D2 = CDelayed(2)
-        val D3 = CDelayed(4) - CDelayed(6)
-        val D4 = CDelayed(1)
-        val D5 = CDelayed(5) - CDelayed(7)
-        val D6 = CDelayed(3)
-        val D7 = CDelayed(5) + CDelayed(7)
-        RegNext(Vec(Seq(D0, D1, D2, D3, D4, D5, D6, D7)))
-      } else {
-        throw new IllegalArgumentException(s"$N - point ${if(!inverse) "" else "inverse "}DFT has not been implemented yet")
-      }
-    }
-    // for 3, 5, 7, 9, use Rader-Winograd DFT
+  def getFftSym(data: Vec[ComplexNumber]) = {
+    val N = data.length
+    val mid = Seq(data(N / 2))
+    val seg0 = data.slice(1, N / 2)
+    val seg1 = data.slice(N / 2 + 1, N)
+    Vec(Seq(data.head) ++ seg1.reverse ++ mid ++ seg0.reverse)
   }
 
-  dataOut.zip(ret).foreach { case (out, ret) => out := ret.truncated(HardType(out.real)) }
+  val ret: Vec[ComplexNumber] = N match {
+    // for 2, 4, 8, use the given box
+    case 2 =>
+      val Seq(a, b) = dataIn.map(_.d)
+      Vec((a + b).d, (a - b).d)
 
-  def latency = LatencyAnalysis(dataIn(0).real.raw, dataOut(0).real.raw).intValue()
-}
+    case 4 =>
+      val Seq(a, b, c, d) = dataIn.map(_.d)
+      val Seq(e, f, g, h) = Seq((a + c).d, (b + d).d, (a - c).d, (b - d).d)
+      val ret = Vec((e + f).d, (g - h.multiplyI).d, (e - f).d, (g + h.multiplyI).d)
+      if (!inverse) ret else getFftSym(ret)
 
-object DFT {
+    case 8 =>
+      val s0 = { // stage 0
+        val Seq(a, b, c, d, e, f, g, h) = dataIn.map(_.d)
+        Seq(a + e, b + f, c + g, d + h,
+          a - e, b - f, c - g, d - h).map(_.d)
+      }
 
+      val s1 = { // stage 1
+        val Seq(a, b, c, d, e, f, g, h) = s0
+        val sqrt2coeff = SF(1 / sqrt(2), coeffType().maxExp exp, coeffType().minExp exp)
+        Seq(
+          (a + c).d(2), (b + d).d(2),
+          (a - c).d(2), (b - d).d(2),
+          e.d(2),
+          ((f + h).d * sqrt2coeff).d.truncated(dataType),
+          g.d(2),
+          ((f - h).d * sqrt2coeff).d.truncated(dataType))
+      }
+
+      val s2 = { // stage 2
+        val Seq(a, b, c, d, e, f, g, h) = s1
+        Seq(a + b, a - b,
+          c - d.multiplyI, c + d.multiplyI,
+          e - f.multiplyI, e + f.multiplyI,
+          h - g.multiplyI, h + g.multiplyI).map(_.d)
+      }
+
+      val s3 = { // stage 3
+        val Seq(a, b, c, d, e, f, g, h) = s2
+        Vec(Seq(a, e + g,
+          c, e - g,
+          b, f - h,
+          d, f + h).map(_.d))
+      }
+
+      if (!inverse) s3 else getFftSym(s3)
+  }
+
+  dataOut := ret
+
+  def latency: Int = N match {
+    case 2 => 2
+    case 4 => 3
+    case 8 => 6
+  }
 }

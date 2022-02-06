@@ -406,8 +406,6 @@ package object Chainsaw extends RealFactory {
       ret := sf.truncated
       ret
     }
-
-    def delay(cycle: Int) = Delay(sf, cycle)
   }
 
   implicit class VecUtil[T <: Data](vec: Vec[T]) {
@@ -687,6 +685,12 @@ package object Chainsaw extends RealFactory {
     def to2DArray = toRowMajoredArray.grouped(dm.cols).toArray
   }
 
-  implicit var cmultConfig = ComplexMultConfig() // configuration of complex multiplication
+  implicit class DataUtil[T <: Data](data: T) {
+
+    def d: T = RegNext(data)
+
+    def d(cycle: Int): T = Delay(data, cycle)
+
+  }
 }
 

@@ -4,13 +4,13 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import spinal.core._
 import spinal.lib._
-
 import breeze.linalg._
 import breeze.math._
 import breeze.numerics._
 import breeze.numerics.constants._
 import breeze.signal._
 
+import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 import scala.math.Pi
 
@@ -23,50 +23,60 @@ package object FFT {
 
   /** optimize the multiplication with coeffs of fourier transform
    */
-  def multiplyWNnk(signal: ComplexNumber, index: Int, N: Int,
-                   dataType: HardType[SFix], coeffType: HardType[SFix]): ComplexNumber = {
+  def multiplyWNnk(signal: ComplexNumber, coeffType: HardType[SFix],
+                   index: Int, N: Int)
+                  (implicit complexMultConfig: ComplexMultConfig): ComplexNumber = {
 
-    implicit class sfixPipeline[T <: Data](sf: T) {
-      def pipelined(implicit doPipeline: Boolean) = if (doPipeline) RegNext(sf) else sf
-    }
-    implicit var doPipeline = false
-
-    val latency = cmultConfig.pipeline
-    def delayed(signal: ComplexNumber) = Delay(signal, latency)
+    val dataType = signal.realType
+    val latency = complexMultConfig.pipeline
 
     def toFixedCoeff: Double => SFix = SF(_, coeffType().maxExp exp, coeffType().minExp exp)
 
-    // multiply (1 - j) / sqrt(2)
-    def multiply1minusj(signal: ComplexNumber) = {
-      val A = signal.real + signal.imag
-      val B = signal.imag - signal.real
-      doPipeline = latency > 1
-      val fullReal = A.pipelined * toFixedCoeff(1 / scala.math.sqrt(2.0))
-      val fullImag = B.pipelined * toFixedCoeff(1 / scala.math.sqrt(2.0))
-      doPipeline = latency > 0
-      val fullComplex = ComplexNumber(fullReal.pipelined, fullImag.pipelined)
-      doPipeline = latency > 2
-      fullComplex.truncated(dataType).pipelined
+    /** 90 degree counterclockwise
+     *
+     * @param quadrant number of 90 degree
+     */
+    def toQuadrant(signal: ComplexNumber, quadrant: Int) = {
+      quadrant match {
+        case 0 => signal.d
+        case 1 => (-signal.multiplyI).d
+        case 2 => (-signal).d
+        case 3 => signal.multiplyI.d
+      }
     }
 
-    val trivialValue = if (N % 8 == 0 && index % (N / 8) == 0) index / (N / 8) else -1
-    trivialValue match { // nontrivial values
-      case 0 => delayed(signal)
-      case 2 => delayed(-signal.multiplyI)
-      case 4 => delayed(-signal)
-      case 6 => delayed(signal.multiplyI)
+    /** multiply (1 - j) / sqrt(2), i.e. 45 degree counterclockwise
+     */
+    def multiply1minusj(signal: ComplexNumber) = {
+      val sqrt2Factor = toFixedCoeff(1 / scala.math.sqrt(2.0)) // * factor = / sqrt2
+      val usePREG = if (complexMultConfig.pipeline - 3 > 0) 1 else 0
+      import signal._
+      ComplexNumber(
+        ((real +^ imag).d * sqrt2Factor).d,
+        ((imag -^ real).d * sqrt2Factor).d
+      ).d(usePREG)
+    }
 
-      case 1 => multiply1minusj(signal)
-      case 3 => multiply1minusj(-signal.multiplyI)
-      case 5 => multiply1minusj(-signal)
-      case 7 => multiply1minusj(signal.multiplyI)
+    var positiveIndex = index
+    while (positiveIndex < 0) positiveIndex += N
+    val caseValue = if (N % 8 == 0 && positiveIndex % (N / 8) == 0) positiveIndex / (N / 8) else -1
 
-      case _ => { // trivial values
-        val coeffValue = WNnk(N, index)
-        val coeff = ComplexNumber(toFixedCoeff(coeffValue.real), toFixedCoeff(coeffValue.imag))
-        val fullComplex = signal * coeff
-        fullComplex.truncated(dataType)
-      }
+    if (caseValue != -1) { // special factors
+      val quadrant = caseValue / 2
+      val mode = caseValue % 2
+
+      val mode0Balancing = latency - 1
+      val mode1Balancing = latency - 4
+
+      if (mode == 0) toQuadrant(signal, quadrant).d(mode0Balancing)
+      else multiply1minusj(toQuadrant(signal, quadrant))
+        .truncated(dataType)
+        .d(if (mode1Balancing < 0) 0 else mode1Balancing)
+    } else {
+      val coeffValue = WNnk(N, index)
+      val coeff = ComplexNumber(toFixedCoeff(coeffValue.real), toFixedCoeff(coeffValue.imag))
+      val fullComplex = signal * coeff
+      fullComplex.truncated(dataType)
     }
   }
 }

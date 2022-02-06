@@ -9,6 +9,8 @@ import XilinxDeviceFamily._
 
 import scala.language.postfixOps
 
+case class VivadoUtil(lut: Int, ff: Int, dsp: Int, bram36: Int)
+
 class VivadoReport(
                     workspacePath: String,
                     deviceFamily: XilinxDeviceFamily,
@@ -58,8 +60,11 @@ class VivadoReport(
   private val slack = getDoubleBefore("required time - arrival time") * 1e-9 //
   val Frequency = 1.0 / (targetPeriod - slack) // 1 / (T - WNS)
 
-  def printArea(): Unit = logger.info(s"LUT: ${LUT}\nFF: ${FF}\nDSP: ${DSP}\nBRAM: ${BRAM}\n")
-  def printFMax(): Unit = logger.info(s"fmax = 1.0 / ($targetPeriod s - $slack s) = ${Frequency / 1E6} MHz\n")
+  val util = VivadoUtil(LUT, FF, DSP, BRAM)
+
+  def printArea(): Unit = logger.info(s"\nLUT: ${LUT}\nFF: ${FF}\nDSP: ${DSP}\nBRAM: ${BRAM}\n")
+
+  def printFMax(): Unit = logger.info(s"\nfmax = 1.0 / ($targetPeriod s - $slack s) = ${Frequency / 1E6} MHz\n")
 
   def getReport = Array(LUT.toString, FF.toString, DSP.toString, BRAM.toString, Frequency.toString)
 

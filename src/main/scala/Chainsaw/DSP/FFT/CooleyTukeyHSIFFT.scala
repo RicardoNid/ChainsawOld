@@ -9,6 +9,7 @@ import spinal.lib._
 case class CooleyTukeyHSIFFT(N: Int, pF: Int,
                              dataType: HardType[SFix], coeffType: HardType[SFix],
                              factors: Seq[Int], shifts: Seq[Int] = null)
+                            (implicit complexMultConfig: ComplexMultConfig= ComplexMultConfig())
   extends Component with DSPTestable[Vec[ComplexNumber], Vec[SFix]] {
 
   val fold = N / pF

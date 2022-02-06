@@ -20,6 +20,7 @@ import Chainsaw.dspTest._
 case class CooleyTukeyRVFFT(N: Int, pF: Int,
                             dataType: HardType[SFix], coeffType: HardType[SFix],
                             factors: Seq[Int], shifts: Seq[Int] = null)
+                           (implicit complexMultConfig: ComplexMultConfig = ComplexMultConfig())
   extends Component with DSPTestable[Vec[SFix], Vec[ComplexNumber]] {
 
   val fold = N / pF

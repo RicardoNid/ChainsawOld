@@ -12,6 +12,7 @@ import Chainsaw.dspTest._
 case class AdaptiveCooleyTukeyFFT(N: Int, pF: Int, inverse: Boolean,
                                   dataType: HardType[SFix], coeffType: HardType[SFix],
                                   factors:Seq[Int], shifts: Seq[Int])
+                                 (implicit complexMultConfig: ComplexMultConfig = ComplexMultConfig())
   extends Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
 
   val complexDataType = toComplexType(dataType)
@@ -40,7 +41,7 @@ case class AdaptiveCooleyTukeyFFT(N: Int, pF: Int, inverse: Boolean,
 
   override val dataOut = master Stream Vec(retComplexDataType, pF)
 
-  override val latency = Seq(inter0, inter1, inter2, core0, core1s.head).map(_.latency).sum + cmultConfig.pipeline
+  override val latency = Seq(inter0, inter1, inter2, core0, core1s.head).map(_.latency).sum + complexMultConfig.pipeline
   logger.info(s"implementing a $N-point folded ${if (inverse) "ifft" else "fft"} module at parallel factor = $pF, latency = $latency")
 
   //  val twiddleFactors: Seq[Seq[MComplex]] = Algos.cooleyTukeyCoeffIndices(N1, N2).map(_.map(i => if (inverse) WNnk(N, -i) else WNnk(N, i)))
@@ -56,7 +57,7 @@ case class AdaptiveCooleyTukeyFFT(N: Int, pF: Int, inverse: Boolean,
   inter0.dataOut.toFlow >> core0.dataIn // inter0 -> core1
 
   // core1 -> multiply twiddle factor -> inter1
-  inter1.dataIn.valid := Delay(core0.dataOut.valid, cmultConfig.pipeline, init = False)
+  inter1.dataIn.valid := Delay(core0.dataOut.valid, complexMultConfig.pipeline, init = False)
   val multiplied: Vec[ComplexNumber] = Vec(core0.dataOut.payload
     .zip(currentFactors)
     .map { case (data, coeff) => (data * coeff).truncated(interDataType) })
