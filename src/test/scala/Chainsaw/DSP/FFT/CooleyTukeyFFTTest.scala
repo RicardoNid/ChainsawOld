@@ -29,7 +29,6 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
     val parallelFactor = if (parallelism == 1) testLength else testLength / (-parallelism)
     val prods = (1 to factors.size).map(factors.take(_).product)
     val splitPoint = prods.indexWhere(_ == parallelFactor)
-    val (factors1, factors2) = factors.splitAt(splitPoint + 1)
 
     // generate testcases according to requirement
     val normalizedData = (0 until testSize).map(_ => ChainsawRand.nextComplexDV(testLength))
@@ -43,7 +42,7 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
 
     SimConfig.withFstWave.compile {
       if (parallelism == 1) CooleyTukeyFFT(N = testLength, inverse = inverse, dataType, coeffType, factors = factors)
-      else AdaptiveCooleyTukeyFFT(testLength, parallelFactor, inverse, dataType, coeffType, factors1, factors2)
+      else AdaptiveCooleyTukeyFFT(testLength, parallelFactor, inverse, dataType, coeffType, factors)
     }.doSim { dut =>
 
       dut.clockDomain.forkStimulus(2)
@@ -113,17 +112,12 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
   }
 
   it should "synth for FTN" in {
-    VivadoSynth(
-      new Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
-        val dspType = HardType(SFix(7 exp, 16 bits))
-        val core = AdaptiveCooleyTukeyFFT(512, 256, true, dspType, dspType, Seq(4, 4, 4, 4), Seq(2))
-        override val dataIn = slave(cloneOf(core.dataIn))
-        override val dataOut = master(cloneOf(core.dataOut))
-        override val latency = core.latency + 2
-        dataIn.m2sPipe() >> core.dataIn
-        core.dataOut.m2sPipe() >> dataOut
-      }
-    )
+    val dspType = HardType(SFix(7 exp, 16 bits))
+    val coeffType = HardType(SFix(1 exp, 16 bits))
+    VivadoSynthForTiming(AdaptiveCooleyTukeyFFT(512, 256, false, dspType, coeffType, Seq(4, 4, 4, 4, 2)), name = "RxIfft")
+    VivadoSynthForTiming(AdaptiveCooleyTukeyFFT(512, 256, false, dspType, coeffType, Seq(8, 8, 4, 2)), name = "RxIfftR8")
+    VivadoSynthForTiming(AdaptiveCooleyTukeyFFT(512, 256, true, dspType, coeffType, Seq(4, 4, 4, 4, 2)), name = "RxFft")
+    VivadoSynthForTiming(AdaptiveCooleyTukeyFFT(512, 256, true, dspType, coeffType, Seq(8, 8, 4, 2)), name = "RxFftR8")
   }
 
   it should "work with P2S2P" in {

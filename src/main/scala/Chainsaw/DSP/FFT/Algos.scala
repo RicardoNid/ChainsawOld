@@ -35,7 +35,7 @@ object Algos extends App {
     def twiddle(input: Seq[Seq[T]]) = {
       val N1 = input.head.size
       val N2 = input.size
-      input.zip(cooleyTukeyCoeffIndices(N1, N2))
+      input.zip(getIndicesBetween(N1, N2))
         .map { case (ts, ints) => ts.zip(ints)
           .map { case (t, i) => mult(t, if (!inverse) i else -i, N1 * N2) }
         }
@@ -69,8 +69,11 @@ object Algos extends App {
     recursiveBuild(input, factors)
   }
 
-  def cooleyTukeyCoeffIndices(N1: Int, N2: Int) = Seq.tabulate(N2, N1)((n2, k1) => n2 * k1)
-  def cooleyTukeyCoeff(N1: Int, N2: Int) = cooleyTukeyCoeffIndices(N1, N2).map(_.map(WNnk(N1 * N2, _)))
+  /** generate twiddle factor indices in between when decomposed into N1 and N2
+   */
+  def getIndicesBetween(N1: Int, N2: Int) = Seq.tabulate(N2, N1)((n2, k1) => n2 * k1)
+
+  def cooleyTukeyCoeff(N1: Int, N2: Int) = getIndicesBetween(N1, N2).map(_.map(WNnk(N1 * N2, _)))
 
   def cooleyTukeyFFT(input: Seq[BComplex], factors: Seq[Int]) = {
     def block(input: Seq[BComplex]) = Refs.FFT(input.toArray).toSeq

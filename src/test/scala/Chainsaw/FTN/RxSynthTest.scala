@@ -13,6 +13,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 class RxSynthTest extends AnyFlatSpec {
 
   implicit val ftnParams: FtnParams = FtnParams(3, 226, true)
+
   import ftnParams._
   import ftnParams.channelInfo._
 
@@ -25,11 +26,11 @@ class RxSynthTest extends AnyFlatSpec {
   it should "synth for RxFront" in VivadoSynthForTiming(RxFront(), "RxFront")
 
   it should "synth for small components in RxLoop" in {
-    VivadoSynthForTiming(comm.qam.AdaptiveQamdemod(bitAlloc , powAlloc, symbolComplexType), "qamdemodRx")
-//    VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(64, 256, 1024, 1024, HardType(Bool())), "interleaveRx")
-//    VivadoSynthForTiming(Convenc512FTN(), "convencRx")
-//    VivadoSynthForTiming(comm.qam.AdaptiveQammod(bitAlloc, powAlloc, symbolType), "qammodRx")
-//    VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(256, 64, 1024, 1024, HardType(Bool())), "deInterleaveRx")
+    VivadoSynthForTiming(comm.qam.AdaptiveQamdemod(bitAlloc, powAlloc, symbolComplexType), "qamdemodRx")
+    //    VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(64, 256, 1024, 1024, HardType(Bool())), "interleaveRx")
+    //    VivadoSynthForTiming(Convenc512FTN(), "convencRx")
+    //    VivadoSynthForTiming(comm.qam.AdaptiveQammod(bitAlloc, powAlloc, symbolType), "qammodRx")
+    //    VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(256, 64, 1024, 1024, HardType(Bool())), "deInterleaveRx")
   }
 
   it should "synth for all components in RxFront" in {
@@ -46,8 +47,10 @@ class RxSynthTest extends AnyFlatSpec {
   }
 
   it should "synth for sub modules of ifft/fft" in {
-    VivadoSynthForTiming(DSP.FFT.CooleyTukeyHSIFFT(512, 512, ifftType, symbolType, Seq(4, 4, 4, 4, 2), ifftShifts), "ifftRx")
-    VivadoSynthForTiming(DSP.FFT.CooleyTukeyRVFFT(512, 512, fftType, symbolType, Seq(4, 4, 4, 4, 2), fftShifts), "fftRx")
+    //    VivadoSynthForTiming(DSP.FFT.CooleyTukeyHSIFFT(512, 512, ifftType, symbolType, Seq(4, 4, 4, 4, 2), ifftShifts), "ifftRx")
+    VivadoSynthForTiming(DSP.FFT.CooleyTukeyHSIFFT(512, 512, ifftType, symbolType, Seq(8, 8, 4, 2), ifftShifts), "ifftRx")
+    //    VivadoSynthForTiming(DSP.FFT.CooleyTukeyRVFFT(512, 512, fftType, symbolType, Seq(4, 4, 4, 4, 2), fftShifts), "fftRx")
+    VivadoSynthForTiming(DSP.FFT.CooleyTukeyRVFFT(512, 512, fftType, symbolType, Seq(8, 8, 4, 2), fftShifts), "fftRx")
   }
 
   //  "RxFull" should "gen successfully" in GenRTL(RxFull(512), name = "RxFull")

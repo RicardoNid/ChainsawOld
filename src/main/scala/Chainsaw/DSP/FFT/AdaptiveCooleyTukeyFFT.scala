@@ -11,26 +11,26 @@ import Chainsaw.dspTest._
 
 case class AdaptiveCooleyTukeyFFT(N: Int, pF: Int, inverse: Boolean,
                                   dataType: HardType[SFix], coeffType: HardType[SFix],
-                                  factors:Seq[Int], shifts: Seq[Int])
+                                  factors:Seq[Int], shifts: Seq[Int] = null)
                                  (implicit complexMultConfig: ComplexMultConfig = ComplexMultConfig())
   extends Component with DSPTestable[Vec[ComplexNumber], Vec[ComplexNumber]] {
 
   val complexDataType = toComplexType(dataType)
   override val dataIn = slave Stream Vec(complexDataType, pF)
 
+  // splitting into two parts
   val N1 = pF
   val N2 = N / pF
-
-  // splitting
   val frontStageCount = factors.indices.map(i => factors.take(i + 1).product).indexWhere(_ == pF) + 1 // stages for "front" part
   require(frontStageCount > 0, s"pF = $pF and factors = ${factors.mkString(" ")} is not a legal combination")
   val (factors1, factors2) = factors.splitAt(frontStageCount)
-  val (shifts1, shifts2) = shifts.splitAt(frontStageCount)
+  val (shifts1, shifts2) = if (shifts == null) (null, null) else shifts.splitAt(frontStageCount)
 
   // components
   val core0 = CooleyTukeyFFT(N1, inverse, dataType, coeffType, factors1, shifts1)
   val interDataType = core0.retDataType
   val interComplexDataType = toComplexType(interDataType)
+
   val core1s = Seq.fill(N1 / N2)(CooleyTukeyFFT(N2, inverse, interDataType, coeffType, factors2, shifts2))
   val retDataType = core1s.head.retDataType
   val retComplexDataType = toComplexType(retDataType)
@@ -44,13 +44,12 @@ case class AdaptiveCooleyTukeyFFT(N: Int, pF: Int, inverse: Boolean,
   override val latency = Seq(inter0, inter1, inter2, core0, core1s.head).map(_.latency).sum + complexMultConfig.pipeline
   logger.info(s"implementing a $N-point folded ${if (inverse) "ifft" else "fft"} module at parallel factor = $pF, latency = $latency")
 
-  //  val twiddleFactors: Seq[Seq[MComplex]] = Algos.cooleyTukeyCoeffIndices(N1, N2).map(_.map(i => if (inverse) WNnk(N, -i) else WNnk(N, i)))
-  val twiddleFactors: Seq[Seq[BComplex]] = Algos.cooleyTukeyCoeffIndices(N2, N1).map(_.map(i => if (inverse) WNnk(N, -i) else WNnk(N, i)))
-  //  val twiddleFactorROM: Mem[Vec[ComplexNumber]] = Mem(twiddleFactors.map(vec => Vec(vec.map(CN(_, coeffType)))))
+  // connections
+
+  val twiddleFactors: Seq[Seq[BComplex]] = Algos.getIndicesBetween(N2, N1)
+    .map(_.map(i => if (inverse) WNnk(N, -i) else WNnk(N, i)))
   val twiddleFactorROMs = twiddleFactors.map(vec => Mem(Vec(vec.map(CN(_, coeffType)))))
   val factorCounter = Counter(N2, inc = core0.dataOut.fire)
-  logger.info(s"twiddle factors num: $N1 * $N2")
-  //  val currentFactors: Vec[ComplexNumber] = twiddleFactorROM.readAsync(factorCounter.value)
   val currentFactors: Vec[ComplexNumber] = Vec(twiddleFactorROMs.map(_.readSync(factorCounter.valueNext)))
 
   dataIn >> inter0.dataIn // outer -> inter0

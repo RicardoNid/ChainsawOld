@@ -92,8 +92,9 @@ class TxTest extends AnyFlatSpec {
     //    VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(256, 64, 256, 256, HardType(Bool())), "interleaveTx")
     //    VivadoSynthForTiming(comm.qam.AdaptiveQammod(bitAlloc, powAlloc, symbolType), "qammodTx")
     //    VivadoSynthForTiming(DSP.FFT.CooleyTukeyHSIFFT(512, 128, ifftType, symbolType, Seq(4, 4, 4, 4, 2), ifftShifts), "ifftTx")
+    VivadoSynthForTiming(DSP.FFT.CooleyTukeyHSIFFT(512, 128, ifftType, symbolType, Seq(8, 8, 4, 2), ifftShifts), "ifftTx")
     //    VivadoSynthForTiming(TxPacking(), "txPacking")
-    VivadoSynthForTiming(TxWhole(), "TxWhole")
-    VivadoSynth(TxOnBoard(), "TxOnBoard")
+    //    VivadoSynthForTiming(TxWhole(), "TxWhole")
+    //    VivadoSynth(TxOnBoard(), "TxOnBoard")
   }
 }

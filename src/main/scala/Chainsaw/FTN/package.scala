@@ -13,7 +13,7 @@ package object FTN {
   var testSize = 1
 
   def runFTN(begin: Int, end: Int, bitAlloc: Boolean,
-             useSyncData: Boolean = false, useGivenAlloc: Boolean = false, seedStart:Int = 0): Unit = {
+             useSyncData: Boolean = false, useGivenAlloc: Boolean = false, seedStart: Int = 0): Unit = {
     eng.eval("cd ~/FTN326")
     eng.eval(s"main([$begin:$end],$testSize,0,0, ${if (bitAlloc) "1" else "0"},${if (useSyncData) "1" else "0"},${if (useGivenAlloc) "1" else "0"}, $seedStart)")
   }
@@ -144,8 +144,10 @@ package object FTN {
 
   // datapaths and datatypes for fft/ifft
   val fftDecomposition = Seq(4, 4, 4, 4, 2) // the way we construct a 512-point fft
-  val ifftShifts = Seq(2, 2, 1, 0, 0)
-  val fftShifts = Seq(2, 2, 1, 0, 0)
+  //  val ifftShifts = Seq(2, 2, 1, 0, 0)
+  //  val fftShifts = Seq(2, 2, 1, 0, 0)
+  val ifftShifts = Seq(3, 2, 0, 0)
+  val fftShifts = Seq(3, 2, 0, 0)
   val frontFftShifts = Seq(2, 2, 2, 0, 0) // this part has a wider dynamic range
 
   val Seq(symbolPeak, ifftPeak, fftPeak, addaPeak) =
@@ -226,7 +228,7 @@ package object FTN {
   // take half of the real-valued fft results
   def fftPost(in: Vec[ComplexNumber]) = Vec(in.take(in.length / 2))
 
-  def prepareSyncData(start: Int, end: Int, dataPostFix: String, allocPostFix:String) = {
+  def prepareSyncData(start: Int, end: Int, dataPostFix: String, allocPostFix: String) = {
     printlnGreen(s"using data file ila${start}_${end}_$dataPostFix.csv")
     // get the params before using syncData
     prepareAlloc(allocPostFix)
