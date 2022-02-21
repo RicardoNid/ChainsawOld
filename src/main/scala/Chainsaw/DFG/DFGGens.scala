@@ -131,7 +131,7 @@ class ButterflyGen[THard <: Data, TSoft](ctButterfly: ButterflyNode[THard], gsBu
                                         (implicit converter: (TSoft, BitCount) => THard) extends DFGGen[THard] {
 
   def getGraph: DFGGraph[THard] = {
-    logger.info(s"start generating butterfly graph of size $size")
+    logger.info(s"start generating butterfly network graph of size $size")
     require(isPow2(size))
     require(gsButterfly.delay == ctButterfly.delay)
     val dfg = DFGGraph[THard]("butterfly_graph")
@@ -231,12 +231,13 @@ class BinaryTreeGen[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFG
   override def getGraph: DFGGraph[T] = {
     val dfg = DFGGraph[T](s"binaryTree_using_${binaryNode.name}")
     logger.info(s"start generating binaryTree graph of size $size")
-    if(!isPow2(size + 1)) logger.info("this binaryTree is not a full-binaryTree")
+    if (!isPow2(size + 1)) logger.info("this binaryTree is not a full-binaryTree")
 
-    /**the inter-layer op for building binaryTree
-     * @param upLayerNodes it is the level layer nodes(seq) for connection when we connecting level layer and level +1 layer
+    /** the inter-layer op for building binaryTree
+     *
+     * @param upLayerNodes   it is the level layer nodes(seq) for connection when we connecting level layer and level +1 layer
      * @param downLayerNodes it is the level + 1 layer nodes(seq) for connection when we connecting level layer and level +1 layer
-     * @param level the level of connection which means we connecting the level layer and level + 1 layer
+     * @param level          the level of connection which means we connecting the level layer and level + 1 layer
      */
     def interLayerOp(upLayerNodes: Seq[BinaryNode[T]], downLayerNodes: Seq[BinaryNode[T]], level: Int): Unit = {
       require(upLayerNodes.size == pow(2, level).toInt, "the number of uplayernodes is mismatch the level")
@@ -247,7 +248,8 @@ class BinaryTreeGen[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFG
       // connecting nodes
       groupDownLayerNodes.zip(upLayerNodes).foreach { case ((cn1, cn2), ln) =>
         Seq(cn1, cn2).filterNot(_ == null).zipWithIndex.foreach { case (cn, id) =>
-          dfg.addEdge(cn(0), ln(id), 0) }
+          dfg.addEdge(cn(0), ln(id), 0)
+        }
       }
     }
 
@@ -340,3 +342,4 @@ class AdderTree[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFGGen[
 
   override def latency: Int = 0
 }
+

@@ -1,29 +1,21 @@
 import Chainsaw.dspTest.DSPTestable
-import Chainsaw.examples.JsonExample.temp
 import Chainsaw.matlabIO._
+import breeze.linalg.{DenseMatrix, DenseVector}
 import org.scalatest.Tag
 import spinal.core._
-import spinal.core.internals.{BaseNode, DeclarationStatement, GraphUtils, PhaseContext, PhaseNetlist}
+import spinal.core.internals.BaseNode
 import spinal.core.sim._
 import spinal.lib._
 import spinal.sim._
-import xilinx.{IMPL, VivadoFlow}
 
-import java.io.{File, PrintWriter}
-import java.nio.file.{Files, Path, Paths}
+import java.io.File
+import java.nio.file.{Files, Paths}
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.math._
-import scala.sys.process.Process
-import scala.util.{Failure, Random, Success, Try}
-import breeze.linalg.{DenseMatrix, DenseVector}
-import org.apache.commons.io.FileUtils
-import org.json4s.NoTypeHints
-import org.json4s.jackson.Serialization
-import org.json4s.jackson.Serialization.{read, write}
-
-import scala.io.Source
 import scala.reflect.ClassTag
+import scala.sys.process.Process
+import scala.util.Random
 
 package object Chainsaw extends RealFactory {
 
@@ -51,7 +43,7 @@ package object Chainsaw extends RealFactory {
    */
   case class outputRegistered() extends scala.annotation.StaticAnnotation
 
-  import org.slf4j.{LoggerFactory, Logger}
+  import org.slf4j.LoggerFactory
 
   val logger = LoggerFactory.getLogger("Chainsaw logger")
 
