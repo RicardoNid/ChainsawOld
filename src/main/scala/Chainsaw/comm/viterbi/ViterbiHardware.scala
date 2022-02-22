@@ -10,10 +10,11 @@ import spinal.lib.{Counter, Delay, master, slave}
 import scala.annotation.tailrec
 
 /**
- * @param trellis
- * @param length
- * @param readAsync
- * @param disWidth
+ * @param trellis   convolution code definition
+ * @param length    fixed length of
+ * @param readAsync readAsync/readSync
+ * @param disWidth  width of discrepancy
+ * @see we adopt the terminologies in ''code theory''
  */
 // TODO: share hamming ROM and prevState ROM?
 case class ViterbiHardware(trellis: Trellis[Int], length: Int, copies: Int = 1,

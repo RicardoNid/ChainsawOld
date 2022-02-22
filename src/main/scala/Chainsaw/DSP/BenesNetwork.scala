@@ -1,42 +1,10 @@
 package Chainsaw.DSP
 
 import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
-import org.jgrapht._
-import org.jgrapht.graph._
-import org.jgrapht.graph.builder._
-import org.jgrapht.nio._
-import org.jgrapht.nio.dot._
-import org.jgrapht.traverse._
-import org.jgrapht.generate._
-import breeze.linalg._
-import breeze.math._
-import breeze.numerics._
-import breeze.numerics.constants._
-import breeze.signal._
 
-import java.util
 import scala.collection.JavaConversions._
 import scala.language.postfixOps
 
-//case class BenesNetwork[T <: Data](hardType: HardType[T], size: Int) extends Component {
-//
-//  // TODO: arbitrary N
-//  require(isPow2(size))
-//  val controlIn = in Vec(Bits(size / 2 bits), log2Up(size) * 2 - 1)
-//
-//  def butterfly(a: T, b: T, switch: Bool) = (Mux(switch, a, b), Mux(~switch, b, a))
-//
-//  def build(dataIn: Seq[T], ctrlIn: Bits) = {
-//    if(dataIn)
-//  }
-//
-//}
 
 case class BenesAlgo() {
 
@@ -98,6 +66,7 @@ case class BenesAlgo() {
 
       import org.jgrapht.alg.color.GreedyColoring
       val color = new GreedyColoring(colorGraph).getColoring.getColors.toSeq
+
       require(color.forall(_._2 < 2)) // 2-color requirement
       val up = color.filter(_._2 == 0).map(_._1)
       val bottom = color.filter(_._2 == 1).map(_._1)
