@@ -9,6 +9,7 @@ object ProdWidthMode extends Enumeration {
 
 import Chainsaw.ProdWidthMode._
 
+
 /** configuration of complex multiplication
  *
  * @param fast      when set, use 3 DSPs(rather than 4)
@@ -22,6 +23,7 @@ case class ComplexMultConfig(fast: Boolean = true, pipeline: Int = 5, widthMode:
 case class ComplexMult(type0: HardType[ComplexNumber], type1: HardType[ComplexNumber])
                       (implicit complexMultConfig: ComplexMultConfig)
   extends Component {
+
   val a = in(type0())
   val b = in(type1())
 

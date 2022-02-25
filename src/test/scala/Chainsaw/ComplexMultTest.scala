@@ -13,7 +13,7 @@ class ComplexMultTest extends AnyFlatSpec {
   "ComplexMult" should "consume 3 DSPs and no LUTs" in{
     val reportFast3 = VivadoSynth(ComplexMult(aForTest, bForTest)(ComplexMultConfig(fast = true, 3)), "pipeline3cMult")
     assert(reportFast3.LUT == 0 && reportFast3.DSP == 3)
-    val reportFast4 = VivadoSynth(ComplexMult(aForTest, bForTest)(ComplexMultConfig(fast = true, 4)), "pipeline6cMult")
+    val reportFast4 = VivadoSynth(ComplexMult(aForTest, bForTest)(ComplexMultConfig(fast = true, 4)), "pipeline4cMult")
     assert(reportFast4.LUT == 0 && reportFast4.DSP == 3)
     val reportFast6 = VivadoSynth(ComplexMult(aForTest, bForTest)(ComplexMultConfig(fast = true, 6)), "pipeline6cMult")
     assert(reportFast6.LUT == 0 && reportFast6.DSP == 3)

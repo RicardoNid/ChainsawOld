@@ -8,7 +8,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.math.sqrt
 
-class AdaptiveQamdemodTest extends AnyFlatSpec {
+class QamdemodWithAllocTest extends AnyFlatSpec {
 
   "adaptiveQamdemod" should "work" in {
 
@@ -37,7 +37,7 @@ class AdaptiveQamdemodTest extends AnyFlatSpec {
 
 
     doFlowPeekPokeTest(
-      "testAdaptiveDeQAM", AdaptiveQamdemod(bitAlloc, powAlloc, symbolType),
+      "testAdaptiveDeQAM", QamdemodWithAlloc(bitAlloc, powAlloc, symbolType),
       testCases, goldens,
       testMetric = TestMetric.SAME)
   }

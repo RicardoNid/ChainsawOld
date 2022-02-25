@@ -27,9 +27,7 @@ class DctTest extends AnyFlatSpec {
 
   it should "dct1ByDoc" in {
     testCases.foreach { testCase =>
-      println(dct1Doc(testCase))
-      println(dct1D(testCase))
-      assert(dct1Doc(testCase) ~= dct1D(testCase))
+      assert(dct1DByDoc(testCase) ~= dct1D(testCase))
       logger.info(s"test on ${testCase.length}-point passed")
     }
   }

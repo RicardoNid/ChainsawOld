@@ -14,7 +14,7 @@ class Tx(implicit ftnParams: FtnParams)
   val convenc = Convenc128FTN()
   val interleave = DSP.interleave.AdaptiveMatIntrlv(256, 64, 256, 256, HardType(Bool()))
   val s2p0 = DSP.S2P(256, 1024, HardType(Bool()))
-  val qammod = comm.qam.AdaptiveQammod(bitAlloc, powAlloc, symbolType)
+  val qammod = comm.qam.QammodWithAlloc(bitAlloc, powAlloc, symbolType)
   val p2s0 = DSP.P2S(512, 128, symbolComplexType)
   val ifft = DSP.FFT.CooleyTukeyHSIFFT(
     N = 512, pF = 128,

@@ -11,6 +11,7 @@ class DSPAttrs() {
 
   // cascading strategy
   var A_INPUT = "DIRECT"
+
   var B_INPUT = "DIRECT"
 
   // pre-adder and mult

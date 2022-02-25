@@ -1,7 +1,7 @@
 package Chainsaw.comm
 
 import Chainsaw._
-import Chainsaw.comm.qam.AdaptiveQammod
+import Chainsaw.comm.qam.QammodWithAlloc
 import Chainsaw.dspTest._
 import breeze.linalg._
 import org.scalatest.funsuite.AnyFunSuite
@@ -9,7 +9,7 @@ import spinal.core._
 
 import scala.math.sqrt
 
-class AdaptiveQammodTest extends AnyFunSuite {
+class QammodWithAllocTest extends AnyFunSuite {
   // TODO: design tests for more different situations
   test("test qammod without bitAlloc and powAlloc") {
 
@@ -36,8 +36,10 @@ class AdaptiveQammodTest extends AnyFunSuite {
     }.toSeq)
 
     doFlowPeekPokeTest(
-      "testAdaptiveQAM", AdaptiveQammod(bitAlloc, powAlloc, dataType),
+      "testAdaptiveQAM", QammodWithAlloc(bitAlloc, powAlloc, dataType),
       testCases, goldens,
       testMetric = TestMetric.APPROXIMATE, epsilon = 1E-2)
+
+    VivadoImpl(QammodWithAlloc(bitAlloc, powAlloc, dataType))
   }
 }

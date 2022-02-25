@@ -11,7 +11,6 @@ case class BenesAlgo() {
   def butterfly(a: Int, b: Int, switch: Boolean) = if (switch) Seq(b, a) else Seq(a, b)
 
   def doBenes(dataIn: Seq[Int], controlIn: Seq[Seq[Boolean]]): Seq[Int] = {
-
     val n = dataIn.size
 
     def getUp[T](dataIn: Seq[T]) = dataIn.take(dataIn.size / 2)
@@ -21,26 +20,16 @@ case class BenesAlgo() {
     if (n == 2) butterfly(dataIn(0), dataIn(1), controlIn.head.head)
     else {
       // decompose controlIn
-      val pre = controlIn.head
-      val post = controlIn.last
-      val mid = controlIn.drop(1).dropRight(1)
-      val subNetworkUp = mid.map(getUp)
-      val subNetworkBottom = mid.map(getBottom)
-
-      val afterPre: Seq[Int] = {
-        val butterflied = getUp(dataIn).zip(getBottom(dataIn)).zip(pre)
-          .map { case ((a, b), switch) => butterfly(a, b, switch) }
-        butterflied.map(_.head) ++ butterflied.map(_.last)
-      }
-
-      val afterSub = doBenes(getUp(afterPre), subNetworkUp) ++ doBenes(getBottom(afterPre), subNetworkBottom)
-
-      val afterPost = {
-        val butterflied = getUp(afterSub).zip(getBottom(afterSub)).zip(post)
-          .map { case ((a, b), switch) => butterfly(a, b, switch) }
-        butterflied.map(_.head) ++ butterflied.map(_.last)
-      }
-      afterPost
+      val (pre, post, mid) = (controlIn.head, controlIn.last, controlIn.drop(1).dropRight(1))
+      val (subNetworkUp, subNetworkBottom) = (mid.map(getUp), mid.map(getBottom))
+      // build network
+      val afterPre = getUp(dataIn).zip(getBottom(dataIn)).zip(pre)
+        .map { case ((a, b), switch) => butterfly(a, b, switch) } // switches
+      val afterPreOrdered: Seq[Int] = afterPre.map(_.head) ++ afterPre.map(_.last) // connections
+      val afterSub = doBenes(getUp(afterPreOrdered), subNetworkUp) ++ doBenes(getBottom(afterPreOrdered), subNetworkBottom) // connections
+      val afterPost = getUp(afterSub).zip(getBottom(afterSub)).zip(post)
+        .map { case ((a, b), switch) => butterfly(a, b, switch) } // switches
+      afterPost.map(_.head) ++ afterPost.map(_.last) // connections
     }
   }
 

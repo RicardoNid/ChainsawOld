@@ -71,7 +71,7 @@ object Dct {
     }
   }
 
-  def dct1Doc(data: DenseVector[Double]) = {
+  def dct1DByDoc(data: DenseVector[Double]) = {
 
     implicit class SeqUtil(data: Seq[Double]) {
       def t(transform: Seq[Double] => Seq[Double]) = transform(data)
@@ -81,6 +81,8 @@ object Dct {
         tarns0(data.take(n / 2)) ++ tarns1(data.takeRight(n / 2))
       }
     }
+
+    val mode = 0
 
     def S(data: Seq[Double]): Seq[Double] = {
 
@@ -98,11 +100,25 @@ object Dct {
       ret
     }
 
+    // identity
     def I(data: Seq[Double]) = data
+
+    def II(data: Seq[Double]) = {
+      val n = data.length
+      val as = data.take(n / 2)
+      val bs = data.takeRight(n / 2)
+      as.zip(bs.reverse).map { case (a, b) => a + b } ++ as.zip(bs.reverse).map { case (a, b) => a - b }
+    }
 
     def M(data: Seq[Double]) = {
       val n = data.length
       val coeffs = (0 until n).map(i => 2 * cos((2 * i + 1) * Pi / (4 * n)))
+      data.zip(coeffs).map { case (d, coeff) => d * coeff }
+    }
+
+    def R(data: Seq[Double]) = {
+      val n = data.length
+      val coeffs = (0 until n).map(i => 1 / (2 * cos((2 * i + 1) * Pi / (4 * n))))
       data.zip(coeffs).map { case (d, coeff) => d * coeff }
     }
 
@@ -118,17 +134,15 @@ object Dct {
       (0 until n).map(i => trans(data, i))
     }
 
-    def II(data: Seq[Double]) = {
-      val n = data.length
-      val as = data.take(n / 2)
-      val bs = data.takeRight(n / 2)
-      as.zip(bs.reverse).map { case (a, b) => a + b } ++ as.zip(bs.reverse).map { case (a, b) => a - b }
-    }
+    def A(data: Seq[Double]) = data.zip(data.tail :+ 0.0).map { case (a, b) => a + b }
 
     def C(data: Seq[Double]): Seq[Double] = {
       val n = data.length
+      val mult = if (mode == 0) M _ else R _
+      val add = if(mode == 0) T _ else A _
+
       if (n == 2) Seq(data(0) + data(1), cos(Pi / 4) * (data(0) - data(1)))
-      else data.t(II).t2(I, M).t2(C, C).t2(I, T).t(S)
+      else data.t(II).t2(I, mult).t2(C, C).t2(I, add).t(S)
     }
 
     new DenseVector(C(data.toArray).toArray)
@@ -158,7 +172,7 @@ case class SBox(n: Int) extends Component {
     ret
   }
 
-  dataOut := Vec(S(dataIn))
+  dataOut := Vec(S(dataIn).map(RegNext(_)))
 }
 
 object SBox extends App {
