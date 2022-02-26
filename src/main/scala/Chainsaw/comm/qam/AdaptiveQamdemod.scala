@@ -9,4 +9,6 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
-case class AdaptiveQamdemod()
+case class AdaptiveQamdemod(bitCandidates:Seq[Int], hardType: HardType[SFix]) extends Component {
+
+}
