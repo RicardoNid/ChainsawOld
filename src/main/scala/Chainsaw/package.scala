@@ -23,6 +23,7 @@ package object Chainsaw extends RealFactory {
   * following methods are designed for Real type*/
 
   case class coreHardware() extends scala.annotation.StaticAnnotation
+  case class hardware() extends scala.annotation.StaticAnnotation
 
 
   // TODO: extract the features of the following annotations and implement them in traits

@@ -16,7 +16,7 @@ class QAMDeModTest extends AnyFlatSpec {
 
   def runSim() = {
 
-    val bitAlloc = (0 until 10).map(_ => ChainsawRand.nextInt(7) + 1)
+    val bitAlloc = (0 until 10).map(_ => (ChainsawRand.nextInt(3) + 1) * 2)
     printlnGreen(bitAlloc.mkString(" "))
     val powAlloc = (0 until 10).map(_ => ChainsawRand.nextDouble())
     //    val powAlloc = Seq.fill(10)(1.0)

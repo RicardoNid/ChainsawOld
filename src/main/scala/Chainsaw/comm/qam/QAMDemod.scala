@@ -37,6 +37,7 @@ case class QAMDemod(symbolType: HardType[ComplexNumber],
   val rms = Qam.getRms(modulationOrder)
   // all thresholds used to compare with values, in adaptive design, they should be implemented as a RAM
   val allThresholds: Seq[Double] = (0 until stageReal - 1).map(i => (1 << (i + 1)) / rms * powerFactor)
+  println(s"thresholds: ${allThresholds.mkString(" ")}")
 
   // generate determinants
   def genDeterminants(value: SFix, stage: Int) = {
