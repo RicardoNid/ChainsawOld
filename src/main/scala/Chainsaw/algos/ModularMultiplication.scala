@@ -1,5 +1,6 @@
 package Chainsaw.algos
 
+import Chainsaw.{definition, hardAlgo}
 import breeze.numerics.ceil
 
 import scala.collection.mutable.ArrayBuffer
@@ -13,6 +14,7 @@ object ModularMultiplication {
   import spinal.core._
   import spinal.core.sim._
 
+  // modular multiplication test util
   def evaluateMM(X: BigInt, Y: BigInt, n: Int, hardware: (UInt, UInt) => UInt): BigInt = {
     var ret = BigInt(0)
     SimConfig.withWave.compile(new Component {
@@ -124,7 +126,7 @@ object ModularMultiplication {
 
   /** radix-2 Montgomery multiplication
    *
-   * @see ''New Hardware Architectures for Montgomery Modular Multiplication Algorithm'' [[http://ece.gmu.edu/~kgaj/publications/journals/GWU_GMU_TOC_2011.pdf]]
+   * @see ''New Hardware Architectures for Montgomery Modular Multiplication Algorithm'' [[https://ieeexplore.ieee.org/document/5669264]]
    */
   @hardAlgo("mmm")
   def r2mm(X: BigInt, Y: BigInt, M: BigInt) = {
@@ -166,7 +168,7 @@ object ModularMultiplication {
 
   /** multi word radix-2 Montgomery modular multiplication, implemented by a hardware calculator
    *
-   * @see ''New Hardware Architectures for Montgomery Modular Multiplication Algorithm'' [[http://ece.gmu.edu/~kgaj/publications/journals/GWU_GMU_TOC_2011.pdf]]
+   * @see ''New Hardware Architectures for Montgomery Modular Multiplication Algorithm'' [[https://ieeexplore.ieee.org/document/5669264]]
    */
   @hardAlgo("mmm")
   def mwr2mm(X: BigInt, Y: BigInt, M: BigInt, w: Int) = {

@@ -1,19 +1,12 @@
 package Chainsaw.algos
 
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
 import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
-
 import breeze.linalg.{DenseMatrix, DenseVector}
 import breeze.math.i
-import breeze.numerics.{cos, exp, pow}
 import breeze.numerics.constants.Pi
+import breeze.numerics.{cos, exp, pow}
 import breeze.signal.fourierTr
+import spinal.core._
 
 /** definition and fast algorithms of DCT, which is closely related to DFT
  *
@@ -71,11 +64,19 @@ object Dct {
     }
   }
 
-  def dct1DByDoc(data: DenseVector[Double]) = {
+  /** fast algorithm for dct by recursive matrix decomposition
+   *
+   * @see ''A fast computational algorithm for the discrete cosine transform, IEEE Transactions on Communications'' for method 0
+   * @see ''A  new  algorithm  to  compute  the  discrete  cosine  transform,  IEEE Transactions on Acoustics, Speech and Signal Processing'' for method 1
+   */
+  @fastAlgo("dct1D")
+  def dct1DByMatrix(data: DenseVector[Double], method: Int = 0) = {
 
     implicit class SeqUtil(data: Seq[Double]) {
+      // transformation on a column vector, i.e. T * v
       def t(transform: Seq[Double] => Seq[Double]) = transform(data)
 
+      // two transformations on upper/lower half of a column vector, i.e. T_0 * v_0 ++ T_1 * v_1
       def t2(tarns0: Seq[Double] => Seq[Double], tarns1: Seq[Double] => Seq[Double]) = {
         val n = data.length
         tarns0(data.take(n / 2)) ++ tarns1(data.takeRight(n / 2))
@@ -84,6 +85,16 @@ object Dct {
 
     val mode = 0
 
+    def build(data: Seq[Double]): Seq[Double] = {
+      val n = data.length
+      val (add, mult) = if (mode == 0) (T _, M _) // method proposed by reference 0, 1977
+      else (A _, R _) // method proposed by reference 1, 1984
+
+      if (n == 2) Seq(data(0) + data(1), cos(Pi / 4) * (data(0) - data(1)))
+      else data.t(II).t2(I, mult).t2(build, build).t2(I, add).t(S)
+    }
+
+    // the final
     def S(data: Seq[Double]): Seq[Double] = {
 
       def s(data: Seq[Double]) = {
@@ -100,9 +111,9 @@ object Dct {
       ret
     }
 
-    // identity
     def I(data: Seq[Double]) = data
 
+    // butterfly
     def II(data: Seq[Double]) = {
       val n = data.length
       val as = data.take(n / 2)
@@ -110,18 +121,21 @@ object Dct {
       as.zip(bs.reverse).map { case (a, b) => a + b } ++ as.zip(bs.reverse).map { case (a, b) => a - b }
     }
 
+    // multiplications
     def M(data: Seq[Double]) = {
       val n = data.length
       val coeffs = (0 until n).map(i => 2 * cos((2 * i + 1) * Pi / (4 * n)))
       data.zip(coeffs).map { case (d, coeff) => d * coeff }
     }
 
+    // multiplications
     def R(data: Seq[Double]) = {
       val n = data.length
       val coeffs = (0 until n).map(i => 1 / (2 * cos((2 * i + 1) * Pi / (4 * n))))
       data.zip(coeffs).map { case (d, coeff) => d * coeff }
     }
 
+    // additions
     def T(data: Seq[Double]) = {
 
       val n = data.length
@@ -134,47 +148,9 @@ object Dct {
       (0 until n).map(i => trans(data, i))
     }
 
+    // additions
     def A(data: Seq[Double]) = data.zip(data.tail :+ 0.0).map { case (a, b) => a + b }
 
-    def C(data: Seq[Double]): Seq[Double] = {
-      val n = data.length
-      val mult = if (mode == 0) M _ else R _
-      val add = if(mode == 0) T _ else A _
-
-      if (n == 2) Seq(data(0) + data(1), cos(Pi / 4) * (data(0) - data(1)))
-      else data.t(II).t2(I, mult).t2(C, C).t2(I, add).t(S)
-    }
-
-    new DenseVector(C(data.toArray).toArray)
+    new DenseVector(build(data.toArray).toArray)
   }
-}
-
-case class SBox(n: Int) extends Component {
-
-  require(isPow2(n))
-
-  val dataIn = in Vec(SFix(7 exp, -8 exp), n)
-  val dataOut = out Vec(SFix(7 exp, -8 exp), n)
-
-  def S(data: Seq[SFix]): Seq[SFix] = {
-
-    def s(data: Seq[SFix]) = {
-      val even = data.zipWithIndex.filter { case (d, i) => i % 2 == 0 }.map(_._1)
-      val odd = data.zipWithIndex.filter { case (d, i) => i % 2 == 1 }.map(_._1)
-      even ++ odd
-    }
-
-    val n = data.length
-    val sTimes = log2Up(n) - 1
-
-    var ret = data
-    (0 until sTimes).foreach(_ => ret = s(ret))
-    ret
-  }
-
-  dataOut := Vec(S(dataIn).map(RegNext(_)))
-}
-
-object SBox extends App {
-  GenRTL(SBox(16))
 }

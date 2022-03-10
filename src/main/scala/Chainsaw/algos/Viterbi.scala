@@ -36,6 +36,7 @@ object Viterbi {
    * @tparam T type of output symbols, could be int(hard) or double(soft)
    * @see ''Coding Theory'' Chap3.1.4 for termination mode, 3.2.3 for Viterbi algorithm
    */
+  @definition
   def viterbi[T](rxSymbols: DenseVector[T],
                  trellis: Trellis[T],
                  metric: (T, T) => Double,

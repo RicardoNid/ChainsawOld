@@ -3,21 +3,23 @@ package Chainsaw.comm.viterbi
 import Chainsaw.algos.Metrics.Hamming
 import Chainsaw.algos.Trellis
 import Chainsaw.dspTest.DSPTestable
-import Chainsaw.logger
+import Chainsaw._
 import spinal.core._
 import spinal.lib.{Counter, Delay, master, slave}
 
 import scala.annotation.tailrec
 
-/**
- * @param trellis   convolution code definition
- * @param length    fixed length of
- * @param readAsync readAsync/readSync
- * @param disWidth  width of discrepancy
+/** Viterbi decoder hardware
+ *
+ * @param trellis     convolution code definition
+ * @param blockLength fixed length of encoding block
+ * @param readAsync   readAsync/readSync
+ * @param disWidth    width of discrepancy
+ *                    TODO: disWidth strategy should be implemented by the module itself, not the designer
  * @see we adopt the terminologies in ''code theory''
  */
-// TODO: share hamming ROM and prevState ROM?
-case class ViterbiHardware(trellis: Trellis[Int], length: Int, copies: Int = 1,
+@coreHardware("viterbiTraceback")
+case class ViterbiHardware(trellis: Trellis[Int], blockLength: Int, copies: Int = 1,
                            readAsync: Boolean = true, disWidth: Int = -1)
   extends Component with DSPTestable[Vec[UInt], Vec[UInt]] {
 
@@ -29,7 +31,7 @@ case class ViterbiHardware(trellis: Trellis[Int], length: Int, copies: Int = 1,
   val stateWidth = log2Up(trellis.numStates)
   val stateType = HardType(UInt(log2Up(trellis.numStates) bits)) // when biterr is higher, corresponding factor should be higher
 
-  val discrepancyWidth = if (disWidth == -1) log2Up(length / 4) else disWidth // when biterr is higher, corresponding factor should be higher, current config is for biterr up to 5%
+  val discrepancyWidth = if (disWidth == -1) log2Up(blockLength / 4) else disWidth // when biterr is higher, corresponding factor should be higher, current config is for biterr up to 5%
   val discrepancyType = HardType(UInt(discrepancyWidth bits)) // when biterr is higher, corresponding factor should be higher
 
   val incrementWidth = log2Up(log2Up(trellis.numOutputSymbols) + 1)
@@ -143,18 +145,18 @@ case class ViterbiHardware(trellis: Trellis[Int], length: Int, copies: Int = 1,
 
   override val dataIn = slave Stream Vec(outputSymbolType(), copies)
   override val dataOut = master Stream Vec(inputSymbolType(), copies)
-  override val latency = length * 2 + (if (readAsync) 1 else 3)
-  logger.info(s"implementing a vitdec at of length $length containing $copies copies, latency = $latency")
+  override val latency = blockLength * 2 + (if (readAsync) 1 else 3)
+  logger.info(s"implementing a vitdec at of length $blockLength containing $copies copies, latency = $latency")
 
   val forwards = Seq.fill(copies)(ACS())
   val backwards = Seq.fill(copies)(TB())
   val recordType = HardType(Bits(log2Up(trellis.numInputSymbols) * trellis.numStates bits))
 
-  val stackOfRecords = Seq.fill(copies)(DataReverse(recordType, length, readAsync = readAsync))
-  val stackOfReverse = DataReverse(Vec(inputSymbolType(), copies), length, readAsync = readAsync)
+  val stackOfRecords = Seq.fill(copies)(DataReverse(recordType, blockLength, readAsync = readAsync))
+  val stackOfReverse = DataReverse(Vec(inputSymbolType(), copies), blockLength, readAsync = readAsync)
 
   dataIn.ready := True
-  val periodCounter = Counter(length, inc = dataIn.fire)
+  val periodCounter = Counter(blockLength, inc = dataIn.fire)
 
   // dataIn -> forward
   forwards.zip(dataIn.payload).foreach { case (acs, int) =>

@@ -19,6 +19,7 @@ case class AdaptiveCooleyTukeyFFT(N: Int, pF: Int, inverse: Boolean,
   override val dataIn = slave Stream Vec(complexDataType, pF)
 
   // splitting into two parts
+
   val N1 = pF
   val N2 = N / pF
   val frontStageCount = factors.indices.map(i => factors.take(i + 1).product).indexWhere(_ == pF) + 1 // stages for "front" part

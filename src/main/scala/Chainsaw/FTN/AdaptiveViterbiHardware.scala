@@ -5,7 +5,10 @@ import Chainsaw.dspTest._
 import spinal.core._
 import spinal.lib._
 
-case class ParallelVitFTN(parallelism: Int, parallelismForTest: Int = -1)
+/** parallel version of ViterbiHardware, using ViterbiHardware as cores
+ * TODO: currently, trellis for 802.11 convenc is used, trellis should be set as a parameter
+ */
+case class AdaptiveViterbiHardware(parallelism: Int, parallelismForTest: Int = -1)
   extends Component with DSPTestable[Bits, Bits] {
 
   override val dataIn = slave Stream Bits(2 * parallelism bits)
@@ -17,7 +20,7 @@ case class ParallelVitFTN(parallelism: Int, parallelismForTest: Int = -1)
   val superInterleave = DSP.interleave.AdaptiveMatIntrlv(parallelism, 256, 2 * parallelism, 2 * parallelism, Bool)
   val superDeInterleave = DSP.interleave.AdaptiveMatIntrlv(128, parallelism, parallelism, parallelism, Bool)
   val vitdec = comm.viterbi.ViterbiHardware(
-    trellis = trellis, length = 128,
+    trellis = trellis, blockLength = 128,
     copies = actualParallelism, readAsync = false, disWidth = 4)
 
   // transformation on payload

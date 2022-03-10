@@ -6,20 +6,6 @@ import breeze.numerics._
 
 package object algos {
 
-  case class definition() extends scala.annotation.StaticAnnotation
-
-  /** the improved algorithm which reduce the strength of the definition version
-   * @param original * @param original the "definition algo" to who it is equivalent
-   */
-  case class fastAlgo(original:String) extends scala.annotation.StaticAnnotation
-
-  /** the binary algorithm which pointed out the hardware datapath of the definition version
-   * @param original the "definition algo" to who it is equivalent
-   */
-  case class hardAlgo(original: String) extends scala.annotation.StaticAnnotation
-
-  case class matlab() extends scala.annotation.StaticAnnotation
-
   case class Modulo(modulo: Int)
 
   // TODO: generic

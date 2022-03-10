@@ -6,6 +6,8 @@ import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
 
+import scala.language.postfixOps
+
 /**
  * @see [[https://www.notion.so/RSA-ECC-59bfcca42cd54253ad370defc199b090 Chainsaw RSA]]
  */

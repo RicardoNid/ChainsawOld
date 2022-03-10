@@ -17,7 +17,7 @@ class RxLoop(stage: Seq[Int], actualParallelismOnVit: Int = 512)(implicit ftnPar
   val qamdemod = if (stage.contains(0)) comm.qam.QamdemodWithAlloc(bitAlloc, powAlloc, symbolComplexType) else null
   val deInterleave = if (stage.contains(0)) DSP.interleave.AdaptiveMatIntrlv(64, 256, 1024, 1024, HardType(Bool())) else null
   // TODO: using same control logic for all vitdecs
-  val vitdecs = if (stage.contains(1)) ParallelVitFTN(512, actualParallelismOnVit) else null
+  val vitdecs = if (stage.contains(1)) AdaptiveViterbiHardware(512, actualParallelismOnVit) else null
   val convencs = if (stage.contains(2)) Convenc512FTN() else null
   val qammod = if (stage.contains(3)) comm.qam.QammodWithAlloc(bitAlloc, powAlloc, symbolType) else null
   val interleave = if (stage.contains(3)) DSP.interleave.AdaptiveMatIntrlv(256, 64, 1024, 1024, HardType(Bool())) else null

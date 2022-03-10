@@ -30,7 +30,7 @@ class RxSynthTest extends AnyFlatSpec {
     //    VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(64, 256, 1024, 1024, HardType(Bool())), "interleaveRx")
     //    VivadoSynthForTiming(Convenc512FTN(), "convencRx")
     //    VivadoSynthForTiming(comm.qam.AdaptiveQammod(bitAlloc, powAlloc, symbolType), "qammodRx")
-    //    VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(256, 64, 1024, 1024, HardType(Bool())), "deInterleaveRx")
+        VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(256, 64, 1024, 1024, HardType(Bool())), "deInterleaveRx")
   }
 
   it should "synth for all components in RxFront" in {
@@ -39,11 +39,11 @@ class RxSynthTest extends AnyFlatSpec {
   }
 
   it should "synth for sub modules of vitdec" in {
-    VivadoSynthForTiming(ParallelVitFTN(512, 512), "vitdecRx")
+    VivadoSynthForTiming(AdaptiveViterbiHardware(512, 512), "vitdecRx")
     val parallelism = 512
     VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(parallelism, 256, 2 * parallelism, 2 * parallelism, Bool), "interleaveForParallelVit")
     VivadoSynthForTiming(DSP.interleave.AdaptiveMatIntrlv(128, parallelism, parallelism, parallelism, Bool), "deInterleaveForParallelVit")
-    VivadoSynthForTiming(comm.viterbi.ViterbiHardware(trellis = trellis, length = 128, copies = parallelism, readAsync = false, disWidth = 4), "parallelVit")
+    VivadoSynthForTiming(comm.viterbi.ViterbiHardware(trellis = trellis, blockLength = 128, copies = parallelism, readAsync = false, disWidth = 4), "parallelVit")
   }
 
   it should "synth for sub modules of ifft/fft" in {

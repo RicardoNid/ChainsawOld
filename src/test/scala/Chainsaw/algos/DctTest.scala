@@ -25,9 +25,10 @@ class DctTest extends AnyFlatSpec {
     testCases.foreach(testCase => assert(idct1D(dct1DByDft(testCase, 1)) ~= testCase))
   }
 
-  it should "dct1ByDoc" in {
+  it should "dct1ByMatrix" in {
     testCases.foreach { testCase =>
-      assert(dct1DByDoc(testCase) ~= dct1D(testCase))
+      assert(dct1DByMatrix(testCase, 0) ~= dct1D(testCase))
+      assert(dct1DByMatrix(testCase, 1) ~= dct1D(testCase))
       logger.info(s"test on ${testCase.length}-point passed")
     }
   }

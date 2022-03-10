@@ -1,5 +1,6 @@
 package Chainsaw.algos
 
+import Chainsaw.definition
 import breeze.linalg._
 import breeze.math.{Complex, _}
 import breeze.signal.{OptOverhang, OptPadding, OptRange, convolve}

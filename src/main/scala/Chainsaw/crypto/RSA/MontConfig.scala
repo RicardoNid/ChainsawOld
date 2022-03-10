@@ -8,7 +8,7 @@ import scala.math.{ceil, floor}
 /**
  * @param lMs sizes of the MontMul that are supported
  * @param w   word size of the MontMulPE
- * @param p   number of the MontMulPE
+ * @param p   number of the MontMulPE(parallelism)
  */
 case class MontConfig(lMs: Seq[Int] = Seq(512, 1024, 2048, 3072, 4096),
                       w: Int = 32,

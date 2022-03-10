@@ -2,6 +2,7 @@ package Chainsaw.algos
 
 import Chainsaw.algos.AlgebraicStructures.Zp
 import Chainsaw.algos.Dft.genericDft
+import Chainsaw.{definition, fastAlgo}
 import breeze.linalg.DenseVector
 
 object Ntt {

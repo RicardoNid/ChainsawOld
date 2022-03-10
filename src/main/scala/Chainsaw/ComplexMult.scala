@@ -24,6 +24,8 @@ case class ComplexMult(type0: HardType[ComplexNumber], type1: HardType[ComplexNu
                       (implicit complexMultConfig: ComplexMultConfig)
   extends Component {
 
+  require(complexMultConfig.pipeline >= 3 && complexMultConfig.pipeline <= 6)
+
   val a = in(type0())
   val b = in(type1())
 
@@ -35,6 +37,10 @@ case class ComplexMult(type0: HardType[ComplexNumber], type1: HardType[ComplexNu
   val ai = a.imag
   val br = b.real
   val bi = b.imag
+
+  val mid =  (br +^ bi) * ar
+  p.imag := (mid + ((ai -^ ar) * br))
+  p.real := (mid - ((ai +^ ar) * bi))
 
   complexMultConfig.pipeline match {
     case 3 => //

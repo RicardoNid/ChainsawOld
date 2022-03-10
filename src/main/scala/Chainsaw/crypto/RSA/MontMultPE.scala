@@ -2,6 +2,8 @@ package Chainsaw.crypto.RSA
 
 import spinal.core._
 
+import scala.language.postfixOps
+
 case class MontMultPEDataFlow(w: Int) extends Bundle {
   val SWord = UInt(w bits) // w-1 downto 1
   val YWord = UInt(w bits)

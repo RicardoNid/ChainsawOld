@@ -12,7 +12,6 @@ class ViterbiTest extends AnyFlatSpec {
 
   behavior of "ViterbiTest"
 
-  // defining model
   val testSize = 10
   val testLength = 128
 

@@ -1,7 +1,8 @@
 package Chainsaw.algos
 
-import breeze.linalg.min
+import breeze.linalg.{min, norm}
 import breeze.math.Semiring
+import breeze.math.Field
 
 object AlgebraicStructures {
 
@@ -36,6 +37,32 @@ object AlgebraicStructures {
     override def ==(a: MPInt, b: MPInt) = a.value == b.value
 
     override def !=(a: MPInt, b: MPInt) = a.value != b.value
+  }
+
+  // finite field with 2 elements
+  case class F2() extends Field[Boolean] {
+
+    override def /(a: Boolean, b: Boolean) = ???
+
+    override def pow(a: Boolean, b: Boolean) = ???
+
+    override def -(a: Boolean, b: Boolean) = ???
+
+    override def %(a: Boolean, b: Boolean) = ???
+
+    override implicit val normImpl: norm.Impl[Boolean, Double] = _
+
+    override def zero = ???
+
+    override def one = ???
+
+    override def +(a: Boolean, b: Boolean) = ???
+
+    override def *(a: Boolean, b: Boolean) = ???
+
+    override def ==(a: Boolean, b: Boolean) = ???
+
+    override def !=(a: Boolean, b: Boolean) = ???
   }
 }
 
