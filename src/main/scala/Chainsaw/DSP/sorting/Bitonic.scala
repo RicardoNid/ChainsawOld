@@ -10,20 +10,20 @@ import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 
 /** Bitonic sorter
- *
- * learn more: [[https://en.wikipedia.org/wiki/Bitonic_sorter]]
- */
+  *
+  * learn more: [[https://en.wikipedia.org/wiki/Bitonic_sorter]]
+  */
 case class Bitonic[T <: Data](dataType: HardType[T], n: Int, comparator: Seq[T] => Seq[T], pattern1: Boolean = true) extends Component {
 
   require(isPow2(n), "or, you should pad it")
 
-  val dataIn = slave Flow Vec(dataType, n)
+  val dataIn  = slave Flow Vec(dataType, n)
   val dataOut = master Flow Vec(dataType, n)
 
   def cmp(dataIn: Seq[T], up: Boolean) = if (up && pattern1) comparator(dataIn) else comparator(dataIn).reverse
 
   def subBlock(dataIn: Seq[T], up: Boolean, red: Boolean) = {
-    val n = dataIn.length
+    val n              = dataIn.length
     val (half0, half1) = dataIn.splitAt(n / 2)
 
     val afterComp = if (red) half0.zip(half1).map { case (t, t1) => cmp(Seq(t, t1), up) }
@@ -33,7 +33,6 @@ case class Bitonic[T <: Data](dataType: HardType[T], n: Int, comparator: Seq[T] 
 
     if (red) (ordered(0), ordered(1)) else (ordered(0), ordered(1).reverse)
   }
-
 
   private def block(dataIn: Seq[T], up: Boolean, first: Boolean): Seq[T] = {
     val n = dataIn.length
@@ -52,7 +51,7 @@ case class Bitonic[T <: Data](dataType: HardType[T], n: Int, comparator: Seq[T] 
     if (step == maxStep) dataIn
     else {
       val upAndDown = (0 until n / step).map(_ % 2 == 1)
-      val ordered = dataIn.grouped(step).toSeq.zip(upAndDown).map { case (data, up) => block(data, up, true) }.flatten
+      val ordered   = dataIn.grouped(step).toSeq.zip(upAndDown).map { case (data, up) => block(data, up, true) }.flatten
       whole(RegNext(Vec(ordered)), step << 1)
     }
   }

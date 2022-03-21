@@ -18,8 +18,7 @@ object NoMUX {
 
 case class GlobalCount(value: UInt)
 
-case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]], period: Int)
-                            (implicit holderProvider: HolderProvider[T]) {
+case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]], period: Int)(implicit holderProvider: HolderProvider[T]) {
 
   def localLcm: Int = schedules.flatten.map(_.period).sorted.reverse.reduce(lcm)
 
@@ -39,7 +38,7 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]], period: Int)
     if (dataIns.size == 1 && schedules.head.head == Schedule(0, 1)) dataIns.head
     else {
       val retWidth = dataIns.map(_.getBitsWidth).max bits
-      val ret = holderProvider(retWidth)
+      val ret      = holderProvider(retWidth)
 
       if (asROM) {
         val ROMValues = ArrayBuffer.fill(period)(dataIns.head)
@@ -51,8 +50,7 @@ case class DFGMUX[T <: Data](schedules: Seq[Seq[Schedule]], period: Int)
         logger.debug(s"implementing MUX as ROM")
         ROM.setName(s"rom", weak = true)
         ret := ROM.readAsync(globalCount.value)
-      }
-      else {
+      } else {
         switch(globalCount.value) {
           schedules.zip(dataIns).foreach { case (schedulesOneSource, bits) =>
             val occupationsOneSource: Seq[Int] = schedulesOneSource.flatMap(occupationOf)

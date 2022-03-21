@@ -6,12 +6,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class ConvolutionTest extends AnyFlatSpec {
 
-  val size = 16
-  val complexData = (0 until 100).map(_ => ChainsawRand.nextComplexDV(size))
+  val size           = 16
+  val complexData    = (0 until 100).map(_ => ChainsawRand.nextComplexDV(size))
   val complexKernels = (0 until 100).map(_ => ChainsawRand.nextComplexDV(size))
 
   behavior of "ConvolutionTest"
-
 
   it should "genericLinearConvolve" in {
 

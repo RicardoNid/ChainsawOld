@@ -22,13 +22,14 @@ object TransformTests {
 
   val logger = LoggerFactory.getLogger("DFG Transform Test Logger")
 
-  def testConsistency[T <: Data](name: String,
-                                 original: DFGGraph[T], transformed: DFGGraph[T], testWidth: Int,
-                                 speedUp: Int, testLength: Int = 50, initLength: Int)
-                                (implicit holderProvider: HolderProvider[T]) {
-
-
-
-  }
+  def testConsistency[T <: Data](
+      name: String,
+      original: DFGGraph[T],
+      transformed: DFGGraph[T],
+      testWidth: Int,
+      speedUp: Int,
+      testLength: Int = 50,
+      initLength: Int
+  )(implicit holderProvider: HolderProvider[T]) {}
 
 }

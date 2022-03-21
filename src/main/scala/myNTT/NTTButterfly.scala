@@ -10,7 +10,7 @@ import scala.util.Random._
 //Butterfly
 //delay n+3
 
-class NTTButterfly(N: BigInt /*被模常数*/) extends Component {
+class NTTButterfly(N: BigInt /*被模常数*/ ) extends Component {
 
   val n = log2Up(N)
 

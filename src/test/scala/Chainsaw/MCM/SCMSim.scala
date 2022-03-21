@@ -11,15 +11,13 @@ import scala.math.abs
 class SCMDUT(constant: Int, scmArch: SCMArch) extends DSPDUTTiming[Real, Real] {
   override val input = in(Real(-1.5, 1, -15 exp).withRoundingError)
   //  override val input: Flow[Real] = slave Flow SIntReal(-3, 6)
-  val scm = new SCM(input, constant, scmArch)
-  val ret = scm.implicitValue
-  override val output = out(scm.implicitValue)
+  val scm                         = new SCM(input, constant, scmArch)
+  val ret                         = scm.implicitValue
+  override val output             = out(scm.implicitValue)
   override val timing: TimingInfo = scm.getTimingInfo
 }
 
-class SCMSim(constant: Int, scmArch: SCMArch) extends
-  SCMDUT(constant, scmArch)
-  with DSPSimTiming[Real, Real, Double, Double] {
+class SCMSim(constant: Int, scmArch: SCMArch) extends SCMDUT(constant, scmArch) with DSPSimTiming[Real, Real, Double, Double] {
 
   override def poke(testCase: Double, input: Real): Unit = {
     input #= testCase

@@ -7,10 +7,13 @@ import scala.io.Source
 import AOperations._
 
 /** run the minimized adder graph algorithm and build an adder graph for constant multiplication
- *
- * @see ''Multiple Constant Multiplication Optimizations for Field Programmable Gate Arrays''[[https://nonchalant-frill-fc5.notion.site/MCM-for-FPGA-35fb512c7d7f4075aec260265c3d2520]]
- * @see ''Constant Integer Multiplication Using Minimum Adders'' [[https://digital-library.theiet.org/content/journals/10.1049/ip-cds_19941191]]
- */
+  *
+  * @see
+  *   ''Multiple Constant Multiplication Optimizations for Field Programmable Gate
+  *   Arrays''[[https://nonchalant-frill-fc5.notion.site/MCM-for-FPGA-35fb512c7d7f4075aec260265c3d2520]]
+  * @see
+  *   ''Constant Integer Multiplication Using Minimum Adders'' [[https://digital-library.theiet.org/content/journals/10.1049/ip-cds_19941191]]
+  */
 object MAG {
 
   def apply(n: Int) = {
@@ -18,9 +21,9 @@ object MAG {
     rebuildMAG(path, graphString)
   }
 
-  implicit val max = 1 << 16
-  val costLUTFileName = s"src/main/resources/16bitsCostLUT.dat"
-  val pathLUTFileName = s"src/main/resources/16bitsPathLUT.dat"
+  implicit val max       = 1 << 16
+  val costLUTFileName    = s"src/main/resources/16bitsCostLUT.dat"
+  val pathLUTFileName    = s"src/main/resources/16bitsPathLUT.dat"
   val onePathLUTFileName = s"src/main/resources/16bitsOnePathLUT.dat"
 
   case class Path(fundamentals: ListBuffer[Int] = ListBuffer(1)) {
@@ -47,7 +50,7 @@ object MAG {
 
   def searchMAG(graph: BinarySFG) = {
     val vertices = 1 until graph.vertexSet().size()
-    var paths = ListBuffer(Path())
+    var paths    = ListBuffer(Path())
     vertices.foreach { vertex =>
       val drivers = graph.driversOf(vertex)
       require(drivers.length == 2)
@@ -56,9 +59,9 @@ object MAG {
     paths
   }
 
-  /**
-   * @see [[https://www.notion.so/RAG-n-e772eb87d24841c8abc2042533f00eda Chainsaw RAG-n - MAG paper Fig 4]]
-   */
+  /** @see
+    *   [[https://www.notion.so/RAG-n-e772eb87d24841c8abc2042533f00eda Chainsaw RAG-n - MAG paper Fig 4]]
+    */
   def topologies = {
     // structure of cost 0 graphs
     val cost0 = new BinarySFG
@@ -105,18 +108,15 @@ object MAG {
   def filesReady = Array(costLUTFileName, pathLUTFileName, onePathLUTFileName).forall(new File(_).exists())
 
   def getCostLUT =
-    if (filesReady) new ObjectInputStream(new FileInputStream(costLUTFileName))
-      .readObject.asInstanceOf[mutable.Map[Int, Int]]
+    if (filesReady) new ObjectInputStream(new FileInputStream(costLUTFileName)).readObject.asInstanceOf[mutable.Map[Int, Int]]
     else buildLUTs()._1
 
   def getPathLUT =
-    if (filesReady) new ObjectInputStream(new FileInputStream(onePathLUTFileName))
-      .readObject.asInstanceOf[mutable.Map[Int, ListBuffer[(Path, String)]]]
+    if (filesReady) new ObjectInputStream(new FileInputStream(onePathLUTFileName)).readObject.asInstanceOf[mutable.Map[Int, ListBuffer[(Path, String)]]]
     else buildLUTs()._2
 
   def getOnePathLUT =
-    if (filesReady) new ObjectInputStream(new FileInputStream(onePathLUTFileName))
-      .readObject.asInstanceOf[mutable.Map[Int, (Path, String)]]
+    if (filesReady) new ObjectInputStream(new FileInputStream(onePathLUTFileName)).readObject.asInstanceOf[mutable.Map[Int, (Path, String)]]
     else buildLUTs()._3
 
   def rebuildMAG(path: Path, mag: BinarySFG) = {
@@ -136,7 +136,11 @@ object MAG {
 
   def buildLUTs(): (mutable.Map[Int, Int], mutable.Map[Int, ListBuffer[(Path, String)]], mutable.Map[Int, (Path, String)]) = {
 
-    val goldenCostLUT = Source.fromFile("src/main/resources/mag14.dat").getLines().mkString("").zipWithIndex
+    val goldenCostLUT = Source
+      .fromFile("src/main/resources/mag14.dat")
+      .getLines()
+      .mkString("")
+      .zipWithIndex
       .map { case (char, i) => (i + 1) -> char.asDigit }
       .filter(pair => pair._1 % 2 != 0)
       .toMap
@@ -145,14 +149,15 @@ object MAG {
     val costLUT = mutable.Map[Int, Int]()
 
     def buildCostLUT(graphs: ListBuffer[BinarySFG], cost: Int) = {
-      graphs.flatMap(searchMAG)
+      graphs
+        .flatMap(searchMAG)
         .foreach(path => costLUT.getOrElseUpdate(path.des, cost))
     }
 
     def buildPathLUT(graphs: ListBuffer[BinarySFG], cost: Int): Unit = {
       graphs.foreach { graph =>
         val graphString = graph.serialized
-        val paths = searchMAG(graph)
+        val paths       = searchMAG(graph)
         paths.foreach { path =>
           val coeff = path.des
           if (costLUT(coeff) == cost) {
@@ -163,8 +168,7 @@ object MAG {
       }
     }
 
-    val ooss = Array(costLUTFileName, pathLUTFileName, onePathLUTFileName).map(filepath =>
-      new ObjectOutputStream(new FileOutputStream(filepath)))
+    val ooss = Array(costLUTFileName, pathLUTFileName, onePathLUTFileName).map(filepath => new ObjectOutputStream(new FileOutputStream(filepath)))
 
     (0 to 4).foreach { i =>
       println(s"building cost-$i graphs")
@@ -175,7 +179,7 @@ object MAG {
 
     val onePathLUT = pathLUT.map { case (i, tuples) =>
       val pathCosts = tuples.map(_._1).map(_.fundamentals.sum)
-      val index = pathCosts.indexOf(pathCosts.min)
+      val index     = pathCosts.indexOf(pathCosts.min)
       i -> tuples(index)
     }
 

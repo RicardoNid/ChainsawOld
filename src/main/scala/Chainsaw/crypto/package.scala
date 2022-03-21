@@ -10,11 +10,4 @@ import rings.primes._
 import rings.poly.univar._
 
 // utilities of cryptography
-package object crypto {
-
-
-
-
-}
-
-
+package object crypto {}

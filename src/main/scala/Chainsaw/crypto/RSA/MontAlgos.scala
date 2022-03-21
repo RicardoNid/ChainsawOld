@@ -7,13 +7,12 @@ import Chainsaw._
 import java.math.BigInteger
 import scala.collection.mutable.ArrayBuffer
 
-
 object MontAlgos {
 
   def R2MM(X: BigInt, Y: BigInt, M: BigInt) = {
     require(X < M && Y < M)
-    var S = BigInt(0)
-    val n = M.bitLength + 2 // for RSA512, n = 514
+    var S  = BigInt(0)
+    val n  = M.bitLength + 2 // for RSA512, n = 514
     val y0 = Y.toString(2).last.asDigit
     (0 until n).foreach { i =>
       val s0 = S.toString(2).last.asDigit
@@ -28,8 +27,8 @@ object MontAlgos {
   // r^2 \pmod M
   def R2MMP(M: BigInt): BigInt = {
     var minusCount = 0
-    val n = M.bitLength
-    var S = BigInt(1) << (M.bitLength - 1)
+    val n          = M.bitLength
+    var S          = BigInt(1) << (M.bitLength - 1)
     println(S)
     (0 until n + 5).foreach { i =>
       S = S << 1
@@ -50,11 +49,11 @@ object MontAlgos {
   // FIXME: test not passed
   def MWR2MM(X: BigInt, Y: BigInt, M: BigInt, w: Int, print: Boolean = false) = {
     require(X < M && Y < M)
-    val n = M.bitLength + 2
-    val e = ceil((n + 1).toDouble / w).toInt
+    val n      = M.bitLength + 2
+    val e      = ceil((n + 1).toDouble / w).toInt
     val MWords = toWords(M, w, e) :+ BigInt(0) // e + 1 elements in total
     val YWords = toWords(Y, w, e) :+ BigInt(0)
-    val y0 = Y.toString(2).last.asDigit
+    val y0     = Y.toString(2).last.asDigit
     val SWords = ArrayBuffer.fill(e + 1)(BigInt(0))
     val CWords = ArrayBuffer.fill(e + 2)(BigInt(0)) // carry, 2-bits long
     (0 until n).foreach { i =>
@@ -70,10 +69,11 @@ object MontAlgos {
           else CWords(j) + xi * YWords(j) + qi * MWords(j) + SWords(j)
         val SBefore = SWords(j)
         CWords(j + 1) = temp / (1 << w)
-        SWords(j) = temp % (1 << w)
+        SWords(j)     = temp % (1 << w)
         // j = 0, no shift
         if (j >= 1) SWords(j - 1) = BigInt(SWords(j).toString(2).last + SWords(j - 1).toString(2).padToLeft(w, '0').take(w - 1), 2)
-        if (print) println(s"xi = $xi, s0 = $s0, S = $SBefore, Y = ${YWords(j)}, M = ${MWords(j)}, C = ${CWords(j)}\nSWords: ${SWords.reverse.mkString(" ")}")
+        if (print)
+          println(s"xi = $xi, s0 = $s0, S = $SBefore, Y = ${YWords(j)}, M = ${MWords(j)}, C = ${CWords(j)}\nSWords: ${SWords.reverse.mkString(" ")}")
       }
       SWords(e) = 0
     }
@@ -93,8 +93,8 @@ object MontAlgos {
     val YWords = Array.fill(n + 1, e + 1)(BigInt(ChainsawRand.nextInt(100)))
     val SWords = ArrayBuffer.fill(n + 1, e + 1)(BigInt(ChainsawRand.nextInt(100)))
     val CWords = ArrayBuffer.fill(n + 1, e + 2)(BigInt(ChainsawRand.nextInt(100))) // carry, 2-bits long
-    val XBits = X.toString(2).padToLeft(n, '0').reverse
-    val y0 = Y.toString(2).last.asDigit
+    val XBits  = X.toString(2).padToLeft(n, '0').reverse
+    val y0     = Y.toString(2).last.asDigit
 
     // input operation
     for (i <- 0 to n; j <- 0 to e) {
@@ -121,13 +121,15 @@ object MontAlgos {
       //  the fact is that, C had an i index already(since it is initialized through i-axis)
       val temp = CWords(i)(j) + xi * YWords(i - 1)(j) + qi * MWords(i - 1)(j) + SWords(i - 1)(j)
       CWords(i)(j + 1) = temp / (1 << w)
-      SWords(i)(j) = temp % (1 << w)
+      SWords(i)(j)     = temp % (1 << w)
 
       // j = 0, no shift
       // this is special
       if (j >= 1) SWords(i)(j - 1) = BigInt(SWords(i)(j).toString(2).last + SWords(i)(j - 1).toString(2).padToLeft(w, '0').take(w - 1), 2)
-      if (j == e) SWords(i)(j) = 0
-      if (print) println(s"$i, $j, xi = $xi, s0 = $s0, S = ${SWords(i - 1)(j)}, Y = ${YWords(i - 1)(j)}, M = ${MWords(i - 1)(j)} C = ${CWords(i - 1)(j)} \n SArray \n${SWords.map(_.reverse.mkString(" ")).mkString("\n")}")
+      if (j == e) SWords(i)(j)     = 0
+      if (print) println(s"$i, $j, xi = $xi, s0 = $s0, S = ${SWords(i - 1)(j)}, Y = ${YWords(i - 1)(j)}, M = ${MWords(i - 1)(j)} C = ${CWords(i - 1)(
+        j
+      )} \n SArray \n${SWords.map(_.reverse.mkString(" ")).mkString("\n")}")
     }
 
     // output operation
@@ -136,23 +138,23 @@ object MontAlgos {
   }
 
   def Arch1MM(X: BigInt, Y: BigInt, M: BigInt, w: Int, print: Boolean = false) = {
-    val n = M.bitLength + 2
-    val e = ceil((n + 1).toDouble / w).toInt
+    val n      = M.bitLength + 2
+    val e      = ceil((n + 1).toDouble / w).toInt
     val MWords = toWords(M, w, e)
     val YWords = toWords(Y, w, e)
-    val y0 = Y.toString(2).last.asDigit
-    val qs = ArrayBuffer.fill(n)(0)
+    val y0     = Y.toString(2).last.asDigit
+    val qs     = ArrayBuffer.fill(n)(0)
 
     val SWords = ArrayBuffer.fill(e + 1)(BigInt(0))
     val CWords = ArrayBuffer.fill(e + 1)(BigInt(0)) // carry, 2-bits long
 
     (0 until e + n - 1).foreach { cycle =>
       val peFirst = if (cycle - (e - 1) <= 0) 0 else cycle - (e - 1)
-      val peLast = if (cycle - (n - 1) <= 0) cycle else n - 1
+      val peLast  = if (cycle - (n - 1) <= 0) cycle else n - 1
       //      if (print) println(s"cycle: $cycle, workings PEs: ${(peFirst to peLast).mkString(" ")}, js: ${(peFirst to peLast).map(cycle - _).mkString(" ")}")
       (peFirst to peLast).foreach { pe =>
-        val j = cycle - pe
-        val i = pe
+        val j  = cycle - pe
+        val i  = pe
         val xi = X.toString(2).padToLeft(n, '0').reverse(i).asDigit
 
         if (j == 0) { // task D extra work
@@ -160,34 +162,34 @@ object MontAlgos {
           qs(i) = (xi * y0) ^ s1
         }
         // task D & E cowork
-        val qi = qs(i)
+        val qi    = qs(i)
         val YWord = YWords(j)
         val SWord = SWords(j)
         val MWord = MWords(j)
         val CWord = CWords(j)
 
-        val tempOdd = (BigInt(1) << (w - 1)) + (SWords(j) >> 1) + CWords(j) + xi * YWords(j) + qi * MWords(j)
+        val tempOdd  = (BigInt(1) << (w - 1)) + (SWords(j) >> 1) + CWords(j) + xi * YWords(j) + qi * MWords(j)
         val tempEven = (SWords(j) >> 1) + CWords(j) + xi * YWords(j) + qi * MWords(j)
-        val det = SWords(j + 1).toString(2).last.asDigit
+        val det      = SWords(j + 1).toString(2).last.asDigit
         CWords(j + 1) = if (det == 1) tempOdd / (BigInt(1) << w) else tempEven / (BigInt(1) << w)
-        SWords(j) = if (det == 1) tempOdd % (BigInt(1) << w) else tempEven % (BigInt(1) << w)
+        SWords(j)     = if (det == 1) tempOdd % (BigInt(1) << w) else tempEven % (BigInt(1) << w)
         if (print && cycle == e + n - 2) println(s"SWords: ${SWords.map(_.toString(16).padToLeft(w / 4, '0')).mkString(" ")}")
-        //        if (print && pe == peLast) println(s"SWords: ${SWords.map(_.toString(16).padToLeft(w/4, '0')).mkString(" ")}")
+      //        if (print && pe == peLast) println(s"SWords: ${SWords.map(_.toString(16).padToLeft(w/4, '0')).mkString(" ")}")
       }
     }
 
     val SBinary = SWords.take(e).reverse.map(_.toString(2).padToLeft(w, '0')).flatten.mkString("")
-    val S = BigInt(SBinary, 2) >> 1
+    val S       = BigInt(SBinary, 2) >> 1
     S
   }
 
   def Arch1ME(X: BigInt, exponent: BigInt, M: BigInt, w: Int, print: Boolean = false) = {
 
-    val r = BigInt(Zp(M)(BigInt(1) << (M.bitLength + 2)).toByteArray)
+    val r       = BigInt(Zp(M)(BigInt(1) << (M.bitLength + 2)).toByteArray)
     val rSquare = BigInt(Zp(M)(r * r).toByteArray)
 
     var partialProduct = X
-    var montX = BigInt(1)
+    var montX          = BigInt(1)
     // precompute
     def MM: (BigInt, BigInt) => BigInt = Arch1MM(_, _, M, w, false)
     def printTrace(title: String) = {
@@ -198,7 +200,7 @@ object MontAlgos {
     // pre, x -> x'
     val temp = MM(partialProduct, rSquare)
     partialProduct = temp
-    montX = temp
+    montX          = temp
     printTrace("after pre")
     // L2R, M2L exponent
     var count = 0
@@ -225,14 +227,14 @@ object MontAlgos {
   // modular multiplication
   def verifyMM(algo: (BigInt, BigInt, BigInt) => BigInt) = {
     (0 until 10).foreach { _ =>
-      val modulus = BigInt(ref.getModulus)
-      val input0 = (modulus - ChainsawRand.nextInt(10000))
-      val input1 = modulus - ChainsawRand.nextInt(10000)
-      val ZN = Zp(modulus)
-      val r = BigInt(1) << (modulus.bitLength + 2)
+      val modulus  = BigInt(ref.getModulus)
+      val input0   = (modulus - ChainsawRand.nextInt(10000))
+      val input1   = modulus - ChainsawRand.nextInt(10000)
+      val ZN       = Zp(modulus)
+      val r        = BigInt(1) << (modulus.bitLength + 2)
       val rInverse = ZN.reciprocal(r)
 
-      val algoResult = algo(input0, input1, modulus)
+      val algoResult  = algo(input0, input1, modulus)
       val RingsResult = BigInt(ZN.multiply(input0, input1, rInverse).toByteArray)
       assert(algoResult < (modulus << 1))
       println(s"golden: ${ZN(RingsResult)}")
@@ -245,10 +247,10 @@ object MontAlgos {
   // pre-computation(r square mod M) for MM
   def verifyMMP(algo: BigInt => BigInt) = {
     (0 until 10).foreach { _ =>
-      val modulus = BigInt(ref.getModulus)
-      val ZN = Zp(modulus)
-      val r = BigInt(1) << (modulus.bitLength + 2)
-      val algoResult = algo(modulus)
+      val modulus     = BigInt(ref.getModulus)
+      val ZN          = Zp(modulus)
+      val r           = BigInt(1) << (modulus.bitLength + 2)
+      val algoResult  = algo(modulus)
       val RingsResult = BigInt(ZN.multiply(r, r).toByteArray)
       assert(algoResult < modulus)
       assert(ZN(algoResult) == ZN(RingsResult))
@@ -259,11 +261,11 @@ object MontAlgos {
   // modular exponentiation
   def verifyME(algo: (BigInt, BigInt, BigInt) => BigInt) = {
     (0 until 1).foreach { _ =>
-      val modulus = BigInt(ref.getModulus)
-      val x = modulus - ChainsawRand.nextInt(10000)
-      val e = ref.getPublicValue
-      val ZN = Zp(modulus)
-      val algoResult = algo(x, e, modulus)
+      val modulus     = BigInt(ref.getModulus)
+      val x           = modulus - ChainsawRand.nextInt(10000)
+      val e           = ref.getPublicValue
+      val ZN          = Zp(modulus)
+      val algoResult  = algo(x, e, modulus)
       val RingsResult = BigInt(ZN.pow(x, e).toByteArray)
       assert(algoResult < modulus)
       val wordCount = modulus.bitLength / 32 + 1
@@ -271,7 +273,7 @@ object MontAlgos {
       println(s"yours  = ${toWordsHexString(algoResult, 32, modulus.bitLength / 32 + 1)}")
       println(s"golden = ${toWordsHexString(RingsResult, 32, modulus.bitLength / 32 + 1)}")
       assert(ZN(algoResult) == ZN(RingsResult))
-      //      assert(algoResult == RingsResult)
+    //      assert(algoResult == RingsResult)
     }
     printlnGreen(s"montExp, passed")
   }
@@ -288,7 +290,7 @@ object MontAlgos {
     //    R2MMP(13)
 
     def checkstyleMontMul(X: BigInt, Y: BigInt, M: BigInt): BigInt = {
-      val ZN = Zp(M)
+      val ZN         = Zp(M)
       val RhoInverse = ZN.reciprocal(BigInt(1) << M.bitLength)
       BigInt(ZN.multiply(X, Y, RhoInverse).toByteArray)
     }

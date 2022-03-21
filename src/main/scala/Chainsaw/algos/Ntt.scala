@@ -14,21 +14,22 @@ object Ntt {
     val ring: Ring[Long] = Zp64(modulus)
     val ret = (2 until modulus).filter { root =>
       ring.pow(root, N) == ring(1) && // N-th root
-        (1 to N).map(ring.pow(root, _)).distinct.size == N
+      (1 to N).map(ring.pow(root, _)).distinct.size == N
     }.head
     ret
   }
 
   /** number theoretic transform
-   *
-   * @param ring the ring at which ntt is defined
-   */
+    *
+    * @param ring
+    *   the ring at which ntt is defined
+    */
   @definition
   def ntt(data: DenseVector[Int], inverse: Boolean = false)(implicit zp: Zp): DenseVector[Int] = {
 
-    val N = data.length
+    val N       = data.length
     val modulus = zp.modulus
-    val omega = getNthRoot(modulus, N)
+    val omega   = getNthRoot(modulus, N)
 
     val ret = genericDft(data, omega)
     println(ret)

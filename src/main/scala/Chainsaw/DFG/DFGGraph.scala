@@ -69,7 +69,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   def executionTimes: Seq[Double] = vertexSeq.map(_.exeTime)
 
   /** Confirm that the graph has no mux(parallel edges)
-   */
+    */
   // classification
   def hasNoParallelEdge: Boolean = vertexSeq.forall(vertex => vertex.targets.distinct.size == vertex.targets.size)
 
@@ -95,14 +95,20 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   override def addEdge(sourceVertex: DSPNode[T], targetVertex: DSPNode[T], e: DSPEdge[T]): Boolean = super.addEdge(sourceVertex, targetVertex, e)
 
   /** Add edge with full information, it is the basic method for adding edge in DFG
-   *
-   * @param source    source node
-   * @param target    target node
-   * @param outOrder  the output port number of source node
-   * @param inOrder   the input port number of target node
-   * @param delay     delay(weight) of this edge
-   * @param schedules schedules on this edge
-   */
+    *
+    * @param source
+    *   source node
+    * @param target
+    *   target node
+    * @param outOrder
+    *   the output port number of source node
+    * @param inOrder
+    *   the input port number of target node
+    * @param delay
+    *   delay(weight) of this edge
+    * @param schedules
+    *   schedules on this edge
+    */
   def addEdge(source: DSPNode[T], target: DSPNode[T], outOrder: Int, inOrder: Int, delay: Double, schedules: Seq[Schedule] = NoMUX()): Unit = {
     val edge = DefaultDelay[T](schedules, outOrder, inOrder)
     if (super.addEdge(source, target, edge)) setEdgeWeight(edge, delay)
@@ -136,9 +142,10 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   }
 
   /** Add an expression to a basic DFG, that is, "derive" a new node by several driving nodes
-   *
-   * @example dfg.add(Seq(a,b) >=> (0,1) >=> c), when c is an adder, this means c.output = a.output + b.output
-   */
+    *
+    * @example
+    *   dfg.add(Seq(a,b) >=> (0,1) >=> c), when c is an adder, this means c.output = a.output + b.output
+    */
   def addExp(exp: DSPAssignment[T]): Unit = {
     import exp._
     if (sources.exists(_.outWidths.size > 1)) logger.warn(s"using addExp(which provides no port number or MUX info) on a MIMO DFG")
@@ -148,9 +155,10 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   }
 
   /** Add a interleaved sequence of nodes and delays to a basic DFG
-   *
-   * @example dfg.addPath(a >> b >> 1 >> c), there's no delay between a and b, 1 delay between b and c
-   */
+    *
+    * @example
+    *   dfg.addPath(a >> b >> 1 >> c), there's no delay between a and b, 1 delay between b and c
+    */
   def addPath(path: DSPPath[T]): Unit = {
     import path._
     require(nodes.size == delays.size + 1)
@@ -201,10 +209,8 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   def isMerged: Boolean = delayAmount == unmergedDelayAmount
 
-
-
   /** the least common multiple of all muxes in this DFG, which is the working period of this DFG
-   */
+    */
   def period: Int = {
     val periods = edgeSeq.flatMap(_.schedules).map(_.period).distinct.sorted.reverse
     periods.reduce(lcm)
@@ -274,10 +280,9 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   override def toString: String = {
 
-    val inputEdges = edgeSeq.filter(edge => edge.source.isInput || edge.source.isInstanceOf[ConstantNode[T]])
+    val inputEdges  = edgeSeq.filter(edge => edge.source.isInput || edge.source.isInstanceOf[ConstantNode[T]])
     val outputEdges = edgeSeq.filter(edge => edge.target.isOutput)
-    val otherEdges = edgeSeq.diff(inputEdges).diff(outputEdges)
-
+    val otherEdges  = edgeSeq.diff(inputEdges).diff(outputEdges)
 
     s"-----graph:$name-----\n" +
       s"inputs:\n\t${inputNodes.mkString(" ")}\n" +
@@ -295,7 +300,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
   }
 
   /** Besides nodes and edges, we clone the weights
-   */
+    */
   override def clone(): AnyRef = {
     val graph = super.clone().asInstanceOf[DFGGraph[T]]
     graph.foreachEdge(edge => graph.setEdgeWeight(edge, edge.weight))
@@ -305,16 +310,19 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
 
   // TODO: consider carefully on these properties
   // FIXME: this could be difficult to define
-  def asNode(name: String, graphLatency: CyclesCount = latency cycles, dataReset: Boolean = false)
-            (implicit holderProvider: HolderProvider[T]): DeviceNode[T] = {
+  def asNode(name: String, graphLatency: CyclesCount = latency cycles, dataReset: Boolean = false)(implicit
+      holderProvider: HolderProvider[T]
+  ): DeviceNode[T] = {
     require(isForwarding)
-    DeviceNode[T](name, DSPHardware(
-      impl = (dataIns: Seq[T], _: GlobalCount) => impl(dataIns, dataReset), // FIXME: this won't provide the counter of outer graph, is that legal?
-      inDegree = inputNodes.size,
-      outWidths = Seq.fill(outputNodes.size)(-1 bits), // FIXME: what if we use subgraph in
-      graphLatency,
-      0 sec
-    )
+    DeviceNode[T](
+      name,
+      DSPHardware(
+        impl      = (dataIns: Seq[T], _: GlobalCount) => impl(dataIns, dataReset), // FIXME: this won't provide the counter of outer graph, is that legal?
+        inDegree  = inputNodes.size,
+        outWidths = Seq.fill(outputNodes.size)(-1 bits), // FIXME: what if we use subgraph in
+        graphLatency,
+        0 sec
+      )
     )
   }
 
@@ -329,9 +337,7 @@ class DFGGraph[T <: Data](val name: String) extends DirectedWeightedPseudograph[
     val retimedDFG = retimed(cg.getSolution)
 
     incrementMap.foreach { case (u, innerDelay) =>
-      retimedDFG.outgoingEdgesOf(u).foreach(edge =>
-        retimedDFG.setEdgeWeight(edge, retimedDFG.getEdgeWeight(edge) - innerDelay)
-      )
+      retimedDFG.outgoingEdgesOf(u).foreach(edge => retimedDFG.setEdgeWeight(edge, retimedDFG.getEdgeWeight(edge) - innerDelay))
     }
 
     retimedDFG

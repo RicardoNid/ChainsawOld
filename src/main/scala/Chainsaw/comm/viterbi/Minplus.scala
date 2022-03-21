@@ -4,10 +4,10 @@ case class MinplusMatrix(value: Array[Array[Double]]) {
 
   import MinplusMatrix._
 
-  def rows = value.length
-  def cols = value.head.length
+  def rows                  = value.length
+  def cols                  = value.head.length
   def apply(i: Int, j: Int) = this.value(i)(j)
-  def isDense = value.forall(_.forall(_ < Int.MaxValue / 3))
+  def isDense               = value.forall(_.forall(_ < Int.MaxValue / 3))
 
   override def toString = s"Minplus matrix: \n${this.value.map(_.map(i => if (i >= max) "-" else i.toString).mkString(" ")).mkString("\n")}"
 
@@ -15,7 +15,7 @@ case class MinplusMatrix(value: Array[Array[Double]]) {
     // this: (i,j), that: (j,k)
     require(this.cols == that.rows)
     val ret = Array.tabulate(this.rows, that.cols) { (i, k) =>
-      (0 until this.cols).map(j => this (i, j) + that(j, k)).min // min-plus
+      (0 until this.cols).map(j => this(i, j) + that(j, k)).min // min-plus
     }
     MinplusMatrix(ret)
   }
@@ -38,14 +38,14 @@ object MinplusMatrix {
     }
   }
 
-  def findMid(head: MinplusMatrix, tail: MinplusMatrix, start:Int, end:Int) ={
+  def findMid(head: MinplusMatrix, tail: MinplusMatrix, start: Int, end: Int) = {
     require(head.cols == tail.rows)
     (0 until head.cols).map(j => head(start, j) + tail(j, end)).zipWithIndex.minBy(_._1)._2
   }
 
   def main(args: Array[String]): Unit = {
 
-    val trellis = Trellis.poly2trellis(3, Array(7, 6))
+    val trellis  = Trellis.poly2trellis(3, Array(7, 6))
     val matrices = trellis2Minplus(trellis, Algos.Hamming)
     println(matrices.mkString("\n\n"))
 

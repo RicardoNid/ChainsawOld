@@ -41,8 +41,8 @@ object IntegerRange {
 
     def kred(c: IntegerRange) = {
 
-      val cl = c % 256
-      val ch = c / 256
+      val cl     = c % 256
+      val ch     = c / 256
       val cPrime = cl * 13 - ch
 
       val cPrimel = cPrime % 256
@@ -58,9 +58,9 @@ object IntegerRange {
     //    }
 
     def correction(base: IntegerRange, possible: IntegerRange, modulo: Int) = {
-      val lowGap = base.low - possible.low
-      val addCorrection = if (lowGap > 0) ceil(lowGap / modulo.toDouble).toInt else 0
-      val highGap = possible.high - base.high
+      val lowGap         = base.low - possible.low
+      val addCorrection  = if (lowGap > 0) ceil(lowGap / modulo.toDouble).toInt else 0
+      val highGap        = possible.high - base.high
       val miusCorrection = if (highGap > 0) ceil(highGap / modulo.toDouble).toInt else 0
       addCorrection + miusCorrection
     }

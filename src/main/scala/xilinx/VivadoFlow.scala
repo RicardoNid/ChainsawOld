@@ -9,28 +9,27 @@ import scala.collection.mutable
 import scala.io.Source
 import scala.sys.process._
 
-/**
- */
+/** */
 class VivadoFlow[T <: Component](
-                                  design: => T,
-                                  topModuleName: String,
-                                  workspacePath: String,
-                                  vivadoConfig: VivadoConfig,
-                                  vivadoTask: VivadoTask,
-                                  force: Boolean = false,
-                                  xdcPath: String = "",
-                                  designPath: String = "",
-                                  constraint: VivadoConstraint = VivadoConstraint() // no constraint by default
-                                ) {
+    design: => T,
+    topModuleName: String,
+    workspacePath: String,
+    vivadoConfig: VivadoConfig,
+    vivadoTask: VivadoTask,
+    force: Boolean               = false,
+    xdcPath: String              = "",
+    designPath: String           = "",
+    constraint: VivadoConstraint = VivadoConstraint() // no constraint by default
+) {
 
   import vivadoConfig._
   import vivadoTask._
 
-  /**
-   * Execute cmd command on host
-   *
-   * @param cmd : The cmd command to execute
-   */
+  /** Execute cmd command on host
+    *
+    * @param cmd
+    *   : The cmd command to execute
+    */
   private def doCmd(cmd: String): Unit = {
     println(cmd)
     if (isWindows)
@@ -39,12 +38,13 @@ class VivadoFlow[T <: Component](
       Process(cmd) !
   }
 
-  /**
-   * Execute cmd command on host at given path
-   *
-   * @param cmd  The cmd command to execute
-   * @param path Specifying the execution path
-   */
+  /** Execute cmd command on host at given path
+    *
+    * @param cmd
+    *   The cmd command to execute
+    * @param path
+    *   Specifying the execution path
+    */
   private def doCmd(cmd: String, path: String): Unit = { // do cmd at the workSpace
     println(cmd)
     if (isWindows)
@@ -53,12 +53,13 @@ class VivadoFlow[T <: Component](
       Process(cmd, new java.io.File(path)) !
   }
 
-  /**
-   * write content in dedicated file
-   *
-   * @param fileName name of the file
-   * @param content  content to be write
-   */
+  /** write content in dedicated file
+    *
+    * @param fileName
+    *   name of the file
+    * @param content
+    *   content to be write
+    */
   private def writeFile(fileName: String, content: String) = {
     val tcl = new java.io.FileWriter(Paths.get(workspacePath, fileName).toFile)
     tcl.write(content)
@@ -68,25 +69,20 @@ class VivadoFlow[T <: Component](
 
   val isWindows = System.getProperty("os.name").toLowerCase().contains("win")
 
-  /**
-   * Generate tcl script content for Vivado Flow
-   *
-   * {{{The generated tcl script will consists of these commands:}}}
-   * {{{    read_verilog -sv xxx.sv (or read_verilog, read_vhdl)}}}
-   * {{{    read_xdc xxx.xdc}}}
-   * {{{    synth_design -part xxx -top xxx}}}
-   * {{{    opt_design (for implementation)}}}
-   * {{{    place_design (for implementation)}}}
-   * {{{    route_design (for implementation)}}}
-   * {{{    write_bitstream -force xxx.bit (for implementation)}}}
-   * {{{    report_utilization}}}
-   * {{{    report_timing}}}
-   * {{{    write_checkpoint xxx.dcp}}}
-   *
-   * @param vivadoConfig you can specify your Vivado Configurations at src/main/scala/Xilinx/package.scala
-   * @param rtlSources   path of your RTL source codes
-   * @return tcl script
-   */
+  /** Generate tcl script content for Vivado Flow
+    *
+    * {{{The generated tcl script will consists of these commands:}}} {{{read_verilog -sv xxx.sv (or read_verilog, read_vhdl)}}} {{{read_xdc xxx.xdc}}}
+    * {{{synth_design -part xxx -top xxx}}} {{{opt_design (for implementation)}}} {{{place_design (for implementation)}}}
+    * {{{route_design (for implementation)}}} {{{write_bitstream -force xxx.bit (for implementation)}}} {{{report_utilization}}} {{{report_timing}}}
+    * {{{write_checkpoint xxx.dcp}}}
+    *
+    * @param vivadoConfig
+    *   you can specify your Vivado Configurations at src/main/scala/Xilinx/package.scala
+    * @param rtlSources
+    *   path of your RTL source codes
+    * @return
+    *   tcl script
+    */
   def getScript(vivadoConfig: VivadoConfig, rtlSources: mutable.LinkedHashSet[String]) = {
     var script = ""
 
@@ -132,19 +128,19 @@ class VivadoFlow[T <: Component](
     script
   }
 
-  /**
-   * generate XDC constraints content for Vivado Flow
-   *
-   * @return XDC constraints
-   */
+  /** generate XDC constraints content for Vivado Flow
+    *
+    * @return
+    *   XDC constraints
+    */
   def getXdc = {
     val targetPeriod = frequencyTarget.toTime
     s"""create_clock -period ${(targetPeriod * 1e9) toBigDecimal} [get_ports clk]"""
   }
 
-  /**
-   * @return VivadoReport as an object
-   */
+  /** @return
+    *   VivadoReport as an object
+    */
   def doit() = {
 
     // prepare the workspace
@@ -165,7 +161,6 @@ class VivadoFlow[T <: Component](
 
     doCmd(s"$vivadoPath/vivado -nojournal -log doit.log -mode batch -source doit.tcl", workspacePath)
 
-
     new VivadoReport(workspacePath, xilinxDeviceFamily, frequencyTarget)
   }
 }
@@ -173,13 +168,13 @@ class VivadoFlow[T <: Component](
 // TODO: modify the API, name and path should be passed to the Flow, so the user can use Config and Task from the recommendation
 object VivadoFlow {
   def apply[T <: Component](
-                             design: => T,
-                             topModuleName: String,
-                             workspacePath: String,
-                             vivadoConfig: VivadoConfig = defaultVivadoConfig,
-                             vivadoTask: VivadoTask = VivadoTask(),
-                             force: Boolean = true,
-                             xdcPath: String = "",
-                             designPath: String = ""
-                           ) = new VivadoFlow(design, topModuleName, workspacePath, vivadoConfig, vivadoTask, force, xdcPath, designPath)
+      design: => T,
+      topModuleName: String,
+      workspacePath: String,
+      vivadoConfig: VivadoConfig = defaultVivadoConfig,
+      vivadoTask: VivadoTask     = VivadoTask(),
+      force: Boolean             = true,
+      xdcPath: String            = "",
+      designPath: String         = ""
+  ) = new VivadoFlow(design, topModuleName, workspacePath, vivadoConfig, vivadoTask, force, xdcPath, designPath)
 }

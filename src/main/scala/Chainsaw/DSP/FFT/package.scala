@@ -15,8 +15,9 @@ package object FFT {
 
   def isPowR(input: Int, radix: Int): Boolean = if (input == radix) true else isPowR(input / radix, radix)
 
-  def multiplyWNnk(signal: ComplexNumber, index: Int, N: Int,
-                   dataType: HardType[SFix], coeffType: HardType[SFix])(implicit latency: Int = 2): ComplexNumber = {
+  def multiplyWNnk(signal: ComplexNumber, index: Int, N: Int, dataType: HardType[SFix], coeffType: HardType[SFix])(implicit
+      latency: Int = 2
+  ): ComplexNumber = {
 
     implicit class sfixPipeline[T <: Data](sf: T) {
       def pipelined(implicit doPipeline: Boolean) = if (doPipeline) RegNext(sf) else sf
@@ -54,8 +55,8 @@ package object FFT {
       case 7 => multiply1minusj(signal.multiplyI)
 
       case _ => { // nontrivial values
-        val coeffValue = WNnk(N, index)
-        val coeff = ComplexNumber(toFixedCoeff(coeffValue.real), toFixedCoeff(coeffValue.imag))
+        val coeffValue  = WNnk(N, index)
+        val coeff       = ComplexNumber(toFixedCoeff(coeffValue.real), toFixedCoeff(coeffValue.imag))
         val fullComplex = signal * coeff
         fullComplex.truncated(dataType)
       }

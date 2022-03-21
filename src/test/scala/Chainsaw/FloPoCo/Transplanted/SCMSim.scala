@@ -9,9 +9,9 @@ import spinal.core.sim._
 import scala.math.abs
 
 class SCMDUT(lower: Double, upper: Double, constant: Int) extends DSPDUTTiming[Real, Real] {
-  override val input: Real = in(Real(lower, upper, 0.1))
-  val scm = new FloPoCoSCM(input, constant)
-  override val output: Real = out(scm.implicitValue)
+  override val input: Real        = in(Real(lower, upper, 0.1))
+  val scm                         = new FloPoCoSCM(input, constant)
+  override val output: Real       = out(scm.implicitValue)
   override val timing: TimingInfo = scm.getTimingInfo
 }
 
@@ -39,8 +39,7 @@ class testFloPoCoSCM extends AnyFunSuite {
       if (traversal) {
         println(s"${dut.input.allValues.length} cases to be tested")
         dut.input.allValues.foreach(dut.insertTestCase)
-      }
-      else for (_ <- 0 until 100) dut.insertTestCase(dut.input.randomValue())
+      } else for (_ <- 0 until 100) dut.insertTestCase(dut.input.randomValue())
       val report = dut.simDone()
       if (report.totalCase == report.trueCase) printlnGreen(s"With constant = $constant, PASS")
       else printlnRed(s"With constant = $constant, FAIL")

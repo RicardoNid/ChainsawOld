@@ -26,11 +26,12 @@ package object xilinx {
   import XilinxDeviceFamily._
 
   def xilinxCDConfig = ClockDomainConfig( // recommended by Xilinx UG901
-    clockEdge = RISING,
-    resetKind = ASYNC,
-    resetActiveLevel = HIGH,
-    softResetActiveLevel = HIGH,
-    clockEnableActiveLevel = HIGH)
+    clockEdge              = RISING,
+    resetKind              = ASYNC,
+    resetActiveLevel       = HIGH,
+    softResetActiveLevel   = HIGH,
+    clockEnableActiveLevel = HIGH
+  )
 
   val defaultVivadoConfig = VivadoConfig( // default vivadoConfig for linux
     xilinxDeviceFamily = UltraScale,

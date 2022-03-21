@@ -22,8 +22,8 @@ class ViterbiForwardingTest extends AnyFlatSpec {
   }
 
   "ViterbiForwarding" should "produce next discrepancies" in {
-    val dutString = runSim()
-    val stack = Algos.viterbiForwarding(testCases, trellis, Algos.Hamming, 0)
+    val dutString    = runSim()
+    val stack        = Algos.viterbiForwarding(testCases, trellis, Algos.Hamming, 0)
     val goldenString = stack.reverse.map(_.map(_.toInt).map(i => if (i >= 127) '-' else i.toString).mkString(" ")).mkString("\n")
     assert(dutString.takeRight(trellis.numStates * 10) == goldenString.takeRight(trellis.numStates * 10))
   }

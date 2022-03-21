@@ -8,18 +8,20 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
 
 /** providing algorithms on analysis of critical paths
- *
- * @see ''VLSI Digital Signal Processing Systems: Design and Implementation'' Chap2.4.2, the graph G_d
- */
+  *
+  * @see
+  *   ''VLSI Digital Signal Processing Systems: Design and Implementation'' Chap2.4.2, the graph G_d
+  */
 class CriticalPathAlgo[T <: Data](dfg: DFGGraph[T]) {
 
   implicit val currentDFG: DFGGraph[T] = dfg // original graph
-  val graph: DFGGraph[T] = dfg.clone().asInstanceOf[DFGGraph[T]] // new graph
+  val graph: DFGGraph[T]               = dfg.clone().asInstanceOf[DFGGraph[T]] // new graph
 
   // step1: expose delays(make them explicit nodes in the graph)
   graph.foreachVertex { vertex => // processing nodes one at a time
     val edgeGroups: Seq[(Int, Seq[DSPEdge[T]])] = vertex.outgoingEdges // for all the outgoing edges from a node
-      .groupBy(_.outOrder).toSeq // group by output port, an element is portIndex -> edges from this port
+      .groupBy(_.outOrder)
+      .toSeq // group by output port, an element is portIndex -> edges from this port
 
     edgeGroups.foreach { case (outputPort, edges) =>
       if (edges.nonEmpty) {
@@ -30,7 +32,7 @@ class CriticalPathAlgo[T <: Data](dfg: DFGGraph[T]) {
             (0 until length).map(i => VirtualNode[T](s"${vertex.name}.${outputPort}_delay${i + 1}"))
           // end-to-end connection
           val starts = vertex +: temps.init
-          val ends = temps
+          val ends   = temps
           starts.zip(ends).foreach { case (start, end) => graph.addPath(start >> 1 >> end) }
           // "move" the edges
           edges.zip(delays).foreach { case (edge, delay) =>
@@ -47,7 +49,7 @@ class CriticalPathAlgo[T <: Data](dfg: DFGGraph[T]) {
   // step2: constructing graph for BellmanFord
   val starts = ArrayBuffer[DSPNode[T]]()
   val delays = starts // we specify the delay unit by the node it drives
-  val ends = ArrayBuffer[DSPNode[T]]()
+  val ends   = ArrayBuffer[DSPNode[T]]()
   graph.foreachEdge { edge =>
     if (graph.getEdgeWeight(edge) > 0) {
       starts += graph.getEdgeTarget(edge)
@@ -62,17 +64,17 @@ class CriticalPathAlgo[T <: Data](dfg: DFGGraph[T]) {
   // following functions are based on the graph
 
   /** Number of delay units in tht DFG
-   */
+    */
   def delaysCount = delays.size
 
   /** Matrix(i,j) = longest path of delays(i) -> delays(j)
-   */
+    */
   def weightMatix = Seq.tabulate(delays.size, delays.size)((i, j) => -shortestPathAlgo.getPathWeight(starts(i), ends(j)) + starts(i).exeTime)
 
   def criticalPath = {
     val index = weightMatix.flatten.indexOf(weightMatix.flatten.max)
-    val i = index / delays.size
-    val j = index % delays.size
+    val i     = index / delays.size
+    val j     = index % delays.size
     shortestPathAlgo.getPath(starts(i), ends(j))
   }
 

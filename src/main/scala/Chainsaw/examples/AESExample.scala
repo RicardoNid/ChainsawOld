@@ -4,14 +4,12 @@ import java.security.SecureRandom
 import java.util.Base64
 import javax.crypto.KeyGenerator
 
-
 /** shows the style of javax.crypto & java.security
- *
- */
+  */
 object AESExample {
-  val plainText = "This is a plain text which need to be encrypted by Java AES 256 GCM Encryption Algorithm"
-  val AES_KEY_SIZE = 256
-  val GCM_IV_LENGTH = 12 // bytes
+  val plainText      = "This is a plain text which need to be encrypted by Java AES 256 GCM Encryption Algorithm"
+  val AES_KEY_SIZE   = 256
+  val GCM_IV_LENGTH  = 12 // bytes
   val GCM_TAG_LENGTH = 16 // bytes
 
   @throws[Exception]
@@ -19,8 +17,8 @@ object AESExample {
     val keyGenerator = KeyGenerator.getInstance("AES")
     keyGenerator.init(AES_KEY_SIZE)
     // Generate Key
-    val key = keyGenerator.generateKey
-    val IV = new Array[Byte](GCM_IV_LENGTH)
+    val key    = keyGenerator.generateKey
+    val IV     = new Array[Byte](GCM_IV_LENGTH)
     val random = new SecureRandom()
     random.nextBytes(IV)
 

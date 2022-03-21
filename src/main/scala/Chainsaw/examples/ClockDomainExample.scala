@@ -12,7 +12,7 @@ import matlabIO._
 
 class ClockDomainExample extends Component {
 
-  val dataType = HardType(UInt(4 bits))
+  val dataType        = HardType(UInt(4 bits))
   val dataIn, dataOut = dataType()
   in(dataIn)
   out(dataOut)
@@ -35,7 +35,7 @@ class ClockDomainExample extends Component {
   val inter = dataType()
   inter.addTag(crossClockDomain)
 
-  inter := slow.regSlow
+  inter        := slow.regSlow
   high.regHigh := inter
 
 }

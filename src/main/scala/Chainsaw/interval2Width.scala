@@ -15,7 +15,7 @@ object interval2Width {
     def log2Up(value: Double) = ceil(log2(value)).toInt
 
     /** Bits need for a bound regardless of its signedness
-     */
+      */
     def bitsForBound(bound: Double) = if (bound >= 0.0) log2Up(bound + ulp) else log2Up(-bound)
 
     val maxExp = max(bitsForBound(realInfo.upper), bitsForBound(realInfo.lower))

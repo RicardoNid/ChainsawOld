@@ -4,11 +4,14 @@ import Chainsaw.{Testable, TimingInfo}
 import spinal.core._
 
 /** The hybrid architecture of Brent-Kung and Kogge-Stone trees
- *
- * @param operator the associative binary operator
- * @param BKLevel  level of Brent-Kung tree, the rest would be Kogge-Stone
- * @see [[https://www.notion.so/SpinalHDL-Trees-9446624ca1594a41a29496cfd46f8605 Trees in Chainsaw]] for basic concepts about Chainsaw Trees
- */
+  *
+  * @param operator
+  *   the associative binary operator
+  * @param BKLevel
+  *   level of Brent-Kung tree, the rest would be Kogge-Stone
+  * @see
+  *   [[https://www.notion.so/SpinalHDL-Trees-9446624ca1594a41a29496cfd46f8605 Trees in Chainsaw]] for basic concepts about Chainsaw Trees
+  */
 class BKKSTree[T <: Data](input: Vec[T], operator: (T, T) => T, BKLevel: Int = 0) extends ImplicitArea[Vec[T]] with Testable {
   val width: Int = input.length
   require(isPow2(width))
@@ -19,30 +22,30 @@ class BKKSTree[T <: Data](input: Vec[T], operator: (T, T) => T, BKLevel: Int = 0
     require(BKLevel <= depth / 2)
 
     val isBKForward = currentDepth < BKLevel
-    val isKS = !isBKForward && currentDepth < (depth - BKLevel)
-    val isMid = currentDepth == depth / 2 - 1
+    val isKS        = !isBKForward && currentDepth < (depth - BKLevel)
+    val isMid       = currentDepth == depth / 2 - 1
 
     println(s"current $currentDepth, isKS: $isKS")
 
     def BKForward(step: Int) = {
-      val doubleStep = step << 1
-      val operandsLeft = input.zipWithIndex.filter(_._2 % doubleStep == 0)
+      val doubleStep    = step << 1
+      val operandsLeft  = input.zipWithIndex.filter(_._2 % doubleStep == 0)
       val operandsRight = operandsLeft.map { case (_, i) => (input(i + step), i + step) }
       (operandsLeft, operandsRight)
     }
 
     def BKBackword(step: Int) = {
-      val doubleStep = step << 1
+      val doubleStep    = step << 1
       val operandsRight = input.zipWithIndex.filter(_._2 % doubleStep == 0).drop(1)
-      val operandsLeft = operandsRight.map { case (_, i) => (input(i - step), i - step) }
+      val operandsLeft  = operandsRight.map { case (_, i) => (input(i - step), i - step) }
       (operandsLeft, operandsRight)
     }
 
     def KoggeStone(level: Int) = { // start starts from 0, level starts from 0
-      val candidateStep = 1 << BKLevel
-      val candidates = input.zipWithIndex.filter(_._2 % candidateStep == 0)
-      val operatorNum = candidates.length - (1 << level)
-      val operandsLeft = candidates.take(operatorNum)
+      val candidateStep = 1                      << BKLevel
+      val candidates    = input.zipWithIndex.filter(_._2 % candidateStep == 0)
+      val operatorNum   = candidates.length - (1 << level)
+      val operandsLeft  = candidates.take(operatorNum)
       val operandsRight = candidates.slice(1 << level, operatorNum + 1 << level)
       (operandsLeft, operandsRight)
     }
@@ -71,4 +74,3 @@ class BKKSTree[T <: Data](input: Vec[T], operator: (T, T) => T, BKLevel: Int = 0
   // TODO: fullfill this and do more on timing
   override val getTimingInfo: TimingInfo = TimingInfo(1, 1, 1, 1)
 }
-

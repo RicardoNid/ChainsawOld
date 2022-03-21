@@ -7,40 +7,42 @@ import spinal.core.sim._
 class AdderTest extends AnyFunSuite {
 
   def testAdder(config: AdderConfig) = {
-    SimConfig.withWave.compile(new Adder(config) {
-      val combined = if (config.hasCOut) io.cOut ## io.s else io.s
-      val dutFullSum = if (config.signed) combined.asSInt else combined.asUInt
-      dutFullSum.simPublic()
-    }).doSim { dut =>
-      import dut._
-      def testOnce() = {
-        io.x.randomize()
-        io.y.randomize()
-        if (dut.config.hasCIn) io.cIn.randomize()
+    SimConfig.withWave
+      .compile(new Adder(config) {
+        val combined   = if (config.hasCOut) io.cOut ## io.s else io.s
+        val dutFullSum = if (config.signed) combined.asSInt else combined.asUInt
+        dutFullSum.simPublic()
+      })
+      .doSim { dut =>
+        import dut._
+        def testOnce() = {
+          io.x.randomize()
+          io.y.randomize()
+          if (dut.config.hasCIn) io.cIn.randomize()
 
-        val valueX = if (dut.config.signed) io.x.toBigInt.toSigned(dut.config.bitWidth) else io.x.toBigInt
-        val valueY = if (dut.config.signed) io.y.toBigInt.toSigned(dut.config.bitWidth) else io.y.toBigInt
-        val valueCIn = if (dut.config.hasCIn) io.cIn.toBigInt else BigInt(0)
-        val valueDut = dutFullSum.toBigInt
-        val valueCorrect = valueX + valueY + valueCIn
+          val valueX       = if (dut.config.signed) io.x.toBigInt.toSigned(dut.config.bitWidth) else io.x.toBigInt
+          val valueY       = if (dut.config.signed) io.y.toBigInt.toSigned(dut.config.bitWidth) else io.y.toBigInt
+          val valueCIn     = if (dut.config.hasCIn) io.cIn.toBigInt else BigInt(0)
+          val valueDut     = dutFullSum.toBigInt
+          val valueCorrect = valueX + valueY + valueCIn
 
-        val correct = valueDut == valueCorrect
+          val correct = valueDut == valueCorrect
 
-        if (dut.config.hasOverflow) {
-          val overflow = io.overflow.toBoolean
-          if (dut.config.doSaturation) {
-            val saturated = if (!dut.config.signed) coreAdder.x.maxValue
-            else if (valueX + valueY > 0) coreAdder.x.maxValue >> 1
-            else -((coreAdder.x.maxValue + 1) / 2)
-            val correctSaturation = overflow && (valueDut == saturated)
-            assert(correctSaturation ^ correct)
-          }
-          else assert(overflow ^ correct) // only one of them can be true
-        } else assert(correct)
-        sleep(1)
+          if (dut.config.hasOverflow) {
+            val overflow = io.overflow.toBoolean
+            if (dut.config.doSaturation) {
+              val saturated =
+                if (!dut.config.signed) coreAdder.x.maxValue
+                else if (valueX + valueY > 0) coreAdder.x.maxValue >> 1
+                else -((coreAdder.x.maxValue + 1) / 2)
+              val correctSaturation = overflow && (valueDut == saturated)
+              assert(correctSaturation ^ correct)
+            } else assert(overflow ^ correct) // only one of them can be true
+          } else assert(correct)
+          sleep(1)
+        }
+        (0 until 100).foreach(_ => testOnce())
       }
-      (0 until 100).foreach(_ => testOnce())
-    }
   }
 
   test("testAllConfigurations") {

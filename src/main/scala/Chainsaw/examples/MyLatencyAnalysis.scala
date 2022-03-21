@@ -23,13 +23,19 @@ object MyLatencyAnalysis {
     val currentQueue, prevQueue = new ArrayBuffer[BaseNode]
 
     def showQueues() = {
-      println(Seq(currentQueue, prevQueue).zip(Seq("current", "prev   ")).map { case (nodes, i) => s"$i: ${
-        nodes.map {
-          case baseType: BaseType => baseType.toString()
-          case mem: Mem[_] => mem.toString()
-        }.mkString(" ")
-      }"
-      }.mkString("\n"))
+      println(
+        Seq(currentQueue, prevQueue)
+          .zip(Seq("current", "prev   "))
+          .map { case (nodes, i) =>
+            s"$i: ${nodes
+              .map {
+                case baseType: BaseType => baseType.toString()
+                case mem: Mem[_] => mem.toString()
+              }
+              .mkString(" ")}"
+          }
+          .mkString("\n")
+      )
       print(s"walked: ")
       Component.current.foreachReflectableNameables {
         case node: BaseType => if (node.algoIncrementale == walkedId) print(s"${node.getName()} ")
@@ -45,11 +51,13 @@ object MyLatencyAnalysis {
     while (currentQueue.nonEmpty) { // while the queues are not all empty
 
       // do traceback for nodes in queue 0
-      currentQueue.foreach(node => if (traceBack(node, "queue")) {
-        printlnGreen("final status");
-        showQueues();
-        return depth
-      })
+      currentQueue.foreach(node =>
+        if (traceBack(node, "queue")) {
+          printlnGreen("final status");
+          showQueues();
+          return depth
+        }
+      )
       printlnGreen("after tracingBack")
       showQueues()
 

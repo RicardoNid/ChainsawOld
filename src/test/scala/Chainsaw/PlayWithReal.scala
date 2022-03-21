@@ -8,26 +8,31 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
 /** The thorough test of Real type
- *
- */
+  */
 class PlayWithReal extends Component {
 
   // API test
   // random exponents in [-25, 24]
-  val SQs = (0 until 100).map(_ => (ChainsawRand.nextInt(24), ChainsawRand.nextInt(25))).map{ case (i, f) => SQ(i + f + 1, f)}
+  val SQs     = (0 until 100).map(_ => (ChainsawRand.nextInt(24), ChainsawRand.nextInt(25))).map { case (i, f) => SQ(i + f + 1, f) }
   val SQReals = SQs.map(QFormatReal)
-  SQs.zip(SQReals).foreach{ case (sq, real) => assert(
-    real.maxExp == sq.nonFraction - 1 // maxExp == i
-      && real.minExp.abs == sq.fraction, // minExp == f
-    s"bad SQ: $sq lead to ${real.maxExp} & ${real.minExp}")}
+  SQs.zip(SQReals).foreach { case (sq, real) =>
+    assert(
+      real.maxExp == sq.nonFraction - 1 // maxExp == i
+        && real.minExp.abs == sq.fraction, // minExp == f
+      s"bad SQ: $sq lead to ${real.maxExp} & ${real.minExp}"
+    )
+  }
   printlnGreen("SQFormat API passed")
 
-  val UQs = (0 until 100).map(_ => (ChainsawRand.nextInt(24), ChainsawRand.nextInt(25))).map{ case (i, f) => UQ(i + f, f)}
+  val UQs     = (0 until 100).map(_ => (ChainsawRand.nextInt(24), ChainsawRand.nextInt(25))).map { case (i, f) => UQ(i + f, f) }
   val UQReals = UQs.map(QFormatReal)
-  UQs.zip(UQReals).foreach{ case (uq, real) => assert(
-    real.maxExp == uq.nonFraction // maxExp == i
-      && real.minExp.abs == uq.fraction, // minExp == f
-    s"bad UQ: $uq lead to ${real.maxExp} & ${real.minExp}")}
+  UQs.zip(UQReals).foreach { case (uq, real) =>
+    assert(
+      real.maxExp == uq.nonFraction // maxExp == i
+        && real.minExp.abs == uq.fraction, // minExp == f
+      s"bad UQ: $uq lead to ${real.maxExp} & ${real.minExp}"
+    )
+  }
   printlnGreen("UQFormat API passed")
 
   val randomRanges = (0 until 1000).map { i =>
@@ -51,16 +56,14 @@ class PlayWithReal extends Component {
   println(a0.realInfo)
   val a1 = QFormatReal(SQ(6, 1))
   val a2 = QFormatReal(SQ(6, 1))
-  val b = QFormatReal(SQ(5, 2))
-
+  val b  = QFormatReal(SQ(5, 2))
 
   val randomRangesForAddition = (0 until 20).map { i =>
     val lower = ChainsawRand.nextDouble() * 10
     RealInfo(lower, lower + ChainsawRand.nextDouble() * 10)
   }
   val randomInputsForAddition = randomRangesForAddition.map(info => Real(info, -ChainsawRand.nextInt(5) exp))
-  val randomOutputsForAddtion = (0 until randomInputsForAddition.length / 2).map(i =>
-    randomInputsForAddition(2 * i) + randomInputsForAddition(2 * i + 1))
+  val randomOutputsForAddtion = (0 until randomInputsForAddition.length / 2).map(i => randomInputsForAddition(2 * i) + randomInputsForAddition(2 * i + 1))
 
   val tangent0 = a0 + a1
   val tangent1 = a0 + a2
@@ -97,7 +100,7 @@ class PlayWithReal extends Component {
   val i = Real(0.3, 0.8, 0.1)
   val j = Real(-0.8, -0.3, 0.1)
 
-  val mul = f * f
+  val mul         = f * f
   val precisemul0 = g * h
   val precisemul1 = g * i
   val precisemul2 = i * j
@@ -105,9 +108,9 @@ class PlayWithReal extends Component {
   in(f, g, h, i, j)
   out(mul, precisemul0, precisemul1, precisemul2)
 
-  val r0 = Real(-1, 1, -3 exp)
-  val r1 = Real(-1, 1, -3 exp)
-  val r0mult1 = r0 * r1
+  val r0        = Real(-1, 1, -3 exp)
+  val r1        = Real(-1, 1, -3 exp)
+  val r0mult1   = r0 * r1
   val truncated = Real(new RealInfo(new AffineForm(0, Map("z" -> 1.0)), 0.0), -5 exp)
   truncated := r0mult1.truncated
   in(r0, r1)
@@ -120,7 +123,6 @@ class PlayWithReal extends Component {
 
 }
 
-
 class testPlayWithReal extends AnyFunSuite {
 
   private def rangeToWidthTest(inputs: IndexedSeq[Real], outputs: IndexedSeq[Real]) = {
@@ -128,14 +130,15 @@ class testPlayWithReal extends AnyFunSuite {
       input.allValues.foreach { value =>
         try {
           input #= value
-        }
-        catch {
+        } catch {
           case _: AssertionError => println(s"range: ${input.realInfo}, value: $value")
           case _ =>
         }
         sleep(1)
-        if (output.minExp <= input.minExp && output.toDouble != value || // equal to
-          !(output ~= value)) // close to
+        if (
+          output.minExp <= input.minExp && output.toDouble != value || // equal to
+          !(output ~= value)
+        ) // close to
           println(s"value: $value, output: ${output.toDouble}, ${output.realInfo}")
       }
     }
@@ -159,11 +162,9 @@ class testPlayWithReal extends AnyFunSuite {
       sleep(1)
 
       if (b.abs > a.ulp)
-        assert(c.toDouble == a.toDouble + b.roundAsScala(a.ulp),
-          s"ulp: ${a.ulp} ${c.toDouble} != ${a.toDouble} + ${b.roundAsScala(a.ulp)}")
+        assert(c.toDouble == a.toDouble + b.roundAsScala(a.ulp), s"ulp: ${a.ulp} ${c.toDouble} != ${a.toDouble} + ${b.roundAsScala(a.ulp)}")
     }
   }
-
 
   private def traversalMultiplicationTest(a: Real, b: Real, c: Real) = {
     println(s"${a.allValues.length * b.allValues.length} testCases to be tested")
@@ -171,63 +172,57 @@ class testPlayWithReal extends AnyFunSuite {
       a #= va
       b #= vb
       sleep(1)
-      assert(c ~= a.toDouble * b.toDouble,
+      assert(
+        c ~= a.toDouble * b.toDouble,
         s"${c.toDouble} != ${a.toDouble} * ${b.toDouble}, " +
-          s" \na: ${a.realInfo}, \nb: ${b.realInfo}, \nc: ${c.realInfo}")
+          s" \na: ${a.realInfo}, \nb: ${b.realInfo}, \nc: ${c.realInfo}"
+      )
     }
   }
-
-
 
   test("testPlayWithRealElaboration") {
     SpinalConfig().generateSystemVerilog(new PlayWithReal)
   }
 
   test("testPlayWithRealSim") {
-    SimConfig.compile(new PlayWithReal).doSim {
-      dut =>
-        import dut._
+    SimConfig.compile(new PlayWithReal).doSim { dut =>
+      import dut._
 
-        println("start range-width test")
-        rangeToWidthTest(randomInputs, randomOutputs)
-        println(Console.GREEN)
-        println("RANGE-WIDTH TEST PASSED !")
-        println(Console.BLACK)
+      println("start range-width test")
+      rangeToWidthTest(randomInputs, randomOutputs)
+      println(Console.GREEN)
+      println("RANGE-WIDTH TEST PASSED !")
+      println(Console.BLACK)
 
-        // TODO: add these tests
-        //                    (a0, c, overlap0),
-        //                    (a0, d, overlap1),
-        //                    (b, c, seperated0),
-        //                    (b, d, seperated1)
-        val additionTests = Array(
-          (a0, a1, tangent0),
-          (a0, a2, tangent1),
-          (a0, b, contains)) ++ (0 until randomInputsForAddition.length / 2).map(i =>
-          (randomInputsForAddition(2 * i), randomInputsForAddition(2 * i + 1),
-            randomOutputsForAddtion(i)))
+      // TODO: add these tests
+      //                    (a0, c, overlap0),
+      //                    (a0, d, overlap1),
+      //                    (b, c, seperated0),
+      //                    (b, d, seperated1)
+      val additionTests = Array((a0, a1, tangent0), (a0, a2, tangent1), (a0, b, contains)) ++ (0 until randomInputsForAddition.length / 2)
+        .map(i => (randomInputsForAddition(2 * i), randomInputsForAddition(2 * i + 1), randomOutputsForAddtion(i)))
 
-        additionTests.zipWithIndex.foreach { case (tuple, i) =>
-          println(s"start addition test $i")
-          traversalAdditionTest(tuple._1, tuple._2, tuple._3)
-        }
-        println(Console.GREEN)
-        println("ADDITION TEST PASSED !")
-        println(Console.BLACK)
+      additionTests.zipWithIndex.foreach { case (tuple, i) =>
+        println(s"start addition test $i")
+        traversalAdditionTest(tuple._1, tuple._2, tuple._3)
+      }
+      println(Console.GREEN)
+      println("ADDITION TEST PASSED !")
+      println(Console.BLACK)
 
-        //        println(s"start constant addition test")
-        //        constantsForAddtion.zip(outputsOfConstantAddition).foreach { case (d, real) =>
-        //          traversalAdditionTest(a0, d, real)
-        //        }
+      //        println(s"start constant addition test")
+      //        constantsForAddtion.zip(outputsOfConstantAddition).foreach { case (d, real) =>
+      //          traversalAdditionTest(a0, d, real)
+      //        }
 
-        println(s"start multiplication test")
-        traversalMultiplicationTest(f, f, mul)
-        traversalMultiplicationTest(g, h, precisemul0)
-        traversalMultiplicationTest(g, i, precisemul1)
-        traversalMultiplicationTest(i, j, precisemul2)
-        println(Console.GREEN)
-        println("MULTIPLICATION TEST PASSED !")
-        println(Console.BLACK)
+      println(s"start multiplication test")
+      traversalMultiplicationTest(f, f, mul)
+      traversalMultiplicationTest(g, h, precisemul0)
+      traversalMultiplicationTest(g, i, precisemul1)
+      traversalMultiplicationTest(i, j, precisemul2)
+      println(Console.GREEN)
+      println("MULTIPLICATION TEST PASSED !")
+      println(Console.BLACK)
     }
   }
 }
-

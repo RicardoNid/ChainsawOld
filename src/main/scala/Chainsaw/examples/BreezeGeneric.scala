@@ -6,8 +6,6 @@ import spinal.core._
 
 import scala.reflect.ClassTag
 
-
-
 class UIntRing(width: Int) extends Semiring[UInt] {
 
   override def zero = U(0, width bits)

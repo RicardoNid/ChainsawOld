@@ -10,18 +10,18 @@ class Refs(lN: Int) {
   val keyGen = KeyPairGenerator.getInstance("RSA")
   keyGen.initialize(lN, new SecureRandom())
 
-  var keyPair = keyGen.generateKeyPair()
+  var keyPair   = keyGen.generateKeyPair()
   def refresh() = keyPair = keyGen.generateKeyPair()
 
   def getPrivate = keyPair.getPrivate
-  def getPublic = keyPair.getPublic
+  def getPublic  = keyPair.getPublic
 
   def privateImpl = keyPair.getPrivate.asInstanceOf[RSAPrivateCrtKeyImpl]
 
   def getModulus = privateImpl.getModulus // N
 
   def getPrivateValue = privateImpl.getPrivateExponent
-  def getPublicValue = privateImpl.getPublicExponent
+  def getPublicValue  = privateImpl.getPublicExponent
 
   def getP = privateImpl.getPrimeExponentP
   def getQ = privateImpl.getPrimeExponentQ

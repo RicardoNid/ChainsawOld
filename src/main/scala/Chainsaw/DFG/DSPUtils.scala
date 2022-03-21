@@ -19,7 +19,7 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
 
 /** A linear transformation on latency, x => scale * x + shift
- */
+  */
 case class LatencyTrans(scale: Int, shift: Int) {
   def trans(original: Int) = scale * original + shift
 }
@@ -36,9 +36,10 @@ object DSPAssignment {
 }
 
 /** a path containing interleaving nodes and edge, these nodes should be SISO, as port indices are not given
- *
- * @example a >> 1 >> b >> 2 >> c, a >> b equals a >> 0 >> b
- */
+  *
+  * @example
+  *   a >> 1 >> b >> 2 >> c, a >> b equals a >> 0 >> b
+  */
 case class DSPPath[T <: Data](nodes: ArrayBuffer[DSPNode[T]], delays: ArrayBuffer[Double]) {
 
   def >>(that: DSPNode[T]): DSPPath[T] = {
@@ -54,7 +55,7 @@ case class DSPPath[T <: Data](nodes: ArrayBuffer[DSPNode[T]], delays: ArrayBuffe
 }
 
 /** source - target <= value, without any retiming, r(V) = r(U) = 0, so when value < 0, retiming is needed
- */
+  */
 case class DSPConstraint[T <: Data](target: DSPNode[T], source: DSPNode[T], value: Int) {
   def <=(value: Int): DSPConstraint[T] = DSPConstraint(target, source, value = value)
 

@@ -1,8 +1,6 @@
 package Chainsaw.comparith
 
-class SequentialDivider {
-
-}
+class SequentialDivider {}
 
 object SequentialDivider {
   def software(z: BigInt, d: BigInt) = {
@@ -32,8 +30,9 @@ object SequentialDivider {
     require(z < d * (BigInt(1) << k))
     var qString = ""
     def recursion(j: Int, partial: BigInt): BigInt = {
-      val newPartial = if (partial > 0) (partial << 1) - (d * (BigInt(1) << k))
-      else (partial << 1) + (d * (BigInt(1) << k))
+      val newPartial =
+        if (partial > 0) (partial << 1) - (d * (BigInt(1) << k))
+        else (partial             << 1) + (d * (BigInt(1) << k))
       if (j > 0) {
         if (partial > 0) qString += "1"
         else qString += "0"

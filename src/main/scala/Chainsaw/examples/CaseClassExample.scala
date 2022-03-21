@@ -16,10 +16,10 @@ object CaseClassExample extends App {
   println(temp2.hashCode())
   println(temp3.hashCode())
 
-  class Package(val orgName:String, val packageName:String, val packageVersion:String){
+  class Package(val orgName: String, val packageName: String, val packageVersion: String) {
     override def toString: String = s"$orgName-$packageName-$packageVersion"
 
-    override def hashCode(): Int =  toString.hashCode
+    override def hashCode(): Int = toString.hashCode
 
     override def equals(obj: Any): Boolean = obj.isInstanceOf[Package] && toString.equals(obj.toString)
   }

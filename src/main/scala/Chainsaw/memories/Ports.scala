@@ -12,14 +12,14 @@ object RamPortType extends Enumeration {
 import RamPortType._
 
 case class XILINX_BRAM_PORT(dataWidth: Int, addressWidth: Int, portType: RamPortType = READWRITE) extends Bundle with IMasterSlave { // FIXME: may not be needed
-  val hasRead = portType != WRITE
+  val hasRead  = portType != WRITE
   val hasWrite = portType != READ
 
-  val addr = UInt(addressWidth bits)
-  val dataIn = if (hasWrite) Bits(dataWidth bits) else null
+  val addr    = UInt(addressWidth bits)
+  val dataIn  = if (hasWrite) Bits(dataWidth bits) else null
   val dataOut = if (hasRead) Bits(dataWidth bits) else null
-  val en = Bool
-  val we = if (portType != READ) Bool else null
+  val en      = Bool
+  val we      = if (portType != READ) Bool else null
 
   override def asMaster(): Unit = { // implemented as slave on a RAM, as master on a ram reader/writer
     out(addr, en)
@@ -28,17 +28,19 @@ case class XILINX_BRAM_PORT(dataWidth: Int, addressWidth: Int, portType: RamPort
   }
 
   def >>(that: XILINX_BRAM_PORT): Unit = { // outer >> inner, the direction is the direction of control flow, not data flow
-    require(!((this.portType == READ && that.portType == WRITE) || (this.portType == WRITE && that.portType == READ)),
-      "read/write port cannot be driven by write/read port")
+    require(
+      !((this.portType == READ && that.portType == WRITE) || (this.portType == WRITE && that.portType == READ)),
+      "read/write port cannot be driven by write/read port"
+    )
 
     that.addr := addr
-    that.en := en
+    that.en   := en
 
     if (this.portType != READ && that.portType != READ) that.dataIn := dataIn
-    if (this.portType != WRITE && that.portType != WRITE) dataOut := that.dataOut
+    if (this.portType != WRITE && that.portType != WRITE) dataOut   := that.dataOut
     if (this.portType != READ && that.portType != READ) {
       if (this.portType == READ && that.portType == READWRITE) that.we := False
-      else that.we := we
+      else that.we                                                     := we
     }
   }
 
@@ -46,30 +48,30 @@ case class XILINX_BRAM_PORT(dataWidth: Int, addressWidth: Int, portType: RamPort
 
   def doRead(addrIn: UInt) = {
     require(portType != WRITE, "cannot read through write port")
-    addr := addrIn
-    en := True
+    addr                          := addrIn
+    en                            := True
     if (portType == READWRITE) we := False
   }
 
   def doWrite(addrIn: UInt, data: Bits) = {
     require(portType != READ, "cannot write through read port")
-    addr := addrIn
+    addr   := addrIn
     dataIn := data
-    en := True
-    we := True
+    en     := True
+    we     := True
   }
 
   def simRead(addrIn: BigInt) = {
     require(portType != WRITE, "cannot read through write port")
-    addr #= addrIn
-    en #= true
+    addr                          #= addrIn
+    en                            #= true
     if (portType == READWRITE) we #= false
   }
 
   def simWrite(addrIn: BigInt, data: BigInt) = {
-    addr #= addrIn
-    en #= true
-    we #= true
+    addr   #= addrIn
+    en     #= true
+    we     #= true
     dataIn #= data
   }
 

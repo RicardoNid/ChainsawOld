@@ -6,8 +6,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.postfixOps
 
 /** modular multiplication algorithms, they validate themselves while running
- *
- */
+  */
 object ModularMultiplication {
 
   import spinal.core._
@@ -15,26 +14,31 @@ object ModularMultiplication {
 
   def evaluateMM(X: BigInt, Y: BigInt, n: Int, hardware: (UInt, UInt) => UInt): BigInt = {
     var ret = BigInt(0)
-    SimConfig.withWave.compile(new Component {
-      val x = in UInt (n bits)
-      val y = in UInt (n bits)
-      val ret = out UInt (n bits)
-      ret := hardware(x, y)
-    }).doSim { dut =>
-      dut.x #= X
-      dut.y #= Y
-      sleep(1)
-      ret = dut.ret.toBigInt
-    }
+    SimConfig.withWave
+      .compile(new Component {
+        val x   = in UInt (n bits)
+        val y   = in UInt (n bits)
+        val ret = out UInt (n bits)
+        ret := hardware(x, y)
+      })
+      .doSim { dut =>
+        dut.x #= X
+        dut.y #= Y
+        sleep(1)
+        ret = dut.ret.toBigInt
+      }
     ret
   }
 
   /** Montgomery modular multiplication
-   *
-   * @param N modulo
-   * @return xyR^-1^ mod N
-   * @see ''Modular multiplication without trial division'' [[https://www.ams.org/mcom/1985-44-170/S0025-5718-1985-0777282-X/S0025-5718-1985-0777282-X.pdf]]
-   */
+    *
+    * @param N
+    *   modulo
+    * @return
+    *   xyR^-1^ mod N
+    * @see
+    *   ''Modular multiplication without trial division'' [[https://www.ams.org/mcom/1985-44-170/S0025-5718-1985-0777282-X/S0025-5718-1985-0777282-X.pdf]]
+    */
   @definition
   def mmm(x: BigInt, y: BigInt, N: BigInt): BigInt = {
 
@@ -48,7 +52,7 @@ object ModularMultiplication {
     val R = BigInt(1) << lN
     // TODO: algo to get RPrime & NPrime
     val RInverse = R.modInverse(N)
-    val NPrime = (R * RInverse - 1) / N
+    val NPrime   = (R * RInverse - 1) / N
 
     // calculation
     val T = x * y
@@ -61,9 +65,11 @@ object ModularMultiplication {
   }
 
   /** McLaughlin Montgomery modular multiplication
-   *
-   * @see ''NEW FRAMEWORKS FOR MONTGOMERY'S MODULAR MULTIPLICATION METHOD'' variation 2 [[https://www.ams.org/journals/mcom/2004-73-246/S0025-5718-03-01543-6/S0025-5718-03-01543-6.pdf]]
-   */
+    *
+    * @see
+    *   ''NEW FRAMEWORKS FOR MONTGOMERY'S MODULAR MULTIPLICATION METHOD'' variation 2
+    *   [[https://www.ams.org/journals/mcom/2004-73-246/S0025-5718-03-01543-6/S0025-5718-03-01543-6.pdf]]
+    */
   @definition
   def mlm(a: BigInt, b: BigInt, N: BigInt): BigInt = {
 
@@ -75,9 +81,9 @@ object ModularMultiplication {
     // preparing parameters
     val R = (BigInt(1) << lN) - 1
     // TODO: verify that GCD(R, N) == 1
-    val QPrime = (BigInt(1) << lN) + 1
+    val QPrime   = (BigInt(1) << lN) + 1
     val RInverse = R.modInverse(N)
-    val NPrime = (R * RInverse - 1) / N
+    val NPrime   = (R * RInverse - 1) / N
 
     // calculation
     val m = (a * b * NPrime) % R
@@ -85,8 +91,8 @@ object ModularMultiplication {
     val w = -S % QPrime + QPrime // or, scala would generate negative value
 
     // conditional selection
-    val s = if (w % 2 == 0) w / 2 else (w + QPrime) / 2
-    val t = if ((s % 2) == ((a * b + m * N) % 2)) s else s + QPrime
+    val s   = if (w % 2 == 0) w / 2 else (w + QPrime) / 2
+    val t   = if ((s % 2) == ((a * b + m * N) % 2)) s else s + QPrime
     val ret = if (t >= N) t - N else t // t \in [0, 2N)
 
     assert(ret == (a * b * RInverse) % N)
@@ -94,12 +100,16 @@ object ModularMultiplication {
   }
 
   /** Improved McLaughlin Montgomery modular multiplication, avoid conditional selections by setting new (looser) bounds and thus consume more width
-   *
-   * @param x \in [0, 2N)
-   * @param y \in [0, 2N)
-   * @return ret = xyR^-1^ (mod N) \in [0, 2N)
-   * @see ''FFT-Based McLaughlin’s MontgomeryExponentiation without Conditional Selections'' [[http://cetinkoc.net/docs/j81.pdf]]
-   */
+    *
+    * @param x
+    *   \in [0, 2N)
+    * @param y
+    *   \in [0, 2N)
+    * @return
+    *   ret = xyR^-1^ (mod N) \in [0, 2N)
+    * @see
+    *   ''FFT-Based McLaughlin’s MontgomeryExponentiation without Conditional Selections'' [[http://cetinkoc.net/docs/j81.pdf]]
+    */
   @hardAlgo("mlm")
   def mlws(x: BigInt, y: BigInt, N: BigInt): BigInt = {
 
@@ -108,9 +118,9 @@ object ModularMultiplication {
     // preparing parameters
     val r = (BigInt(1) << lN) - 1 // corresponding to R in MLM
     // TODO: verify that GCD(R, N) == 1
-    val h = (BigInt(1) << lN) + 1 // corresponding to QPrime in MLM
+    val h        = (BigInt(1) << lN) + 1 // corresponding to QPrime in MLM
     val RInverse = r.modInverse(N)
-    val NPrime = (r * RInverse - 1) / N
+    val NPrime   = (r * RInverse - 1) / N
 
     // calculation
     val m = (x * y * NPrime) % r
@@ -123,16 +133,17 @@ object ModularMultiplication {
   }
 
   /** radix-2 Montgomery multiplication
-   *
-   * @see ''New Hardware Architectures for Montgomery Modular Multiplication Algorithm'' [[http://ece.gmu.edu/~kgaj/publications/journals/GWU_GMU_TOC_2011.pdf]]
-   */
+    *
+    * @see
+    *   ''New Hardware Architectures for Montgomery Modular Multiplication Algorithm'' [[http://ece.gmu.edu/~kgaj/publications/journals/GWU_GMU_TOC_2011.pdf]]
+    */
   @hardAlgo("mmm")
   def r2mm(X: BigInt, Y: BigInt, M: BigInt) = {
     require(X < M && Y < M)
     val n = M.bitLength // log2Down(M) + 1
 
     def hardwareCalculator(X: UInt, Y: UInt) = {
-      val zero = U(0, n bits)
+      val zero  = U(0, n bits)
       val bitsM = U(M, n bits)
       bitsM.setName("M")
 
@@ -158,37 +169,38 @@ object ModularMultiplication {
 
     val ret = evaluateMM(X, Y, n, hardwareCalculator)
 
-    val R = BigInt(1) << n
+    val R        = BigInt(1) << n
     val RInverse = R.modInverse(M)
     assert((ret % M) == (X * Y * RInverse) % M)
     ret
   }
 
   /** multi word radix-2 Montgomery modular multiplication, implemented by a hardware calculator
-   *
-   * @see ''New Hardware Architectures for Montgomery Modular Multiplication Algorithm'' [[http://ece.gmu.edu/~kgaj/publications/journals/GWU_GMU_TOC_2011.pdf]]
-   */
+    *
+    * @see
+    *   ''New Hardware Architectures for Montgomery Modular Multiplication Algorithm'' [[http://ece.gmu.edu/~kgaj/publications/journals/GWU_GMU_TOC_2011.pdf]]
+    */
   @hardAlgo("mmm")
   def mwr2mm(X: BigInt, Y: BigInt, M: BigInt, w: Int) = {
     require(X < M && Y < M)
-    val n = M.bitLength // log2Down(M) + 1
-    val e = ceil((n + 1) / w.toDouble).toInt
+    val n         = M.bitLength // log2Down(M) + 1
+    val e         = ceil((n + 1) / w.toDouble).toInt
     val dataWidth = e * w
 
     def hardwareCalculator(X: UInt, Y: UInt): UInt = {
-      val zero = U(0, w bits)
+      val zero  = U(0, w bits)
       val bitsM = U(M, dataWidth bits)
 
-      val S = Seq.fill(e + 1)(ArrayBuffer[UInt](zero))
+      val S      = Seq.fill(e + 1)(ArrayBuffer[UInt](zero))
       val YWords = Y.subdivideIn(w bits) :+ zero
       val MWords = bitsM.subdivideIn(w bits) :+ zero
-      val C = ArrayBuffer[Bits]()
+      val C      = ArrayBuffer[Bits]()
 
       def combine(xi: Bool, qi: Bool, Y: UInt, M: UInt, S: UInt) = Mux(xi, Y, zero) +^ Mux(qi, M, zero) +^ S
 
       (0 until n).foreach { i =>
-        val xi = X(i)
-        val qi = (xi & Y.lsb) ^ S(0).last.lsb
+        val xi     = X(i)
+        val qi     = (xi & Y.lsb) ^ S(0).last.lsb
         val (c, s) = combine(xi, qi, YWords(0), MWords(0), S(0).last).splitAt(w)
         S(0) += s.asUInt
         C += c
@@ -205,15 +217,16 @@ object ModularMultiplication {
 
     val ret = evaluateMM(X, Y, dataWidth, hardwareCalculator)
 
-    val R = BigInt(1) << n
+    val R        = BigInt(1) << n
     val RInverse = R.modInverse(M)
     assert((ret % M) == (X * Y * RInverse) % M)
     ret
   }
 
-  /**
-   * @see ''Discrete weighted transforms and large-integer arithmetic'' [[https://www.ams.org/mcom/1994-62-205/S0025-5718-1994-1185244-1/S0025-5718-1994-1185244-1.pdf]]
-   */
-  def fftms(x: BigInt, y: BigInt, N: BigInt) :BigInt = ???
+  /** @see
+    *   ''Discrete weighted transforms and large-integer arithmetic''
+    *   [[https://www.ams.org/mcom/1994-62-205/S0025-5718-1994-1185244-1/S0025-5718-1994-1185244-1.pdf]]
+    */
+  def fftms(x: BigInt, y: BigInt, N: BigInt): BigInt = ???
 
 }

@@ -6,12 +6,11 @@ import spinal.lib._
 
 import scala.math.sqrt
 
-case class DFT(N: Int, inverse: Boolean = false,
-               dataType: HardType[SFix], coeffType: HardType[SFix]) extends Component {
+case class DFT(N: Int, inverse: Boolean = false, dataType: HardType[SFix], coeffType: HardType[SFix]) extends Component {
 
   val complexDataType = HardType(ComplexNumber(dataType().maxExp, dataType().minExp))
-  val dataIn = in Vec(complexDataType(), N)
-  val dataOut = out Vec(complexDataType(), N)
+  val dataIn          = in Vec (complexDataType(), N)
+  val dataOut         = out Vec (complexDataType(), N)
 
   def delayed[T <: Data](signal: T, pipelined: Boolean) = if (pipelined) RegNext(signal) else signal
 
@@ -37,7 +36,7 @@ case class DFT(N: Int, inverse: Boolean = false,
       if (!inverse) {
         // stage 0
         val zipped = dataIn.take(4).zip(dataIn.takeRight(4))
-        val A = RegNext(Vec(zipped.map { case (number, number1) => number + number1 } ++ zipped.map { case (number, number1) => number - number1 }))
+        val A      = RegNext(Vec(zipped.map { case (number, number1) => number + number1 } ++ zipped.map { case (number, number1) => number - number1 }))
         // stage 1
         val B = Vec(complexDataType(), 8)
         B(0) := A(0) + A(2)
@@ -50,7 +49,7 @@ case class DFT(N: Int, inverse: Boolean = false,
         B(7) := A(5) - A(7)
         val BDelayed = Delay(B, 2)
         // stage 2
-        val C = Vec(complexDataType(), 8)
+        val C     = Vec(complexDataType(), 8)
         val CTemp = Vec(complexDataType(), 2) // for dataWidth
 
         val sqrt2coeff = SF(1 / sqrt(2), coeffType().maxExp exp, coeffType().minExp exp)

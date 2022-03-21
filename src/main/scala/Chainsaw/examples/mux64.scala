@@ -11,12 +11,12 @@ import Chainsaw.dspTest._
 
 case class mux64() extends Component {
 
-  val dataIn = in UInt(6 bits)
-  val dataOut = out Bits(64 bits)
+  val dataIn  = in UInt (6 bits)
+  val dataOut = out Bits (64 bits)
 
   val regs = RegInit(B(0, 64 bits))
   regs(dataIn) := True
-  dataOut := regs
+  dataOut      := regs
 }
 
 object mux64 {

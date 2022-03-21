@@ -12,11 +12,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class NTTTest extends AnyFlatSpec {
 
-  val p = 3329
+  val p                                     = 3329
   implicit val polyRing: UnivariateRingZp64 = UnivariateRingZp64(p, "x")
-  implicit val cfRing: Ring[Long] = polyRing.cfRing
+  implicit val cfRing: Ring[Long]           = polyRing.cfRing
 
-  val testSize = 128
+  val testSize            = 128
   val testCase: Seq[Long] = (0 until testSize).map(_ => ChainsawRand.nextInt(p).toLong)
 
   val nttAlgo: NTT = NTT(cfRing, testSize)

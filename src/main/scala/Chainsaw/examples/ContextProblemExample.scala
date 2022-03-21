@@ -3,8 +3,7 @@ package Chainsaw.examples
 import spinal.core._
 
 /** this example shows that "Hardware evaluations" in SpinalHDL need a context
- *
- */
+  */
 object ContextProblemExample {
   def main(args: Array[String]): Unit = {
 
@@ -23,8 +22,8 @@ object ContextProblemExample {
 
     // to "run" this function, you need a hardware context
     new Component {
-      val a = in UInt (2 bits)
-      val b = in UInt (3 bits)
+      val a   = in UInt (2 bits)
+      val b   = in UInt (3 bits)
       val ret = out(add2(a, b))
     }
 

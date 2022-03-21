@@ -11,8 +11,8 @@ import Chainsaw.dspTest._
 
 case class UndeterminedWidth() extends Component {
 
-  val input = in Vec(UInt(4 bits), 2)
-  val output = out UInt()
+  val input  = in Vec (UInt(4 bits), 2)
+  val output = out UInt ()
 
   output := input(0) + input(1)
 

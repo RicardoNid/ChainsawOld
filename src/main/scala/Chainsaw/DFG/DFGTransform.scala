@@ -13,9 +13,9 @@ case class Iteration[T <: Data](device: DSPNode[T], time: Int) {
 }
 
 /** definition and execution of time-space transformation
- *
- * @tparam T
- */
+  *
+  * @tparam T
+  */
 trait DFGTransform[T <: Data] {
 
   implicit val dfg: DFGGraph[T]
@@ -47,16 +47,18 @@ trait DFGTransform[T <: Data] {
   def pairsInvolved: Seq[(Iteration[T], Iteration[T], DSPEdge[T])] = {
     iterationsInvolved.flatMap { sourceIteration => // concrete pairs
       val (u, uT) = (sourceIteration.device, sourceIteration.time)
-      u.outgoingEdges.filter { edge => // filter edges start from this source iteration
-        edge.schedules.flatMap(schedule => schedule.timesUnderPeriod(dfg.period))
-          .contains((edge.weightWithSource + uT) % dfg.period)
-      }.map { edge =>
-        val targetIteration = Iteration(edge.target, sourceIteration.time + edge.weightWithSource)
-        (sourceIteration, targetIteration, edge)
-      }
+      u.outgoingEdges
+        .filter { edge => // filter edges start from this source iteration
+          edge.schedules
+            .flatMap(schedule => schedule.timesUnderPeriod(dfg.period))
+            .contains((edge.weightWithSource + uT) % dfg.period)
+        }
+        .map { edge =>
+          val targetIteration = Iteration(edge.target, sourceIteration.time + edge.weightWithSource)
+          (sourceIteration, targetIteration, edge)
+        }
     } ++ // pairs for latency
-      (dfg.latencyEdges.flatMap(edge => (0 until ioMultiple).
-        map(i => (Iteration(edge.source, 0), Iteration(edge.target, i + edge.weightWithSource), edge)))
+      (dfg.latencyEdges.flatMap(edge => (0 until ioMultiple).map(i => (Iteration(edge.source, 0), Iteration(edge.target, i + edge.weightWithSource), edge)))
         ++ (1 to ioMultiple).map(i => (Iteration(dfg.ioReference, 0), Iteration(dfg.ioReference, i), LatencyEdge[T]())))
   }
 
@@ -75,18 +77,17 @@ trait DFGTransform[T <: Data] {
 
     logger.debug(s"\niterationsInvolved\n\t${iterationsInvolved.mkString(" ")}")
     logger.debug(s"\nbefore $transformName:\n\t$dfg")
-    val transformedDFG = DFGGraph[T](s"dfg_$transformName")
+    val transformedDFG    = DFGGraph[T](s"dfg_$transformName")
     val transformedPeriod = periodTransform(dfg.period)
 
     // make sure that nodes(especially I/O) is in correct order
     iterationsInvolved.map(spaceTransform).foreach(transformedDFG.addVertex(_))
 
     pairsInvolved.foreach { case (sourceIteration, targetIteration, edge) =>
-
       val newSourceIteration = timeSpaceTransform(sourceIteration)
       val newTargetIteration = timeSpaceTransform(targetIteration)
 
-      val (uPrime, vPrime) = (newSourceIteration.device, newTargetIteration.device)
+      val (uPrime, vPrime)   = (newSourceIteration.device, newTargetIteration.device)
       val (tUPrime, tVPrime) = (newSourceIteration.time, newTargetIteration.time)
 
       transformedDFG.addVertices(uPrime, vPrime)
@@ -95,17 +96,17 @@ trait DFGTransform[T <: Data] {
         transformedDFG.addLatencyEdge(uPrime, vPrime, tVPrime - tUPrime - uPrime.delay)
       } else {
         transformedDFG.addEdge(
-          source = uPrime(edge.outOrder), target = vPrime(edge.inOrder),
-          delay = tVPrime - tUPrime - uPrime.delay,
-          schedules = Seq(Schedule(tVPrime % transformedPeriod, transformedPeriod)))
+          source    = uPrime(edge.outOrder),
+          target    = vPrime(edge.inOrder),
+          delay     = tVPrime - tUPrime - uPrime.delay,
+          schedules = Seq(Schedule(tVPrime % transformedPeriod, transformedPeriod))
+        )
       }
     }
 
     logger.debug(s"$transformName result:\n$transformedDFG")
-    val ret = if(! this.isInstanceOf[Retiming[T]]) Retiming.alignIO(transformedDFG) else transformedDFG
+    val ret = if (!this.isInstanceOf[Retiming[T]]) Retiming.alignIO(transformedDFG) else transformedDFG
     logger.debug(s"latency after IO alignment:\n${ret.latencyEdges.map(ret.getEdgeWeight(_)).mkString(" ")}")
     ret
   }
 }
-
-

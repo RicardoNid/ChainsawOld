@@ -8,15 +8,15 @@ import scala.collection.immutable
 import scala.language.postfixOps
 
 /** the following examples came from:
- *
- * ''VLSI Digital Signal Processing Systems: Design and Implementation'', 1999
- *
- * fig6_3 came from chapter 6, number 3
- *
- * ''Synthesis of Control Circuits in Folded Pipelined DSP Architectures'', 1992
- *
- * fig9_a came from this paper, fig 9 (a)
- */
+  *
+  * ''VLSI Digital Signal Processing Systems: Design and Implementation'', 1999
+  *
+  * fig6_3 came from chapter 6, number 3
+  *
+  * ''Synthesis of Control Circuits in Folded Pipelined DSP Architectures'', 1992
+  *
+  * fig9_a came from this paper, fig 9 (a)
+  */
 
 object simpleFolding {
   // add some comments
@@ -40,12 +40,11 @@ object simpleFolding {
 
   def foldingSet = Seq(Seq(incs(0), incs(1)), Seq(incs(2), incs(3)))
 
-
 }
 
 object implementingDFGs {
 
-  val adds: Seq[BinaryNode[SInt]] = Seq.tabulate(2)(i => BinaryHardware(sintAdd).asDeviceNode(s"add${i + 1}"))
+  val adds: Seq[BinaryNode[SInt]]  = Seq.tabulate(2)(i => BinaryHardware(sintAdd).asDeviceNode(s"add${i + 1}"))
   val mults: Seq[BinaryNode[SInt]] = Seq.tabulate(2)(i => BinaryHardware(sintMult).asDeviceNode(s"mult${i + 1}"))
 
   val butterfly = DFGGraph[SInt]("butterfly")
@@ -64,7 +63,7 @@ object implementingDFGs {
   val butterflyNode = butterfly.asNode("butterflyNode")
 
   def nestedDFG: DFGGraph[SInt] = {
-    val whole = DFGGraph[SInt]("simpleNested")
+    val whole          = DFGGraph[SInt]("simpleNested")
     val butterflyNodes = (0 until 2).map(i => butterflyNode.copy(s"b${i + 1}"))
     whole.addVertices(butterflyNodes: _*)
     whole.addEdge(butterflyNodes(0)(0), butterflyNodes(1)(0), 1)
@@ -81,7 +80,7 @@ object chap2 {
   // FIXME: this example should use exeTime, so we should provide a corresponding node interface on this
   def fig2_2 = {
     val Seq(n1, n2, n3, n4, n5, n6) = Seq(1, 1, 1, 2, 2, 2).zipWithIndex.map { case (exe, i) => DeviceNode[SInt](s"node${i + 1}", Operators.passThrough()) }
-    val dfg = DFGGraph[SInt]("fig2.2")
+    val dfg                         = DFGGraph[SInt]("fig2.2")
 
     dfg.addPath(n1 >> 2 >> n4 >> n2 >> n1)
     dfg.addPath(n1 >> 3 >> n5 >> n3 >> n2)
@@ -92,9 +91,9 @@ object chap2 {
 
 object chap5 {
 
-  val add = BinaryHardware(sintAdd, 10 bits, 0 cycles, 1 ns).asDeviceNode("add")
+  val add             = BinaryHardware(sintAdd, 10 bits, 0 cycles, 1 ns).asDeviceNode("add")
   val add_inner_delay = BinaryHardware(sintAdd, 10 bits, 8 cycles, 1 ns).asDeviceNode("add0")
-  val cmult = BinaryHardware(sintMult, 10 bits, 0 cycles, 1 ns).asDeviceNode("cmult")
+  val cmult           = BinaryHardware(sintMult, 10 bits, 0 cycles, 1 ns).asDeviceNode("cmult")
 
   def fig5_2 = {
     val dfg_5_2 = DFGGraph[SInt]("fig5.2")
@@ -135,7 +134,7 @@ object chap5 {
 
   def fig5_12 = {
     val zero = ConstantNode[SInt, Int]("zero", 0, 10 bits)
-    val add = sintAddCNode(10 bits)
+    val add  = sintAddCNode(10 bits)
 
     val dfg = DFGGraph[SInt]("fig5.12")
     dfg.addVertex(add)
@@ -171,7 +170,8 @@ object chap6 {
       adds(0) >=> 1 >=> cmults(0),
       adds(0) >=> 1 >=> cmults(1),
       adds(0) >=> 1 >=> cmults(2),
-      adds(0) >=> 2 >=> cmults(3))
+      adds(0) >=> 2 >=> cmults(3)
+    )
     exps.foreach(dfg_6_3.addExp(_))
     dfg_6_3.setOutput(adds(1))
     dfg_6_3
@@ -196,7 +196,8 @@ object chap6 {
       adds(0) >=> 1 >=> cmults(0),
       adds(0) >=> 1 >=> cmults(1),
       adds(0) >=> 2 >=> cmults(2),
-      adds(0) >=> 2 >=> cmults(3))
+      adds(0) >=> 2 >=> cmults(3)
+    )
     exps.foreach(dfg_6_5.addExp(_))
     dfg_6_5.setOutput(adds(1))
     dfg_6_5
@@ -208,28 +209,28 @@ object chap6 {
 
 object paper1992OnFolding {
 
-  val unary: UnaryHardware[SInt] = UnaryHardware(Operators.sintInc, 10 bits)
-  val binary0: BinaryHardware[SInt] = BinaryHardware(Operators.sintAdd, 10 bits)
-  val binary1: BinaryHardware[SInt] = BinaryHardware(Operators.sintMult, 10 bits)
+  val unary: UnaryHardware[SInt]     = UnaryHardware(Operators.sintInc, 10 bits)
+  val binary0: BinaryHardware[SInt]  = BinaryHardware(Operators.sintAdd, 10 bits)
+  val binary1: BinaryHardware[SInt]  = BinaryHardware(Operators.sintMult, 10 bits)
   val trinary: TrinaryHardware[SInt] = TrinaryHardware(Operators.sintMultAdd, 10 bits)
 
   // nodes tobe used
   val as: Seq[DeviceNode[SInt]] = unary.asDeviceNodes("A", 4)
-  val Seq(a1, a2, a3, a4) = as
+  val Seq(a1, a2, a3, a4)       = as
 
   val b: TrinaryNode[SInt] = trinary.asDeviceNode("B")
 
-  val mas: Seq[DeviceNode[SInt]] = trinary.asDeviceNodes("MA", 5)
+  val mas: Seq[DeviceNode[SInt]]   = trinary.asDeviceNodes("MA", 5)
   val Seq(ma1, ma2, ma3, ma4, ma5) = mas
 
   val adds: Seq[DeviceNode[SInt]] = binary0.asDeviceNodes("A", 4)
   val Seq(add1, add2, add3, add4) = adds
 
-  val mults: Seq[DeviceNode[SInt]] = binary1.asDeviceNodes("M", 4)
+  val mults: Seq[DeviceNode[SInt]]    = binary1.asDeviceNodes("M", 4)
   val Seq(mult1, mult2, mult3, mult4) = mults
 
   val addcs: Seq[DSPNode[SInt]] = (1 to 3).map(i => sintAddCNode(10 bits).copy(s"A_$i"))
-  val Seq(addc1, addc2, addc3) = addcs
+  val Seq(addc1, addc2, addc3)  = addcs
 
   lazy val fig6_a: DFGGraph[SInt] = {
     val dfg_6_a = DFGGraph[SInt]("paper1992fig6_a")
@@ -246,7 +247,7 @@ object paper1992OnFolding {
   lazy val fig8_a: DFGGraph[SInt] = {
     val dfg_8_a = DFGGraph[SInt]("paper1992fig8_a")
     as.foreach(dfg_8_a.addVertex(_))
-    dfg_8_a.addPath(a1 >> 1 >> a2 >> 1 >> a3 >> 2 >> b) // A1 >> A2 >> A3 >> B
+    dfg_8_a.addPath(a1 >> 1  >> a2 >> 1 >> a3 >> 2 >> b) // A1 >> A2 >> A3 >> B
     dfg_8_a.addPath(a1 >> a4 >> b)
     dfg_8_a.addPath(a1 >> b)
     dfg_8_a.setInput(a1)
@@ -328,7 +329,6 @@ object paper1992OnFolding {
 
   lazy val foldingSet_example12 = Seq(Seq(a1, a2), Seq(a3, a4))
 
-
   lazy val fig14_a: DFGGraph[SInt] = {
     implicit val dfg14_a: DFGGraph[SInt] = DFGGraph[SInt]("paper1992fig14_a")
     addcs.foreach(dfg14_a.addVertex(_))
@@ -345,15 +345,14 @@ object paper1992OnFolding {
     dfg14_a
   }
 
-  lazy val foldingSet_example13 = Seq(Seq(addc1, addc2, addc3))
+  lazy val foldingSet_example13    = Seq(Seq(addc1, addc2, addc3))
   lazy val foldingSet_example13_v2 = Seq(Seq(addc2, addc3, addc1))
 }
-
 
 object chap4 {
   def fig4_3 = {
     val Seq(r1, r2, r3, r4) = (0 until 4).map(i => VirtualNode[SInt](s"const$i"))
-    val cg = ConstraintGraph[SInt]()
+    val cg                  = ConstraintGraph[SInt]()
     cg.addConstraint(r1 - r2 <= 0)
     cg.addConstraint(r3 - r1 <= 5)
     cg.addConstraint(r4 - r1 <= 4)

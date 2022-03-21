@@ -14,7 +14,7 @@ import scala.collection.mutable.ArrayBuffer
 class ViterbiHardTest extends AnyFlatSpec {
 
   val (trellis, testCases, golden) = Refs.getTestData
-  val temp = Algos.viterbiForwarding(testCases, trellis, Algos.Hamming).head.zipWithIndex.minBy(_._1)._2
+  val temp                         = Algos.viterbiForwarding(testCases, trellis, Algos.Hamming).head.zipWithIndex.minBy(_._1)._2
 
   def runSim() = {
     var dutResult = Seq[BigInt]()

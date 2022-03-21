@@ -14,8 +14,8 @@ import Chainsaw.matlabIO._
 
 class R2RVFFTTest extends AnyFlatSpec with Matchers {
 
-  val testSize = 64
-  val dataType = HardType(SFix(7 exp, -8 exp))
+  val testSize  = 64
+  val dataType  = HardType(SFix(7 exp, -8 exp))
   val coeffType = HardType(SFix(1 exp, -11 exp))
 
   SimConfig.withWave.compile(R2RVFFT(testSize, dataType, coeffType)).doSim { dut =>
@@ -35,11 +35,15 @@ class R2RVFFTTest extends AnyFlatSpec with Matchers {
 
     println(s"latency = ${dut.latency}")
     //    println(testCase.mkString(" "))
-    println(Refs.FFT(testCase.map(BComplex(_)).toArray).take(testSize / 2)
-      .mkString(" "))
-    // FIXME: UNACCESSIBLE SIGNAL : (toplevel/dataOut_payload_0_real : out SInt[16 bits]) isn't accessible during the simulation.
-    //    val dutResult = dataOut.payload.map(_.toComplex)
-    //    println(dutResult.mkString(" "))
+    println(
+      Refs
+        .FFT(testCase.map(BComplex(_)).toArray)
+        .take(testSize / 2)
+        .mkString(" ")
+    )
+  // FIXME: UNACCESSIBLE SIGNAL : (toplevel/dataOut_payload_0_real : out SInt[16 bits]) isn't accessible during the simulation.
+  //    val dutResult = dataOut.payload.map(_.toComplex)
+  //    println(dutResult.mkString(" "))
   }
 
 }

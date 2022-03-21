@@ -11,10 +11,10 @@ import scala.annotation.tailrec
 class SequentialMultiplier(k: Int, signed: Boolean = false) extends Component {
 
   val io = new Bundle {
-    val start = in Bool()
-    val a, x = in Bits (k bits)
-    val p = out Bits (2 * k bits)
-    val valid = out Bool()
+    val start = in Bool ()
+    val a, x  = in Bits (k bits)
+    val p     = out Bits (2 * k bits)
+    val valid = out Bool ()
   }
 
   val a = io.a.asUInt
@@ -23,17 +23,17 @@ class SequentialMultiplier(k: Int, signed: Boolean = false) extends Component {
   val count = Counter(k)
   io.valid := RegNext(count.willOverflow, init = False)
 
-  val partialReg = Reg(UInt(2 * k bits))
-  val aReg = RegNextWhen(a, io.start)
-  val xLast = partialReg.lsb
+  val partialReg  = Reg(UInt(2 * k bits))
+  val aReg        = RegNextWhen(a, io.start)
+  val xLast       = partialReg.lsb
   val partialHigh = partialReg(2 * k - 1 downto k)
-  val partialLow = partialReg(k - 1 downto 0)
+  val partialLow  = partialReg(k - 1 downto 0)
   io.p := partialReg.asBits
 
   if (!signed) {
     val fsm = new StateMachine {
       val IDLE = StateEntryPoint()
-      val RUN = State()
+      val RUN  = State()
       IDLE.whenIsActive(when(io.start)(goto(RUN)))
       RUN.whenIsActive(when(count.willOverflow)(goto(IDLE)))
 
@@ -46,7 +46,7 @@ class SequentialMultiplier(k: Int, signed: Boolean = false) extends Component {
   } else {
     val fsm = new StateMachine {
       val IDLE = StateEntryPoint()
-      val RUN = State()
+      val RUN  = State()
       IDLE.whenIsActive(when(io.start)(goto(RUN)))
       RUN.whenIsActive(when(count.willOverflow)(goto(IDLE)))
 
@@ -70,9 +70,9 @@ class SequentialMultiplier(k: Int, signed: Boolean = false) extends Component {
   }
 }
 
-/**
- * @see Computer Arithmetic, page 180
- */
+/** @see
+  *   Computer Arithmetic, page 180
+  */
 object SequentialMultiplier { // right-shift version
 
   def software(a: BigInt, x: BigInt, signed: Boolean = false): BigInt = {
@@ -81,8 +81,9 @@ object SequentialMultiplier { // right-shift version
     def recursion(j: Int, partial: BigInt): BigInt = {
       if (j == k) partial
       else {
-        val newPartial = if (signed && j == k - 1) (if (x.testBit(j)) partial - (a << k) else partial) >> 1
-        else (if (x.testBit(j)) partial + (a << k) else partial) >> 1
+        val newPartial =
+          if (signed && j == k - 1) (if (x.testBit(j)) partial - (a << k) else partial) >> 1
+          else (if (x.testBit(j)) partial + (a << k) else partial)                      >> 1
         recursion(j + 1, newPartial)
       }
     }
@@ -97,8 +98,8 @@ object SequentialMultiplier { // right-shift version
         import dut._
         clockDomain.forkStimulus(2)
         clockDomain.waitSampling()
-        io.a #= 5
-        io.x #= BigInt("1101", 2) // 13 / -3
+        io.a     #= 5
+        io.x     #= BigInt("1101", 2) // 13 / -3
         io.start #= true
         while (true) {
           if (io.valid.toBoolean) {

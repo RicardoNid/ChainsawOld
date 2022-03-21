@@ -13,14 +13,12 @@ import scala.+:
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-
 object gfOperators {
-
 
   def gfIsZero(a: Bits): Bits = {
     //todo:the result of gfIsZero C code is 13 bits,or just need 12 bits?
-    val allZero=Bits(GfBits+1 bits)
-    val allOne= Bits(GfBits+1 bits)
+    val allZero = Bits(GfBits + 1 bits)
+    val allOne  = Bits(GfBits + 1 bits)
     allZero.setAllTo(false)
     allOne.setAllTo(true)
     Mux(a.orR, allZero, allOne)
@@ -39,21 +37,21 @@ object gfOperators {
 //    (0 until GfBits-1).foreach{ i =>
 //      tem += Mux(b(i + 1), tem.last ^ (aPadded |<< i+1), tem.last)
 //    }
-    val x = Seq.fill(GfBits)(Bits(2*GfBits-1 bits))
-    val select=Seq.fill(GfBits)(Bits(2*GfBits-1 bits))
+    val x      = Seq.fill(GfBits)(Bits(2 * GfBits - 1 bits))
+    val select = Seq.fill(GfBits)(Bits(2 * GfBits - 1 bits))
     select(0).setAllTo(~b(0))
-    (1 until(GfBits)).foreach(i=> select(i).setAllTo(b(i)))
+    (1 until (GfBits)).foreach(i => select(i).setAllTo(b(i)))
 
-    (aPadded+:x.init)
+    (aPadded +: x.init)
       .zip(x)
-      .zipWithIndex.foreach{ case ((prev,next),i)=>
-      next:=prev^((aPadded|<<i)&select(i))
-    }
-
+      .zipWithIndex
+      .foreach { case ((prev, next), i) =>
+        next := prev ^ ((aPadded |<< i) & select(i))
+      }
 
     //todo: add polynominal f into config
     val temp = ArrayBuffer(x.last)
-    val t1 = temp.last & B"23'x7fc000"
+    val t1   = temp.last & B"23'x7fc000"
     temp += (temp.last ^ (t1 |>> 9))
     temp += (temp.last ^ (t1 |>> 12))
     val t2 = temp.last & (B"23'x3000")
@@ -108,11 +106,10 @@ object gfOperators {
   def GFMul(dataIn: Vec[Bits]): Vec[Bits] = {
     //todo: require t>4
     ///*
-    require(dataIn.length==CorrectionNum*2)
+    require(dataIn.length == CorrectionNum * 2)
     //depart input into two parameters:
-    val paraA=dataIn.take(CorrectionNum)      // the first CorrectionNum elements
-    val paraB=dataIn.takeRight(CorrectionNum) // the last CorrectionNum elements
-
+    val paraA = dataIn.take(CorrectionNum) // the first CorrectionNum elements
+    val paraB = dataIn.takeRight(CorrectionNum) // the last CorrectionNum elements
 
     // a matrix to save temp prod of two input Vectors
     val tmp = Vec(Vec(Bits(GfBits bits), CorrectionNum), CorrectionNum)
@@ -140,11 +137,10 @@ object gfOperators {
       prod(i) := Addtemp.last
     }
 
-
     val mul2 = Vec(Bits(GfBits bits), CorrectionNum + 2)
     (2 until CorrectionNum - 1).foreach(i => mul2(i) := prod(i) ^ gfMul(prod(i + CorrectionNum), (B"12'x002")))
     mul2(CorrectionNum - 1) := prod(CorrectionNum - 1)
-    mul2(CorrectionNum) := prod(CorrectionNum)
+    mul2(CorrectionNum)     := prod(CorrectionNum)
     mul2(CorrectionNum + 1) := prod(CorrectionNum + 1)
 
     val prod1 = Vec(Bits(GfBits bits), CorrectionNum + 2)
@@ -240,42 +236,35 @@ object gfOperators {
 //    }
 //    out
 
-
-
-
   }
 
   case class TestGfzero() extends Component with DSPTestable[Vec[Bits], Vec[Bits]] {
-    override val dataIn: Flow[Vec[Bits]] = slave Flow Vec(Bits(12 bits), 1)
+    override val dataIn: Flow[Vec[Bits]]  = slave Flow Vec(Bits(12 bits), 1)
     override val dataOut: Flow[Vec[Bits]] = master Flow Vec(Bits(12 bits), 1)
-    override val latency: Int = 1
-
+    override val latency: Int             = 1
 
     dataOut.payload := RegNext(Vec(gfOperators.gfInv(dataIn.payload.asBits)))
-    dataOut.valid := Delay(dataIn.valid, latency, init = False)
+    dataOut.valid   := Delay(dataIn.valid, latency, init = False)
   }
 
   case class TestGfmul() extends Component with DSPTestable[Vec[Bits], Vec[Bits]] {
-    override val dataIn: Flow[Vec[Bits]] = slave Flow Vec(Bits(12 bits), 2)
+    override val dataIn: Flow[Vec[Bits]]  = slave Flow Vec(Bits(12 bits), 2)
     override val dataOut: Flow[Vec[Bits]] = master Flow Vec(Bits(12 bits), 1)
-    override val latency: Int = 1
-
+    override val latency: Int             = 1
 
     dataOut.payload := RegNext(Vec(gfOperators.gfMul(dataIn.payload(0), dataIn.payload(1))))
-    dataOut.valid := Delay(dataIn.valid, latency, init = False)
+    dataOut.valid   := Delay(dataIn.valid, latency, init = False)
   }
 
   case class TestGFMUL() extends Component with DSPTestable[Vec[Bits], Vec[Bits]] {
 
-    override val dataIn: Flow[Vec[Bits]] = slave Flow Vec(Bits(12 bits), 2 * CorrectionNum)
+    override val dataIn: Flow[Vec[Bits]]  = slave Flow Vec(Bits(12 bits), 2 * CorrectionNum)
     override val dataOut: Flow[Vec[Bits]] = master Flow Vec(Bits(12 bits), CorrectionNum)
-    override val latency: Int = 1
-
+    override val latency: Int             = 1
 
     dataOut.payload := RegNext(Vec(gfOperators.GFMul(dataIn.payload)))
-    dataOut.valid := Delay(dataIn.valid, latency, init = False)
+    dataOut.valid   := Delay(dataIn.valid, latency, init = False)
   }
-
 
 }
 
@@ -286,22 +275,17 @@ object TestComponent {
     //    val GoldenCase=Seq("3410").map(BigInt(_,10))
     //    doFlowPeekPokeTest("TestGf",gfOperators.TestGfmul(), Seq(testCase),GoldenCase)
 
-
-        val testCase: Seq[BigInt] =Seq.fill(CorrectionNum*2)(0).zipWithIndex.map{
-          case (out,in)=> BigInt(in+1)
-        }
+    val testCase: Seq[BigInt] = Seq.fill(CorrectionNum * 2)(0).zipWithIndex.map { case (out, in) =>
+      BigInt(in + 1)
+    }
 
 //        val GoldenCase=Seq("2051","1043","2053","5","2054","1","2096","21","2099","1",
 //          "2108","5","2111","1","2240","85","2243","1","2252","5","2255","1","2288","21","2291",
 //          "1","2300","5","2303","1","2816","341","2819","1","2828","5","2831","1","2864","21","2867",
 //          "1","2876","5","2879","1","3008","85","3011","1","3020","5","3023","1","3056","21","3059",
 //          "1","3068","5","3071","1","1042","1372").map(BigInt(_,10))
-          val GoldenCase=Seq("531","1937","220","837","399","769","192","5","307","321","460","213","447","129","1072","933").map(BigInt(_,10))
+    val GoldenCase = Seq("531", "1937", "220", "837", "399", "769", "192", "5", "307", "321", "460", "213", "447", "129", "1072", "933").map(BigInt(_, 10))
     doFlowPeekPokeTest("TestGf", gfOperators.TestGFMUL(), Seq(testCase), GoldenCase)
-
 
   }
 }
-
-
-

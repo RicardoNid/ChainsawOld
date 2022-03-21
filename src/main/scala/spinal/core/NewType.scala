@@ -25,7 +25,7 @@ class UsingNewType extends Component {
 
   import NewTypeFactory._
 
-  val input = in(NewType)
+  val input  = in(NewType)
   val output = out(NewType)
 
   output := input
@@ -35,5 +35,3 @@ object UsingNewType {
     SpinalConfig().generateSystemVerilog(new UsingNewType)
   }
 }
-
-

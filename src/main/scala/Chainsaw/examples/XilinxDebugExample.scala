@@ -11,7 +11,7 @@ import Chainsaw.Real
 import xilinx._
 
 case class XilinxDebugExample() extends Component {
-  val core = CounterFreeRun(13)
+  val core    = CounterFreeRun(13)
   val dataOut = out(core.value)
   dataOut.addAttribute("mark_debug", "true")
   println(dataOut.getName())

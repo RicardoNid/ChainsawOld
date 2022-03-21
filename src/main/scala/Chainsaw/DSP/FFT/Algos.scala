@@ -16,28 +16,28 @@ import scala.collection.mutable.ArrayBuffer
 
 object Algos extends App {
 
-  def omega(index:Int)(implicit N:Int) = exp(-i * 2 * Pi * index / N ) // \omega ^{ik}
-  def beta(index:Int)(implicit N:Int) = exp(-i  * Pi * index / N ) // \omega ^{ik}
+  def omega(index: Int)(implicit N: Int) = exp(-i * 2 * Pi * index / N) // \omega ^{ik}
+  def beta(index: Int)(implicit N: Int)  = exp(-i * Pi * index / N) // \omega ^{ik}
 
-  def bluesteinChirp(input:DenseVector[BComplex]) = {
-    implicit val N = input.length
-    val data: DenseVector[BComplex] = input *:* DenseVector.tabulate(N)(i => beta(-i * i)) // pointwise product
+  def bluesteinChirp(input: DenseVector[BComplex]) = {
+    implicit val N                   = input.length
+    val data: DenseVector[BComplex]  = input *:* DenseVector.tabulate(N)(i => beta(-i * i)) // pointwise product
     val coeff: DenseVector[BComplex] = DenseVector.tabulate(N)(i => beta(i * i))
 
 //    convolved *:* DenseVector.tabulate(N)(k => beta(-k*k))
   }
 
   // build radix-r Cooley-Tukey FFT by the "block" and "parallel line" given
-  def cooleyTukeyBuilder[T](input: Seq[T], factors: Seq[Int],
-                            block: Seq[T] => Seq[T],
-                            mult: (T, Int, Int) => T, inverse: Boolean = false): Seq[T] = {
+  def cooleyTukeyBuilder[T](input: Seq[T], factors: Seq[Int], block: Seq[T] => Seq[T], mult: (T, Int, Int) => T, inverse: Boolean = false): Seq[T] = {
 
     def twiddle(input: Seq[Seq[T]]) = {
       val N1 = input.head.size
       val N2 = input.size
-      input.zip(cooleyTukeyCoeffIndices(N1, N2))
-        .map { case (ts, ints) => ts.zip(ints)
-          .map { case (t, i) => mult(t, if (!inverse) i else -i, N1 * N2) }
+      input
+        .zip(cooleyTukeyCoeffIndices(N1, N2))
+        .map { case (ts, ints) =>
+          ts.zip(ints)
+            .map { case (t, i) => mult(t, if (!inverse) i else -i, N1 * N2) }
         }
     }
 
@@ -60,7 +60,7 @@ object Algos extends App {
         //        printlnGreen("before inter1")
         //        println(afterParallel.map(_.mkString(" ")).mkString("\n"))
         val input2DForRecursion = transpose(afterParallel) // permutation 1(transpose)
-        val afterRecursion = input2DForRecursion.map(recursiveBuild(_, factors.tail))
+        val afterRecursion      = input2DForRecursion.map(recursiveBuild(_, factors.tail))
         //        println(afterRecursion.map(_.mkString(" ")).mkString("\n"))
         val ret = matIntrlv(afterRecursion.flatten, N1, N2) // permutation 2
         ret
@@ -70,20 +70,19 @@ object Algos extends App {
   }
 
   def cooleyTukeyCoeffIndices(N1: Int, N2: Int) = Seq.tabulate(N2, N1)((n2, k1) => n2 * k1)
-  def cooleyTukeyCoeff(N1: Int, N2: Int) = cooleyTukeyCoeffIndices(N1, N2).map(_.map(WNnk(N1 * N2, _)))
+  def cooleyTukeyCoeff(N1: Int, N2: Int)        = cooleyTukeyCoeffIndices(N1, N2).map(_.map(WNnk(N1 * N2, _)))
 
   def cooleyTukeyFFT(input: Seq[BComplex], factors: Seq[Int]) = {
-    def block(input: Seq[BComplex]) = Refs.FFT(input.toArray).toSeq
+    def block(input: Seq[BComplex])               = Refs.FFT(input.toArray).toSeq
     def mult(input: BComplex, index: Int, N: Int) = input * WNnk(N, index)
     cooleyTukeyBuilder(input, factors, block, mult)
   }
 
   def radixRFFT(input: Seq[BComplex], radix: Int) = {
-    val N = input.size
+    val N                                         = input.size
     def buildFactors(factors: Seq[Int]): Seq[Int] = if (factors.product == N) factors else buildFactors(factors :+ radix)
     cooleyTukeyFFT(input, buildFactors(Seq(radix)))
   }
-
 
   def CyclicConv(input: Seq[BComplex], coeff: Seq[BComplex], L: Int): Seq[BComplex] = {
     require(L >= input.size && L >= coeff.size)
@@ -105,13 +104,13 @@ object Algos extends App {
       (1 until modulus).dropWhile(!isGenerator(_)).head
     }
 
-    val g = getGenerator(N)
-    val inputPermutation = (0 until N - 1).map(N - 1 - _).map(i => Zp(N).pow(g, i).intValue())
-    val coeffPermutation = (0 until N - 1).map(i => Zp(N).pow(g, i).intValue())
+    val g                 = getGenerator(N)
+    val inputPermutation  = (0 until N - 1).map(N - 1 - _).map(i => Zp(N).pow(g, i).intValue())
+    val coeffPermutation  = (0 until N - 1).map(i => Zp(N).pow(g, i).intValue())
     val outputPermutation = (0 until N - 1).map(i => Zp(N).pow(g, i).intValue())
 
-    val permutedInput = inputPermutation.map(input(_))
-    val permutedCoeff = coeffPermutation.map(WNnk(N, _) - new BComplex(1, 0))
+    val permutedInput                 = inputPermutation.map(input(_))
+    val permutedCoeff                 = coeffPermutation.map(WNnk(N, _) - new BComplex(1, 0))
     val permutedOutput: Seq[BComplex] = CyclicConv(permutedInput, permutedCoeff, N - 1)
 
     val output: ArrayBuffer[BComplex] = ArrayBuffer.fill(N)(new BComplex(0, 0)) // output1, output2...output(N-1)
@@ -124,12 +123,12 @@ object Algos extends App {
   def fold[T](data: Seq[T]) = data.take(data.length / 2).zip(data.takeRight(data.length / 2))
 
   // transformations
-  def butterflyReal(data: Seq[Double]): Seq[Double] = fold(data).map { case (d, d1) => d + d1 } ++ fold(data).map { case (d, d1) => d - d1 }
+  def butterflyReal(data: Seq[Double]): Seq[Double]        = fold(data).map { case (d, d1) => d + d1 } ++ fold(data).map { case (d, d1) => d - d1 }
   def butterflyComplex(data: Seq[BComplex]): Seq[BComplex] = fold(data).map { case (d, d1) => d + d1 } ++ fold(data).map { case (d, d1) => d - d1 }
-  def swap(data: Seq[Double]) = fold(data).map { case (d, d1) => new BComplex(d, -d1) }
+  def swap(data: Seq[Double])                              = fold(data).map { case (d, d1) => new BComplex(d, -d1) }
 
   // reverse transformation
-  def butterflyRealR(data: Seq[Double]): Seq[Double] = fold(data).map { case (d, d1) => (d + d1) } ++ fold(data).map { case (d, d1) => (d - d1) }
+  def butterflyRealR(data: Seq[Double]): Seq[Double]        = fold(data).map { case (d, d1) => (d + d1) } ++ fold(data).map { case (d, d1) => (d - d1) }
   def butterflyComplexR(data: Seq[BComplex]): Seq[BComplex] = fold(data).map { case (d, d1) => (d + d1) } ++ fold(data).map { case (d, d1) => (d - d1) }
   def swapR(data: Seq[BComplex]): Seq[Double] = {
     val reals = data.map(_.real)
@@ -149,11 +148,11 @@ object Algos extends App {
     def fig1R(stack: Stack[BComplex], stage: Int): Seq[BComplex] = {
       if (stage == stageMax) butterflyComplexR(Seq(stack.pop(), stack.pop()))
       else {
-        val prev0 = fig1R(stack, stage + 1)
-        val prev1 = fig1R(stack, stage + 1)
-        val indices = (0 until prev1.length).map(_ * 1 << (stage - 1))
+        val prev0      = fig1R(stack, stage + 1)
+        val prev1      = fig1R(stack, stage + 1)
+        val indices    = (0 until prev1.length).map(_ * 1 << (stage - 1))
         val multiplied = prev1.zip(indices).map { case (complex, i) => complex * WNnk(N, -i) }
-        val combined = prev0 ++ multiplied
+        val combined   = prev0 ++ multiplied
         butterflyComplexR(combined)
       }
     }
@@ -161,21 +160,23 @@ object Algos extends App {
     def fig2R(stack: Stack[BComplex], stage: Int): Seq[Double] = {
       if (stage == stageMax) butterflyRealR(Seq(stack.pop(), stack.pop()).map(_.real))
       else {
-        val prev0 = fig2R(stack, stage + 1)
-        val prev1 = if (stage + 2 <= stageMax) fig1R(stack, stage + 2) else Seq(stack.pop())
-        val indices = (0 until prev1.length).map(_ * 1 << (stage - 1))
+        val prev0      = fig2R(stack, stage + 1)
+        val prev1      = if (stage + 2 <= stageMax) fig1R(stack, stage + 2) else Seq(stack.pop())
+        val indices    = (0 until prev1.length).map(_ * 1 << (stage - 1))
         val multiplied = prev1.zip(indices).map { case (complex, i) => complex * WNnk(N, -i) }
-        val swapped = swapR(multiplied)
+        val swapped    = swapR(multiplied)
         butterflyRealR(prev0 ++ swapped)
       }
     }
 
     val reverseIndices = (0 until N).map(bitReverse(N, _))
-    val droppedIndices = (0 until N).filter { i =>
-      val up = 1 << log2Up(i + 1)
-      val level = up / 4
-      level != 0 && (i / level) % 4 == 3
-    }.map(bitReverse(N, _))
+    val droppedIndices = (0 until N)
+      .filter { i =>
+        val up    = 1 << log2Up(i + 1)
+        val level = up / 4
+        level != 0 && (i / level) % 4 == 3
+      }
+      .map(bitReverse(N, _))
 
     val bitReverseInput = reverseIndices.map(input.apply(_))
 
@@ -186,8 +187,8 @@ object Algos extends App {
       }
       case 2 => {
         val remainedIndices = reverseIndices.filterNot(droppedIndices.contains(_))
-        val remainedInput = remainedIndices.map(input.apply(_))
-        val dataStack = Stack(remainedInput: _*)
+        val remainedInput   = remainedIndices.map(input.apply(_))
+        val dataStack       = Stack(remainedInput: _*)
         fig2R(dataStack, 1).map(BComplex(_))
       }
     }
@@ -203,10 +204,10 @@ object Algos extends App {
       //      println(s"fig1 stage$stage")
       if (stage == stageMax) butterflyComplex(data)
       else {
-        val half = data.length / 2
+        val half                         = data.length / 2
         val (butterflied0, butterflied1) = butterflyComplex(data).splitAt(half)
-        val indices = (0 until half).map(_ * 1 << (stage - 1))
-        val multiplied = butterflied1.zip(indices).map { case (complex, i) => complex * WNnk(N, i) }
+        val indices                      = (0 until half).map(_ * 1 << (stage - 1))
+        val multiplied                   = butterflied1.zip(indices).map { case (complex, i) => complex * WNnk(N, i) }
         fig1(butterflied0, stage + 1) ++ fig1(multiplied, stage + 1)
       }
     }
@@ -216,21 +217,23 @@ object Algos extends App {
       //      println(s"fig2 stage$stage")
       if (stage == stageMax) butterflyReal(data).map(BComplex(_))
       else {
-        val half = data.length / 2
+        val half                         = data.length / 2
         val (butterflied0, butterflied1) = butterflyReal(data).splitAt(half)
-        val indices = (0 until half).map(_ * 1 << (stage - 1))
-        val multiplied = swap(butterflied1).zip(indices).map { case (complex, i) => complex * WNnk(N, i) }
+        val indices                      = (0 until half).map(_ * 1 << (stage - 1))
+        val multiplied                   = swap(butterflied1).zip(indices).map { case (complex, i) => complex * WNnk(N, i) }
         if (multiplied.length > 1) fig2(butterflied0, stage + 1) ++ fig1(multiplied, stage + 2).padTo(half, BComplex(0))
         else fig2(butterflied0, stage + 1) ++ multiplied.padTo(half, BComplex(0))
       }
     }
 
     val reverseIndices = (0 until N).map(bitReverse(N, _))
-    val droppedIndices = (0 until N).filter { i =>
-      val up = 1 << log2Up(i + 1)
-      val level = up / 4
-      level != 0 && (i / level) % 4 == 3
-    }.map(bitReverse(N, _))
+    val droppedIndices = (0 until N)
+      .filter { i =>
+        val up    = 1 << log2Up(i + 1)
+        val level = up / 4
+        level != 0 && (i / level) % 4 == 3
+      }
+      .map(bitReverse(N, _))
 
     mode match {
       case 1 => {
@@ -239,7 +242,7 @@ object Algos extends App {
       }
       case 2 => {
         val bitReversRet = fig2(input, 1)
-        val orderedRet = reverseIndices.map(bitReversRet.apply(_))
+        val orderedRet   = reverseIndices.map(bitReversRet.apply(_))
         (0 until (N / 2)).map(i => if (droppedIndices.contains(i)) orderedRet(N - i).conjugate else orderedRet(i))
       }
     }

@@ -27,16 +27,14 @@ object JGraphtTExamples extends App {
     .edgeClass(classOf[DefaultEdge])
     .buildGraph()
 
-
-  var google = new URI("http://www.google.com")
+  var google    = new URI("http://www.google.com")
   val wikipedia = new URI("http://www.wikipedia.org")
-  val jgrapht = new URI("http://www.jgrapht.org")
+  val jgrapht   = new URI("http://www.jgrapht.org")
 
   // add the vertices
   g.addVertex(google)
   g.addVertex(wikipedia)
   g.addVertex(jgrapht)
-
 
   // add edges to create linking structure
   g.addEdge(jgrapht, wikipedia)
@@ -44,7 +42,7 @@ object JGraphtTExamples extends App {
   g.addEdge(google, wikipedia)
   g.addEdge(wikipedia, google)
 
-  Graphs.addEdgeWithVertices(g, google,jgrapht)
+  Graphs.addEdgeWithVertices(g, google, jgrapht)
 
   // find from sets
   println(g.vertexSet().filter(_.toString.contains("google")).mkString(" "))
@@ -64,7 +62,7 @@ object JGraphtTExamples extends App {
 
   println(new DepthFirstIterator(g, google).mkString(" "))
 
-  val i = g.clone().asInstanceOf[DefaultDirectedGraph[URI, DefaultEdge]] // clone
+  val i        = g.clone().asInstanceOf[DefaultDirectedGraph[URI, DefaultEdge]] // clone
   val chainsaw = new URI("http://www.chainsaw.com")
   i.addVertex(chainsaw)
   println(s"i: ${i.vertexSet().mkString(" ")}")
@@ -80,11 +78,11 @@ object JGraphtTExamples extends App {
 object CompleteGraphDemo { // number of vertices
   private val SIZE = 10
 
-  /**
-   * Main demo entry point.
-   *
-   * @param args command line arguments
-   */
+  /** Main demo entry point.
+    *
+    * @param args
+    *   command line arguments
+    */
   def main(args: Array[String]): Unit = { // Create the VertexFactory so the generator can create vertices
     val vSupplier = new Supplier[String]() {
       private var id = 0
@@ -102,7 +100,7 @@ object CompleteGraphDemo { // number of vertices
     completeGenerator.generateGraph(completeGraph)
     // Print out the graph to be sure it's really complete
     val iter = new DepthFirstIterator[String, DefaultEdge](completeGraph)
-    while ( {
+    while ({
       iter.hasNext
     }) {
       val vertex = iter.next

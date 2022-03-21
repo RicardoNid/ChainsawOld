@@ -25,12 +25,13 @@ object SM4 {
   def transformL(data: Bits, forData: Boolean)(implicit config: SM4Config): Bits = new Composite(data) {
     require(data.getBitsWidth == 32)
     val rotateValues = if (forData) Seq(0, 2, 10, 18, 24) else Seq(0, 13, 23)
-    val afterL = rotateValues.map(data.rotateLeft).reduce(_ ^ _)
+    val afterL       = rotateValues.map(data.rotateLeft).reduce(_ ^ _)
     afterL.addAttribute("use_dsp", "logic")
   }.afterL
 
   def FKData: Seq[Bits] = Seq("A3B1BAC6", "56AA3350", "677D9197", "B27022DC")
-    .map(BigInt(_, 16)).map(B(_, 32 bits))
+    .map(BigInt(_, 16))
+    .map(B(_, 32 bits))
 
   def CKData: Array[Bits] = getBigSeqFromHex(
     "00070E15 1C232A31 383F464D 545B6269" +
@@ -40,7 +41,8 @@ object SM4 {
       " C0C7CED5 DCE3EAF1 F8FF060D 141B2229" +
       " 30373E45 4C535A61 686F767D 848B9299" +
       " A0A7AEB5 BCC3CAD1 D8DFE6ED F4FB0209" +
-      " 10171E25 2C333A41 484F565D 646B7279").map(B(_, 32 bits))
+      " 10171E25 2C333A41 484F565D 646B7279"
+  ).map(B(_, 32 bits))
 
   def substitutionS(data: Bits)(implicit config: SM4Config): Bits = {
     require(data.getBitsWidth == 8)
@@ -61,7 +63,8 @@ object SM4 {
         " 8D 1B AF 92 BB DD BC 7F 11 D9 5C 41 1F 10 5A D8" +
         " 0A C1 31 88 A5 CD 7B BD 2D 74 D0 12 B8 E5 B4 B0" +
         " 89 69 97 4A 0C 96 77 7E 65 B9 F1 09 C5 6E C6 84" +
-        " 18 F0 7D EC 3A DC 4D 20 79 EE 5F 3E D7 CB 39 48").map(B(_, 8 bits))
+        " 18 F0 7D EC 3A DC 4D 20 79 EE 5F 3E D7 CB 39 48"
+    ).map(B(_, 8 bits))
 
     val SROM = Mem(SBoxData)
 
@@ -75,8 +78,12 @@ object SM4 {
   def transformT(data: Bits, forData: Boolean)(implicit config: SM4Config): Bits = new Composite(data) {
     require(data.getBitsWidth == 32)
     //    data.setName("beforeS", weak = true)
-    val afterS = data.subdivideIn(8 bits).reverse
-      .map(substitutionS).reduce(_ ## _).asBits
+    val afterS = data
+      .subdivideIn(8 bits)
+      .reverse
+      .map(substitutionS)
+      .reduce(_ ## _)
+      .asBits
     //    afterS.setName("afterS", weak = true)
     val afterT = transformL(afterS, forData)
   }.afterT
@@ -84,21 +91,21 @@ object SM4 {
   def transformF(data: Seq[Bits], key: Bits, forData: Boolean)(implicit config: SM4Config): Bits = new Composite(key) {
     require(data.forall(_.getBitsWidth == 32) && key.getBitsWidth == 32)
     val Seq(x0, x1, x2, x3) = data
-    val x0Pipelined = if (config.readAsync) x0 else RegNext(x0)
-    val afterF = x0Pipelined ^ transformT((x1 ^ x2) ^ (x3 ^ key), forData)
+    val x0Pipelined         = if (config.readAsync) x0 else RegNext(x0)
+    val afterF              = x0Pipelined ^ transformT((x1 ^ x2) ^ (x3 ^ key), forData)
   }.afterF
 
   val baseLineConfig: SM4Config = SM4Config(
-    readAsync = true,
-    usingBRAM = false,
-    usingROM = true,
+    readAsync   = true,
+    usingBRAM   = false,
+    usingROM    = true,
     parallelism = 1
   )
 
-  val testString: String = "\t01\t23\t45\t67\t89\tAB\tCD\tEF\tFE\tDC\tBA\t98\t76\t54\t32\t10".replace("\t", "")
+  val testString: String   = "\t01\t23\t45\t67\t89\tAB\tCD\tEF\tFE\tDC\tBA\t98\t76\t54\t32\t10".replace("\t", "")
   val goldenString: String = "68\t1E\tDF\t34\tD2\t06\t96\t5E\t86\tB3\tE9\t4F\t53\t6E\t42\t46".replace("\t", "")
-  val testCase, testKey = BigInt(testString, 16)
-  val golden = BigInt(goldenString, 16)
+  val testCase, testKey    = BigInt(testString, 16)
+  val golden               = BigInt(goldenString, 16)
 }
 
 object SM4Operators {
@@ -108,11 +115,11 @@ object SM4Operators {
   val xorHardware = new BinaryHardware(Operators.xor, 32 bits, 0, 0)
 
   def dataTransformHardware(implicit config: SM4Config): DSPHardware[Bits] = DSPHardware(
-    impl = (dataIn: Seq[Bits], _: GlobalCount) => Seq(transformF(dataIn.take(4).map(_.resize(32 bits)), dataIn.last.resize(32 bits), forData = true)),
-    inDegree = 5,
+    impl      = (dataIn: Seq[Bits], _: GlobalCount) => Seq(transformF(dataIn.take(4).map(_.resize(32 bits)), dataIn.last.resize(32 bits), forData = true)),
+    inDegree  = 5,
     outWidths = Seq(32 bits),
-    delay = 0 cycles,
-    exeTime = 0 sec
+    delay     = 0 cycles,
+    exeTime   = 0 sec
   )
 
   def keyTransformHardware(implicit config: SM4Config): DSPHardware[Bits] = DSPHardware(
@@ -138,24 +145,25 @@ case class SM4HardwareSpinal(comb: Boolean) extends Component {
 
   implicit val config: SM4Config = baseLineConfig
 
-  val plain: Bits = in Bits (128 bits)
-  val key: Bits = in Bits (128 bits)
+  val plain: Bits  = in Bits (128 bits)
+  val key: Bits    = in Bits (128 bits)
   val cipher: Bits = out Bits (128 bits)
 
   val Seq(x0, x1, x2, x3) = plain.subdivideIn(32 bits).reverse
   val Seq(k0, k1, k2, k3) = key.subdivideIn(32 bits).reverse
 
   // initial calculation on keys
-  val Seq(ki0, ki1, ki2, ki3) = Seq(k0, k1, k2, k3).zip(FKData)
+  val Seq(ki0, ki1, ki2, ki3) = Seq(k0, k1, k2, k3)
+    .zip(FKData)
     .map { case (key, fk) => key ^ fk }
   // hardware component
   val dataTrans: (Seq[Bits], Bits) => Bits = transformF(_, _, forData = true)
-  val keyTrans: (Seq[Bits], Bits) => Bits = transformF(_, _, forData = false)
+  val keyTrans: (Seq[Bits], Bits) => Bits  = transformF(_, _, forData = false)
 
   // round
   if (comb) {
     val dataAtEachRound: ArrayBuffer[Bits] = ArrayBuffer(x0, x1, x2, x3)
-    val keyAtEachRound: ArrayBuffer[Bits] = ArrayBuffer(ki0, ki1, ki2, ki3)
+    val keyAtEachRound: ArrayBuffer[Bits]  = ArrayBuffer(ki0, ki1, ki2, ki3)
 
     (0 until 32).foreach { i =>
       val kNext = keyTrans(keyAtEachRound.takeRight(4), CKData(i))
@@ -168,23 +176,20 @@ case class SM4HardwareSpinal(comb: Boolean) extends Component {
     }
 
     cipher := dataAtEachRound.takeRight(4).reverse.reduce(_ ## _)
-  }
-
-  else {
+  } else {
     val xDelayLines = Seq(x0, x1, x2, x3).map(signal => History(RegNext(signal), 5))
     val kDelayLines = Seq(ki0, ki1, ki2, ki3).map(signal => History(signal, 5))
 
     val dataDelayLineAtEachRound: ArrayBuffer[Vec[Bits]] = ArrayBuffer(xDelayLines: _*)
-    val keyDelayLineAtEachRound: ArrayBuffer[Vec[Bits]] = ArrayBuffer(kDelayLines: _ *)
+    val keyDelayLineAtEachRound: ArrayBuffer[Vec[Bits]]  = ArrayBuffer(kDelayLines: _*)
 
     val lifeTable = Seq.fill(4)(0) ++ (1 to 32)
 
     def getLifeCycle(round: Int) = lifeTable(round + 4)
 
     (0 until 32).foreach { i =>
-
       val sourceGaps = (1 to 4).reverse.map { j =>
-        val yourLifeCycle = getLifeCycle(i)
+        val yourLifeCycle     = getLifeCycle(i)
         val previousLifeCycle = getLifeCycle(i - j)
         yourLifeCycle - previousLifeCycle
       }
@@ -193,19 +198,23 @@ case class SM4HardwareSpinal(comb: Boolean) extends Component {
 
       println(s"from ${sourceGaps.mkString(" ")}, to $delayLength")
 
-      val keySources = keyDelayLineAtEachRound.takeRight(4)
-        .zip(sourceGaps).map { case (delayLine, gap) =>
-        delayLine(gap)
-      }
+      val keySources = keyDelayLineAtEachRound
+        .takeRight(4)
+        .zip(sourceGaps)
+        .map { case (delayLine, gap) =>
+          delayLine(gap)
+        }
       val kNext = keyTrans(keySources, CKData(i))
       //      kNext.setName(s"keyAtRound${i + 1}")
 
       keyDelayLineAtEachRound += History(kNext, delayLength)
 
-      val dataSources = dataDelayLineAtEachRound.takeRight(4)
-        .zip(sourceGaps).map { case (delayLine, gap) =>
-        delayLine(gap)
-      }
+      val dataSources = dataDelayLineAtEachRound
+        .takeRight(4)
+        .zip(sourceGaps)
+        .map { case (delayLine, gap) =>
+          delayLine(gap)
+        }
       val dataNext = dataTrans(dataSources, keyDelayLineAtEachRound(i + 4)(1))
       //      dataNext.setName(s"dataAtRound${i + 1}")
 
@@ -222,7 +231,6 @@ object SM4HardwareSpinal {
     val comb = true
 
     SimConfig.withWave.compile(SM4HardwareSpinal(comb)).doSim { dut =>
-
       import dut.{clockDomain, plain, key, cipher}
 
       if (!comb) {
@@ -230,7 +238,7 @@ object SM4HardwareSpinal {
         clockDomain.waitSampling()
       }
       plain #= SM4.testCase
-      key #= SM4.testKey
+      key   #= SM4.testKey
       if (comb) sleep(1)
       else clockDomain.waitSampling(35)
       println(cipher.toBigInt.toString(16))
@@ -248,11 +256,11 @@ case class SM4HardwareDFG(config: SM4Config) extends Component with DSPTestable[
   implicit val currentConfig = config
   // data path
   override val dataIn: Flow[Vec[Bits]] = slave Flow Vec(Bits(128 bits), 2)
-  override val dataOut: Flow[Bits] = master Flow Bits(128 bits)
+  override val dataOut: Flow[Bits]     = master Flow Bits(128 bits)
 
   // "main" part
   // naming inputs
-  val Seq(data, key) = dataIn.payload
+  val Seq(data, key)      = dataIn.payload
   val Seq(x0, x1, x2, x3) = data.subdivideIn(32 bits).reverse
   Seq(x0, x1, x2, x3).zip(Seq("x0", "x1", "x2", "x3")).foreach { case (signal, name) => signal.setName(name) }
   val Seq(k0, k1, k2, k3) = key.subdivideIn(32 bits).reverse
@@ -263,12 +271,12 @@ case class SM4HardwareDFG(config: SM4Config) extends Component with DSPTestable[
 
   // set inputs
   val dataInputs: immutable.Seq[InputNode[Bits]] = (0 until 4).map(i => sm4CoreDFG.addInput(s"dataIn$i"))
-  val keyInputs: immutable.Seq[InputNode[Bits]] = (0 until 4).map(i => sm4CoreDFG.addInput(s"keyIn$i"))
+  val keyInputs: immutable.Seq[InputNode[Bits]]  = (0 until 4).map(i => sm4CoreDFG.addInput(s"keyIn$i"))
 
   // declare nodes(operators)
-  val xorNodes: Seq[DeviceNode[Bits]] = (0 until 4).map(i => xorHardware.asDSPNode(s"xor$i"))
+  val xorNodes: Seq[DeviceNode[Bits]]  = (0 until 4).map(i => xorHardware.asDSPNode(s"xor$i"))
   val dataNodes: Seq[DeviceNode[Bits]] = (0 until 32).map(i => dataTransformHardware.asDSPNode(s"dataTrans_$i"))
-  val keyNodes: Seq[DeviceNode[Bits]] = (0 until 32).map(i => keyTransformHardware.asDSPNode(s"keyTrans_$i"))
+  val keyNodes: Seq[DeviceNode[Bits]]  = (0 until 32).map(i => keyTransformHardware.asDSPNode(s"keyTrans_$i"))
   sm4CoreDFG.addVertices(dataNodes ++ keyNodes ++ xorNodes: _*) // add them into the DFG
 
   // set outputs
@@ -284,21 +292,21 @@ case class SM4HardwareDFG(config: SM4Config) extends Component with DSPTestable[
   (0 until 4).foreach { i => sm4CoreDFG.addEdge(keyInputs(i), xorNodes(i), 0) }
 
   // "main" part, data & key round operations
-  val allData: Seq[DSPNode[Bits]] = dataInputs ++ dataNodes
+  val allData: Seq[DSPNode[Bits]]    = dataInputs ++ dataNodes
   val allKeys: Seq[DeviceNode[Bits]] = xorNodes ++ keyNodes
 
   // cascading data transformations
   (0 until 32).foreach { i =>
     val sources = allData.slice(i, i + 4)
-    val key = allKeys(i + 4)
-    val target = allData(i + 4)
+    val key     = allKeys(i + 4)
+    val target  = allData(i + 4)
     (sources :+ key).foreach(node => sm4CoreDFG.addEdge(node, target, 0))
   }
 
   // cascading key transformations
   (0 until 32).foreach { i =>
     val sources = allKeys.slice(i, i + 4)
-    val target = allKeys(i + 4)
+    val target  = allKeys(i + 4)
     sources.zipWithIndex.foreach { case (node, i) => sm4CoreDFG.addEdge(node(0), target(i), 0) }
   }
 
@@ -310,8 +318,9 @@ case class SM4HardwareDFG(config: SM4Config) extends Component with DSPTestable[
 
   val nodeRetimingValues: Map[DSPNode[Bits], Int] = (dataNodes ++ keyNodes).map(node => node -> 1).toMap
 
-  val foldingSet: Seq[Seq[DSPNode[Bits]]] = if (parallelism < 0) dataNodes.grouped(-parallelism).toSeq ++ keyNodes.grouped(-parallelism).toSeq ++ xorNodes.grouped(-parallelism).toSeq
-  else null
+  val foldingSet: Seq[Seq[DSPNode[Bits]]] =
+    if (parallelism < 0) dataNodes.grouped(-parallelism).toSeq ++ keyNodes.grouped(-parallelism).toSeq ++ xorNodes.grouped(-parallelism).toSeq
+    else null
 
   // pipelining strategies
   val retimed: DFGGraph[Bits] =
@@ -328,4 +337,3 @@ case class SM4HardwareDFG(config: SM4Config) extends Component with DSPTestable[
   override val latency: Int = parallelized.latency
   dataOut.valid := Delay(dataIn.valid, latency, init = False)
 }
-

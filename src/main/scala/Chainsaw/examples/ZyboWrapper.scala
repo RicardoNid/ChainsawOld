@@ -12,15 +12,15 @@ import matlabIO._
 
 class ZyboWrapper extends Component {
 
-  val sw = in Bits(4 bits)
-  val btn = in Bits(3 bits)
-  val led = out Bits(4 bits)
+  val sw  = in Bits (4 bits)
+  val btn = in Bits (3 bits)
+  val led = out Bits (4 bits)
   led := B"0000"
   led.allowOverride
 
 }
 
-case class ZyboDesign0() extends ZyboWrapper{
+case class ZyboDesign0() extends ZyboWrapper {
 
   led := RegNext(sw)
   led.addAttribute("mark_debug")
@@ -34,7 +34,7 @@ object ZyboDesign0 {
   }
 }
 
-case class ZyboDesign1() extends ZyboWrapper{
+case class ZyboDesign1() extends ZyboWrapper {
 
   led := RegNext(sw)
 

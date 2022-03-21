@@ -20,24 +20,24 @@ import scala.collection.mutable.ArrayBuffer
 
 class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
 
-  val dataType = HardType(SFix(8 exp, -15 exp))
+  val dataType  = HardType(SFix(8 exp, -15 exp))
   val coeffType = HardType(SFix(1 exp, -14 exp))
 
   def testCooleyTukeyFFTHardware(testLength: Int, factors: Seq[Int], inverse: Boolean = false, epsilon: Double = 0.1, realSequence: Boolean = false) = {
     SimConfig.withWave.compile(CooleyTukeyFFTStream(N = testLength, factors = factors, inverse = inverse, dataType, coeffType)).doSim { dut =>
-
-      val testComplex: Array[BComplex] = if (!realSequence) (0 until testLength).map(_ => ChainsawRand.nextComplex(-1.0, 1.0)).toArray
-      else if (realSequence && !inverse) (0 until testLength).map(_ => (ChainsawRand.nextDouble() - 0.5) * 2).map(new BComplex(_, 0.0)).toArray
-      else {
-        val zero = new BComplex(0.0, 0.0)
-        val valid = (1 until testLength / 2).map(_ => ChainsawRand.nextComplex(-1.0, 1.0))
-        val conjed = valid.map(_.conjugate).reverse
-        (zero +: valid :+ zero) ++ conjed
-      }.toArray
+      val testComplex: Array[BComplex] =
+        if (!realSequence) (0 until testLength).map(_ => ChainsawRand.nextComplex(-1.0, 1.0)).toArray
+        else if (realSequence && !inverse) (0 until testLength).map(_ => (ChainsawRand.nextDouble() - 0.5) * 2).map(new BComplex(_, 0.0)).toArray
+        else {
+          val zero   = new BComplex(0.0, 0.0)
+          val valid  = (1 until testLength / 2).map(_ => ChainsawRand.nextComplex(-1.0, 1.0))
+          val conjed = valid.map(_.conjugate).reverse
+          (zero +: valid :+ zero) ++ conjed
+        }.toArray
 
       import dut.{clockDomain, dataIn, dataOut}
       clockDomain.forkStimulus(2)
-      dataIn.valid #= false
+      dataIn.valid  #= false
       dataOut.ready #= true
       clockDomain.waitSampling()
 
@@ -55,8 +55,8 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
 
       dataIn.payload.zip(testComplex).foreach { case (port, complex) =>
         dataIn.valid #= true
-        port.real #= complex.real
-        port.imag #= complex.imag
+        port.real    #= complex.real
+        port.imag    #= complex.imag
       }
       clockDomain.waitSampling()
       dataIn.valid #= false
@@ -72,55 +72,51 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
     }
   }
 
-  def testCooleyTukeyBackToBackHardware(testLength: Int, pF: Int,
-                                        factors1: Seq[Int], factors2: Seq[Int],
-                                        inverse: Boolean = false, epsilon: Double = 0.1) = {
-    SimConfig.withWave.compile(CooleyTukeyBackToBack(
-      N = testLength, pF = pF,
-      factors1 = factors1, factors2 = factors2, inverse = inverse,
-      dataType, coeffType)).doSim { dut =>
+  def testCooleyTukeyBackToBackHardware(testLength: Int, pF: Int, factors1: Seq[Int], factors2: Seq[Int], inverse: Boolean = false, epsilon: Double = 0.1) = {
+    SimConfig.withWave
+      .compile(CooleyTukeyBackToBack(N = testLength, pF = pF, factors1 = factors1, factors2 = factors2, inverse = inverse, dataType, coeffType))
+      .doSim { dut =>
+        val testBase    = (0 until testLength).map(i => new BComplex(ChainsawRand.nextDouble() - 0.5, ChainsawRand.nextDouble() - 0.5)).toArray
+        val testComplex = testBase
 
-      val testBase = (0 until testLength).map(i => new BComplex(ChainsawRand.nextDouble() - 0.5, ChainsawRand.nextDouble() - 0.5)).toArray
-      val testComplex = testBase
+        import dut.{clockDomain, dataIn, dataOut}
+        clockDomain.forkStimulus(2)
+        dataIn.valid  #= false
+        dataOut.ready #= true
+        clockDomain.waitSampling()
 
-      import dut.{clockDomain, dataIn, dataOut}
-      clockDomain.forkStimulus(2)
-      dataIn.valid #= false
-      dataOut.ready #= true
-      clockDomain.waitSampling()
+        val dutResult = ArrayBuffer[BComplex]()
+        val monitor = fork {
+          while (true) {
+            if (dataOut.valid.toBoolean) {
+              dutResult ++= dataOut.payload.map(complex => new BComplex(complex.real.toDouble, complex.imag.toDouble))
+            }
+            clockDomain.waitSampling()
+          }
+        }
 
-      val dutResult = ArrayBuffer[BComplex]()
-      val monitor = fork {
-        while (true) {
-          if (dataOut.valid.toBoolean) {
-            dutResult ++= dataOut.payload.map(complex => new BComplex(complex.real.toDouble, complex.imag.toDouble))
+        dataOut.ready #= true
+        testComplex.grouped(pF).toSeq.foreach { data =>
+          dataIn.valid #= true
+          dataIn.payload.zip(data).foreach { case (port, complex) =>
+            port.real #= complex.real
+            port.imag #= complex.imag
           }
           clockDomain.waitSampling()
         }
+        dataIn.valid #= false
+
+        clockDomain.waitSampling(200)
+
+        val golden = if (!inverse) Refs.FFT(testComplex) else Refs.IFFT(testComplex).map(_ * testLength)
+        //      val golden = if (!inverse) Refs.FFT(testComplex) else Refs.IFFT(testComplex)
+        println(testComplex.grouped(testLength / pF).toSeq.map(_.mkString(" ")).mkString("\n"))
+        println(testComplex.reduce(_ + _).real, testComplex.reduce(_ + _).imag)
+
+        println(dutResult.zip(golden).map { case (complex, complex1) => complex.toString + "####" + complex1.toString }.mkString("\n"))
+        dutResult should not be empty
+        assert(golden.zip(dutResult).forall { case (complex, complex1) => complex.sameAs(complex1, epsilon) })
       }
-
-      dataOut.ready #= true
-      testComplex.grouped(pF).toSeq.foreach { data =>
-        dataIn.valid #= true
-        dataIn.payload.zip(data).foreach { case (port, complex) =>
-          port.real #= complex.real
-          port.imag #= complex.imag
-        }
-        clockDomain.waitSampling()
-      }
-      dataIn.valid #= false
-
-      clockDomain.waitSampling(200)
-
-      val golden = if (!inverse) Refs.FFT(testComplex) else Refs.IFFT(testComplex).map(_ * testLength)
-      //      val golden = if (!inverse) Refs.FFT(testComplex) else Refs.IFFT(testComplex)
-      println(testComplex.grouped(testLength / pF).toSeq.map(_.mkString(" ")).mkString("\n"))
-      println(testComplex.reduce(_ + _).real, testComplex.reduce(_ + _).imag)
-
-      println(dutResult.zip(golden).map { case (complex, complex1) => complex.toString + "####" + complex1.toString }.mkString("\n"))
-      dutResult should not be empty
-      assert(golden.zip(dutResult).forall { case (complex, complex1) => complex.sameAs(complex1, epsilon) })
-    }
   }
 
   def testRadixR(factors: Seq[Int], inverse: Boolean, epsilon: Double, realSequence: Boolean = false) =

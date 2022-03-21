@@ -12,8 +12,10 @@ class interval2WidthTest extends AnyFunSuite {
       val maxValue = max - 25
       val minValue = min - 25
       if (maxValue >= minValue)
-        assert(interval2Width(RealInfo(0.0, pow(2.0, maxValue)), minValue exp).maxExp == maxValue + 1,
-          s"bad pair maxExp: $maxValue, minExp: $minValue, the maxExp is not expanded ")
+        assert(
+          interval2Width(RealInfo(0.0, pow(2.0, maxValue)), minValue exp).maxExp == maxValue + 1,
+          s"bad pair maxExp: $maxValue, minExp: $minValue, the maxExp is not expanded "
+        )
     }
   }
 

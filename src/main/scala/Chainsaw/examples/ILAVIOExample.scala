@@ -1,5 +1,3 @@
 package Chainsaw.examples
 
-class ILAVIOExample {
-
-}
+class ILAVIOExample {}

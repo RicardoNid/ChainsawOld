@@ -5,29 +5,30 @@ import spinal.core._
 
 import scala.math.{ceil, floor}
 
-/**
- * @param lMs sizes of the MontMul that are supported
- * @param w   word size of the MontMulPE
- * @param p   number of the MontMulPE
- */
-case class MontConfig(lMs: Seq[Int] = Seq(512, 1024, 2048, 3072, 4096),
-                      w: Int = 32,
-                      pe: Int = 17,
-                      parallel: Boolean = true) {
+/** @param lMs
+  *   sizes of the MontMul that are supported
+  * @param w
+  *   word size of the MontMulPE
+  * @param p
+  *   number of the MontMulPE
+  */
+case class MontConfig(lMs: Seq[Int] = Seq(512, 1024, 2048, 3072, 4096), w: Int = 32, pe: Int = 17, parallel: Boolean = true) {
 
-  val parallelFactor = if (parallel) lMs.max / lMs.min else 1
-  val p = if (parallel) floor((lMs.max + 2 + 1).toDouble / w).toInt else pe // when parallel, p = e - 1
+  val parallelFactor   = if (parallel) lMs.max / lMs.min else 1
+  val p                = if (parallel) floor((lMs.max + 2 + 1).toDouble / w).toInt else pe // when parallel, p = e - 1
   val groupPerInstance = lMs.map(_ / lMs.min)
-  val instanceNumber = lMs.map(lMs.max / _)
+  val instanceNumber   = lMs.map(lMs.max / _)
 
-  val wordPerGroup = lMs.min / w
+  val wordPerGroup    = lMs.min / w
   val wordPerInstance = lMs.map(_ / w)
 
-  val pPerGroup = p / parallelFactor // PEs number for the smallest lM
+  val pPerGroup    = p / parallelFactor // PEs number for the smallest lM
   val pPerInstance = lMs.map(lM => p / parallelFactor * (lM / lMs.min)) // actual PEs work for a single instance when in parallel architecture
 
-  val startersAtModes = lMs.indices.map(i => (0 until parallelFactor).filter(_ % groupPerInstance(i) == 0) // instance indices of current mode
-    .take(parallelFactor / groupPerInstance(i))
+  val startersAtModes = lMs.indices.map(i =>
+    (0 until parallelFactor)
+      .filter(_ % groupPerInstance(i) == 0) // instance indices of current mode
+      .take(parallelFactor / groupPerInstance(i))
   )
 
   val ns = lMs.map(_ + 2) // total numbers of iterations, r = 2^(n) > 4M
@@ -48,13 +49,16 @@ case class MontConfig(lMs: Seq[Int] = Seq(512, 1024, 2048, 3072, 4096),
   // data
   val IIs = es.zip(rounds).map { case (i, i1) => i * i1 } // initiation intervals
   // utilizations, tasks / (PE * round)
-  val utilizations = if (parallel) (0 until ns.size).map(i => ns(i).toDouble / (p * rounds(i)) * (lMs.max / lMs(i)))
-  else (0 until ns.size).map(i => ns(i).toDouble / (p * rounds(i)))
-  val queueUtilizations = if (parallel) lMs.map(lM => (lMs.max / lM) * (lM / lMs.min) / parallelFactor.toDouble)
-  else (0 until es.size).map(i => (es(i).toDouble - p) / (es.max - p))
+  val utilizations =
+    if (parallel) (0 until ns.size).map(i => ns(i).toDouble / (p * rounds(i)) * (lMs.max / lMs(i)))
+    else (0 until ns.size).map(i => ns(i).toDouble / (p * rounds(i)))
+  val queueUtilizations =
+    if (parallel) lMs.map(lM => (lMs.max / lM) * (lM / lMs.min) / parallelFactor.toDouble)
+    else (0 until es.size).map(i => (es(i).toDouble - p) / (es.max - p))
   // n + e - 1 for the whole interval, (round - 1) * (e - p) for waiting - (e - 1) for where the output word started, 1 for start -> run
-  val latencies = if (parallel) (0 until ns.size).map(i => (ns(i) + es(i) - 1) + (rounds(i) - 1) * (es(i) - pPerInstance(i)) - es(i) + 1 + 1)
-  else (0 until ns.size).map(i => (ns(i) + es(i) - 1) + (rounds(i) - 1) * (es(i) - p) - es(i) + 1 + 1)
+  val latencies =
+    if (parallel) (0 until ns.size).map(i => (ns(i) + es(i) - 1) + (rounds(i) - 1) * (es(i) - pPerInstance(i)) - es(i) + 1 + 1)
+    else (0 until ns.size).map(i => (ns(i) + es(i) - 1) + (rounds(i) - 1) * (es(i) - p) - es(i) + 1 + 1)
 
   printlnGreen(
     s"\n********systolic array properties report********" +
@@ -83,5 +87,6 @@ case class MontConfig(lMs: Seq[Int] = Seq(512, 1024, 2048, 3072, 4096),
       s"\n\t\tfor cycle j <- 0 to p-1, bits of X, X(j) should be provided to io.XiIn, then" +
       s"\n\t\tfor cycle j <- e to e + p - 1, continues from X(j - (e - p)), this continues until X is fully consumed" +
       s"\n\tthe output is indicated by valid" +
-      s"\n********systolic array properties report********")
+      s"\n********systolic array properties report********"
+  )
 }

@@ -15,8 +15,7 @@ import Chainsaw.tobeTransplanted.AOperations._
 import Chainsaw.tobeTransplanted.SCMArch._
 
 /** Single Constant Multiplication by multiplier/CSD
- *
- */
+  */
 class SCM(input: Real, constant: Int, scmArch: SCMArch) extends ImplicitArea[Real] with Testable {
 
   val result: Real = scmArch match {
@@ -24,7 +23,7 @@ class SCM(input: Real, constant: Int, scmArch: SCMArch) extends ImplicitArea[Rea
     case SCMArch.MAG =>
       printlnYellow(BinarySFG.fromSerialized(MAG.getOnePathLUT(constant)._2))
       val (mag, magInfos) = MAG(constant)
-      val graph = new HomogeneousBinarySFGBuilder(Seq(input), mag, AOpHardware, magInfos)
+      val graph           = new HomogeneousBinarySFGBuilder(Seq(input), mag, AOpHardware, magInfos)
       graph.implicitValue.head
 
     case SCMArch.CSD =>

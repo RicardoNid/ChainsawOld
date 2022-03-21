@@ -12,9 +12,9 @@ import scala.language.postfixOps
 class FFTNetSim(N: Int, numOfInput: Int) {
   require(isPow2(N) && isPow2(numOfInput) && numOfInput > 1 && N >= numOfInput)
 
-  val layer = log2Up(N)
-  val noOperationLayer = log2Up(numOfInput)
-  val operationLayer = layer - noOperationLayer
+  val layer                = log2Up(N)
+  val noOperationLayer     = log2Up(numOfInput)
+  val operationLayer       = layer - noOperationLayer
   val normalOperationLayer = (operationLayer + 1) >> 1
 
   val numOfTotal = N / 2
@@ -23,14 +23,14 @@ class FFTNetSim(N: Int, numOfInput: Int) {
 
   val simNet = new Array[Array[Int]](numOfInput) //每个元素是一个输入通道
   simNet.indices.foreach { i =>
-    simNet(i) = (i until(N, numOfInput)).toArray
+    simNet(i) = (i until (N, numOfInput)).toArray
   }
 
   def doSwitch(row: (Int, Int), p: Int): Unit = {
-    for (i <- 0 until(period, 2 * p)) {
+    for (i <- 0 until (period, 2 * p)) {
       for (j <- 0 until p) {
         val temp = simNet(row._2)(i + j)
-        simNet(row._2)(i + j) = simNet(row._1)(i + p + j)
+        simNet(row._2)(i + j)     = simNet(row._1)(i + p + j)
         simNet(row._1)(i + p + j) = temp
       }
     }
@@ -42,7 +42,7 @@ class FFTNetSim(N: Int, numOfInput: Int) {
     //第二个参数为参数列表
     //第四个参数为连接列表
     //输入的连接默认是做过变换的
-    val output = new Array[(Int, Array[Array[Int]], Int, Array[Int])](layer)
+    val output   = new Array[(Int, Array[Array[Int]], Int, Array[Int])](layer)
     val linkList = new Array[Int](numOfInput)
     for (i <- linkList.indices) {
       linkList(i) = reverse(i, noOperationLayer)
@@ -66,7 +66,7 @@ class FFTNetSim(N: Int, numOfInput: Int) {
             linkList(j) = reverse(j, noOperationLayer)
           }
         } else {
-          val jLimit = 1 << (i - operationLayer + 1)
+          val jLimit = 1          << (i - operationLayer + 1)
           val kLimit = numOfInput >> (i - operationLayer + 1)
           val bitNum = noOperationLayer - (i - operationLayer + 1)
           for (j <- 0 until jLimit) {

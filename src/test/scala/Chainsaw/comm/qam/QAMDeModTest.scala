@@ -23,7 +23,7 @@ class QAMDeModTest extends AnyFlatSpec {
     val testUpperbound = 1
 
     val testCase: Seq[BComplex] = powAlloc.map(ChainsawRand.nextComplex(-testUpperbound, testUpperbound) * _)
-    var dutResults = ArrayBuffer[BigInt]()
+    var dutResults              = ArrayBuffer[BigInt]()
 
     SimConfig.withWave.compile(QAMDeMod(bitAlloc, powAlloc, HardType(ComplexNumber(3, -14)))).doSim { dut =>
       import dut.{clockDomain, dataIn, dataOut}
@@ -31,7 +31,10 @@ class QAMDeModTest extends AnyFlatSpec {
       dutResults = flowPeekPoke(dut, Seq(testCase), dataIn, dataOut, 1)
     }
 
-    val golden: Array[Int] = testCase.zip(powAlloc.zip(bitAlloc)).map { case (complex, (pow, bit)) => Refs.qamdemod(complex / sqrt(pow) * Refs.getQAMRms(bit), bit, true) }.toArray
+    val golden: Array[Int] = testCase
+      .zip(powAlloc.zip(bitAlloc))
+      .map { case (complex, (pow, bit)) => Refs.qamdemod(complex / sqrt(pow) * Refs.getQAMRms(bit), bit, true) }
+      .toArray
 
     println(s"yours  ${dutResults.map(_.toString.padToLeft(3, ' ')).mkString(" ")}")
     println(s"golden ${golden.map(_.toString.padToLeft(3, ' ')).mkString(" ")}")

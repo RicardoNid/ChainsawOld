@@ -4,10 +4,11 @@ import spinal.core._
 import Chainsaw._
 import Chainsaw.matlabIO._
 
-/**
- * @param R real part of the complex number
- * @param I imaginary part of the complex number
- */
+/** @param R
+  *   real part of the complex number
+  * @param I
+  *   imaginary part of the complex number
+  */
 case class ComplexNumber(peak: Int, resolution: Int) extends Bundle {
 
   val real = SFix(peak exp, resolution exp)
@@ -21,7 +22,7 @@ case class ComplexNumber(peak: Int, resolution: Int) extends Bundle {
 
   def multiplyI = ComplexNumber(-imag, real)
 
-  def conj = ComplexNumber(real, - imag)
+  def conj = ComplexNumber(real, -imag)
 
   def *(that: SFix) = {
     val R = real * that
@@ -85,9 +86,9 @@ object ComplexNumber {
 
   def apply(R: SFix, I: SFix): ComplexNumber = {
     require(R.maxExp == I.maxExp && R.minExp == I.minExp)
-    val peak = R.maxExp
+    val peak       = R.maxExp
     val resolution = R.minExp
-    val ret = new ComplexNumber(peak, resolution)
+    val ret        = new ComplexNumber(peak, resolution)
     ret.real := R
     ret.imag := I
     ret
@@ -107,7 +108,7 @@ object ComplexNumber {
 
 object CN {
   def apply(complex: BComplex, dataType: HardType[SFix]): ComplexNumber = {
-    def toSF(value:Double) = SF(value, dataType().maxExp exp, dataType().minExp exp)
+    def toSF(value: Double) = SF(value, dataType().maxExp exp, dataType().minExp exp)
     ComplexNumber(toSF(complex.real), toSF(complex.imag))
   }
 }

@@ -7,28 +7,35 @@ import breeze.signal.{OptOverhang, OptPadding, OptRange, convolve}
 import scala.reflect.ClassTag
 
 /** definition of generic convolution, linear and cyclic convolution
- *
- */
+  */
 object Convolution {
 
   // TODO: find reference using concepts below(or, write one by myself)
 
   /** general template for all kinds of convolutions & correlations
-   *
-   * @param data      data sequence
-   * @param kernel    kernel/coeff sequence
-   * @param correlate convolution/correlation
-   * @param overhang  determine the padded length
-   * @param padding   determine the content to pad
-   * @param range     determine the range of output
-   */
+    *
+    * @param data
+    *   data sequence
+    * @param kernel
+    *   kernel/coeff sequence
+    * @param correlate
+    *   convolution/correlation
+    * @param overhang
+    *   determine the padded length
+    * @param padding
+    *   determine the content to pad
+    * @param range
+    *   determine the range of output
+    */
   @definition
-  def genericConvolve[T](data: DenseVector[T], kernel: DenseVector[T],
-                         correlate: Boolean = false,
-                         overhang: OptOverhang = OptOverhang.Full,
-                         padding: OptPadding = OptPadding.Zero,
-                         range: OptRange = OptRange.All)
-                        (implicit semiring: Semiring[T], tag: ClassTag[T]): DenseVector[T] = {
+  def genericConvolve[T](
+      data: DenseVector[T],
+      kernel: DenseVector[T],
+      correlate: Boolean    = false,
+      overhang: OptOverhang = OptOverhang.Full,
+      padding: OptPadding   = OptPadding.Zero,
+      range: OptRange       = OptRange.All
+  )(implicit semiring: Semiring[T], tag: ClassTag[T]): DenseVector[T] = {
 
     val N = data.length
     val L = kernel.length
@@ -58,7 +65,7 @@ object Convolution {
     }
 
     val paddedData = DenseVector.vertcat(padL, data, padR)
-    val fullRange = paddedData.length - L + 1
+    val fullRange  = paddedData.length - L + 1
 
     val parsedRange = range match {
       case OptRange.All => 0 until fullRange
@@ -69,12 +76,10 @@ object Convolution {
     else innerCorrelation(paddedData, reverse(kernel), parsedRange)
   }
 
-  def genericLinearConvolve[T](data: DenseVector[T], kernel: DenseVector[T])
-                              (implicit semiring: Semiring[T], tag: ClassTag[T]): DenseVector[T] =
+  def genericLinearConvolve[T](data: DenseVector[T], kernel: DenseVector[T])(implicit semiring: Semiring[T], tag: ClassTag[T]): DenseVector[T] =
     genericConvolve(data, kernel)
 
-  def genericCyclicConvolve[T](data: DenseVector[T], kernel: DenseVector[T])
-                              (implicit semiring: Semiring[T], tag: ClassTag[T]): DenseVector[T] = {
+  def genericCyclicConvolve[T](data: DenseVector[T], kernel: DenseVector[T])(implicit semiring: Semiring[T], tag: ClassTag[T]): DenseVector[T] = {
     require(data.length == kernel.length)
     genericConvolve(data, kernel, padding = OptPadding.Cyclical, range = 0 until data.length)
   }

@@ -15,7 +15,7 @@ package object symmetric {
   }
 
   /** get BigInts from HEX strings split by spaces
-   */
+    */
   def getBigSeqFromHex(string: String): Array[BigInt] = string.split(" +").map(string => BigInt(string, 16))
 
 }

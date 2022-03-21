@@ -10,13 +10,11 @@ class TestExamplesTest extends AnyFlatSpec with Matchers {
 
   "examples" should "show you how to use should matchers" in {
     Set[Int]() shouldBe 'empty
-    Set[Int]() shouldBe  'empty
+    Set[Int]() shouldBe 'empty
 
     7 shouldEqual 6 +- 2
 
   }
-
-
 
 }
 
@@ -37,13 +35,13 @@ class SetSpec extends AnyPropSpec with TableDrivenPropertyChecks with should.Mat
 
   property("an empty Set should have size 0") {
     forAll(examples) { set =>
-      set.size should be (0)
+      set.size should be(0)
     }
   }
 
   property("invoking head on an empty set should produce NoSuchElementException") {
     forAll(examples) { set =>
-      a [NoSuchElementException] should be thrownBy { set.head }
+      a[NoSuchElementException] should be thrownBy { set.head }
     }
   }
 }
@@ -52,7 +50,7 @@ import org.scalatest._
 
 class TVSet {
   private var on: Boolean = false
-  def isOn: Boolean = on
+  def isOn: Boolean       = on
   def pressPowerButton() {
     on = !on
   }

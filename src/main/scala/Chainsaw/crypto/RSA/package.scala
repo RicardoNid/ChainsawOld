@@ -4,7 +4,4 @@ import Chainsaw._
 
 import scala.math.BigInt
 
-package object RSA {
-
-
-}
+package object RSA {}

@@ -1,5 +1,3 @@
 package Chainsaw.ai.gemm
 
-class Hardware {
-
-}
+class Hardware {}

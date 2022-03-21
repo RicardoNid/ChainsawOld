@@ -11,21 +11,21 @@ import Chainsaw.dspTest._
 
 case class S2P2S() extends Component {
 
-  val dataIn = slave(Flow Fragment UInt(4 bits))
-  val inner = Flow Fragment Vec(UInt(4 bits), 4)
+  val dataIn  = slave(Flow Fragment UInt(4 bits))
+  val inner   = Flow Fragment Vec(UInt(4 bits), 4)
   val dataOut = master(Flow Fragment UInt(4 bits))
 
   def holdData[T <: Data](start: Bool, data: T, cycles: Int) = {
-    val hold = History(start, cycles, init = False).orR
+    val hold     = History(start, cycles, init = False).orR
     val heldData = RegNextWhen(data, start)
-    val ret = Mux(start, data, heldData)
+    val ret      = Mux(start, data, heldData)
     (hold, ret)
   }
 
   val (hold, heldData) = holdData(inner.valid, inner.payload, 4)
-  val innerNext = Flow Fragment Vec(UInt(4 bits), 4)
+  val innerNext        = Flow Fragment Vec(UInt(4 bits), 4)
   innerNext.payload := heldData
-  innerNext.valid := hold
+  innerNext.valid   := hold
 
   import BetterFlow._
 

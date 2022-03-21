@@ -31,14 +31,19 @@ import Chainsaw.DSP.CordicArch._
 import Chainsaw.DSP.CordicPipe._
 import Chainsaw.DSP.RotationMode._
 
-case class CordicConfig(algebricMode: AlgebraicMode, rotationMode: RotationMode,
-                        cordicArch: CordicArch = PARALLEL, cordicPipe: CordicPipe = MAXIMUM,
-                        outputWidth: Int = 16, iteration: Int = 11, precision: Int = 15,
-                        coarseRotation: Boolean = false, scaleCompensate: Boolean = true)
+case class CordicConfig(
+    algebricMode: AlgebraicMode,
+    rotationMode: RotationMode,
+    cordicArch: CordicArch   = PARALLEL,
+    cordicPipe: CordicPipe   = MAXIMUM,
+    outputWidth: Int         = 16,
+    iteration: Int           = 11,
+    precision: Int           = 15,
+    coarseRotation: Boolean  = false,
+    scaleCompensate: Boolean = true
+)
 
-
-class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfig)
-  extends ImplicitArea[(SFix, SFix, SFix)] with Testable {
+class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfig) extends ImplicitArea[(SFix, SFix, SFix)] with Testable {
 
   import cordicConfig._
 
@@ -51,7 +56,7 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
   def phaseTypeGen(i: Int, value: Double) = SF(value, 2 exp, -(13 + i) exp)
 
   val start = Bool()
-  val busy = Bool()
+  val busy  = Bool()
 
   val outputX = SFix(2 exp, -(outputWidth - 2 - 1) exp)
   val outputY = SFix(2 exp, -(outputWidth - 2 - 1) exp)
@@ -68,8 +73,8 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
         if (algebricMode == AlgebraicMode.HYPERBOLIC) getHyperbolicSequence(iteration)
         else (0 until iteration)
 
-      val shiftedXs = signalXs.dropRight(1).zip(shiftingCoeffs).map { case (x, i) => x >> i }
-      val shiftedYs = signalYs.dropRight(1).zip(shiftingCoeffs).map { case (y, i) => y >> i }
+      val shiftedXs   = signalXs.dropRight(1).zip(shiftingCoeffs).map { case (x, i) => x >> i }
+      val shiftedYs   = signalYs.dropRight(1).zip(shiftingCoeffs).map { case (y, i) => y >> i }
       val phaseCoeffs = (0 until iteration).map(i => phaseTypeGen(i, getPhaseCoeff(i)(algebricMode)))
 
       val pipesAll = false :: (0 until iteration).map { i =>
@@ -86,7 +91,9 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
         case RotationMode.VECTORING => signalYs.dropRight(1).map(_.asBits.msb) // Y < 0
       }
 
-      signalXs.dropRight(1).zip(signalXs.drop(1))
+      signalXs
+        .dropRight(1)
+        .zip(signalXs.drop(1))
         .zip(counterClockwises.zip(pipes))
         .zip(shiftedYs)
         .foreach { case (((prev, next), (counterClockwise, pipe)), shifted) => // note the format of tuple
@@ -98,7 +105,9 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
           next := (if (pipe) RegNext(combX) else combX).truncated
         }
 
-      signalYs.dropRight(1).zip(signalYs.drop(1)) // get the prev and next
+      signalYs
+        .dropRight(1)
+        .zip(signalYs.drop(1)) // get the prev and next
         .zip(counterClockwises.zip(pipes)) // get the control signal/conditions
         .zip(shiftedXs) // get the increment
         .foreach { case (((prev, next), (counterClockwise, pipe)), shifted) => // note the format of tuple
@@ -106,7 +115,9 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
           next := (if (pipe) RegNext(combY) else combY).truncated
         }
 
-      signalZs.dropRight(1).zip(signalZs.drop(1)) // get the prev and next
+      signalZs
+        .dropRight(1)
+        .zip(signalZs.drop(1)) // get the prev and next
         .zip(counterClockwises.zip(pipes)) // get the control signal/conditions
         .zip(phaseCoeffs) // get the increment
         .foreach { case (((prev, next), (counterClockwise, pipe)), coeff) => // note the format of tuple
@@ -125,7 +136,7 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
     case CordicArch.SERIAL => {
       val fsm = new StateMachine {
 
-        val IDLE = new StateDelay(iteration) with EntryPoint
+        val IDLE    = new StateDelay(iteration) with EntryPoint
         val WORKING = new StateDelay(iteration)
 
         val counter = Counter(iteration, isActive(WORKING))
@@ -140,14 +151,14 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
         val signalY = Reg(magnitudeType(iteration))
         val signalZ = Reg(phaseType(iteration))
 
-        val shiftedX = magnitudeType(iteration)
-        val shiftedY = magnitudeType(iteration)
+        val shiftedX   = magnitudeType(iteration)
+        val shiftedY   = magnitudeType(iteration)
         val phaseCoeff = phaseType(iteration)
 
         val shiftingCoeffs =
           if (algebricMode == AlgebraicMode.HYPERBOLIC) getHyperbolicSequence(iteration)
           else (0 until iteration)
-        val shiftingROM = Mem(shiftingCoeffs.map(coeff => U(coeff, log2Up(iteration + 1) bits)))
+        val shiftingROM   = Mem(shiftingCoeffs.map(coeff => U(coeff, log2Up(iteration + 1) bits)))
         val shiftingCoeff = shiftingROM.readAsync(counter)
 
         // TODO: implement dynamic shifting for fixed type, or this would be very error-prone
@@ -198,9 +209,9 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
 
   // compensation
   val scaleComplement = magnitudeTypeGen(iteration, getScaleComplement(iteration)(algebricMode))
-  val compensatedX = if (scaleCompensate) RegNext(outputX * scaleComplement).truncated else outputX
-  val compensatedY = if (scaleCompensate) RegNext(outputY * scaleComplement).truncated else outputY
-  val compensatedZ = if (scaleCompensate) RegNext(outputZ) else outputZ
+  val compensatedX    = if (scaleCompensate) RegNext(outputX * scaleComplement).truncated else outputX
+  val compensatedY    = if (scaleCompensate) RegNext(outputY * scaleComplement).truncated else outputY
+  val compensatedZ    = if (scaleCompensate) RegNext(outputZ) else outputZ
 
   // TODO: output registration strategy
 
@@ -213,11 +224,12 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
   }
 
   /** Get the phase coefficient stored in LUT for Z iteration
-   *
-   * @param iteration current iteration
-   * @param algebricMode
-   * @return
-   */
+    *
+    * @param iteration
+    *   current iteration
+    * @param algebricMode
+    * @return
+    */
   def getPhaseCoeff(iteration: Int)(implicit algebricMode: AlgebraicMode) = {
     algebricMode match {
       case AlgebraicMode.CIRCULAR => atan(pow(2.0, -iteration))
@@ -230,16 +242,18 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
     require(iteration >= 1)
     algebricMode match {
       case AlgebraicMode.CIRCULAR => (0 until iteration).map(i => cos(getPhaseCoeff(i))).product
-      case AlgebraicMode.HYPERBOLIC => 1.0 / (1 until iteration)
-        .map(i => getHyperbolicSequence(i).last)
-        .map(i => sqrt(1 - pow(2.0, -2 * i))).product
+      case AlgebraicMode.HYPERBOLIC =>
+        1.0 / (1 until iteration)
+          .map(i => getHyperbolicSequence(i).last)
+          .map(i => sqrt(1 - pow(2.0, -2 * i)))
+          .product
       case AlgebraicMode.LINEAR => 1.0
     }
   }
 
   override val getTimingInfo: TimingInfo = {
-    val extraDelay = if (scaleCompensate) 1 else 0
-    val inputInterval = 1
+    val extraDelay     = if (scaleCompensate) 1 else 0
+    val inputInterval  = 1
     val outputInterval = 1
     val latency = cordicArch match {
       case PARALLEL => {

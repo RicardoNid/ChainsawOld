@@ -22,23 +22,23 @@ package object matlabIO {
 
   val eng: MatlabEngine = AsyncEng.get()
 
-  type MComplex = types.Complex
-  type MStruct = types.Struct
+  type MComplex      = types.Complex
+  type MStruct       = types.Struct
   type MHandleObject = types.HandleObject
-  type MCellStr = types.CellStr
+  type MCellStr      = types.CellStr
 
   def writeFile(fileName: String, content: String) = {
     val filepath = Paths.get(matlabWorkingSpace.toString, fileName)
-    val writer = new java.io.FileWriter(filepath.toFile)
+    val writer   = new java.io.FileWriter(filepath.toFile)
     writer.write(content)
     writer.flush()
     writer.close()
   }
 
   def writeFileIncrementally(fileName: String, content: String) = {
-    val filepath = Paths.get(matlabWorkingSpace.toString, fileName)
+    val filepath   = Paths.get(matlabWorkingSpace.toString, fileName)
     val oldContent = Source.fromFile(filepath.toString).getLines().mkString("\n")
-    val writer = new java.io.FileWriter(filepath.toFile)
+    val writer     = new java.io.FileWriter(filepath.toFile)
     writer.write(oldContent + content)
     writer.flush()
     writer.close()
@@ -81,13 +81,18 @@ package object matlabIO {
 
   implicit class StructUtil(struct: MStruct) {
     def formatted = {
-      struct.keySet().toArray.zip(struct.values().toArray).map { case (key, value) =>
-        val valueString = value match {
-          case array: Array[_] => array.info
-          case value => value.toString
+      struct
+        .keySet()
+        .toArray
+        .zip(struct.values().toArray)
+        .map { case (key, value) =>
+          val valueString = value match {
+            case array: Array[_] => array.info
+            case value => value.toString
+          }
+          s"$key: $valueString"
         }
-        s"$key: $valueString"
-      }.mkString("\n")
+        .mkString("\n")
     }
   }
 
@@ -117,12 +122,14 @@ package object matlabIO {
     }
 
     def getSFixType(variableName: String) = {
-      eng.eval(s"temp0 = ${variableName}.numerictype.Signedness;\n" +
-        s"temp1 = ${variableName}.numerictype.WordLength;\n" +
-        s"temp2 = ${variableName}.numerictype.FractionLength;\n")
+      eng.eval(
+        s"temp0 = ${variableName}.numerictype.Signedness;\n" +
+          s"temp1 = ${variableName}.numerictype.WordLength;\n" +
+          s"temp2 = ${variableName}.numerictype.FractionLength;\n"
+      )
       val signedString = eng.getVariable("temp0").asInstanceOf[String]
       if (signedString != "Signed") throw new IllegalArgumentException(s"$variableName is not signed")
-      val wordLength = eng.getVariable("temp1").asInstanceOf[Double].toInt
+      val wordLength     = eng.getVariable("temp1").asInstanceOf[Double].toInt
       val fractionLength = eng.getVariable("temp2").asInstanceOf[Double].toInt
       HardType(SFix((wordLength - 1 - fractionLength) exp, -fractionLength exp))
     }

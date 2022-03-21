@@ -4,12 +4,10 @@ import spinal.core._
 import spinal.lib.slave
 
 case class BlockRamConfig(
+)
 
-                         )
-
-/** General BRAM model for FPGAs
- * BRAMs are natively synchronous both at read and write port
- */
+/** General BRAM model for FPGAs BRAMs are natively synchronous both at read and write port
+  */
 case class BlockRam(dataWidth: Int, addressWidth: Int) extends Component {
 
   val ioA = slave(XILINX_BRAM_PORT(dataWidth, addressWidth))

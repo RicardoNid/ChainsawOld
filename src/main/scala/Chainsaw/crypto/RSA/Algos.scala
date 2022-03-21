@@ -39,9 +39,10 @@ class Algos(lN: Int) {
   }
 
   /** Get omega = -N^-1^ (mod 2^lN^) by Hensel's lemma
-   *
-   * @param N the modulus of RSA
-   */
+    *
+    * @param N
+    *   the modulus of RSA
+    */
   def getOmega(N: BigInt, print: Boolean = false) = {
     val init = BigInt(1) // N^{-1} \pmod 2^1
     // lifting by Hensel's lemma
@@ -72,8 +73,7 @@ class Algos(lN: Int) {
   }
 
   /** Get rho^2^ (mod N) by iterative algorithm
-   *
-   */
+    */
   def getRhoSquare(N: BigInt, print: Boolean = false) = {
     var count = 0
 
@@ -97,8 +97,12 @@ class Algos(lN: Int) {
   }
 
   def printPadded(name: String, value: BigInt, lN: Int = 512, reverse: Boolean = false) = {
-    val hex = value.toString(2).padToLeft(lN, '0')
-      .grouped(4).toArray.map(BigInt(_, 2).toString(16))
+    val hex = value
+      .toString(2)
+      .padToLeft(lN, '0')
+      .grouped(4)
+      .toArray
+      .map(BigInt(_, 2).toString(16))
       .mkString("")
     println(s"$name = ${if (reverse) hex.reverse else hex}")
   }
@@ -107,7 +111,7 @@ class Algos(lN: Int) {
     require(t >= 0 && t <= N * Rho - 1)
     // TODO: is t necessarily to be 2 * lN long?
     //    printPadded("t", t, 2 * lN)
-    val U = bigMultMod(t, getOmega(N), Rho)
+    val U   = bigMultMod(t, getOmega(N), Rho)
     val mid = (t + bigMult(U, N)) >> lN // divided by Rho
     val det = mid - N
     if (print) {
@@ -148,19 +152,18 @@ class Algos(lN: Int) {
     val aMont = montMul(a, getRhoSquare(N), N, print)
     //    printPadded("aMont", aMont)
     val sequence = exponent.toString(2)
-    var reg = aMont
+    var reg      = aMont
     sequence.tail.foreach { char =>
       val square = montSquare(reg, N, print = print)
       if (char == '1') {
         reg = montMul(square, aMont, N, print = print)
-      }
-      else reg = square
+      } else reg = square
     }
     montRed(reg, N, print = print)
   }
 
   def R2MM(X: BigInt, Y: BigInt, N: BigInt) = {
-    var S = BigInt(0)
+    var S  = BigInt(0)
     val lN = N.bitLength
     val y0 = Y.toString(2).last.asDigit
     for (i <- 0 until lN) {
@@ -177,9 +180,9 @@ object Algos {
   def apply(lN: Int): Algos = new Algos(lN)
   def main(args: Array[String]): Unit = {
     val algo = new Algos(4)
-    val a = 7
-    val b = 8
-    println(algo.R2MM(a,b,13))
+    val a    = 7
+    val b    = 8
+    println(algo.R2MM(a, b, 13))
     val RhoReverse = Zp64(13).reciprocal(16)
     println(s"golden = ${a * b * RhoReverse % 13}")
   }

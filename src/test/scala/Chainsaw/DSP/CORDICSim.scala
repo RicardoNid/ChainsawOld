@@ -25,9 +25,7 @@ class CORDICSim(cordicConfig: CordicConfig) extends CORDICDUT(cordicConfig) with
   }
 
   override def peek(output: CordicData): CordicSimData = {
-    val ret = CordicSimData(output.x.toDouble,
-      output.y.toDouble,
-      output.z.toDouble)
+    val ret = CordicSimData(output.x.toDouble, output.y.toDouble, output.z.toDouble)
     clockDomain.waitSampling()
     ret
   }
@@ -64,7 +62,7 @@ class CORDICSim(cordicConfig: CordicConfig) extends CORDICDUT(cordicConfig) with
 class testCORDIC extends AnyFunSuite {
   private def randomCase(cordicConfig: CordicConfig) = {
     val theta = (ChainsawRand.nextDouble() * 0.5 - 0.25) * Pi
-    val unit = ChainsawRand.nextDouble() * 2 - 1
+    val unit  = ChainsawRand.nextDouble() * 2 - 1
     cordicConfig.algebricMode match {
       case CIRCULAR =>
         cordicConfig.rotationMode match {

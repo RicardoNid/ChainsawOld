@@ -12,12 +12,12 @@ import matlabIO._
 
 case class AddressingExamples() extends Component {
 
-  val counter = CounterFreeRun(10)
+  val counter     = CounterFreeRun(10)
   val counterAddr = CounterFreeRun(16)
 
   val rams = Seq.fill(10)(Mem(UInt(4 bits), 16))
 
   val ramOutputs = Vec(rams.map(_.readSync(counterAddr.value)))
-  val ret = ramOutputs(counter.value)
+  val ret        = ramOutputs(counter.value)
 
 }

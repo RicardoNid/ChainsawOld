@@ -10,9 +10,9 @@ import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
 case class OrderExample() extends Component {
-  val dataIn = in Vec(UInt(4 bits), 4)
-  val dataOut0 = out Bits(16 bits)
-  val dataOut1 = out Vec(UInt(4 bits), 4)
+  val dataIn   = in Vec (UInt(4 bits), 4)
+  val dataOut0 = out Bits (16 bits)
+  val dataOut1 = out Vec (UInt(4 bits), 4)
 
   dataOut0 := dataIn.asBits
   dataOut1 := Vec(dataIn.asBits.subdivideIn(4 slices).map(_.asUInt))

@@ -14,20 +14,20 @@ import scala.util.Random._
 object NTTSim {
   def main(arg: Array[String]): Unit = {
     val N: BigInt = 3329
-    val numOfNTT = 256
+    val numOfNTT  = 256
     var w: BigInt = 1
     for (_ <- 0 until 13 * 256 / numOfNTT) {
       w = (w * 3) % N
     }
-    val ring = asRing(rings.Rings.Zp64(N.toLong))
-    val ntt = crypto.NTT(ring, numOfNTT)
-    val queue = new Queue[Long]
-    val input = new Array[Long](numOfNTT)
-    val output = new Array[Long](numOfNTT)
-    val realOutput = new Array[Long](numOfNTT)
-    val n = 10
+    val ring           = asRing(rings.Rings.Zp64(N.toLong))
+    val ntt            = crypto.NTT(ring, numOfNTT)
+    val queue          = new Queue[Long]
+    val input          = new Array[Long](numOfNTT)
+    val output         = new Array[Long](numOfNTT)
+    val realOutput     = new Array[Long](numOfNTT)
+    val n              = 10
     val parallelDegree = 6
-    val foldNum = 4
+    val foldNum        = 4
     SimConfig.withWave.compile(new NTT(N, w, numOfNTT, parallelDegree, foldNum)).doSimUntilVoid { dut =>
       dut.clockDomain.forkStimulus(10)
 

@@ -12,7 +12,7 @@ object Algos {
 
     def fold(value: Double, times: Int) = {
       val thresholds = getThresholds(times)
-      val folded = ArrayBuffer[Double]()
+      val folded     = ArrayBuffer[Double]()
       (0 until times).foreach { i =>
         if (i == 0) folded += (value - thresholds(i))
         else folded += (folded.last.abs - thresholds(i))
@@ -25,8 +25,8 @@ object Algos {
     val realAbs = input.real.abs
     val imagAbs = input.imag.abs
 
-    val realLt = (value: Int) => (realAbs - value) < 0
-    val imagLt = (value: Int) => (imagAbs - value) < 0
+    val realLt     = (value: Int) => (realAbs - value) < 0
+    val imagLt     = (value: Int) => (imagAbs - value) < 0
     val realLtImag = realAbs < imagAbs
 
     val bits = bitsAllocated match {
@@ -60,4 +60,3 @@ object Algos {
 
   }
 }
-

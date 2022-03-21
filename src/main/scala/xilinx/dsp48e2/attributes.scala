@@ -14,37 +14,48 @@ class DSPAttrs() {
   var B_INPUT = "DIRECT"
 
   // pre-adder and mult
-  var USE_MULT = "NONE" // "NONE", "MULTIPLY", "DYNAMIC"
-  var AMULTSEL = "A"
-  var BMULTSEL = "B"
+  var USE_MULT    = "NONE" // "NONE", "MULTIPLY", "DYNAMIC"
+  var AMULTSEL    = "A"
+  var BMULTSEL    = "B"
   var PREADDINSEL = "A"
-  var multMode = AB1
+  var multMode    = AB1
 
   // pipeline strategy
   // stage1 & 2
   var AREG, BREG, ACASCREG, BCASCREG = 1 // when set as 1, skip stage
   // stage1 for pipeline matching
-  var DREG = 1
+  var DREG      = 1
   var INMODEREG = 1
   // stage2 feed the pre-adder
   var ADREG = 1
   // stage3 feed the ALU
-  var MREG, CREG = 1
+  var MREG, CREG                = 1
   var CARRYINREG, CARRYINSELREG = 1
-  var OPMODEREG, ALUMODEREG = 1
+  var OPMODEREG, ALUMODEREG     = 1
   // stage4
   var PREG = 1
 
-  def generics = Seq("A_INPUT" -> A_INPUT, "B_INPUT" -> B_INPUT,
-    "AREG" -> AREG, "BREG" -> BREG, "ACASCREG" -> ACASCREG, "BCASCREG" -> BCASCREG,
-    "DREG" -> DREG, "ADREG" -> ADREG,
-    "INMODEREG" -> INMODEREG, "ALUMODEREG" -> ALUMODEREG, "OPMODEREG" -> OPMODEREG,
-    "CARRYINREG" -> CARRYINREG, "CARRYINSELREG" -> CARRYINSELREG,
+  def generics = Seq(
+    "A_INPUT" -> A_INPUT,
+    "B_INPUT" -> B_INPUT,
+    "AREG" -> AREG,
+    "BREG" -> BREG,
+    "ACASCREG" -> ACASCREG,
+    "BCASCREG" -> BCASCREG,
+    "DREG" -> DREG,
+    "ADREG" -> ADREG,
+    "INMODEREG" -> INMODEREG,
+    "ALUMODEREG" -> ALUMODEREG,
+    "OPMODEREG" -> OPMODEREG,
+    "CARRYINREG" -> CARRYINREG,
+    "CARRYINSELREG" -> CARRYINSELREG,
     "PREG" -> PREG,
-    "AMULTSEL" -> AMULTSEL, "BMULTSEL" -> BMULTSEL, "PREADDINSEL" -> PREADDINSEL, "USE_MULT" -> USE_MULT
+    "AMULTSEL" -> AMULTSEL,
+    "BMULTSEL" -> BMULTSEL,
+    "PREADDINSEL" -> PREADDINSEL,
+    "USE_MULT" -> USE_MULT
   )
 }
-
 
 // builder of DSPAttrs
 class DSPAttrBuilder {
@@ -73,20 +84,20 @@ class DSPAttrBuilder {
   def setALU() = {}
 
   // FIXME: following strategy is only available for MAC
-  def setLatency(latency:Int) = {
+  def setLatency(latency: Int) = {
     def setStage(stage: Int, set: Boolean) = {
       val value = if (set) 1 else 0
       stage match {
         case 1 =>
-          DREG = value
+          DREG      = value
           INMODEREG = value
         case 2 =>
           ADREG = value
         case 3 =>
-          MREG = value
-          CREG = value
+          MREG       = value
+          CREG       = value
           CARRYINREG = value
-          OPMODEREG = value
+          OPMODEREG  = value
           ALUMODEREG = value
         case 4 =>
           PREG = value

@@ -19,10 +19,10 @@ object Qam {
 
     def genSymbol(order: Int, bits: Int) = {
       require(order < (1 << bits))
-      val lowBits = bits / 2 // when bits is odd, lowBits is smaller than highBits
-      val highBits = bits - lowBits
+      val lowBits   = bits / 2 // when bits is odd, lowBits is smaller than highBits
+      val highBits  = bits - lowBits
       val highOrder = Gray.fromGray(order >> lowBits, highBits)
-      val lowOrder = Gray.fromGray(order % (1 << lowBits), lowBits)
+      val lowOrder  = Gray.fromGray(order % (1 << lowBits), lowBits)
       val realValue = (highOrder - (1 << (highBits - 1))) * 2.0 + 1
       val imagValue = -((lowOrder - (1 << (lowBits - 1))) * 2.0 + 1)
       Seq(realValue, imagValue)
@@ -48,10 +48,10 @@ object Qam {
   // more specifically, it adopted gray code on two axis independently, for example
 
   /** use gray code order by default as there's no extra effort implementing it
-   */
+    */
   def qammod(data: DenseVector[Int], modulationOrder: Int): DenseVector[BComplex] = {
     val averagePower = getAveragePower(modulationOrder)
-    val lut = getSymbols(modulationOrder)
+    val lut          = getSymbols(modulationOrder)
     data.map(lut(_) / averagePower)
   }
 
@@ -60,16 +60,16 @@ object Qam {
     require(modulationOrder <= 256, "demodulation order higher than 256 has not been supported yet")
     require(modulationOrder != 32 && modulationOrder != 128, "demodulation order 32 & 128 has not been supported yet")
 
-    val bits = log2Up(modulationOrder)
-    val lowBits = bits / 2 // when bits is odd, lowBits is smaller than highBits
+    val bits     = log2Up(modulationOrder)
+    val lowBits  = bits / 2 // when bits is odd, lowBits is smaller than highBits
     val highBits = bits - lowBits
 
     def getThresholds(bits: Int) = (0 +: (bits - 1 to 1 by -1).map(1 << _)).map(_ / getAveragePower(modulationOrder))
 
     def folding(value: Double, bits: Int): Seq[Boolean] = {
-      val thresholds = getThresholds(bits)
+      val thresholds  = getThresholds(bits)
       val valueBuffer = ArrayBuffer[Double](value)
-      val bitBuffer = ArrayBuffer[Boolean]()
+      val bitBuffer   = ArrayBuffer[Boolean]()
       thresholds.foreach { threshold =>
         val diff = valueBuffer.last - threshold
         bitBuffer += diff < 0
@@ -81,7 +81,7 @@ object Qam {
     def bools2Int(bools: Seq[Boolean]) = bools.reverse.zipWithIndex.map { case (bool, i) => if (bool) 1 << i else 0 }.sum
 
     data.map { complex =>
-      val bools = folding(complex.real, highBits) ++ folding(complex.imag, lowBits)
+      val bools     = folding(complex.real, highBits) ++ folding(complex.imag, lowBits)
       val trueBools = !bools.head +: bools.tail
       bools2Int(trueBools)
     }
@@ -90,9 +90,12 @@ object Qam {
   def main(args: Array[String]): Unit = {
 
     def printRaw(modulationOrder: Int) = {
-      val raw = MatlabRefs.qammod(DenseVector.tabulate(modulationOrder)(i => i), modulationOrder).toArray
+      val raw = MatlabRefs
+        .qammod(DenseVector.tabulate(modulationOrder)(i => i), modulationOrder)
+        .toArray
         .grouped(16)
-        .map(_.map(complex => s"${complex.real}, ${complex.imag}").mkString(", ")).mkString(",\n")
+        .map(_.map(complex => s"${complex.real}, ${complex.imag}").mkString(", "))
+        .mkString(",\n")
       println(s"case $modulationOrder => Seq($raw)")
     }
 

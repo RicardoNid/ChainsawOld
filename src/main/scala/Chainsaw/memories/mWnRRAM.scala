@@ -13,17 +13,17 @@ object mWnRMode extends Enumeration {
 import Chainsaw.memories.RamPortType._
 import Chainsaw.memories.mWnRMode._
 
-/**
- * @see ''Efficient Multi-Ported Memories for FPGAs'' [[https://dl.acm.org/doi/10.1145/1723112.1723122]]
- * @param m
- * @param n
- * @param mode
- */
+/** @see
+  *   ''Efficient Multi-Ported Memories for FPGAs'' [[https://dl.acm.org/doi/10.1145/1723112.1723122]]
+  * @param m
+  * @param n
+  * @param mode
+  */
 case class mWnRRAM(m: Int, n: Int, mode: mWnRMode) extends Component {
 
   val stageNum = m + n
   val io = new Bundle {
-    val reads = Seq.fill(n)(slave(XILINX_BRAM_PORT(18, 10, READ)))
+    val reads  = Seq.fill(n)(slave(XILINX_BRAM_PORT(18, 10, READ)))
     val writes = Seq.fill(m)(slave(XILINX_BRAM_PORT(18, 10, WRITE)))
   }
 
@@ -46,8 +46,8 @@ case class mWnRRAM(m: Int, n: Int, mode: mWnRMode) extends Component {
       rams.zip(io.reads).foreach { case (ram, port) =>
         val ramPort = ram.ioA
         ramPort.addr := port.addr
-        ramPort.en := True
-        ramPort.we := False
+        ramPort.en   := True
+        ramPort.we   := False
         port.dataOut := ramPort.dataOut
       } // read
     }
@@ -55,15 +55,15 @@ case class mWnRRAM(m: Int, n: Int, mode: mWnRMode) extends Component {
       io.reads.foreach(_.dataOut.clearAll())
       io.reads.foreach(_.dataOut.allowOverride)
       val multiplexCounter = CounterFreeRun(stageNum)
-      val ram = XILINX_BRAM18E2()
+      val ram              = XILINX_BRAM18E2()
 
       ram.ioA.preAssign()
       ram.ioB.preAssign()
 
       val writeAddr = io.writes.map(port => RegNext(port.addr))
       val writeData = io.writes.head.dataIn +: io.writes.tail.map(port => RegNext(port.dataIn))
-      val readAddr = io.reads.head.addr +: io.reads.tail.map(port => RegNext(port.addr))
-      val readData = io.reads.init.map(port => Reg(port.dataOut)) :+ io.reads.last.dataOut
+      val readAddr  = io.reads.head.addr +: io.reads.tail.map(port => RegNext(port.addr))
+      val readData  = io.reads.init.map(port => Reg(port.dataOut)) :+ io.reads.last.dataOut
 
       Seq(writeAddr, writeData, readAddr, readData).foreach(_.foreach(_.addTag(crossClockDomain)))
 
@@ -73,9 +73,9 @@ case class mWnRRAM(m: Int, n: Int, mode: mWnRMode) extends Component {
 
         (0 until n).foreach { readIndex =>
           is(U((readIndex + 1) % stageNum)) {
-            ram.ioA.addr := readAddr(readIndex)
-            ram.ioA.en := True
-            ram.ioA.we := False
+            ram.ioA.addr                                := readAddr(readIndex)
+            ram.ioA.en                                  := True
+            ram.ioA.we                                  := False
             if (readIndex != 0) readData(readIndex - 1) := ram.ioA.dataOut
           }
         }
@@ -95,13 +95,13 @@ case class mWnRRAM(m: Int, n: Int, mode: mWnRMode) extends Component {
 }
 
 case class mWnRDUT(m: Int, n: Int, mode: mWnRMode) extends Component {
-  val ramClockDomain = ClockDomain.external("ram", config = ClockDomainConfig(resetKind = BOOT))
+  val ramClockDomain    = ClockDomain.external("ram", config = ClockDomainConfig(resetKind = BOOT))
   val globalClockDomain = ClockDomain.external("global", config = XilinxClockConfig)
 
   val globalClokingArea = new ClockingArea(globalClockDomain) {
     val io = new Bundle {
-      val writes = Seq.fill(m)(slave(XILINX_BRAM_PORT(18, 10, WRITE)))
-      val reads = Seq.fill(n)(slave(XILINX_BRAM_PORT(18, 10, READ)))
+      val writes   = Seq.fill(m)(slave(XILINX_BRAM_PORT(18, 10, WRITE)))
+      val reads    = Seq.fill(n)(slave(XILINX_BRAM_PORT(18, 10, READ)))
       val forClock = out Bool // FIXME
     }
 

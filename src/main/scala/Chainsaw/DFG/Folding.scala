@@ -6,8 +6,7 @@ import spinal.core._
 import scala.math.ceil
 
 /** my folding algorithm based on periodic time-space transformation
- *
- */
+  */
 class Folding[T <: Data](override val dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPNode[T]]]) extends DFGTransform[T] {
 
   implicit val referenceDFG: DFGGraph[T] = dfg
@@ -26,7 +25,7 @@ class Folding[T <: Data](override val dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPN
   }
 
   override val transformName: String = "folding"
-  override val logger: Logger = LoggerFactory.getLogger("folding procedure")
+  override val logger: Logger        = LoggerFactory.getLogger("folding procedure")
 
   override def periodTransform(period: Int): Int = dfg.period * N
 
@@ -45,7 +44,7 @@ class Folding[T <: Data](override val dfg: DFGGraph[T], foldingSet: Seq[Seq[DSPN
   override def timeTransform(iteration: Iteration[T]): Int = iteration.time * N + foldingOrderOf(iteration.device)
 
   override def constraint(sourceIteration: Iteration[T], targetIteration: Iteration[T]): DSPConstraint[T] = {
-    val (u, v) = (sourceIteration.device, targetIteration.device)
+    val (u, v)   = (sourceIteration.device, targetIteration.device)
     val (tU, tV) = (sourceIteration.time, targetIteration.time)
     logger.debug(s"constraint $tU - $tV + floor((${u.delay} - ${foldingOrderOf(v)} + ${foldingOrderOf(u)}).toDouble / $N).toInt")
     v - u >= tU - tV + ceil((u.delay - foldingOrderOf(v) + foldingOrderOf(u)).toDouble / N).toInt

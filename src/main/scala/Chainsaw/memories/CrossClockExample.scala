@@ -11,15 +11,12 @@ import Chainsaw.Real
 
 class CrossClockExample(exampleId: Int) extends Component {
   val io = new Bundle {
-    val input = in UInt (4 bits)
+    val input  = in UInt (4 bits)
     val output = out UInt (4 bits)
   }
 
-  if(exampleId == 0){ // example using default clockdomain
-    globalData.commonClockConfig = ClockDomainConfig(
-      clockEdge = RISING,
-      resetKind = SYNC,
-      resetActiveLevel = LOW)
+  if (exampleId == 0) { // example using default clockdomain
+    globalData.commonClockConfig = ClockDomainConfig(clockEdge = RISING, resetKind = SYNC, resetActiveLevel = LOW)
 
     println(ClockDomain.current.config)
     println(clockDomain.config)
@@ -31,26 +28,26 @@ class CrossClockExample(exampleId: Int) extends Component {
     val externalDomain = ClockDomain.external(
       name = "external",
       config = ClockDomainConfig(
-        clockEdge = RISING,
-        resetKind = SYNC,
+        clockEdge        = RISING,
+        resetKind        = SYNC,
         resetActiveLevel = LOW
       )
     )
-    new ClockingArea(externalDomain){
+    new ClockingArea(externalDomain) {
       io.output := RegNext(io.input, init = U(0))
     }
   }
 
-  if(exampleId == 2){ // example of the resetKind = BOOT
+  if (exampleId == 2) { // example of the resetKind = BOOT
     val externalDomain = ClockDomain.external(
       name = "external",
       config = ClockDomainConfig(
-        clockEdge = RISING,
-        resetKind = BOOT,
+        clockEdge        = RISING,
+        resetKind        = BOOT,
         resetActiveLevel = LOW
       )
     )
-    new ClockingArea(externalDomain){
+    new ClockingArea(externalDomain) {
       io.output := RegNext(io.input, init = U(0))
     }
   }

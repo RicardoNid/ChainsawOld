@@ -29,10 +29,10 @@ object Algos {
         val N1 = factors.head
         val N2 = factors.tail.product
         println(s"$N1, $N2")
-        val dataForBlockA = DSP.interleave.Algos.matIntrlv(dataIn, N1, N2)
-        val afterBlockA = dataForBlockA.grouped(N1).map(block(_)).toSeq
-        val afterLine = line(afterBlockA.flatten, N1, N2)
-        val dataForBlockB = DSP.interleave.Algos.matIntrlv(afterLine, N2, N1)
+        val dataForBlockA  = DSP.interleave.Algos.matIntrlv(dataIn, N1, N2)
+        val afterBlockA    = dataForBlockA.grouped(N1).map(block(_)).toSeq
+        val afterLine      = line(afterBlockA.flatten, N1, N2)
+        val dataForBlockB  = DSP.interleave.Algos.matIntrlv(afterLine, N2, N1)
         val afterRecursion = dataForBlockB.grouped(N2).map(buildRecursively(_, factors.tail)).toSeq
         DSP.interleave.Algos.matIntrlv(afterRecursion.flatten, N1, N2)
       }
@@ -54,7 +54,8 @@ object Algos {
   def DFT(dataIn: Seq[BComplex]) = DSP.FFT.Refs.FFT(dataIn.toArray)
 
   def main(args: Array[String]): Unit = {
-    val mult = (dataIn: Seq[BComplex], N1: Int, N2: Int) => dataIn.zip(CooleyTukeyCoeffs(N1, N2).map(WNnk(N1 * N2, _))).map { case (data, coeff) => data * coeff }
+    val mult = (dataIn: Seq[BComplex], N1: Int, N2: Int) =>
+      dataIn.zip(CooleyTukeyCoeffs(N1, N2).map(WNnk(N1 * N2, _))).map { case (data, coeff) => data * coeff }
     val ctfft = CooleyTukeyBuilder(Seq(2, 2, 2), DFT, mult)
 
     val testCase: Seq[BComplex] = (0 until 8).map(_ => ChainsawRand.nextComplex(-1, 1))

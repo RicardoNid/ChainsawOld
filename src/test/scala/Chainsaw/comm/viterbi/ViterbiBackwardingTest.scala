@@ -15,8 +15,8 @@ import scala.collection.mutable.ArrayBuffer
 class ViterbiBackwardingTest extends AnyFlatSpec {
 
   val (trellis, forwardingTestcases, golden) = Refs.getTestData
-  val testCase: mutable.Stack[Seq[Double]] = Algos.viterbiForwarding(forwardingTestcases, trellis, Algos.Hamming)
-  val testCaseCopy = Algos.viterbiForwarding(forwardingTestcases, trellis, Algos.Hamming)
+  val testCase: mutable.Stack[Seq[Double]]   = Algos.viterbiForwarding(forwardingTestcases, trellis, Algos.Hamming)
+  val testCaseCopy                           = Algos.viterbiForwarding(forwardingTestcases, trellis, Algos.Hamming)
 
   def runSim() = {
 
@@ -25,7 +25,7 @@ class ViterbiBackwardingTest extends AnyFlatSpec {
       import dut.{dataIn, dataOut, clockDomain}
       clockDomain.forkStimulus(2)
       dataIn.valid #= false
-      dataIn.last #= false
+      dataIn.last  #= false
       clockDomain.waitSampling()
 
       def limit(value: Seq[Double]) = value.map(d => if (d > 15) 15 else d.toInt)
@@ -36,8 +36,8 @@ class ViterbiBackwardingTest extends AnyFlatSpec {
       val end = testCase.length - 1
 
       testCase.indices.foreach { i =>
-        dataIn.valid #= true
-        dataIn.last #= (i == end)
+        dataIn.valid   #= true
+        dataIn.last    #= (i == end)
         dut.stateStart #= (if (i == 0) testCase.head.zipWithIndex.minBy(_._1)._2 else 0)
 
         val record = testCase.pop()
@@ -46,7 +46,7 @@ class ViterbiBackwardingTest extends AnyFlatSpec {
       }
 
       dataIn.valid #= false
-      dataIn.last #= false
+      dataIn.last  #= false
       clockDomain.waitSampling(10)
     }
     dutResults
@@ -54,8 +54,8 @@ class ViterbiBackwardingTest extends AnyFlatSpec {
 
   "ViterbiBackwarding" should "produce input symbols" in {
     val dutResults = runSim()
-    val states = Algos.viterbiBackwarding(testCaseCopy, trellis).reverse // to map with trace back order
-    val bits = states.map(_.toBinaryString.padToLeft(log2Up(trellis.numStates), '0').head.asDigit)
+    val states     = Algos.viterbiBackwarding(testCaseCopy, trellis).reverse // to map with trace back order
+    val bits       = states.map(_.toBinaryString.padToLeft(log2Up(trellis.numStates), '0').head.asDigit)
     assert(bits.mkString("") == dutResults.mkString(""))
   }
 

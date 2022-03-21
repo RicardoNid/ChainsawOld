@@ -10,18 +10,17 @@ class ViterbiAlgosTest extends AnyFlatSpec {
   // TODO: expand this to multi-in, multi-out
 
   val constLen = 7
-  val codeGen = Array(177, 131)
-  val trellis = Trellis.poly2trellis(constLen, codeGen)
+  val codeGen  = Array(177, 131)
+  val trellis  = Trellis.poly2trellis(constLen, codeGen)
   val trellisM = Refs.poly2trellisM(constLen, codeGen)
 
   val inputData = (0 until 100).map(_ => ChainsawRand.nextInt(trellis.numInputSymbols)).toArray
   val codedData = Refs.convenc(inputData, trellisM)
-  val testCase = codedData.grouped(log2Up(trellis.numOutputSymbols)).map(_.reverse.zipWithIndex.map { case (i, i1) => i * (1 << i1) }.sum).toArray
-  val golden = Refs.vitdecHard(codedData, trellisM, 6 * constLen)
+  val testCase  = codedData.grouped(log2Up(trellis.numOutputSymbols)).map(_.reverse.zipWithIndex.map { case (i, i1) => i * (1 << i1) }.sum).toArray
+  val golden    = Refs.vitdecHard(codedData, trellisM, 6 * constLen)
 
   def testAlgo(algo: (Array[Int], Trellis[Int], (Int, Int) => Double) => Array[Int]) = {
-    val yours = algo(testCase, trellis, Algos.Hamming)
-      .tail.map(_.toBinaryString.padToLeft(constLen - 1, '0').head.asDigit)
+    val yours = algo(testCase, trellis, Algos.Hamming).tail.map(_.toBinaryString.padToLeft(constLen - 1, '0').head.asDigit)
     assert(yours.length == testCase.length)
     println(yours.mkString(""))
     println(golden.mkString(""))

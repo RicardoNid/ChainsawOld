@@ -7,47 +7,47 @@ import xilinx.dsp48e2.MULTMODE.AD0B1
 
 // ports for cascading
 case class DSPCASC() extends Bundle {
-  val A = SInt(30 bits)
-  val B = SInt(18 bits)
-  val P = SInt(48 bits)
-  val CARRY = Bool()
+  val A        = SInt(30 bits)
+  val B        = SInt(18 bits)
+  val P        = SInt(48 bits)
+  val CARRY    = Bool()
   val MULTSIGN = Bool()
-  val all = Seq(A, B, P, CARRY, MULTSIGN)
+  val all      = Seq(A, B, P, CARRY, MULTSIGN)
 }
 
 case class DSPCONTROL() extends Bundle { // 4
-  val ALUMODE = Bits(4 bits)
-  val INMODE = Bits(5 bits)
-  val OPMODE = Bits(9 bits)
+  val ALUMODE    = Bits(4 bits)
+  val INMODE     = Bits(5 bits)
+  val OPMODE     = Bits(9 bits)
   val CARRYINSEL = Bits(3 bits)
 }
 
 case class DSPINPUT() extends Bundle { // 5
   // for a,b,c,d,special strategy is required when unused
-  val A = in SInt (30 bits)
-  val B = in SInt (18 bits)
-  val C = in SInt (48 bits)
-  val D = in SInt (27 bits)
-  val CARRYIN = in Bool()
+  val A       = in SInt (30 bits)
+  val B       = in SInt (18 bits)
+  val C       = in SInt (48 bits)
+  val D       = in SInt (27 bits)
+  val CARRYIN = in Bool ()
 }
 
 case class DSPOUTPUT() extends Bundle { // 7
-  val P = out SInt (48 bits)
-  val CARRYOUT = out SInt (4 bits)
-  val XOROUT = out Bits (8 bits)
-  val OVERFLOW, UNDERFLOW = out Bool()
-  val PATTERNBDETECT, PATTERNDETECT = out Bool()
+  val P                             = out SInt (48 bits)
+  val CARRYOUT                      = out SInt (4 bits)
+  val XOROUT                        = out Bits (8 bits)
+  val OVERFLOW, UNDERFLOW           = out Bool ()
+  val PATTERNBDETECT, PATTERNDETECT = out Bool ()
 }
 
 case class DSPCEs() extends Bundle { //
   val A1, A2, B1, B2, C, D, AD, M, P, CARRYIN, CTRL, INMODE, ALUMODE = Bool()
-  val all = Seq(A1, A2, B1, B2, C, D, AD, M, P, CARRYIN, CTRL, INMODE, ALUMODE)
+  val all                                                            = Seq(A1, A2, B1, B2, C, D, AD, M, P, CARRYIN, CTRL, INMODE, ALUMODE)
   all.foreach(signal => signal.setName("CE" + signal.getPartialName()))
 }
 
 case class DSPRSTs() extends Bundle {
   val A, B, C, D, M, P, ALLCARRYIN, CTRL, INMODE, ALUMODE = Bool()
-  val all = Seq(A, B, C, D, M, P, ALLCARRYIN, CTRL, INMODE, ALUMODE)
+  val all                                                 = Seq(A, B, C, D, M, P, ALLCARRYIN, CTRL, INMODE, ALUMODE)
   all.foreach(signal => signal.setName("RST" + signal.getPartialName()))
 }
 
@@ -56,17 +56,17 @@ class DSP48E2(attrs: DSPAttrs) extends BlackBox {
   addGenerics(attrs.generics: _*)
   println(attrs.AMULTSEL)
 
-  val CLK = in Bool()
+  val CLK = in Bool ()
   // control
   val INST = in(DSPCONTROL())
   // inputs/outputs for cascading
-  val CASCDATAIN = in(DSPCASC())
+  val CASCDATAIN  = in(DSPCASC())
   val CASCDATAOUT = out(DSPCASC())
   // ClockEnables & ReSeTs
-  val CEs = in(DSPCEs())
+  val CEs  = in(DSPCEs())
   val RSTs = in(DSPRSTs())
   // inputs/outputs from generic logic
-  val DATAIN = in(DSPINPUT())
+  val DATAIN  = in(DSPINPUT())
   val DATAOUT = out(DSPOUTPUT())
 
   // set names to be the same as primitive ports
@@ -86,7 +86,7 @@ class DSP48E2(attrs: DSPAttrs) extends BlackBox {
   CASCDATAIN.CARRY.setName("CARRYCASCIN")
   CASCDATAIN.MULTSIGN.setName("MULTSIGNIN")
 
-  val inputs = Seq(INST, CASCDATAIN, DATAIN, CEs, RSTs)
+  val inputs  = Seq(INST, CASCDATAIN, DATAIN, CEs, RSTs)
   val outputs = Seq(CASCDATAOUT, DATAOUT)
 
   mapClockDomain(clock = CLK)
@@ -109,7 +109,7 @@ class DSP48E2(attrs: DSPAttrs) extends BlackBox {
       case 2 => CEs.B1 := True; CEs.B2 := True
     }
     if (CARRYINREG == 1 && CARRYINSELREG == 1) CTRL := True else CTRL := False
-    val otherCEs = Seq(C, D, AD, M, P, CARRYIN, INMODE, ALUMODE)
+    val otherCEs  = Seq(C, D, AD, M, P, CARRYIN, INMODE, ALUMODE)
     val otherREGs = Seq(CREG, DREG, ADREG, MREG, PREG, CARRYINREG, INMODEREG, ALUMODEREG)
     otherREGs.zip(otherCEs).foreach { case (i, bool) => if (i == 1) bool := True else bool := False }
     RSTs.all.foreach(_.clear())
@@ -125,15 +125,15 @@ class DSP48E2(attrs: DSPAttrs) extends BlackBox {
   // AD0B1C0 means (A + D) * B + C
   def AD0B1C0(A: SInt, B: SInt, C: SInt, D: SInt): SInt = {
     require(attrs.multMode == AD0B1)
-    INST.ALUMODE := B"0000" // result = Z + W + X + Y + CIN
-    INST.OPMODE := B"110000101" // W = C, Z = 0, X,Y = M
+    INST.ALUMODE    := B"0000" // result = Z + W + X + Y + CIN
+    INST.OPMODE     := B"110000101" // W = C, Z = 0, X,Y = M
     INST.CARRYINSEL := B"000" // CIN = CARRYIN
-    INST.INMODE := B"00000" //
+    INST.INMODE     := B"00000" //
 
-    DATAIN.A := A
-    DATAIN.B := B
-    DATAIN.C := C
-    DATAIN.D := D
+    DATAIN.A       := A
+    DATAIN.B       := B
+    DATAIN.C       := C
+    DATAIN.D       := D
     DATAIN.CARRYIN := False
 
     DATAOUT.P
@@ -154,7 +154,6 @@ object SYMFIR {
   }
 }
 
-
 class DSPDUT extends Component {
   // example of MACC, result = (A+D) * B + C, latency =
   val A = in SInt (30 bits)
@@ -164,7 +163,7 @@ class DSPDUT extends Component {
   val p = out SInt (48 bits)
 
   val attr = DSPAttrBuilder().setMult(AD0B1).setLatency(4).build // Multiplier, latency = 4
-  val dsp = SYMFIR()
+  val dsp  = SYMFIR()
   p := RegNext(dsp.AD0B1C0(A, B, C, D))
 }
 
@@ -175,16 +174,17 @@ object DSPDUT extends App {
   // FIXME: the problem of #1
   SimConfig.withWave
     .addRtl("src/main/resources/DSP48E2.v")
-    .compile(new DSPDUT).doSim { dut =>
-    import dut._
-    clockDomain.forkStimulus(2)
-    clockDomain.waitSampling()
-    A #= 13
-    B #= 13
-    C #= 13
-    D #= 13
-    sleep(20)
-  }
+    .compile(new DSPDUT)
+    .doSim { dut =>
+      import dut._
+      clockDomain.forkStimulus(2)
+      clockDomain.waitSampling()
+      A #= 13
+      B #= 13
+      C #= 13
+      D #= 13
+      sleep(20)
+    }
 
   //  VivadoSynth(new DSPDUT)
 }

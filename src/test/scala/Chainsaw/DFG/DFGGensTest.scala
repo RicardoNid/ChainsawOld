@@ -16,11 +16,12 @@ import scala.language.postfixOps
 // TODO: verify folding of following tests
 // TODO: fft as fft itself
 
-/** Tests below shows that DFGGens functions are abstract "architectures" which can be used in implementation of different specific designs
- * as for the ftt as ntt hardware example
- *
- * @see [[crypto.lattice.HuaweiKyberTest]]
- */
+/** Tests below shows that DFGGens functions are abstract "architectures" which can be used in implementation of different specific designs as for the ftt as
+  * ntt hardware example
+  *
+  * @see
+  *   [[crypto.lattice.HuaweiKyberTest]]
+  */
 class DFGGensTest extends AnyFlatSpec {
 
   import FirArch._
@@ -28,25 +29,25 @@ class DFGGensTest extends AnyFlatSpec {
   val doSynths: Boolean = false
 
   // operators for fir test
-  val add: BinaryNode[SInt] = BinaryHardware(sintAdd).asDeviceNode("add")
+  val add: BinaryNode[SInt]  = BinaryHardware(sintAdd).asDeviceNode("add")
   val mult: BinaryNode[SInt] = BinaryHardware(sintMult).asDeviceNode("mult")
-
 
   def dspMAC: TrinaryNode[SInt] = Operators.macDSP48(mreg = true)
 
-  val firSize = 10
-  val firCoeffs: Seq[Int] = (0 until firSize).map(_ => ChainsawRand.nextInt(1 << 16) + 1000)
+  val firSize                  = 10
+  val firCoeffs: Seq[Int]      = (0 until firSize).map(_ => ChainsawRand.nextInt(1 << 16) + 1000)
   val firTestCase: Seq[BigInt] = Seq.fill(firSize)(BigInt(0)) ++ (0 until 100).map(_ => ChainsawRand.nextBigInt(2))
   // generate golden by Matlab
-  val firGolden: Array[Double] = eng.feval("filter", firCoeffs.reverse.map(_.toDouble).toArray, Array(1), firTestCase.map(_.toDouble).toArray).asInstanceOf[Array[Double]]
+  val firGolden: Array[Double] =
+    eng.feval("filter", firCoeffs.reverse.map(_.toDouble).toArray, Array(1), firTestCase.map(_.toDouble).toArray).asInstanceOf[Array[Double]]
 
   def firDUT(arch: FirArch, useDSP: Boolean): DSPNode[SInt] =
     if (useDSP) FIRGen(dspMAC, arch, firCoeffs, 18 bits, 1).getGraphAsNode()
     else FIRGen(add, mult, arch, firCoeffs, 18 bits, 1).getGraphAsNode()
 
   def testFIR(arch: FirArch, useDSP: Boolean): Seq[Seq[BigInt]] = {
-    println(firTestCase)         // just for test
-    println(firGolden.toList)    // just for test
+    println(firTestCase) // just for test
+    println(firGolden.toList) // just for test
     testDSPNode[SInt, Seq[BigInt], Int](firDUT(arch, useDSP), Seq(18 bits), firTestCase.map(Seq(_)), firGolden.map(_.toInt), initLength = firSize)
   }
 
@@ -66,9 +67,9 @@ class DFGGensTest extends AnyFlatSpec {
 
   if (doSynths) {
     it should "be implemented efficiently as by dsp slices" in {
-      synthFIR(DIRECT, useDSP = true)
+      synthFIR(DIRECT, useDSP    = true)
       synthFIR(TRANSPOSE, useDSP = true)
-      synthFIR(SYSTOLIC, useDSP = true)
+      synthFIR(SYSTOLIC, useDSP  = true)
     }
   }
 
@@ -78,12 +79,12 @@ class DFGGensTest extends AnyFlatSpec {
   "fir structure" should "be correct as convenc" in {
     // operators for convenc test
     val and = BinaryHardware(Operators.and).asDeviceNode("and")
-    val xor = BinaryHardware( Operators.xor).asDeviceNode("xor")
+    val xor = BinaryHardware(Operators.xor).asDeviceNode("xor")
 
     import comm.channelCoding._
-    val convencTestCase = Seq.fill(7)(BigInt(0)) ++ (0 until 100).map(_ => ChainsawRand.nextBigInt(1))
+    val convencTestCase        = Seq.fill(7)(BigInt(0)) ++ (0 until 100).map(_ => ChainsawRand.nextBigInt(1))
     val conv802_11: ConvConfig = ConvConfig(Array(171, 133), radix = 8)
-    val trellisM = Refs.poly2trellisM(conv802_11.ms.map(_ + 1), conv802_11.codeGens)
+    val trellisM               = Refs.poly2trellisM(conv802_11.ms.map(_ + 1), conv802_11.codeGens)
     // generate golden by Matlab
     val convencGolden: Array[Int] = Refs.convenc(convencTestCase.map(_.toInt).toArray, trellisM)
 
@@ -93,14 +94,20 @@ class DFGGensTest extends AnyFlatSpec {
     def convencGen(coeffs: Seq[Int], firArch: FirArch): FIRGen[Bits, Int] = FIRGen(xor, and, firArch, coeffs, 1 bits, 1)
 
     def testConvenc(firArch: FirArch) = {
-      doFlowPeekPokeTest("testConv", new Component with DSPTestable[Vec[Bits], Vec[Bits]] {
-        val dataIn: Flow[Vec[Bits]] = slave Flow Vec(Bits(1 bits), 1)
-        val dataOut: Flow[Vec[Bits]] = master Flow Vec(Bits(), 2)
-        val latency = convencGen(coeff171, firArch).latency
-        dataOut.valid := Delay(dataIn.valid, latency, init = False)
-        dataOut.payload(0) := convencGen(coeff171, firArch).getGraph.impl(Seq(dataIn.payload).head).head
-        dataOut.payload(1) := convencGen(coeff133, firArch).getGraph.impl(Seq(dataIn.payload).head).head
-      }, convencTestCase.grouped(1).toSeq, convencGolden, initLength = 7)
+      doFlowPeekPokeTest(
+        "testConv",
+        new Component with DSPTestable[Vec[Bits], Vec[Bits]] {
+          val dataIn: Flow[Vec[Bits]]  = slave Flow Vec(Bits(1 bits), 1)
+          val dataOut: Flow[Vec[Bits]] = master Flow Vec(Bits(), 2)
+          val latency                  = convencGen(coeff171, firArch).latency
+          dataOut.valid      := Delay(dataIn.valid, latency, init = False)
+          dataOut.payload(0) := convencGen(coeff171, firArch).getGraph.impl(Seq(dataIn.payload).head).head
+          dataOut.payload(1) := convencGen(coeff133, firArch).getGraph.impl(Seq(dataIn.payload).head).head
+        },
+        convencTestCase.grouped(1).toSeq,
+        convencGolden,
+        initLength = 7
+      )
     }
 
     testConvenc(DIRECT)
@@ -109,9 +116,7 @@ class DFGGensTest extends AnyFlatSpec {
 
   behavior of "radix-2 fft DFG(butterfly) as fft"
 
-  "fft structure" should "be correct as fft" taggedAs (DFGTest) in {
-
-  }
+  "fft structure" should "be correct as fft" taggedAs (DFGTest) in {}
 
   behavior of "radix-2 fft DFG(butterfly) as ntt"
 

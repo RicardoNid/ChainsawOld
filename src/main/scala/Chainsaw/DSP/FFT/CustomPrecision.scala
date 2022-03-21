@@ -16,7 +16,7 @@ trait CustomPrecision {
   val dataWidth: Int
   val coeffWidth: Int
 
-  val peak = 4 // TODO: find a better strategy
+  val peak       = 4 // TODO: find a better strategy
   val resolution = -(dataWidth - 1 - peak)
 
   def dataType = HardType(SFix(peak exp, resolution exp))

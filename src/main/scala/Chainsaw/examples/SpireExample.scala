@@ -18,16 +18,12 @@ class minSumRing(upperBound: Int) extends Ring[minSum] {
   override def plus(x: minSum, y: minSum) = minSum(min(x.value, y.value))
 }
 
-
 object SpireExample {
 
   def main(args: Array[String]): Unit = {
 
     implicit val ring: minSumRing = new minSumRing(128)
 
-
-
   }
 
 }
-

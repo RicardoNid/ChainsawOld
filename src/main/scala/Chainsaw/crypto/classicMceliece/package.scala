@@ -1,12 +1,10 @@
 package Chainsaw.crypto
 
 package object classicMceliece {
-  val GfBits = 12
-  val CodeLength = 3488
+  val GfBits        = 12
+  val CodeLength    = 3488
   val CorrectionNum = 64
 }
-
-
 
 //package Chainsaw.crypto
 //

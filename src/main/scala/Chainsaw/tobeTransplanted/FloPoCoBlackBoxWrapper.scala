@@ -8,7 +8,7 @@ abstract class FloPoCoBlackBoxWrapper[inputType <: Data, outputType <: Data] ext
   val blackBox: BlackBox with FloPoCoBlackBox[inputType, outputType]
 
   def connect(): Unit = {
-    blackBox.input <> input
+    blackBox.input  <> input
     blackBox.output <> output
   }
 }

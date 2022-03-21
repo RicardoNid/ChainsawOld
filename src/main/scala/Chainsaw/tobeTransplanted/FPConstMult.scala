@@ -11,19 +11,18 @@ import Chainsaw.Real
 
 import scala.reflect.runtime.{universe => ru}
 
-class FPConstMult(val wE_in: Int, val wF_in: Int, val wE_out: Int, val wF_out: Int, val constant: String, val cst_width: Int) extends FloPoCoBlackBox[Real, Real] {
+class FPConstMult(val wE_in: Int, val wF_in: Int, val wE_out: Int, val wF_out: Int, val constant: String, val cst_width: Int)
+    extends FloPoCoBlackBox[Real, Real] {
 
   override val operatorName = "FPConstMult"
 
   override def ruType = ru.typeOf[this.type] // this is a must-be
 
-  val clk = in Bool()
-  val input = in(QFormatReal(SQ(10, 0)))
+  val clk    = in Bool ()
+  val input  = in(QFormatReal(SQ(10, 0)))
   val output = out(QFormatReal(SQ(10, 0)))
   mapCurrentClockDomain(clk)
   noIoPrefix()
 
   invokeFloPoCo() // a must-be
 }
-
-

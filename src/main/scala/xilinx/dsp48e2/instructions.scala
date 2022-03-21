@@ -1,6 +1,6 @@
 package xilinx.dsp48e2
 
-object DSPInstructions{
+object DSPInstructions {
   val raw = DSPCONTROL
   //  def mult =
 }

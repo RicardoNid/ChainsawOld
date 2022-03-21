@@ -8,8 +8,7 @@ import spinal.core._
 import scala.language.postfixOps
 
 /** Regression test of DFG
- *
- */
+  */
 class DFGGraphTest extends AnyFlatSpec {
 
   import Operators._
@@ -18,13 +17,19 @@ class DFGGraphTest extends AnyFlatSpec {
 
   val testHardType: HardType[SInt] = HardType(SInt(10 bits))
 
-  lazy val textBookDUTs: Seq[DFGGraph[SInt]] = Seq(chap2.fig2_2,
-    chap5.fig5_2, chap5.fig5_2_inner_delay, chap5.fig5_10, chap5.fig5_12,
-    chap6.fig6_3, chap6.fig6_5)
+  lazy val textBookDUTs: Seq[DFGGraph[SInt]] =
+    Seq(chap2.fig2_2, chap5.fig5_2, chap5.fig5_2_inner_delay, chap5.fig5_10, chap5.fig5_12, chap6.fig6_3, chap6.fig6_5)
 
-  lazy val paper1992OnFoldingDUTs: Seq[DFGGraph[SInt]] = Seq(paper1992OnFolding.fig6_a, paper1992OnFolding.fig8_a, paper1992OnFolding.fig9_a,
-    paper1992OnFolding.fig10_a, paper1992OnFolding.fig10_c,
-    paper1992OnFolding.fig12_a, paper1992OnFolding.fig13_a, paper1992OnFolding.fig14_a)
+  lazy val paper1992OnFoldingDUTs: Seq[DFGGraph[SInt]] = Seq(
+    paper1992OnFolding.fig6_a,
+    paper1992OnFolding.fig8_a,
+    paper1992OnFolding.fig9_a,
+    paper1992OnFolding.fig10_a,
+    paper1992OnFolding.fig10_c,
+    paper1992OnFolding.fig12_a,
+    paper1992OnFolding.fig13_a,
+    paper1992OnFolding.fig14_a
+  )
 
   it should "work on nested DFG" in {
     val nested = implementingDFGs.nestedDFG
@@ -34,8 +39,8 @@ class DFGGraphTest extends AnyFlatSpec {
   "dfg" should "be implemented correctly" in {
     val dfg = DFGGraph[SInt]("simpleGraph")
 
-    val pts = (0 until 4).map(i => BinaryHardware(sintMult, 10 bits, 0 cycles, 1 ns).asDeviceNode(s"pt$i"))
-    val ptsCNodes = (0 until 4).map(i => ConstantNode[SInt, Int](s"ptscnode_${i + 1}", 1, 10 bits))
+    val pts                     = (0 until 4).map(i => BinaryHardware(sintMult, 10 bits, 0 cycles, 1 ns).asDeviceNode(s"pt$i"))
+    val ptsCNodes               = (0 until 4).map(i => ConstantNode[SInt, Int](s"ptscnode_${i + 1}", 1, 10 bits))
     val Seq(pt0, pt1, pt2, pt3) = pts
     dfg.addPath(pt0 >> 1 >> pt1 >> 1 >> pt2 >> 1 >> pt3)
     ptsCNodes.zip(pts).foreach { case (pcnode, pnode) => dfg.addPath(pcnode >> 0 >> pnode) }
@@ -61,31 +66,31 @@ class DFGGraphTest extends AnyFlatSpec {
   it should "fold correctly on paper1992 fig7_a(example4)" in verifyFolding(paper1992OnFolding.fig6_a, paper1992OnFolding.foldingSet_example4, testHardType)
 
   it should "fold correctly on paper1992 fig8_b(example6)" in {
-    val dfg = paper1992OnFolding.fig8_a
+    val dfg        = paper1992OnFolding.fig8_a
     val foldingSet = paper1992OnFolding.foldingSet_example6
     verifyFolding(dfg, foldingSet, testHardType)
   }
 
   it should "fold correctly on paper1992 fig9_b(example7)" in {
-    val dfg = paper1992OnFolding.fig9_a
+    val dfg        = paper1992OnFolding.fig9_a
     val foldingSet = paper1992OnFolding.foldingSet_example7
     verifyFolding(dfg, foldingSet, testHardType, "paper1992_fig9_a")
   }
 
   it should "fold correctly on paper1992 fig10_b(example8)" in {
-    val dfg = paper1992OnFolding.fig10_a
+    val dfg        = paper1992OnFolding.fig10_a
     val foldingSet = paper1992OnFolding.foldingSet_example8and10
     verifyFolding(dfg, foldingSet, testHardType, "paper1992_fig10_a")
   }
 
   it should "fold correctly on paper1992 fig10_b(example10)" in {
-    val dfg = paper1992OnFolding.fig10_c
+    val dfg        = paper1992OnFolding.fig10_c
     val foldingSet = paper1992OnFolding.foldingSet_example8and10
     verifyFolding(dfg, foldingSet, testHardType, "paper1992_fig10_c")
   }
 
   it should "fold correctly on paper1992 fig12_a(example11)" in {
-    val dfg = paper1992OnFolding.fig12_a
+    val dfg        = paper1992OnFolding.fig12_a
     val foldingSet = paper1992OnFolding.foldingSet_example11
     verifyFolding(dfg, foldingSet, testHardType, name = "paper1992_fig12_a")
   }
@@ -98,13 +103,13 @@ class DFGGraphTest extends AnyFlatSpec {
   //  }
 
   it should "fold correctly on paper1992 fig14_a(example13_v1)" in {
-    val dfg = paper1992OnFolding.fig14_a
+    val dfg        = paper1992OnFolding.fig14_a
     val foldingSet = paper1992OnFolding.foldingSet_example13
     verifyFolding(dfg, foldingSet, testHardType, "paper1992_fig14_a")
   }
 
   it should "fold correctly on paper1992 fig15_a(example13_v2)" in {
-    val dfg = paper1992OnFolding.fig14_a
+    val dfg        = paper1992OnFolding.fig14_a
     val foldingSet = paper1992OnFolding.foldingSet_example13_v2
     verifyFolding(dfg, foldingSet, testHardType, name = "paper1992_fig15_a")
   }
@@ -132,37 +137,47 @@ class DFGGraphTest extends AnyFlatSpec {
   "the reg opt algorithms" should "work on multiple different graphs" in {
 
     val duts0 = textBookDUTs.filterNot(_.isMerged)
-    logger.info(s"testing reg merge on\n${duts0.map(_.name).mkString(" ")}" +
-      s"\n${duts0.map(dut => s"${dut.name}: ${dut.unmergedDelayAmount} -> ${dut.merged.unmergedDelayAmount}").mkString("\n")}")
+    logger.info(
+      s"testing reg merge on\n${duts0.map(_.name).mkString(" ")}" +
+        s"\n${duts0.map(dut => s"${dut.name}: ${dut.unmergedDelayAmount} -> ${dut.merged.unmergedDelayAmount}").mkString("\n")}"
+    )
     assert(duts0.forall(_.merged.isMerged))
 
     val duts1 = paper1992OnFoldingDUTs.filterNot(_.isMerged)
-    logger.info(s"testing reg merge on\n${duts1.filterNot(_.isMerged).map(_.name).mkString(" ")}" +
-      s"\n${duts1.map(dut => s"${dut.name}: ${dut.unmergedDelayAmount} -> ${dut.merged.unmergedDelayAmount}").mkString("\n")}")
+    logger.info(
+      s"testing reg merge on\n${duts1.filterNot(_.isMerged).map(_.name).mkString(" ")}" +
+        s"\n${duts1.map(dut => s"${dut.name}: ${dut.unmergedDelayAmount} -> ${dut.merged.unmergedDelayAmount}").mkString("\n")}"
+    )
     assert(duts1.forall(_.merged.isMerged))
   }
 
   "DFG MUX" should "be implemented correctly" in {
+    GenRTL(
+      new Component {
+        val dataIn: Vec[Bits]                 = in Vec (Bits(4 bits), 3)
+        val count: UInt                       = in UInt (log2Up(24) bits)
+        implicit val globalCount: GlobalCount = GlobalCount(count)
+        val dataOut: Bits                     = out Bits (4 bits)
+
+        val mux: DFGMUX[Bits] = DFGMUX[Bits](
+          Seq(
+            Seq(Schedule(1, 4), Schedule(2, 4)),
+            Seq(Schedule(0, 8), Schedule(4, 8)),
+            Seq(Schedule(3, 12), Schedule(7, 12), Schedule(11, 12))
+          ),
+          24
+        )
+
+        dataOut := mux.impl(dataIn)
+      },
+      name = "complexMUX"
+    )
+
     GenRTL(new Component {
-      val dataIn: Vec[Bits] = in Vec(Bits(4 bits), 3)
-      val count: UInt = in UInt (log2Up(24) bits)
+      val dataIn: Bits                      = in Bits (4 bits)
+      val count: UInt                       = in UInt (log2Up(24) bits)
       implicit val globalCount: GlobalCount = GlobalCount(count)
-      val dataOut: Bits = out Bits (4 bits)
-
-      val mux: DFGMUX[Bits] = DFGMUX[Bits](Seq(
-        Seq(Schedule(1, 4), Schedule(2, 4)),
-        Seq(Schedule(0, 8), Schedule(4, 8)),
-        Seq(Schedule(3, 12), Schedule(7, 12), Schedule(11, 12))
-      ), 24)
-
-      dataOut := mux.impl(dataIn)
-    }, name = "complexMUX")
-
-    GenRTL(new Component {
-      val dataIn: Bits = in Bits (4 bits)
-      val count: UInt = in UInt (log2Up(24) bits)
-      implicit val globalCount: GlobalCount = GlobalCount(count)
-      val dataOut: Bits = out Bits (4 bits)
+      val dataOut: Bits                     = out Bits (4 bits)
 
       val mux: DFGMUX[Bits] = DFGMUX[Bits](Seq(Seq(Schedule(1, 1))), 24)
       dataOut := mux.impl(Seq(dataIn))

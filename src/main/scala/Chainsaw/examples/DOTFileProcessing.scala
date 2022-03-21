@@ -2,15 +2,16 @@ package Chainsaw.examples
 import Chainsaw.{logger, _}
 
 /** Regularize DOT to make a prettier picture
- */
+  */
 class DOTFileProcessing {
 
   /** Regularize DOT by adding ranks
-   * @param DOTContent DOT content to be regularize
-   */
-  def DOTGraphRanking(DOTContent:String, rankList:List[String]): String = {
-    val ranking = rankList.map(s => "    " + s + ";\n").reduceLeft((s1,s2) => s1+s2)
-    def rankStructure(ranking:String):String = {
+    * @param DOTContent
+    *   DOT content to be regularize
+    */
+  def DOTGraphRanking(DOTContent: String, rankList: List[String]): String = {
+    val ranking = rankList.map(s => "    " + s + ";\n").reduceLeft((s1, s2) => s1 + s2)
+    def rankStructure(ranking: String): String = {
       s"""  {
          |    rank=same;
          |$ranking  }""".stripMargin
@@ -20,11 +21,13 @@ class DOTFileProcessing {
   }
 
   /** Add Global Rank Dir
-   * @param DOTContent DOT content to be regularize
-   * @param GlobalRankdir one of "LR", "RL", "TB", "BT"
-   * @return
-   */
-  def addGlobRankDir(DOTContent:String, GlobalRankdir:String = "TB"): String = {
+    * @param DOTContent
+    *   DOT content to be regularize
+    * @param GlobalRankdir
+    *   one of "LR", "RL", "TB", "BT"
+    * @return
+    */
+  def addGlobRankDir(DOTContent: String, GlobalRankdir: String = "TB"): String = {
     var GRdir = s"TB"
     GlobalRankdir match {
       case "LR" => GRdir = s"  rankdir = LR;\n"
@@ -44,7 +47,7 @@ object DOTFileProcessing {
   def main(args: Array[String]): Unit = {
     // TODO: "FileProcessing" rather than "StrProcessing"
     val str: String =
-        """
+      """
         |strict digraph G {
         |  a0;
         |  a1;
@@ -67,7 +70,7 @@ object DOTFileProcessing {
     val a = dotProcess.DOTGraphRanking(str, List("a0", "a1", "a2"))
     val b = dotProcess.DOTGraphRanking(a, List("b0", "b1", "b2"))
     // STEP3 : Setting GlobalRankDir
-    val strRankDir = dotProcess.addGlobRankDir(b, "LR")    // add rankdir lastly
+    val strRankDir = dotProcess.addGlobRankDir(b, "LR") // add rankdir lastly
     println(strRankDir)
   }
 }

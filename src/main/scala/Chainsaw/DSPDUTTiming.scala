@@ -13,4 +13,3 @@ abstract class DSPDUTTiming[inputType <: Data, outputType <: Data] extends Compo
   val output: outputType
   val timing: TimingInfo
 }
-

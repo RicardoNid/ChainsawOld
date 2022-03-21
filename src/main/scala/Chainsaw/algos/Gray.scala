@@ -1,8 +1,7 @@
 package Chainsaw.algos
 
 /** conversions between binary and gray code
- *
- */
+  */
 object Gray {
 
   def grayTable(width: Int): Seq[Int] = {
@@ -19,9 +18,9 @@ object Gray {
   def fromGray(gray: Int, width: Int) = grayTable(width).indexOf(gray)
 
   def main(args: Array[String]): Unit = {
-    val bits = 6
+    val bits  = 6
     val grays = (0 until (1 << bits)).map(toGray(_, bits))
-    val bins = grays.map(fromGray(_, bits))
+    val bins  = grays.map(fromGray(_, bits))
 
     println(grays)
     println(bins)

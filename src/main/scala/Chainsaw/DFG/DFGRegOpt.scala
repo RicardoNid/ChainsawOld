@@ -3,14 +3,13 @@ package Chainsaw.DFG
 import spinal.core._
 
 /** providing algorithms on optimizing registers and memories
- *
- */
+  */
 class DFGRegOpt[T <: Data](dfg: DFGGraph[T]) {
 
   implicit val referenceDFG: DFGGraph[T] = dfg
 
   /** merge delay lines from the same signal
-   */
+    */
   def getRegMergedDFG: DFGGraph[T] = {
     val graph: DFGGraph[T] = dfg.clone().asInstanceOf[DFGGraph[T]] // new graph
 
@@ -18,7 +17,8 @@ class DFGRegOpt[T <: Data](dfg: DFGGraph[T]) {
       case constant: ConstantNode[_] => constant.outgoingEdges.foreach(graph.setEdgeWeight(_, 0)) // remove the delays from constantNode
       case vertex: DeviceNode[_] => // merge the delays from deviceNode
         val edgeGroups: Seq[(Int, Seq[DSPEdge[T]])] = vertex.outgoingEdges // for all the outgoing edges from a node
-          .groupBy(_.outOrder).toSeq // group by output port, an element is portIndex -> edges from this port
+          .groupBy(_.outOrder)
+          .toSeq // group by output port, an element is portIndex -> edges from this port
 
         edgeGroups.foreach { case (outputPort, edges) => // processing ports one at a time
           if (edges.nonEmpty) {
@@ -48,10 +48,8 @@ class DFGRegOpt[T <: Data](dfg: DFGGraph[T]) {
     graph
   }
 
-
   /** minimize reg number by lifecycle method
-   *
-   */
+    */
   @deprecated // TODO: is there a "todo" annotation(instead of deprecated)
   def getRegMinimizedDFG = {}
 

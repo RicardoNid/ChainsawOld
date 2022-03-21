@@ -14,9 +14,9 @@ class FFTAlgosTest extends AnyFunSuite {
   }
 
   test("test fast algos for DFT") {
-    val Ns0 = Seq(24, 75, 133)
+    val Ns0     = Seq(24, 75, 133)
     val factors = Seq(Seq(4, 6), Seq(3, 5, 5), Seq(7, 19))
-    val algos = factors.map(factor => Algos.cooleyTukeyFFT(_: Seq[BComplex], factor))
+    val algos   = factors.map(factor => Algos.cooleyTukeyFFT(_: Seq[BComplex], factor))
     Ns0.zip(algos).foreach { case (n, algo) => testAlgo(n, algo) }
     printlnGreen(s"test CooleyTukey passed")
 
@@ -32,9 +32,9 @@ class FFTAlgosTest extends AnyFunSuite {
   }
 
   test("CooleyTukey fast test") {
-    val Ns0 = Seq(24)
+    val Ns0     = Seq(24)
     val factors = Seq(Seq(4, 6))
-    val algos = factors.map(factor => Algos.cooleyTukeyFFT(_: Seq[BComplex], factor))
+    val algos   = factors.map(factor => Algos.cooleyTukeyFFT(_: Seq[BComplex], factor))
     Ns0.zip(algos).foreach { case (n, algo) => testAlgo(n, algo) }
     printlnGreen(s"test CooleyTukey passed")
   }
@@ -48,13 +48,13 @@ class FFTAlgosTest extends AnyFunSuite {
     val size = 16
     val half = size / 2
 
-    val zero = new BComplex(0, 0)
-    val valid = zero +: (1 until half).map(_ => ChainsawRand.nextComplex(-1, 1))
-    val conjed = valid.tail.map(_.conjugate).reverse
+    val zero      = new BComplex(0, 0)
+    val valid     = zero +: (1 until half).map(_ => ChainsawRand.nextComplex(-1, 1))
+    val conjed    = valid.tail.map(_.conjugate).reverse
     val symmetric = valid ++ (zero +: conjed)
 
-    val real = (0 until size).map(_ => (ChainsawRand.nextDouble() - 0.5) * 2)
-    val yours = Algos.r2RealValuedFFT(real, 1)
+    val real   = (0 until size).map(_ => (ChainsawRand.nextDouble() - 0.5) * 2)
+    val yours  = Algos.r2RealValuedFFT(real, 1)
     val golden = Refs.FFT(real.toArray.map(new BComplex(_, 0))).take(half)
 
     println(yours.mkString(" "))
@@ -68,12 +68,12 @@ class FFTAlgosTest extends AnyFunSuite {
     val size = 16
     val half = size / 2
 
-    val zero = new BComplex(0, 0)
-    val valid = zero +: (1 until half).map(_ => ChainsawRand.nextComplex(-1, 1))
-    val conjed = valid.tail.map(_.conjugate).reverse
+    val zero      = new BComplex(0, 0)
+    val valid     = zero +: (1 until half).map(_ => ChainsawRand.nextComplex(-1, 1))
+    val conjed    = valid.tail.map(_.conjugate).reverse
     val symmetric = valid ++ (zero +: conjed)
 
-    val yours = Algos.hermitianSymmetricIFFT(symmetric, 2).map(_.real)
+    val yours  = Algos.hermitianSymmetricIFFT(symmetric, 2).map(_.real)
     val golden = Refs.IFFT(symmetric.toArray).map(_.real).map(_ * size / 2)
 
     println(yours.mkString(" "))

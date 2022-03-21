@@ -14,7 +14,7 @@ object HelloMatlab {
     def testDuration(func: => Unit): Unit = {
       val start = Instant.now()
       func
-      val end = Instant.now()
+      val end      = Instant.now()
       val duration = Duration.between(start, end)
       println(duration.toMillis)
     }
@@ -40,11 +40,12 @@ object HelloMatlab {
     eng.putVariable("anotherComplex", anotherComplex)
     val ret = eng.getVariable[BComplex]("anotherComplex")
     println(ret.getClass)
-    val retArray = try {
-      eng.getVariable[Array[BComplex]]("anotherComplex")
-    } catch {
-      case _ => println("failed")
-    }
+    val retArray =
+      try {
+        eng.getVariable[Array[BComplex]]("anotherComplex")
+      } catch {
+        case _ => println("failed")
+      }
 
     // jagged array
     val jagged = Array(Array(1, 2), Array(1, 2, 3))

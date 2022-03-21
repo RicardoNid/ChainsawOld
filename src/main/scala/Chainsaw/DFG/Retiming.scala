@@ -6,7 +6,7 @@ import spinal.core._
 class Retiming[T <: Data](override val dfg: DFGGraph[T], solution: Map[DSPNode[T], Int]) extends DFGTransform[T] {
 
   override val transformName: String = "retiming"
-  override val logger: Logger = LoggerFactory.getLogger("retiming procedure")
+  override val logger: Logger        = LoggerFactory.getLogger("retiming procedure")
 
   def r(node: DSPNode[T]): Int = solution.getOrElse(node, 0)
 
@@ -21,7 +21,7 @@ class Retiming[T <: Data](override val dfg: DFGGraph[T], solution: Map[DSPNode[T
   override def rangeInvolved: Int = dfg.period
 
   override def constraint(sourceIteration: Iteration[T], targetIteration: Iteration[T]): DSPConstraint[T] = {
-    val (u, v) = (sourceIteration.device, targetIteration.device)
+    val (u, v)   = (sourceIteration.device, targetIteration.device)
     val (tU, tV) = (sourceIteration.time, targetIteration.time)
     v - u >= tU - tV + r(u) - r(v) + u.delay
   }
@@ -34,22 +34,18 @@ class Retiming[T <: Data](override val dfg: DFGGraph[T], solution: Map[DSPNode[T
 object Retiming {
 
   /** align IO by padding
-   *
-   * @param dfg
-   * @tparam T
-   */
+    *
+    * @param dfg
+    * @tparam T
+    */
   def alignIO[T <: Data](dfg: DFGGraph[T]): DFGGraph[T] = {
     implicit val refDFG: DFGGraph[T] = dfg
 
-    val inputPosition = dfg.inputLatencies.min
+    val inputPosition  = dfg.inputLatencies.min
     val outputPosition = dfg.outputLatencies.max
 
-    val inputRetimingValues = dfg.inputNodes.zip(dfg.inputLatencies)
-      .map { case (input, position) => input -> (inputPosition - position) }
-      .toMap
-    val outputRetimingValues = dfg.outputNodes.zip(dfg.outputLatencies)
-      .map { case (input, position) => input -> (outputPosition - position) }
-      .toMap
+    val inputRetimingValues  = dfg.inputNodes.zip(dfg.inputLatencies).map { case (input, position) => input -> (inputPosition - position) }.toMap
+    val outputRetimingValues = dfg.outputNodes.zip(dfg.outputLatencies).map { case (input, position) => input -> (outputPosition - position) }.toMap
 
     val ret = new Retiming(dfg, inputRetimingValues ++ outputRetimingValues).transformed
     ret.setLatency(outputPosition - inputPosition)

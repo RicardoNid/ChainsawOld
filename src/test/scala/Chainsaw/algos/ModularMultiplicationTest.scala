@@ -14,9 +14,9 @@ import org.scalatest.flatspec.AnyFlatSpec
 class ModularMultiplicationTest extends AnyFlatSpec {
 
   // preparing RSA params for test
-  val lN = 1024
-  val testCount = 1000
-  val rsaParams = RsaParams(lN)
+  val lN                            = 1024
+  val testCount                     = 1000
+  val rsaParams                     = RsaParams(lN)
   val (ns, publicKeys, privateKeys) = rsaParams.getParams(testCount)
 
   val as = ns.map(n => ChainsawRand.nextBigInt(lN) % n)
@@ -35,11 +35,11 @@ class ModularMultiplicationTest extends AnyFlatSpec {
   }
 
   // for large length, the "hardware calculator" would lead to stackoverflow
-  val smallerLN = 32
+  val smallerLN  = 32
   val wordLength = 8
-  val M = ChainsawRand.nextBigInt(smallerLN)
-  val X = ChainsawRand.nextBigInt(smallerLN) % M
-  val Y = ChainsawRand.nextBigInt(smallerLN) % M
+  val M          = ChainsawRand.nextBigInt(smallerLN)
+  val X          = ChainsawRand.nextBigInt(smallerLN) % M
+  val Y          = ChainsawRand.nextBigInt(smallerLN) % M
 
   "R2MM" should "work" in ModularMultiplication.r2mm(X, Y, M)
 

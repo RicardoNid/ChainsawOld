@@ -6,8 +6,9 @@ import spinal.lib._
 
 import scala.collection.mutable
 
-trait DSPSimTiming[inputType <: Data, outputType <: Data, testCaseType, testResultType] extends DSPDUTTiming[inputType, outputType]
-  with DSPSim[inputType, outputType, testCaseType, testResultType] {
+trait DSPSimTiming[inputType <: Data, outputType <: Data, testCaseType, testResultType]
+    extends DSPDUTTiming[inputType, outputType]
+    with DSPSim[inputType, outputType, testCaseType, testResultType] {
 
   val monitorPoints = mutable.Queue[Long]()
 
@@ -17,7 +18,7 @@ trait DSPSimTiming[inputType <: Data, outputType <: Data, testCaseType, testResu
   }
 
   /** Define when and how the testCase is passed to the DUT and the reference model
-   */
+    */
   def driver(): Unit = {
     fork {
       while (true) {
@@ -30,14 +31,13 @@ trait DSPSimTiming[inputType <: Data, outputType <: Data, testCaseType, testResu
           poke(testCase, input)
           clockDomain.waitSampling() // input interval >= 1
           clockDomain.waitSampling(timing.initiationInterval - timing.inputInterval)
-        }
-        else clockDomain.waitSampling()
+        } else clockDomain.waitSampling()
       }
     }
   }
 
   /** Define when and how the testResult is fetched from the DUT
-   */
+    */
   def monitor(): Unit = {
     fork {
       while (true) {
@@ -46,16 +46,16 @@ trait DSPSimTiming[inputType <: Data, outputType <: Data, testCaseType, testResu
           val dutResult = peek(output)
           dutResults.enqueue(dutResult)
           clockDomain.waitSampling() // output interval >= 1
-        }
-        else clockDomain.waitSampling()
+        } else clockDomain.waitSampling()
       }
     }
   }
 
   /** Thread that terminates the simulation
-   *
-   * @return The report of simulation
-   */
+    *
+    * @return
+    *   The report of simulation
+    */
   def simDone(): SimReport = {
     clockDomain.waitSampling(2) // start checking at the time right after when first case is dequeued
     // the time needed at most to finish a single testCase
@@ -67,4 +67,3 @@ trait DSPSimTiming[inputType <: Data, outputType <: Data, testCaseType, testResu
     SimReport(trueCase, totalCase, log, validLog)
   }
 }
-

@@ -20,14 +20,13 @@ import scala.language.postfixOps
 
 case class MuxExample() extends Component {
 
-  val dataIn = in Bits (1024 bits)
-  val bitPositions = in Vec(UInt(10 bits), 256)
-  val dataOut = out Vec(Bits(7 bits), 256)
+  val dataIn       = in Bits (1024 bits)
+  val bitPositions = in Vec (UInt(10 bits), 256)
+  val dataOut      = out Vec (Bits(7 bits), 256)
 
-  dataOut.zip(bitPositions).zipWithIndex.foreach {
-    case ((bits, position), i) =>
+  dataOut.zip(bitPositions).zipWithIndex.foreach { case ((bits, position), i) =>
 //      val candidate = dataIn(1023 downto i * 2)
-      bits := dataIn(position, 7 bits)
+    bits := dataIn(position, 7 bits)
   }
 }
 

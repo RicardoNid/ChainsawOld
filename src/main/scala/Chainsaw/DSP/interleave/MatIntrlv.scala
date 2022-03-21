@@ -14,13 +14,16 @@ import spinal.lib._
 import scala.language.postfixOps
 
 /** High-throughput general interlever that implements matrix interleaving with any given parameters
- *
- * @param row   the semantic is the same as row of Matlab matintrlv
- * @param col   the semantic is the same as row of Matlab matintrlv
- *              for matrix interleaver, the de-interleaver is an interleaver that exchange the original row and col
- * @param pFIn  data number per cycle of input, determines the throughput
- * @param pFOut data number per cycle of output, determines the throughput
- */
+  *
+  * @param row
+  *   the semantic is the same as row of Matlab matintrlv
+  * @param col
+  *   the semantic is the same as row of Matlab matintrlv for matrix interleaver, the de-interleaver is an interleaver that exchange the original row and col
+  * @param pFIn
+  *   data number per cycle of input, determines the throughput
+  * @param pFOut
+  *   data number per cycle of output, determines the throughput
+  */
 
 // XDH: basically, this implementation is the same as [[https://ieeexplore.ieee.org/document/6732285]], though I proposed it all by myself
 // XDH: you should refactor this ans MatintrlvCore according to the paper formally, and test it
@@ -36,7 +39,7 @@ case class MatIntrlv[T <: Data](row: Int, col: Int, pFIn: Int, pFOut: Int, dataT
     else if (pFIn == row && pFOut == col || (pFIn == col && pFOut == row)) 2
     else 3
 
-  val dataIn = slave Stream Vec(dataType, pFIn)
+  val dataIn  = slave Stream Vec(dataType, pFIn)
   val dataOut = master Stream Vec(dataType, pFOut)
 
   var latency = 0
@@ -44,15 +47,15 @@ case class MatIntrlv[T <: Data](row: Int, col: Int, pFIn: Int, pFOut: Int, dataT
   mode match {
     case 0 => // directly using the core
       val core = MatIntrlvCore(row, col, dataType)
-      core.dataIn << dataIn
+      core.dataIn  << dataIn
       core.dataOut >> dataOut
       latency = row max col
 
     case 1 => // packing + core
       // parameters for packing
-      val packRow = pFIn / col
-      val packCol = pFIn / row
-      val packSize = packRow * packCol // (intersection size of input and output)
+      val packRow    = pFIn / col
+      val packCol    = pFIn / row
+      val packSize   = packRow * packCol // (intersection size of input and output)
       val squareSize = pFIn / packSize
 
       val packType = HardType(Bits(packSize * widthOf(dataType) bits))
@@ -62,24 +65,24 @@ case class MatIntrlv[T <: Data](row: Int, col: Int, pFIn: Int, pFOut: Int, dataT
 
       // packing input
       val dataInRearranged: Seq[T] = Algos.matIntrlv(dataIn.payload, packRow, col)
-      val dataInPacked = Vec(dataInRearranged.grouped(packSize).toSeq.map(_.asBits()))
-      val dataOutPacked = cloneOf(dataInPacked)
+      val dataInPacked             = Vec(dataInRearranged.grouped(packSize).toSeq.map(_.asBits()))
+      val dataOutPacked            = cloneOf(dataInPacked)
 
       // connecting the core
       core.dataIn.valid := dataIn.valid
-      dataIn.ready := core.dataIn.ready
+      dataIn.ready      := core.dataIn.ready
 
       core.dataIn.payload := dataInPacked
-      dataOutPacked := core.dataOut.payload
+      dataOutPacked       := core.dataOut.payload
 
-      dataOut.valid := core.dataOut.valid
+      dataOut.valid      := core.dataOut.valid
       core.dataOut.ready := dataOut.ready
 
       // unpacking output
       (0 until row / packRow).foreach { packId =>
         (0 until packCol).foreach { packColId =>
           (0 until packRow).foreach { packRowId =>
-            val id = packColId * row + packId * packRow + packRowId
+            val id       = packColId * row + packId * packRow + packRowId
             val idInPack = packColId * packRow + packRowId
             dataOut.payload(id).assignFromBits(dataOutPacked(packId).subdivideIn(packSize slices)(idInPack))
           }
@@ -93,4 +96,3 @@ object InterleaverFTN extends App {
 //  VivadoSynth(MatIntrlv(64 * 8, 256, 1024, 1024, HardType(Bits(1 bits))), name = "superInterleave")
   VivadoSynth(MatIntrlv(64, 256, 1024, 1024, HardType(Bits(1 bits))), name = "superInterleave")
 }
-

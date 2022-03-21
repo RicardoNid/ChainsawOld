@@ -9,18 +9,18 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 
 /** Viterbi Decoder using Hamming(Hard) and has a fixed length of input
- *
- * @param trellis
- * @param lengthMax
- */
+  *
+  * @param trellis
+  * @param lengthMax
+  */
 case class ViterbiHard(trellis: Trellis[Int], lengthMax: Int, temp: Int) extends Component {
 
   // submodules
-  val forward = ViterbiForwarding(trellis) // ACS
+  val forward  = ViterbiForwarding(trellis) // ACS
   val backward = ViterbiBackwarding(trellis) // TB
 
   // I/O
-  val dataIn: Flow[Fragment[Bits]] = slave Flow Fragment(HardType(forward.dataIn.fragment))
+  val dataIn: Flow[Fragment[Bits]]  = slave Flow Fragment(HardType(forward.dataIn.fragment))
   val dataOut: Flow[Fragment[Bits]] = master Flow Fragment(HardType(backward.dataOut.fragment))
 
   val addrWidth = log2Up(lengthMax * 2)
@@ -36,15 +36,15 @@ case class ViterbiHard(trellis: Trellis[Int], lengthMax: Int, temp: Int) extends
   recordStack(stackCounter) := forward.dataOut.fragment
 
   // data reading
-  val dataReady = Delay(forward.dataOut.valid, lengthMax, init = False) // TODO: improve the implementation
+  val dataReady      = Delay(forward.dataOut.valid, lengthMax, init = False) // TODO: improve the implementation
   val stackCountDown = Reg(UInt(log2Up(lengthMax * 2) bits)) // TODO: optimize the width
-  when(dataReady)(stackCountDown := stackCountDown - 1) // pop counter for the stack
+  when(dataReady)(stackCountDown            := stackCountDown - 1) // pop counter for the stack
   when(forward.dataOut.last)(stackCountDown := stackCounter) // forward last means backward starts
 
   // stack -> backward
-  backward.stateStart := temp // FIXME: should be from a common minTree
-  backward.dataIn.valid := RegNext(dataReady, init = False) // latency for read sync
-  backward.dataIn.last := Delay(forward.dataOut.last, lengthMax + 1, init = False) // 1 for read sync
+  backward.stateStart      := temp // FIXME: should be from a common minTree
+  backward.dataIn.valid    := RegNext(dataReady, init = False) // latency for read sync
+  backward.dataIn.last     := Delay(forward.dataOut.last, lengthMax + 1, init = False) // 1 for read sync
   backward.dataIn.fragment := recordStack.readSync(stackCountDown) // TODO: readSync and using BRAM
 
   // backward -> output

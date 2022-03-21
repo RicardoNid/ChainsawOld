@@ -1,7 +1,3 @@
 package Chainsaw.DSP.convolution
 
-
-
-class Algo {
-
-}
+class Algo {}

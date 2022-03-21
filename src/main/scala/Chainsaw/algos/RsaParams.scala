@@ -46,8 +46,8 @@ case class RsaParams(lN: Int) {
 
   // generate multiple groups of parameters
   def getParams(num: Int) = {
-    val modulusBuffer = ArrayBuffer[BigInt]()
-    val publicKeyBuffer = ArrayBuffer[BigInt]()
+    val modulusBuffer    = ArrayBuffer[BigInt]()
+    val publicKeyBuffer  = ArrayBuffer[BigInt]()
     val privateKeyBuffer = ArrayBuffer[BigInt]()
 
     (0 until num).foreach { _ =>

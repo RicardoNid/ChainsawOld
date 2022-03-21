@@ -19,15 +19,16 @@ class SM4Test extends AnyFlatSpec {
 
   "the SM4 design" should "work correctly on combinational version" in {
     val combConfig = SM4Config(readAsync = true, usingBRAM = false, usingROM = true, 1, comb = true)
-    doFlowPeekPokeTest(
-      s"testSM4_combinational", SM4HardwareDFG(combConfig),
-      Seq.fill(baseLineConfig.parallelism.abs)(Seq(testCase, testKey)), Seq(golden))
+    doFlowPeekPokeTest(s"testSM4_combinational", SM4HardwareDFG(combConfig), Seq.fill(baseLineConfig.parallelism.abs)(Seq(testCase, testKey)), Seq(golden))
   }
 
   "the SM4 design" should "work correctly on baseline config" in {
     doFlowPeekPokeTest(
-      s"testSM4_$baseLineConfig", SM4HardwareDFG(baseLineConfig),
-      Seq.fill(baseLineConfig.parallelism.abs)(Seq(testCase, testKey)), Seq(golden))
+      s"testSM4_$baseLineConfig",
+      SM4HardwareDFG(baseLineConfig),
+      Seq.fill(baseLineConfig.parallelism.abs)(Seq(testCase, testKey)),
+      Seq(golden)
+    )
   }
 
   "the SM4 design" should "work correctly on all configs" in {

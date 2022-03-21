@@ -31,7 +31,7 @@ class BinarySFG extends DirectedMultigraph[Int, DefaultEdge](classOf[DefaultEdge
 
   def serialized = {
     val exporter = new DOTExporter[Int, DefaultEdge]()
-    val writer = new StringWriter()
+    val writer   = new StringWriter()
     exporter.exportGraph(this, writer)
     writer.toString.filterNot(_ == '\n')
   }
@@ -49,9 +49,9 @@ object BinarySFG {
   }
 
   def fromSerialized(serialized: String): BinarySFG = {
-    val ret = new BinarySFG()
+    val ret      = new BinarySFG()
     val importer = new DOTImporter[Int, DefaultEdge]()
-    val reader = new StringReader(serialized)
+    val reader   = new StringReader(serialized)
     ret.setVertexSupplier(intSupplier)
     importer.importGraph(ret, reader)
     intSupplier.clear()

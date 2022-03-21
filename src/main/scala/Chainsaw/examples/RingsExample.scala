@@ -18,7 +18,7 @@ object RingsExample {
     val poly1: UnivariatePolynomial[IntZ] = PolyRingOnZ("x^3 - 1")
     println(Factor(poly1).mkString(" "))
     val product: UnivariatePolynomial[IntZ] = poly0 * poly1
-    val value: IntZ = product.evaluate(3)
+    val value: IntZ                         = product.evaluate(3)
     println(value.intValue())
 
     println(s"Z is a field: ${Z.isField}")
@@ -46,12 +46,12 @@ object RingsExample {
     println(s"power ${zp3329.pow(2, 256)}")
 
     /** HUAWEI,Competition [[https://cpipc.acge.org.cn//cw/detail/10/2c90800c78715fdd0178a1cb74720c89]]Problem 3
-     */
+      */
     def evaluateHUAWEI(poly0: Seq[Term], poly1: Seq[Term], ret: Seq[Term]) = {
       val polyRing = UnivariateRingZp64(3329, "x")
-      val modulo = polyRing("x^256 + 1")
+      val modulo   = polyRing("x^256 + 1")
 
-      val golden = polyRing(buildString(poly0, "x")) * polyRing(buildString(poly1, "x")) % modulo
+      val golden      = polyRing(buildString(poly0, "x")) * polyRing(buildString(poly1, "x")) % modulo
       val goldenTerms = (0 until 255).map(i => i -> golden.get(i)).filterNot(_._2 == 0).map { case (order, coeff) => Term(coeff, order) }
 
       println("evaluate HUAWEI")
@@ -62,7 +62,7 @@ object RingsExample {
 
     val thePoly1 = Seq(Term(278, 245), Term(1, 0))
     val thePoly2 = Seq(Term(213, 399), Term(2, 0))
-    val result = Seq(Term(2, 0), Term(2621, 132), Term(3116, 143), Term(556, 246))
+    val result   = Seq(Term(2, 0), Term(2621, 132), Term(3116, 143), Term(556, 246))
     evaluateHUAWEI(thePoly1, thePoly2, result)
 
     val Z7 = Zp(7)
@@ -77,33 +77,37 @@ object RingsExample {
     println(a gcd b)
 
     /** Lagrange polynomial interpolation formula
-     *
-     * @param points x -> p(x) pairs
-     * @param ring   the background polynomial ring of interpolation
-     * @tparam Poly the polynomial type
-     * @tparam Coef the coefficient ring type
-     * @return result polynomial of Lagrange interpolation
-     */
-    def interpolate[Poly <: IUnivariatePolynomial[Poly], Coef]
-    (points: Seq[(Coef, Coef)])
-    (implicit ring: IUnivariateRing[Poly, Coef]) = {
+      *
+      * @param points
+      *   x -> p(x) pairs
+      * @param ring
+      *   the background polynomial ring of interpolation
+      * @tparam Poly
+      *   the polynomial type
+      * @tparam Coef
+      *   the coefficient ring type
+      * @return
+      *   result polynomial of Lagrange interpolation
+      */
+    def interpolate[Poly <: IUnivariatePolynomial[Poly], Coef](points: Seq[(Coef, Coef)])(implicit ring: IUnivariateRing[Poly, Coef]) = {
       // implicit coefficient ring (setups algebraic operators on type Coef)
       implicit val cfRing: Ring[Coef] = ring.cfRing
       if (!cfRing.isField) throw new IllegalArgumentException
-      val betas = points.map(_._1)
+      val betas  = points.map(_._1)
       val values = points.map(_._2)
-      points.indices.map { i =>
-        val indices = points.indices.filterNot(_ == i) // j != i
-        val numerator = indices.map(j => ring.`x` - betas(j)).reduce(_ * _)
-        val denominator = indices.map(j => betas(i) - betas(j)).reduce(_ * _)
-        ring(values(i)) * numerator / denominator // ring(values(i)) regards the coeff as a 0th-order poly
-      }.reduce(_ + _)
+      points.indices
+        .map { i =>
+          val indices     = points.indices.filterNot(_ == i) // j != i
+          val numerator   = indices.map(j => ring.`x` - betas(j)).reduce(_ * _)
+          val denominator = indices.map(j => betas(i) - betas(j)).reduce(_ * _)
+          ring(values(i)) * numerator / denominator // ring(values(i)) regards the coeff as a 0th-order poly
+        }
+        .reduce(_ + _)
     }
 
     implicit val ring = UnivariateRing(Q, "x")
     // provided three points of polynomial x^2 + 1
     println(s"poly: ${interpolate(Seq(Q(0) -> Q(1), Q(1) -> Q(2), Q(-1) -> Q(2)))}")
-
 
     // examples on generator
     val GF7_10 = GF(7, 10, "x") // Galios filed can be specified by p^m
@@ -117,12 +121,12 @@ object RingsExample {
     Frac(MultivariateRingZp64(19, Array("x", "y", "z")))
 
     // find the generator of GF(p)
-    def getGenerator(p:Int) = {
+    def getGenerator(p: Int) = {
       val field = Zp(p)
-      def isGenerator(candidate:Int) = {
-        val want: Array[IntZ] = field.iterator().toArray.tail // all the elements except 0
+      def isGenerator(candidate: Int) = {
+        val want: Array[IntZ]    = field.iterator().toArray.tail // all the elements except 0
         val get: Seq[BigInteger] = want.map(i => field.pow(candidate, i)).sorted // powers of the candidate
-        want.zip(get).forall{ case (z, integer) => z.intValue() == integer.intValue()} // check whether get is a permutation of want
+        want.zip(get).forall { case (z, integer) => z.intValue() == integer.intValue() } // check whether get is a permutation of want
       }
       field.iterator().toArray.dropWhile(i => !isGenerator(i.intValue())).head // run isGenerator until we find one
     }

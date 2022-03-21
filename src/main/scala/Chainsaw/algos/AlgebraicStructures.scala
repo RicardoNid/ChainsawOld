@@ -20,5 +20,4 @@ object AlgebraicStructures {
     override def !=(a: ZInt, b: ZInt) = a.value != b.value
   }
 
-
 }

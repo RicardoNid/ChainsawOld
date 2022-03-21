@@ -11,24 +11,24 @@ import Chainsaw.Real
 
 class BlackBoxExample extends BlackBox {
   val a, b = in UInt (4 bits)
-  val sum = out UInt (4 bits)
+  val sum  = out UInt (4 bits)
 
   addRTLPath("adder.v")
 
 }
 
-class Dut extends Component{
-  val a, b = in UInt (4 bits)
-  val sum = out UInt (4 bits)
+class Dut extends Component {
+  val a, b            = in UInt (4 bits)
+  val sum             = out UInt (4 bits)
   val blackBoxExample = new BlackBoxExample
   blackBoxExample.a := a
   blackBoxExample.b := b
-  sum := blackBoxExample.sum
+  sum               := blackBoxExample.sum
 }
 
 object BlackBoxExample {
   def main(args: Array[String]): Unit = {
-    SimConfig.addRtl("adder.v").withWave.compile(new Dut).doSim{ dut =>
+    SimConfig.addRtl("adder.v").withWave.compile(new Dut).doSim { dut =>
       dut.a #= 3
       dut.b #= 1
       sleep(1)
@@ -39,11 +39,11 @@ object BlackBoxExample {
   }
 }
 
-class DSPExample extends Component{
-  val io = new Bundle{
-    val a = in SInt(18 bits)
-    val b = in SInt(27 bits)
-    val p = out SInt(45 bits)
+class DSPExample extends Component {
+  val io = new Bundle {
+    val a = in SInt (18 bits)
+    val b = in SInt (27 bits)
+    val p = out SInt (45 bits)
   }
   io.p := io.a * io.b
   io.p.addAttribute("use_dsp", "yes")

@@ -10,9 +10,9 @@ import scala.sys.process.Process
 
 class FloPoCoSCM(input: Real, constant: Int) extends ImplicitArea[Real] with Testable {
 
-  val flopocoPath = "/home/ltr/FloPoCo/flopoco/build"
+  val flopocoPath       = "/home/ltr/FloPoCo/flopoco/build"
   val defaultOutputPath = flopocoPath + "/flopoco.vhdl"
-  val defaultOutputDir = "/home/ltr/IdeaProjects/Chainsaw/tempRTL"
+  val defaultOutputDir  = "/home/ltr/IdeaProjects/Chainsaw/tempRTL"
 
   case class FloPoCoConfig(entityName: String, outputFile: String)
 
@@ -24,14 +24,14 @@ class FloPoCoSCM(input: Real, constant: Int) extends ImplicitArea[Real] with Tes
 
   // extract the design from the source
   val patternShiftAdd = "([P|M]?[0-9]*)X <-  ([P|M]?[0-9]*)X<<([0-9]+)  \\+ ([P|M]?[0-9]*)X".r.unanchored
-  val opStrings = rtl.filter(line => patternShiftAdd.findAllIn(line).nonEmpty).toSeq
+  val opStrings       = rtl.filter(line => patternShiftAdd.findAllIn(line).nonEmpty).toSeq
   println(opStrings.mkString("\n"))
 
   import Chainsaw.tobeTransplanted.AOpSign._
 
   val mag = new BinarySFG
   mag.addVertex(0)
-  val path = MAG.Path()
+  val path       = MAG.Path()
   val AOpConfigs = ListBuffer[AOpConfig](tobeTransplanted.AOpConfig(0, 0, 0, ADD))
 
   opStrings.foreach { line =>
@@ -40,12 +40,12 @@ class FloPoCoSCM(input: Real, constant: Int) extends ImplicitArea[Real] with Tes
 
     def toInt(string: String): Int = {
       val digits = string.filter(_.isDigit)
-      val abs = if (digits.nonEmpty) digits.toInt else 1
+      val abs    = if (digits.nonEmpty) digits.toInt else 1
       if (string.startsWith("M")) -abs else abs
     }
 
-    val coeffSum = toInt(sum)
-    val tempLeft = toInt(left)
+    val coeffSum  = toInt(sum)
+    val tempLeft  = toInt(left)
     val tempRight = toInt(right)
     val (coeffLeft, coeffRight, slLeft, slRight) =
       if (tempLeft.abs <= tempRight.abs) (tempLeft, tempRight, shift.toInt, 0)
@@ -55,7 +55,8 @@ class FloPoCoSCM(input: Real, constant: Int) extends ImplicitArea[Real] with Tes
       if (coeffLeft >= 0 && coeffRight >= 0) ADD
       else if (!(coeffLeft >= 0) && !(coeffRight >= 0)) ADD
       else if (coeffLeft >= 0 && !(coeffRight >= 0)) if (coeffSum >= 0) SUBNEXT else SUBPREV
-      else if (coeffSum >= 0) SUBPREV else SUBNEXT
+      else if (coeffSum >= 0) SUBPREV
+      else SUBNEXT
 
     if (!path.contains(coeffSum.abs)) {
       println(coeffSum, coeffLeft, coeffRight)
@@ -71,14 +72,14 @@ class FloPoCoSCM(input: Real, constant: Int) extends ImplicitArea[Real] with Tes
   println(path)
 
   val (graph, magInfos) = MAG.rebuildMAG(path, mag)
-  val SAG = new HomogeneousBinarySFGBuilder(Seq(input), graph, AOpHardware, AOpConfigs)
+  val SAG               = new HomogeneousBinarySFGBuilder(Seq(input), graph, AOpHardware, AOpConfigs)
 
   // post-processing, as current result is POF of the constant
   val complement = constant / AOperations.getPOF(constant)
   require(isPow2(complement.abs))
   val retPOF = SAG.implicitValue.head
   val retAbs = retPOF << log2Up(complement.abs)
-  val ret = if (complement < 0) -retAbs else retAbs
+  val ret    = if (complement < 0) -retAbs else retAbs
 
   override def implicitValue = RegNext(ret)
 
@@ -92,8 +93,8 @@ object FloPoCoSCM {
   def main(args: Array[String]): Unit = {
     ChainsawDebug = true
     SpinalConfig().generateVhdl(new Component {
-      val input = in(IntReal(0, (1 << 14) - 1))
-      val sag = new FloPoCoSCM(input, 31)
+      val input  = in(IntReal(0, (1 << 14) - 1))
+      val sag    = new FloPoCoSCM(input, 31)
       val output = out(sag.implicitValue)
     })
   }

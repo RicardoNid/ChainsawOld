@@ -9,7 +9,5 @@ import spinal.core._
 import scala.language.postfixOps
 
 object FIR {
-  def main(args: Array[String]): Unit = {
-
-  }
+  def main(args: Array[String]): Unit = {}
 }
