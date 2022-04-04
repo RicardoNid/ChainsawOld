@@ -7,7 +7,6 @@ import scala.util.Random
 import Chainsaw._
 import Para._
 import scala.math._
-import SFixSimSupport._
 
 class UnwrapTest extends AnyFlatSpec {
   "The result" should "meet a the standard \"|x(n)' - x(n - 1)| <= 1 and |x(n)' - x(n)| % 2 = 0\"" in

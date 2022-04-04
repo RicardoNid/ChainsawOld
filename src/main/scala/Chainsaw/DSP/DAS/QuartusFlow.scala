@@ -25,6 +25,9 @@ class QuartusFlow[T <: Component](dut: => T, workspace: String = "quartusWorkspa
   val DEVICE = "5CGXFC7C6U19A7"
 
   def impl() = {
+    // new workspace
+    s"mkdir $workspace".run()
+    println("")
     //generate RTL
     SpinalConfig(mode = Verilog, targetDirectory = s"$workspace").generateVerilog(dut.setDefinitionName("temp"))
     // clear the workspace--shell
@@ -33,7 +36,7 @@ class QuartusFlow[T <: Component](dut: => T, workspace: String = "quartusWorkspa
 
     // new project and compile--tcl
     tclGen
-    Process("quartus_sh -t set.tcl", new File("quartusWorkspace")) !
+    Process("quartus_sh -t set.tcl", new File(workspace)) !
     // get report
     val resourceReport = getReport(Report.RESOURCE)
     val timingReport   = getReport(Report.TIMING)
@@ -69,7 +72,7 @@ class QuartusFlow[T <: Component](dut: => T, workspace: String = "quartusWorkspa
       reportType match {
         case Chainsaw.DSP.DAS.Report.RESOURCE => {
           var index = -1
-          report.zipWithIndex.foreach { case (r, i) => if (r.contains("Analysis & Synthesis Resource Usage Summary") ) index = i }
+          report.zipWithIndex.foreach { case (r, i) => if (r.contains("Analysis & Synthesis Resource Usage Summary")) index = i }
           val resourceReport = report.zipWithIndex.filter { case (r, i) => i >= index - 1 && i <= index + 23 }.map(_._1)
           resourceReport
         }
@@ -90,12 +93,3 @@ class QuartusFlow[T <: Component](dut: => T, workspace: String = "quartusWorkspa
   }
 }
 
-object tst extends App {
-  val quartusFlow = new QuartusFlow(DivideCordic())
-  quartusFlow.impl()
-//  "quartus_sh -t ./quartusWorkspace/set.tcl".run()
-//  "find /home/xdh -name Chainsaw" !
-//  "cd /home/xdh".run()
-//  "mkdir fuck".run()
-//  Process("quartus_sh -t set.tcl", new File("quartusWorkspace")) !
-}
