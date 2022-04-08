@@ -179,7 +179,7 @@ class CooleyTukeyFFTTest() extends AnyFlatSpec with Matchers {
     val fp18 = HardType(SFix(1 exp, -16 exp))
     val fp24 = HardType(SFix(6 exp, -17 exp))
     VivadoSynth(
-      AdaptiveCooleyTukeyFFT(1024, 128, false, fp24, fp18, Seq(4, 4, 4, 2, 8), Seq(0, 0, 0, 0, 0, 0))
+      AdaptiveCooleyTukeyFFT(1024, 128, false, fp24, fp18, Seq(4, 4, 4, 2, 8), Seq(0, 0, 0, 0, 0))
     )
   }
 }

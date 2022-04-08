@@ -1,15 +1,7 @@
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
 
-class BasicIntQueue {
-  private val buf = new ArrayBuffer[Int]()
+val temp = Seq(1,2,3)
 
-  def get = buf.remove(0)
+val temp1 = Seq(1,2,3,4)
 
-  def put(x: Int) = buf += x
-}
-
-var a,b,c = 0
-val temp = ArrayBuffer(a,b,c)
-temp(0) = 3
-a
-temp
+temp.zip(temp1)

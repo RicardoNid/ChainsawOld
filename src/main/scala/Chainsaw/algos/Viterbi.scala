@@ -16,17 +16,6 @@ import Chainsaw.algos.TerminationMode._
 
 object Viterbi {
 
-  def bits2Symbols(bits: DenseVector[Int], symbolSize: Int) = {
-    val symbols: Array[Int] = bits.toArray.grouped(symbolSize).toArray
-      .map(_.mkString("")).map(BigInt(_, 2).toInt)
-    new DenseVector(symbols)
-  }
-
-  def symbols2Bits(symbols: DenseVector[Int], symbolSize: Int) = {
-    val bits = symbols.toArray.flatMap(_.toBinaryString.padToLeft(symbolSize, '0').map(_.asDigit))
-    new DenseVector(bits)
-  }
-
   /** plain implementation of general Viterbi algorithm by maintaining paths
    *
    * @param rxSymbols received sequence of output symbols with noise

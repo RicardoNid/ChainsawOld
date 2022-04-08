@@ -1,4 +1,4 @@
-package Chainsaw.PwlWorkspace
+package Chainsaw.dsl
 
 import spinal.core._
 import spinal.core.sim._
@@ -9,6 +9,8 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
-case class Xor() extends Component {
+trait HasConstant[T, THard <: Data] {
+
+  def fromConstant(constant: T): THard
 
 }

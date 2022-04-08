@@ -25,5 +25,6 @@ object Gray {
 
     println(grays)
     println(bins)
+    println(toGray(74,7).toBinaryString)
   }
 }

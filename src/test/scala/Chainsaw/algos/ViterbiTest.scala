@@ -38,8 +38,8 @@ class ViterbiTest extends AnyFlatSpec {
 
   @matlab
   def testViterbiAlgo(algo: viterbiHardAlgo): Unit = {
-    val codedSymbols: Seq[DenseVector[Int]] = coded.map(Viterbi.bits2Symbols(_, 2))
-    val pollutedSymbols: Seq[DenseVector[Int]] = polluted.map(Viterbi.bits2Symbols(_, 2))
+    val codedSymbols: Seq[DenseVector[Int]] = coded.map(bits2Symbols(_, 2))
+    val pollutedSymbols: Seq[DenseVector[Int]] = polluted.map(bits2Symbols(_, 2))
 
     val symbols = Seq(codedSymbols, pollutedSymbols)
     val yours = Seq.tabulate(2, 2)((i, j) => symbols(i).map(algo(_, trellis, Metrics.Hamming, modes(j)))).flatten
@@ -60,11 +60,11 @@ class ViterbiTest extends AnyFlatSpec {
     val pollutedSymbols: Seq[DenseVector[Int]] = FTN.loadFTN1d[Double]("iter1")
       .grouped(256).toSeq
       .map(doubles => new DenseVector(doubles.map(_.toInt)))
-      .map(Viterbi.bits2Symbols(_, 2))
+      .map(bits2Symbols(_, 2))
     val decodedSymbols = FTN.loadFTN1d[Double]("iter2")
       .grouped(128).toSeq
       .map(doubles => new DenseVector(doubles.map(_.toInt)))
-      .map(Viterbi.bits2Symbols(_, 1))
+      .map(bits2Symbols(_, 1))
 
     var diff = 0
     pollutedSymbols.zip(decodedSymbols).zipWithIndex.foreach { case ((polluted, decoded), i) =>
@@ -86,7 +86,7 @@ class ViterbiTest extends AnyFlatSpec {
     GenRTL(ViterbiHardware(trellis, testLength))
 
     // run algo first, so you can generate info to compare with
-    val symbols: Seq[DenseVector[Int]] = (coded ++ polluted).map(Viterbi.bits2Symbols(_, 2))
+    val symbols: Seq[DenseVector[Int]] = (coded ++ polluted).map(bits2Symbols(_, 2))
     val golden: Seq[DenseVector[Int]] = goldens(0) ++ goldens(2)
     val ret = symbols.map(Viterbi.viterbiTraceback(_, trellis, Metrics.Hamming, TERMINATION))
     assert(ret.zip(golden).forall { case (a, b) => a == b })
@@ -104,7 +104,7 @@ class ViterbiTest extends AnyFlatSpec {
     val goldens: Array[Double] = FTN.loadFTN1d[Double]("iter2")
 
     val parallelism = 1
-    val testCase: Array[Seq[BigInt]] = Viterbi.bits2Symbols(new DenseVector(testCases.map(_.toInt)), 2)
+    val testCase: Array[Seq[BigInt]] = bits2Symbols(new DenseVector(testCases.map(_.toInt)), 2)
       .toArray.map(BigInt(_)).map(data => Seq.fill(parallelism)(data))
     val golden: Array[Seq[BigInt]] = goldens.map(_.toInt).map(BigInt(_))
       .map(data => Seq.fill(parallelism)(data))

@@ -93,4 +93,6 @@ object Bitonic extends App {
     println(s"after sorting:  ${dutResult.mkString(" ")}")
     //    assert(dutResult.zip(testCase.sorted).forall { case (i, i1) => i == i1 })
   }
+
+  VivadoSynth(Bitonic(UInt(8 bits), 32, uintcomp))
 }

@@ -8,8 +8,8 @@ case class StateTransition[T](prevState: Int, nextState: Int, input: Int, output
 
 /** a state machine(trellis) represented by integer symbols and states, this relate state machine to coding theory
  *
- * @param nextStateLogic A(currentState, inputSymbol) = nextState
- * @param outputLogic    A(currentState, inputSymbol) = outputSymbol
+ * @param nextStateLogic lookup table of next state logic - A(currentState, inputSymbol) = nextState
+ * @param outputLogic    lookup table of output logic A(currentState, inputSymbol) = outputSymbol
  * @tparam T data type of output symbols, could be int(for hard decision) or double(for soft decision)
  */
 case class Trellis[T](nextStateLogic: DenseMatrix[Int], outputLogic: DenseMatrix[T]) {
@@ -25,7 +25,7 @@ case class Trellis[T](nextStateLogic: DenseMatrix[Int], outputLogic: DenseMatrix
   val numTransitions = numStates * numInputSymbols
 
   // pre-built table, A(nextState) = transition
-  val transitionsTo: Seq[Seq[StateTransition[T]]] = (0 until numStates).map{ state =>
+  val transitionsTo: Seq[Seq[StateTransition[T]]] = (0 until numStates).map { state =>
     val indices = nextStateLogic.findAll(_ == state)
     indices.map(tuple => StateTransition(tuple._1, state, tuple._2, outputLogic(tuple._1, tuple._2)))
   }
@@ -37,11 +37,11 @@ case class Trellis[T](nextStateLogic: DenseMatrix[Int], outputLogic: DenseMatrix
   val transitions = transitionsMap.values.toSeq
 
   // methods
-  def getPrevStatesTo(state:Int) = nextStateLogic.findAll(_ == state).map(_._1)
+  def getPrevStatesTo(state: Int) = nextStateLogic.findAll(_ == state).map(_._1)
 
   def getTransitionsTo(state: Int) = transitionsTo(state)
 
-  def getTransition(prevState:Int, nextState:Int) = transitionsMap(prevState, nextState)
+  def getTransition(prevState: Int, nextState: Int) = transitionsMap(prevState, nextState)
 }
 
 object Trellis {
@@ -57,9 +57,11 @@ object Trellis {
     )
   }
 
-  // TODO: this is for 1/n code rate, k/n code rate should be implemented
+  // TODO: this is for 1/n code rate, k/n code rate should be implemented, for that, polys would be a 2-D array
 
   /** create a coding state machine from a generator polynomials, we adopt the definition of constraint length in ''Coding Theory'', so +1 for matlab
+   *
+   * @param constLen number of memory
    *
    */
   def fromPoly(constLen: Int, polys: Array[Int]) = fromMatlab(poly2trellis(constLen + 1, polys))

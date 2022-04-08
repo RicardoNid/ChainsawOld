@@ -50,4 +50,15 @@ package object algos {
     }
   }
 
+  def bits2Symbols(bits: DenseVector[Int], symbolSize: Int) = {
+    val symbols: Array[Int] = bits.toArray.grouped(symbolSize).toArray
+      .map(_.mkString("")).map(BigInt(_, 2).toInt)
+    new DenseVector(symbols)
+  }
+
+  def symbols2Bits(symbols: DenseVector[Int], symbolSize: Int) = {
+    val bits = symbols.toArray.flatMap(_.toBinaryString.padToLeft(symbolSize, '0').map(_.asDigit))
+    new DenseVector(bits)
+  }
+
 }

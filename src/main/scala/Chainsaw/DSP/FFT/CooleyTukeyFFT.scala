@@ -16,7 +16,7 @@ import spinal.lib._
  * @param shifts      shifts(carries) on each stage, by default all 0s(then you should provide a wide enough dataType to avoid all overflows)
  * @see ''Fast Algorithms for Signal Processing'' Chap3.1
  */
-@coreHardware
+@coreHardware("fft")
 @fullyPipelined
 case class CooleyTukeyFFT(N: Int, inverse: Boolean, // determining the transformation
                           dataType: HardType[SFix], coeffType: HardType[SFix], // determining the precision

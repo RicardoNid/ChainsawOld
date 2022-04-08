@@ -1,6 +1,6 @@
 package Chainsaw.algos
 
-import Chainsaw.algos.AlgebraicStructures.Zp
+import Chainsaw.algos.AlgebraicStructures.SemiZp
 import Chainsaw.algos.Dft.genericDft
 import Chainsaw.{definition, fastAlgo}
 import breeze.linalg.DenseVector
@@ -25,7 +25,7 @@ object Ntt {
    * @param ring the ring at which ntt is defined
    */
   @definition
-  def ntt(data: DenseVector[Int], inverse: Boolean = false)(implicit zp: Zp): DenseVector[Int] = {
+  def ntt(data: DenseVector[Int], inverse: Boolean = false)(implicit zp: SemiZp): DenseVector[Int] = {
 
     val N = data.length
     val modulus = zp.modulus
@@ -36,10 +36,10 @@ object Ntt {
     ret
   }
 
-  def intt(data: DenseVector[Int])(implicit zp: Zp): DenseVector[Int] = ntt(data, inverse = true)
+  def intt(data: DenseVector[Int])(implicit zp: SemiZp): DenseVector[Int] = ntt(data, inverse = true)
 
   @fastAlgo("cconv")
-  def cconvByNtt(a: DenseVector[Int], b: DenseVector[Int])(implicit zp: Zp): DenseVector[Int] = intt(ntt(a) *:* ntt(b))
+  def cconvByNtt(a: DenseVector[Int], b: DenseVector[Int])(implicit zp: SemiZp): DenseVector[Int] = intt(ntt(a) *:* ntt(b))
 
   @fastAlgo("")
   def multByNtt(a: BigInt, b: BigInt): BigInt = ??? // TODO

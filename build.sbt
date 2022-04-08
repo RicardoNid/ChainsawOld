@@ -70,4 +70,6 @@ libraryDependencies += "net.openhft" % "affinity" % "3.21ea5"
 //jetbrains
 libraryDependencies += "org.jetbrains" % "annotations" % "23.0.0"
 
-libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.0.1"
+//libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "2.0.1"
+
+//libraryDependencies += "org.xwiki.contrib" % "draw.io-api" % "12.3.3-2"
