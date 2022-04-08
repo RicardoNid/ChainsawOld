@@ -26,7 +26,7 @@ object Examples {
 
     SimConfig.withFstWave.compile(new Component {
 
-      implicit val field = IntSignalField()
+      implicit val field = IntSignalField() //
       implicit val vectorSpace = BasicVectorSpace[SInt]
 
       val dataIn = in Vec(SInt(8 bits), 3)
