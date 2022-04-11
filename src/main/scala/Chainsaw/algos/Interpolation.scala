@@ -1,5 +1,7 @@
 package Chainsaw.algos
 
+import scala.sys.process._
+
 object Interpolation {
 
   def getPixels(image: BMPImage, x: Int, y: Int) = {
@@ -15,7 +17,7 @@ object Interpolation {
 
   def BiQuadratic(srcWidth: Long, srcHeight: Long,
                   tagWidth: Long, tagHeight: Long,
-                  fileName: String, filePath: String = "/home/lqx/bmpFile") = {
+                  fileName: String, filePath: String = "/home/lqx/Sampling_src/test_scala/downsampling") = {
     // load source bmp image
     val srcBmp = BMPImage(srcWidth, srcHeight)
     srcBmp.bmpRead(fileName, filePath)
@@ -27,11 +29,11 @@ object Interpolation {
     val xDoubleScale = srcHeight.toDouble / tagHeight.toDouble
 
     (0 until tagBmp.header.height_px).foreach{ x =>
-      val xDPosition = x * xDoubleScale
+      val xDPosition = x * xDoubleScale + 0.5 * (xDoubleScale - 1)
       val xIPosition = xDPosition.toInt
       val xDiff = xDPosition - xIPosition
       (0 until tagBmp.header.width_px).foreach{ y =>
-        val yDPosition = y * yDoubleScale
+        val yDPosition = y * yDoubleScale + 0.5 * (yDoubleScale - 1)
         val yIPosition = yDPosition.toInt
         val yDiff = yDPosition - yIPosition
 
@@ -58,8 +60,26 @@ object Interpolation {
     }
     tagBmp
   }
+
+  val isWindows = System.getProperty("os.name").toLowerCase().contains("win")
+
+  def doCmd(cmd: String, path: String): Unit = { // do cmd at the workSpace
+    println(cmd)
+    if (isWindows)
+      Process("cmd /C " + cmd, new java.io.File(path)) !
+    else
+      Process(cmd, new java.io.File(path)) !
+  }
+
+  def evalScore(fileName: String, path: String = "/home/lqx/Sampling_src/test_scala") = {
+    doCmd("python3 " + fileName, path)
+  }
 }
 
 object TestInterpolation extends App{
-  Interpolation.BiQuadratic(960L, 540L, 3840L, 2160L, "downscaled.bmp").bmpWrite("upscaled.bmp")
+//  (0 to 46).foreach { i =>
+//    Interpolation.BiQuadratic(960L, 540L, 3840L, 2160L, s"${i}.bmp").bmpWrite(s"${i}_upsampling.bmp")
+//  }
+  Interpolation.evalScore("Measure.py")
+
 }

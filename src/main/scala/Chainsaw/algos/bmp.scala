@@ -55,7 +55,7 @@ case class BMPImage(width: Long, height: Long) {
       0xff00 & byteArray(1) << 8 | 0xff & byteArray(0)
   }
 
-  def readHeader(fileName: String, filePath: String = "/home/lqx/bmpFile") = {
+  def readHeader(fileName: String, filePath: String = "/home/lqx/Sampling_src/test_scala/downsampling") = {
     val headerStream = new FileImageInputStream(Paths.get(filePath,fileName).toFile)
 
     println(s"************The BMP header information************")
@@ -165,7 +165,7 @@ case class BMPImage(width: Long, height: Long) {
     headerStream.close()
   }
 
-  def readPixels(fileName: String, filePath: String = "/home/lqx/bmpFile") = {
+  def readPixels(fileName: String, filePath: String = "/home/lqx/Sampling_src/test_scala/downsampling") = {
     val pixelStream = new FileImageInputStream(Paths.get(filePath, fileName).toFile)
     // skip header's byte
     val skipNumb = pixelStream.skipBytes(header.offset)
@@ -182,12 +182,12 @@ case class BMPImage(width: Long, height: Long) {
     pixelStream.close()
 
   }
-  def bmpRead(fileName: String, filePath: String = "/home/lqx/bmpFile"): Unit ={
+  def bmpRead(fileName: String, filePath: String = "/home/lqx/Sampling_src/test_scala/downsampling"): Unit ={
     readHeader(fileName, filePath)
     readPixels(fileName, filePath)
   }
 
-  def bmpWrite(fileName: String, filePath: String = "/home/lqx/bmpFile"):Unit = {
+  def bmpWrite(fileName: String, filePath: String = "/home/lqx/Sampling_src/test_scala/upsampling"):Unit = {
     val retImage = BMPImage(width, height)
     val retStream = new FileImageOutputStream(Paths.get(filePath, fileName).toFile)
 
@@ -229,7 +229,7 @@ case class BMPImage(width: Long, height: Long) {
 
 object Test extends App{
   val a = BMPImage(3840, 2160)
-  a.bmpRead("downscaled.bmp")
-  a.bmpWrite("copy.bmp")
+  a.bmpRead("1.bmp")
+  a.bmpWrite("1_upsampling.bmp")
 
 }
