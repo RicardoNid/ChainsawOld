@@ -1,7 +1,7 @@
 package Chainsaw.DFG
 
 import Chainsaw._
-import jdk.jfr.Experimental
+//import jdk.jfr.Experimental
 import org.slf4j.{Logger, LoggerFactory}
 import spinal.core._
 import spinal.lib._
@@ -23,7 +23,7 @@ import scala.util.{Failure, Success, Try}
   * @see
   *   [[examples.MultiModuleExample]] for submodule sharing mechanism
   */
-@Experimental // the "submodule" mode is experimental, it improves the gen result, but may lead to width inference problem
+//@Experimental // the "submodule" mode is experimental, it improves the gen result, but may lead to width inference problem
 class DFGImpl[T <: Data](dfg: DFGGraph[T], useRegInit: Boolean = true, useSubmodule: Boolean = true)(implicit val holderProvider: HolderProvider[T]) {
 
   val logger: Logger = LoggerFactory.getLogger(s"implementing procedure")
