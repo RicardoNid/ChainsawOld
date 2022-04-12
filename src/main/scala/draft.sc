@@ -1,13 +1,12 @@
-import Chainsaw._
-import breeze.linalg._
-import breeze.math._
-import breeze.numerics._
-import breeze.numerics.constants._
-import breeze.signal._
+import Chainsaw.crypto.ReedSolomon._
+import spinal.core._
+import spinal.lib._
+import scala.collection.mutable._
 
-import scala.math.floor
+val rs = RS(15, 11)
 
+val gx = rs.getGxCoff
 
+val ab = new ArrayBuffer[Int]()
 
-val a = Range(0, 10).toArray
-val b = a.tail
+ab.contains(0)
