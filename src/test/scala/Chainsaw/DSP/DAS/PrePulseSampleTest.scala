@@ -6,9 +6,10 @@ import spinal.lib._
 import spinal.core.sim._
 import spinal.sim._
 
-class RowDiffAndUnwrapTest extends AnyFlatSpec {
-//  new QuartusFlow(RowDiffAndUnwrap()).impl() // FIXME
-
+class PrePulseSampleTest extends AnyFlatSpec {
+  //  new QuartusFlow(PrePulseSample()).impl()
+  // 244.68 MHz
+  // 24 ALMs
   SimConfig.withFstWave
     .withConfig(
       SpinalConfig(
@@ -16,16 +17,17 @@ class RowDiffAndUnwrapTest extends AnyFlatSpec {
         defaultClockDomainFrequency  = FixedFrequency(100 MHz)
       )
     )
-    .compile(new RowDiffAndUnwrap())
+    .compile(new PrePulseSample())
     .doSim { dut =>
       import dut._
       clockDomain.forkStimulus(10)
-      io.dataIn.valid       #= false
       io.dataIn.payload.raw #= 0
+      io.dataIn.valid       #= false
       clockDomain.waitSampling()
-      Range(0, 3000000).foreach { i =>
+      Range(0, 8000).foreach { i =>
         io.dataIn.randomize()
         clockDomain.waitSampling()
       }
     }
+
 }

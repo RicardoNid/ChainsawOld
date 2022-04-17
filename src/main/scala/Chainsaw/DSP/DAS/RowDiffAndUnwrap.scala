@@ -3,10 +3,7 @@ import spinal.core._
 import spinal.lib._
 
 case class RowDiffAndUnwrap() extends Component {
-  val io = new Bundle {
-    val dataIn  = slave Flow (Para.dataType())
-    val dataOut = master Flow (Para.dataType())
-  }
+  val io = new Io()
 
   // row diff
   val shiftRegLoadCounter = Counter(0, Para.gauge)
@@ -24,7 +21,7 @@ case class RowDiffAndUnwrap() extends Component {
   val firstUnwrap = Unwrap(Para.rowCount, xnFlow)
 
   // acc and average
-  val counter = Counter(0, Para.gauge - 1)
+  val counter = Counter(0, Para.gauge)
   when(firstUnwrap.io.xnOut.valid)(counter.increment())
   val acc     = Reg(Para.dataType()) init (0)
   val divisor = Para.dataType()
@@ -33,11 +30,14 @@ case class RowDiffAndUnwrap() extends Component {
   val xnFlow2 = Flow(Para.dataType())
   xnFlow2.payload := 0
   xnFlow2.valid.clear()
-  when(counter.willOverflow) {
-    acc := 0
+  when(counter.willOverflowIfInc) {
+    counter.clear()
     xnFlow2.valid.set()
     xnFlow2.payload := (acc * divisor).truncated
-  } elsewhen (firstUnwrap.io.xnOut.valid)(acc := acc + firstUnwrap.io.xnOut.payload)
+    when(firstUnwrap.io.xnOut.valid){
+      acc := firstUnwrap.io.xnOut.payload
+    }otherwise(acc := 0)
+  }elsewhen(firstUnwrap.io.xnOut.valid)(acc := acc + firstUnwrap.io.xnOut.payload)
 
   val secondUnwrap = Unwrap(Para.rowCount2, xnFlow2)
 

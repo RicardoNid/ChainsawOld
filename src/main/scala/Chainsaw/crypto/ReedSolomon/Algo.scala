@@ -26,6 +26,11 @@ case class RS(n: Int, k: Int) {
     }
     coff.reverse
   }
+
+  def encode(messageWord: Seq[Int])={
+    require(messageWord.size == k)
+
+  }
 }
 
 /**

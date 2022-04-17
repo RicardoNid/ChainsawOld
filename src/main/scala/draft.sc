@@ -1,12 +1,5 @@
-import Chainsaw.crypto.ReedSolomon._
-import spinal.core._
-import spinal.lib._
-import scala.collection.mutable._
 
-val rs = RS(15, 11)
+// "11+10x+9x^2+8x^3+7x^4+6x^5+5x^6+4x^7+3x^8+2x^9+x^10"
+val a = Range(0, 100)
 
-val gx = rs.getGxCoff
-
-val ab = new ArrayBuffer[Int]()
-
-ab.contains(0)
+a.slice(1, 10)
