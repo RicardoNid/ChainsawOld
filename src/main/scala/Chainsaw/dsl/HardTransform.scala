@@ -9,8 +9,8 @@ import Chainsaw._
 import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 
-trait HasConstant[T, THard <: Data] {
+trait HardTransform[T <: Data] {
 
-  def fromConstant(constant: T): THard
+  def latency: Int
 
 }

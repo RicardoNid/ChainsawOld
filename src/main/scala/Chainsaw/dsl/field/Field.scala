@@ -1,4 +1,4 @@
-package Chainsaw.dsl
+package Chainsaw.dsl.field
 
 abstract class Field[T] {
 
@@ -11,5 +11,7 @@ abstract class Field[T] {
   def identity(a: T): T
 
   def zero: T
+
+  def one:T
 
 }

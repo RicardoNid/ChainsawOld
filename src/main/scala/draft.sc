@@ -1,7 +1,2 @@
-import scala.collection.mutable
-
-val temp = Seq(1,2,3)
-
-val temp1 = Seq(1,2,3,4)
-
-temp.zip(temp1)
+(64 + 56 + 1).toBinaryString
+(64 + 24 + 3).toBinaryString

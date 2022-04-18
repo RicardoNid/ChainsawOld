@@ -1,46 +1,33 @@
 package Chainsaw.dsl
 
+import Chainsaw.{BComplex, dsl}
+import breeze.math.Complex
+import breeze.numerics.constants.Pi
+import breeze.numerics.exp
 import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
+import dsl.field._
+import dsl.vectorspace._
+import dsl.transform._
 
 object Examples {
 
   def main(args: Array[String]): Unit = {
 
-    implicit val field = IntField()
+    implicit val testField = ComplexField()
+    implicit val testSpace = BasicVectorSpace[Complex]
 
-    implicit val vectorSpace = BasicVectorSpace[Int]
+    // software
 
-    //    val a = Matrix(Array.tabulate(3, 3)((_, _) => 1), 1, 1)
-    //    val b = Matrix(Array.tabulate(3, 3)((_, _) => 2), 1, 1)
+    def WNnk(nk: Int, N: Int) = exp(Complex(0, -2 * Pi * nk / N))
+    val coeff = Array.tabulate(2, 2)((n2, k1) => n2 * k1).flatten.map(WNnk(_, 4))
 
-    //    println(a)
-    //    println(b)
-    //    println(a * b)
+    val dft2 = Matrix(Array(Array(Complex(1, 0), Complex(1, 0)), Array(Complex(1, 0), Complex(-1, 0))))
+    val sp22 = SPermutation(2, 2)
+    val t22 = Diagonal(coeff: _*)
+    val dft4 = sp22 * dft2.⊗(2) * sp22 * t22 * dft2.⊗(2) * sp22
 
-    SimConfig.withFstWave.compile(new Component {
+    println(dft4(Array(Complex(1, 0), Complex(2, 0), Complex(3, 0), Complex(4, 0))).mkString(" "))
 
-      implicit val field = IntSignalField() //
-      implicit val vectorSpace = BasicVectorSpace[SInt]
-
-      val dataIn = in Vec(SInt(8 bits), 3)
-      val dataOut = out Vec(SInt(13 bits), 3)
-
-      val coeff = Matrix(Array.tabulate(3, 3)((i, j) => i + j), 1, 1)
-      println(coeff)
-
-      dataOut := (coeff *: dataIn.toMatrix).toVec.resized
-    }).doSim { dut =>
-      dut.dataIn.foreach(port => port #= 1)
-      sleep(3)
-    }
-
+    // hardware
   }
-
 }
