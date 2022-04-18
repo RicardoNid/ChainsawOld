@@ -1,4 +1,4 @@
-package Chainsaw.dataflow
+package Chainsaw.dsl.dataflow
 
 import breeze.numerics.ceil
 import spinal.core._

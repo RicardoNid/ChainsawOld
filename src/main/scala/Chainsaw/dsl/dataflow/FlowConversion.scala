@@ -1,4 +1,4 @@
-package Chainsaw.dataflow
+package Chainsaw.dsl.dataflow
 
 import Chainsaw._
 import spinal.core._

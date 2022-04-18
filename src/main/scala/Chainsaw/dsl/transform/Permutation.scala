@@ -7,7 +7,8 @@ import scala.reflect.ClassTag
 
 class Permutation[T](override val array: Array[Array[T]], val intArray: Array[Array[Int]])
                     (implicit tag: ClassTag[T], vectorSpace: VectorSpace[T])
-  extends Matrix[T](array) {}
+  extends Matrix[T](array) {
+}
 
 object Permutation {
 
