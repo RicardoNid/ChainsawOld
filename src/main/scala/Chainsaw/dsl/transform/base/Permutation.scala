@@ -1,4 +1,4 @@
-package Chainsaw.dsl.transform
+package Chainsaw.dsl.transform.base
 
 import Chainsaw.dsl.vectorspace.VectorSpace
 

@@ -12,7 +12,7 @@ import Chainsaw.matlabIO._
 import Chainsaw.dspTest._
 import scala.reflect.ClassTag
 
-abstract class VectorSpace[T](implicit val field: Field[T], classTag: ClassTag[T]) {
+abstract class VectorSpace[T](val field: Field[T])(implicit classTag: ClassTag[T]) {
 
   implicit val vectorSpace = this
 

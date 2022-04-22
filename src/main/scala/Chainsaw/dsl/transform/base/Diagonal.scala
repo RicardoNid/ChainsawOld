@@ -1,4 +1,4 @@
-package Chainsaw.dsl.transform
+package Chainsaw.dsl.transform.base
 
 import Chainsaw.dsl.vectorspace.VectorSpace
 
@@ -7,10 +7,7 @@ import scala.reflect.ClassTag
 
 class Diagonal[T](override val array: Array[Array[T]])
                  (implicit tag: ClassTag[T], vectorSpace: VectorSpace[T])
-  extends Matrix[T](array) {
-
-
-}
+  extends Matrix[T](array) {}
 
 object Diagonal {
   def apply[T](diag: Array[T], parallel: Int = 1, iterative: Int = 1)

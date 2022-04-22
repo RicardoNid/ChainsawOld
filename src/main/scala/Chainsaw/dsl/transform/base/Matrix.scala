@@ -1,32 +1,16 @@
-package Chainsaw.dsl.transform
+package Chainsaw.dsl.transform.base
 
 import Chainsaw.dsl.vectorspace.VectorSpace
-import spinal.core.{Bits, Data}
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
+import spinal.core.{Bits, _}
+import Chainsaw.dsl._
 
 import scala.reflect.ClassTag
-import Matrix._
 
 /** a more accurate name would be "linear transform", as linear transform can always be represented by a matrix, we take matrix as its name
  */
 class Matrix[T](val array: Array[Array[T]])
                (implicit tag: ClassTag[T], vectorSpace: VectorSpace[T])
-  extends Transform[T, T](
-    Matrix.transform(array), Matrix.impl(array),
-    vectorSpace.field.width, array.length, array.head.length,
-    1, 1) {
-
-  // attributes
-  def rows = array.length
-
-  def columns = array.head.length
+  extends BaseTransform[T, T](Matrix.transform(array), Matrix.impl(array), Matrix.size(array))(tag, tag, vectorSpace.field, vectorSpace.field) {
 
   override def toString = {
     val widthMax = array.flatten.map(_.toString.length).max
@@ -43,6 +27,8 @@ object Matrix {
   def impl[T](array: Array[Array[T]])
              (implicit tag: ClassTag[T], vectorSpace: VectorSpace[T])
   = (dataIn: Vec[Bits]) => Vec(vectorSpace.gemv(array, dataIn.toArray))
+
+  def size[T](array: Array[Array[T]]) = (array.head.length, array.length)
 
   /** basic factory method with full parameters
    */

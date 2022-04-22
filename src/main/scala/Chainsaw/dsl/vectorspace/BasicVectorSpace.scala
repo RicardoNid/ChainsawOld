@@ -13,8 +13,8 @@ import Chainsaw.dspTest._
 
 import scala.reflect.ClassTag
 
-class BasicVectorSpace[T](implicit override val field: Field[T], classTag: ClassTag[T])
-  extends VectorSpace[T] {
+class BasicVectorSpace[T](override val field: Field[T])(implicit classTag: ClassTag[T])
+  extends VectorSpace[T](field) {
   /** basic operation of Chainsaw vector space which should be implemented according to hardware architecture
    *
    * @param a matrix, the transform
@@ -41,9 +41,9 @@ class BasicVectorSpace[T](implicit override val field: Field[T], classTag: Class
     ret
   }
 
-  override def gemv(a: Array[Array[T]], b: Array[T]) =  a.map(row => row.zip(b).map{ case (eleA, eleB) => field.multiply(eleA, eleB) }.reduce(field.add))
+  override def gemv(a: Array[Array[T]], b: Array[T]) = a.map(row => row.zip(b).map { case (eleA, eleB) => field.multiply(eleA, eleB) }.reduce(field.add))
 }
 
 object BasicVectorSpace {
-  def apply[T](implicit field: Field[T], classTag: ClassTag[T]): BasicVectorSpace[T] = new BasicVectorSpace()
+  def apply[T](field: Field[T])(implicit classTag: ClassTag[T]): BasicVectorSpace[T] = new BasicVectorSpace(field)
 }

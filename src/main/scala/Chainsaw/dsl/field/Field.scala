@@ -1,15 +1,22 @@
 package Chainsaw.dsl.field
 
 import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
 
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
+import scala.reflect.ClassTag
 
 abstract class Field[T] {
+
+  val width: Int
+
+  def toBits(value: T): String
+
+  def fromBits(bits: String): T
+
+  def toBigInt(value: T) = BigInt(toBits(value), 2)
+
+  def fromBigInt(bigInt: BigInt) = fromBits(bigInt.toString(2))
+
+  def undefined = Bits(width bits)
 
   def add(a: T, b: T): T
 
@@ -23,7 +30,7 @@ abstract class Field[T] {
 
   def one: T
 
-  val width:Int
+  def random: T
 
   def addH(a: Bits, b: Bits): Bits
 
@@ -37,8 +44,5 @@ abstract class Field[T] {
 
   def oneH: Bits
 
-  def undefinedH: Bits
-
   def toHard(coeff: T): Bits
-
 }
