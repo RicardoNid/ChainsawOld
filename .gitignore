@@ -32,6 +32,7 @@ bin/
 *.cf
 *.json
 *.vcd
+*.bin
 
 /simWorkspace
 /tmp/

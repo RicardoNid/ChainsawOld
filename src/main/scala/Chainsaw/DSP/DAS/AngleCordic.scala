@@ -15,7 +15,7 @@ case class AngleCordic() extends Component {
   }
 
   val x, y = Vec(Reg(Para.dataType()) init (0), CordicConfig.iter)
-  val d    = x.zip(y).map { case (xr, yr) => xr.toSInt.sign ^ yr.toSInt.sign }.map(~_) //y.map(_.toSInt).map(_.sign).map(~_)
+  val d    = x.zip(y).map { case (xr, yr) => xr.toSInt.sign ^ yr.toSInt.sign }.map(~_) // d(i) = -sign(x(i)y(i))
   val z    = Vec(Reg(Para.dataType()) init (0), CordicConfig.iter)
 
   // theta(i) = arctan(2^{-i})

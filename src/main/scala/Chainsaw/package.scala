@@ -223,6 +223,7 @@ package object Chainsaw extends RealFactory {
     }
 
     def #=(value: Double): Unit = #=(BigDecimal(value))
+    def #=(value: Int): Unit    = #=(value.toDouble)
 
     def toDouble = raw.toBigInt.toDouble / (1 << -minExp)
   }
@@ -508,7 +509,7 @@ package object Chainsaw extends RealFactory {
     override def equals(obj: Any) = {
       obj match {
         case complex: BComplex => this.sameAs(complex)
-        case _ => false
+        case _                 => false
       }
     }
 
