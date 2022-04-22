@@ -4,10 +4,21 @@ import java.nio.file.Paths
 import java.nio.ByteOrder
 import javax.imageio.stream._
 import scala.collection.mutable.ArrayBuffer
+import PathInfo._
 
+object PathInfo {
+  val bootPath = "/home/lqx/Sampling_src/"
+  val cCodePath = bootPath + "c_src/"
+  val cTestPath = bootPath + "test_bmp_4K/"
+  val scalaTestPath = bootPath + "test_scala/"
+  val cUpPath = cTestPath + "bicubic_upsampling/"
+  val scalaUpPath = scalaTestPath + "bicubic_upsampling/"
+  val cDownPath = cTestPath + "downsampling/"
+  val scalaDownPath = scalaTestPath + "downsampling/"
+}
 
 case class BMPPixels (width: Long, height: Long){
-  var r, g, b: Array[Short] = Array.fill((width * height).toInt)(0.toShort)
+  var r, g, b, a: Array[Short] = Array.fill((width * height).toInt)(0.toShort)
 }
 
 case class BMPHeader(width: Long, height: Long) {
@@ -45,8 +56,8 @@ case class BMPImage(width: Long, height: Long) {
 
   def byteToLong(byteArray: Array[Byte]):Long = {
     assert(byteArray.length >= 4, "the byteArray which to be transform to Long is illegal array!\n")
-    0xff000000L & byteArray(3) << 24 |  0xff0000 & byteArray(2) << 16 |
-      0xff00 & byteArray(1) << 8  | 0xff & byteArray(0)
+    0xff000000L & byteArray(3) << 24 |  0xff0000L & byteArray(2) << 16 |
+      0xff00L & byteArray(1) << 8  | 0xffL & byteArray(0)
   }
 
   def combByteToInt(byteArray: Array[Byte]):Int = {
@@ -55,7 +66,7 @@ case class BMPImage(width: Long, height: Long) {
       0xff00 & byteArray(1) << 8 | 0xff & byteArray(0)
   }
 
-  def readHeader(fileName: String, filePath: String = "/home/lqx/Sampling_src/test_scala/downsampling") = {
+  def readHeader(fileName: String, filePath: String = scalaDownPath) = {
     val headerStream = new FileImageInputStream(Paths.get(filePath,fileName).toFile)
 
     println(s"************The BMP header information************")
@@ -132,7 +143,10 @@ case class BMPImage(width: Long, height: Long) {
     val imgArray = new Array[Byte](4)
     val rImgNumb = headerStream.read(imgArray, 0, 4)
     assert(rImgNumb == 4, "read image_size_bytes fail!\n")
-    header.image_size_bytes = byteToLong(imgArray)
+    byteToLong(imgArray) match {
+      case 0L => header.image_size_bytes = header.size - header.offset
+      case _  => header.image_size_bytes = byteToLong(imgArray)
+    }
     println(f"image_size_bytes : ${header.image_size_bytes}%d")
 
     // read x_resolution_ppm/ y_resolution_ppm
@@ -165,30 +179,33 @@ case class BMPImage(width: Long, height: Long) {
     headerStream.close()
   }
 
-  def readPixels(fileName: String, filePath: String = "/home/lqx/Sampling_src/test_scala/downsampling") = {
+  def readPixels(fileName: String, filePath: String = scalaDownPath) = {
     val pixelStream = new FileImageInputStream(Paths.get(filePath, fileName).toFile)
     // skip header's byte
     val skipNumb = pixelStream.skipBytes(header.offset)
     assert(skipNumb == header.offset, "Fail to skip!\n")
 
-    (0 until (header.image_size_bytes / 3).toInt).foreach{ idx =>
-      pixels.r(idx) = byteToShort(pixelStream.readByte())
-//      println(pixels.r(idx))
-      pixels.g(idx) = byteToShort(pixelStream.readByte())
-//      println(pixels.g(idx))
+    (0 until (header.image_size_bytes * 8 / header.bits_per_pixel).toInt).foreach{ idx =>
       pixels.b(idx) = byteToShort(pixelStream.readByte())
-//      println(pixels.b(idx))
+      //println(pixels.b(idx))
+      pixels.g(idx) = byteToShort(pixelStream.readByte())
+      //println(pixels.g(idx))
+      pixels.r(idx) = byteToShort(pixelStream.readByte())
+      //println(pixels.r(idx))
+      if(header.bits_per_pixel == 32){
+        pixels.a(idx) = byteToShort(pixelStream.readByte())
+        //println(pixels.a(idx))
+      }
     }
     pixelStream.close()
 
   }
-  def bmpRead(fileName: String, filePath: String = "/home/lqx/Sampling_src/test_scala/downsampling"): Unit ={
+  def bmpRead(fileName: String, filePath: String = scalaDownPath): Unit ={
     readHeader(fileName, filePath)
     readPixels(fileName, filePath)
   }
 
-  def bmpWrite(fileName: String, filePath: String = "/home/lqx/Sampling_src/test_scala/upsampling"):Unit = {
-    val retImage = BMPImage(width, height)
+  def bmpWrite(fileName: String, filePath: String = scalaUpPath):Unit = {
     val retStream = new FileImageOutputStream(Paths.get(filePath, fileName).toFile)
 
     // write header
@@ -217,19 +234,55 @@ case class BMPImage(width: Long, height: Long) {
     }
 
     // write pixels
-    (0 until (header.image_size_bytes / 3).toInt).foreach { idx =>
-      retStream.writeByte(0xff & pixels.r(idx))
-      retStream.writeByte(0xff & pixels.g(idx))
+    (0 until (header.image_size_bytes * 8 / header.bits_per_pixel).toInt).foreach { idx =>
       retStream.writeByte(0xff & pixels.b(idx))
+      retStream.writeByte(0xff & pixels.g(idx))
+      retStream.writeByte(0xff & pixels.r(idx))
+      if(header.bits_per_pixel == 32){
+        retStream.writeByte(0xff & pixels.a(idx))
+      }
+
     }
     retStream.close()
+  }
+
+  def getPixels(x: Int, y: Int) = {
+    case class retPixel(var r: Short, var g: Short, var b: Short){}
+    val ret = retPixel(0, 0, 0)
+    var xIdx, yIdx = 0
+    if(x > header.height_px - 1)  {xIdx = header.height_px - 1}else if(x < 0){xIdx = 0} else{xIdx = x}
+    if(y > header.width_px - 1 )   {yIdx = header.width_px - 1 }else if(y < 0){yIdx = 0} else{yIdx = y}
+    header.height_px >=0 match {
+      case true  => ret.r = pixels.r(yIdx + header.width_px * (header.height_px - xIdx - 1))
+                    ret.g = pixels.g(yIdx + header.width_px * (header.height_px - xIdx - 1))
+                    ret.b = pixels.b(yIdx + header.width_px * (header.height_px - xIdx - 1))
+      case false => ret.r = pixels.r(yIdx + xIdx * header.width_px)
+                    ret.g = pixels.g(yIdx + xIdx * header.width_px)
+                    ret.b = pixels.b(yIdx + xIdx * header.width_px)
+    }
+    ret
+  }
+
+  def transPosition(x: Int, y:Int) ={
+    val ret = header.height_px >= 0 match {
+      case true  => y + header.width_px * (header.height_px - x - 1)
+      case false => y + x * header.width_px
+    }
+    ret
   }
 }
 
 
 object Test extends App{
   val a = BMPImage(3840, 2160)
-  a.bmpRead("1.bmp")
-  a.bmpWrite("1_upsampling.bmp")
+  a.bmpRead("0.bmp", "/home/lqx/Sampling_src/test_bmp_4K/GT/")
+  //a.bmpWrite("1_upsampling.bmp")
+//  (0 until 15).foreach{x =>
+//    (0 until 15).foreach{ y =>
+//      println(s"the r is ${a.getPixels(x, y).r}")
+//      println(s"the g is ${a.getPixels(x, y).g}")
+//      println(s"the b is ${a.getPixels(x, y).b}")
+//    }
+//  }
 
 }

@@ -4,8 +4,11 @@ import spinal.lib._
 import Chainsaw._
 import Chainsaw.comparith._
 import spinal.core._
+
 import scala.collection._
 import spinal.core.sim._
+
+import scala.collection.immutable.IntMap.Bin
 
 case class NonRestoringDivider(config: DividerConfig) extends Component {
   val io = new Bundle {
@@ -27,7 +30,7 @@ case class NonRestoringDivider(config: DividerConfig) extends Component {
   io.remainder := dividendReg(config.width, config.width + 1 bits)
 
   // define other signal we need
-  val counter = Counter(0, config.width + 2)
+  val counter = Counter(0, config.width + 1)
   // begin compute
   when(counter <= U(config.width - 1)) {
     val adder = BasicAdder(config.width, AdderType.RCA).setDefinitionName("Adder")
@@ -48,7 +51,7 @@ case class NonRestoringDivider(config: DividerConfig) extends Component {
     counter.increment()
   }.elsewhen(counter === U(config.width)) {
     // adjust quotient and remainder when the last partial remainder's sign isn't equal to dividend's sign
-    when(dividendReg.msb =/= io.dividend.msb) {
+    when(dividendReg.msb =/= io.dividend.msb && dividendReg(config.width, config.width + 1 bits) =/= S(0)) {
       val adderForRemainder, adderForQuotient = BasicAdder(config.width + 1, AdderType.RCA).setDefinitionName("adderForResult")
       adderForRemainder.setName("adderForRemainder")
       adderForQuotient.setName("adderForQuotient")
@@ -87,20 +90,8 @@ case class NonRestoringDivider(config: DividerConfig) extends Component {
       quotientReg := (!quotientReg(config.width - 1, 1 bits).asBool ## quotientReg(0, config.width - 1 bits).asBits ## B(1, 1 bits)).asSInt
       counter.increment()
     }
-  }.elsewhen(counter === U(config.width + 1)) {
-    when(dividendReg(config.width, config.width + 1 bits).abs === io.divisor.abs) {
-      dividendReg := (B(0, config.width + 1 bits) ## dividendReg(0, config.width bits)).asSInt
-      when(quotientReg.msb) {
-        quotientReg := quotientReg - S(1)
-      } otherwise {
-        quotientReg := quotientReg + S(1)
-      }
-      counter.increment()
-    } otherwise {
-      counter.increment()
-    }
-
-  } otherwise {
+  }
+  .otherwise {
 
   }
 
@@ -112,8 +103,8 @@ object TestNonRestoringDivider extends App {
       import dut.{clockDomain, io}
       clockDomain.forkStimulus(10)
       clockDomain.assertReset()
-      io.dividend #= 53
-      io.divisor #= 7
+      io.dividend #= -49
+      io.divisor #= -7
 
       clockDomain.deassertReset()
       clockDomain.waitSampling(dut.config.width + 3)
