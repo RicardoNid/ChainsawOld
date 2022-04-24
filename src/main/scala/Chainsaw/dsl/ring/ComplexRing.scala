@@ -1,4 +1,4 @@
-package Chainsaw.dsl.field
+package Chainsaw.dsl.ring
 
 import breeze.math._
 import spinal.core.Bits
@@ -25,14 +25,19 @@ class ComplexRing(integral: Int, fractional: Int) extends MixType[Complex] with 
 
   override def mult(a: Complex, b: Complex) = a * b
 
-  // todo: implement complex operators
-  override def addH(a: Bits, b: Bits) = a
-
-  override def subH(a: Bits, b: Bits) = a
-
-  override def multH(a: Bits, b: Bits) = a
-
-  override def idH(a: Bits) = a
+  // TODO: not implemented
+  override val addH = new HardOp2(
+    op = (a: Bits, b: Bits) => a,
+    latency = 0
+  )
+  override val subH = new HardOp2(
+    op = (a: Bits, b: Bits) => a,
+    latency = 0
+  )
+  override val multH = new HardOp2(
+    op = (a: Bits, b: Bits) => a,
+    latency = 0
+  )
 }
 
 object ComplexRing {

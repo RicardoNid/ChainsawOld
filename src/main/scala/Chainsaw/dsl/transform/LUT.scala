@@ -1,5 +1,6 @@
-package Chainsaw.dsl.transform.base
+package Chainsaw.dsl.transform
 
+import Chainsaw.dsl
 import Chainsaw.dsl._
 import spinal.core._
 
@@ -9,7 +10,7 @@ import LUT._
 class LUT[T: ClassTag]
 (val lut: Array[T])
 (implicit mixTypeIn: MixType[Int], mixTypeOut: MixType[T])
-  extends BaseTransform[Int, T](
+  extends dsl.BaseTransform[Int, T](
     getAlgo(lut),
     getImpl(lut))
 
@@ -26,9 +27,9 @@ object LUT {
       size = (1, 1),
       impl = (dataIn: Vec[Bits]) => {
         val rom = Mem(lut.map(mixType.toCoeff))
-        Vec(rom.readSync(dataIn.head.asUInt))
+        Vec(rom.readAsync(dataIn.head.asUInt))
       },
-      latency = 1
+      latency = 0
     )
 
   def apply[T: ClassTag]

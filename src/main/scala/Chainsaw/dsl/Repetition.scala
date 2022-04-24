@@ -1,4 +1,4 @@
-package Chainsaw.dsl.transform
+package Chainsaw.dsl
 
 import scala.reflect.ClassTag
 

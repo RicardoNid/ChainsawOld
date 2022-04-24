@@ -1,12 +1,6 @@
-package Chainsaw.dsl.transform
+package Chainsaw.dsl
 
-import Chainsaw.dsl.field.MixType
-import Chainsaw.dsl._
-import spinal.core._
-
-import scala.reflect.{ClassTag}
-
-import scala.Predef
+import scala.reflect.ClassTag
 
 class BaseTransform[TIn, TOut]
 (val algo: Algo[TIn, TOut],

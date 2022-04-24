@@ -1,17 +1,9 @@
 package Chainsaw.dsl
 
-import Chainsaw.dsl.field._
-import Chainsaw.dsl.transform.base._
-import Chainsaw.dsl.vectorspace.BasicVectorSpace
-import breeze.math._
-import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
-
 import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
+import Chainsaw.dsl.ring._
+import Chainsaw.dsl.transform.{Converter, LUT, Matrix, SPermutation}
+import breeze.math._
 
 import scala.util.Random
 
@@ -23,8 +15,7 @@ object Examples {
     implicit val intField: UIntRing = UIntRing(4)
     implicit val complexField: ComplexRing = ComplexRing(2, 13)
 
-    implicit val finiteSpace: BasicVectorSpace[FiniteInt] = BasicVectorSpace(finiteField)
-    implicit val complexSpace: BasicVectorSpace[Complex] = BasicVectorSpace(complexField)
+    complexField.selfTest()
 
     val data = Array.fill[FiniteInt](6)(0) ++ (0 until 128).map(_ => FiniteInt(Random.nextInt(2)))
 
@@ -42,7 +33,8 @@ object Examples {
       Array(1 + 0 * i, 1 + 0 * i),
       Array(1 + 0 * i, -1 + 0 * i)))
 
-    val ofdm = sp16_16 ° (conv ⊗ (128, 1))
+    val ofdm = (conv ⊗ (128, 1))
+    //    val ofdm = sp16_16 ° (conv ⊗ (128, 1))
     //    val ofdm = sp16_16 ° (conv ⊗ (128, 1))
     //    val ofdm = (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
     //    val ofdm = (lut ⊗ 64) ° (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))

@@ -1,5 +1,6 @@
-package Chainsaw.dsl.transform.base
+package Chainsaw.dsl.transform
 
+import Chainsaw.dsl
 import Chainsaw.dsl._
 import spinal.core._
 
@@ -8,7 +9,7 @@ import scala.reflect.ClassTag
 
 class SPermutation[T](val row: Int, val column: Int)
                      (implicit tag: ClassTag[T], field: MixType[T])
-  extends BaseTransform[T, T](
+  extends dsl.BaseTransform[T, T](
     SPermutation.getTransform(row, column),
     SPermutation.getImpl(row, column))(field, field)
 

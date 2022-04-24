@@ -1,6 +1,6 @@
 package Chainsaw
 
-import Chainsaw.dsl.field.RingOp
+import Chainsaw.dsl.ring.RingOp
 import spinal.core._
 //import scala.language.implicitConversions
 import scala.math.BigInt
@@ -8,11 +8,15 @@ import scala.math.BigInt
 package object dsl {
 
   type Algo[TIn, TOut] = Array[TIn] => Array[TOut]
-  type Impl = dsl.transform.Impl
-  type MixType[T] = dsl.field.MixType[T]
-  type Field[T] = dsl.field.MixType[T] with RingOp[T]
-  type BaseTransform[TIn, TOut] = dsl.transform.BaseTransform[TIn, TOut]
-  type PureTransform[TIn, TOut] = dsl.transform.Transform[TIn, TOut]
+  type Op2[T] = (T, T) => T
+
+  case class HardOp2(op: Op2[Bits], latency: Int)
+  case class Impl(size: (Int, Int), impl: Vec[Bits] => Vec[Bits], latency: Int)
+
+  type Module = (Vec[Bits], Bool) => Vec[Bits]
+
+  type MixType[T] = dsl.ring.MixType[T]
+  type Ring[T] = dsl.ring.MixType[T] with RingOp[T]
 
   case class FiniteInt(value: Int) {
     override def toString = value.toString
@@ -20,11 +24,11 @@ package object dsl {
 
   implicit def int2finite(value: Int) = FiniteInt(value)
 
-  implicit def base2pure[TIn, TOut](base: BaseTransform[TIn, TOut]) = base.toPure
+  implicit def base2pure[TIn, TOut](base: dsl.BaseTransform[TIn, TOut]) = base.toPure
 
-  implicit def base2system[TIn, TOut](base: BaseTransform[TIn, TOut]) = base.toPure.toSystem
+  implicit def base2system[TIn, TOut](base: dsl.BaseTransform[TIn, TOut]) = base.toPure.toSystem
 
-  implicit def pure2system[TIn, TOut](pure: PureTransform[TIn, TOut]) = pure.toSystem
+  implicit def pure2system[TIn, TOut](pure: Transform[TIn, TOut]) = pure.toSystem
 
   /** Utils for string which you treat it as a binary number
    */
@@ -61,7 +65,7 @@ package object dsl {
         require(rawAbs.length <= width, s"$i is to small/big for $width-bit signed number")
         rawAbs.padToLeft(width)
       }
-      if(i >= 0) abs
+      if (i >= 0) abs
       else (abs.map(reverse).asUnsigned + 1).toUnsigned(width)
     }
   }
@@ -75,4 +79,7 @@ package object dsl {
       Seq(head, contents, last).mkString(" ")
     }
   }
+
+  // get factors of Int
+  def factors(value: Int) = (1 to value).filter(value % _ == 0).toArray
 }
