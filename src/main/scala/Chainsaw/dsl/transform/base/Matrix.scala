@@ -10,7 +10,7 @@ import scala.reflect.{ClassTag, classTag}
  */
 class Matrix[T: ClassTag](val array: Array[Array[T]])
                          (implicit vectorSpace: VectorSpace[T])
-  extends BaseTransform[T, T](Matrix.transform(array), Matrix.impl(array), Matrix.size(array))(vectorSpace.field, vectorSpace.field) {
+  extends BaseTransform[T, T](Matrix.getAlgo(array), Matrix.getImpl(array))(vectorSpace.field, vectorSpace.field) {
 
   override def toString = {
     val widthMax = array.flatten.map(_.toString.length).max
@@ -20,22 +20,23 @@ class Matrix[T: ClassTag](val array: Array[Array[T]])
 
 object Matrix {
 
-  def transform[T](array: Array[Array[T]])
-                  (implicit tag: ClassTag[T], vectorSpace: VectorSpace[T]) =
+  def getAlgo[T](array: Array[Array[T]])
+                (implicit tag: ClassTag[T], vectorSpace: VectorSpace[T]) =
     (dataIn: Array[T]) => vectorSpace.gemv(array, dataIn)
 
-  def impl[T](array: Array[Array[T]])
-             (implicit tag: ClassTag[T], vectorSpace: VectorSpace[T])
-  = (dataIn: Vec[Bits]) => Vec(vectorSpace.gemv(array, dataIn.toArray))
-
-  def size[T](array: Array[Array[T]]) = (array.head.length, array.length)
+  def getImpl[T](array: Array[Array[T]])
+                (implicit tag: ClassTag[T], vectorSpace: VectorSpace[T])
+  = new Impl(
+    size = (array.head.length, array.length),
+    impl = (dataIn: Vec[Bits]) => Vec(vectorSpace.gemv(array, dataIn.toArray)),
+    latency = 1 // TODO: correct latency
+  )
 
   /** basic factory method with full parameters
    */
   def apply[T: ClassTag](array: Array[Array[T]])
                         (implicit vectorSpace: VectorSpace[T], field: MixType[T]): Matrix[T] =
     new Matrix(array)
-
 
   /** from an 1-D array, the result is a column vector
    */

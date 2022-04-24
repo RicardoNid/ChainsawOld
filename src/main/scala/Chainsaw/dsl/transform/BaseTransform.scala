@@ -6,10 +6,11 @@ import spinal.core._
 
 import scala.reflect.{ClassTag}
 
+import scala.Predef
+
 class BaseTransform[TIn, TOut]
 (val algo: Algo[TIn, TOut],
- val impl: Impl,
- val size: (Int, Int))
+ val impl: Impl)
 (implicit fieldIn: MixType[TIn], fieldOut: MixType[TOut]) {
 
   implicit val tagIn: ClassTag[TIn] = fieldIn.tag
@@ -27,9 +28,9 @@ class BaseTransform[TIn, TOut]
 
 
 object BaseTransform {
-  def apply[TIn:ClassTag, TOut:ClassTag](transform: Array[TIn] => Array[TOut], impl: Vec[Bits] => Vec[Bits], size: (Int, Int))
-                      (implicit fieldIn: MixType[TIn], fieldOut: MixType[TOut]): BaseTransform[TIn, TOut] =
-    new BaseTransform(transform, impl, size)
+  def apply[TIn: ClassTag, TOut: ClassTag](transform: Algo[TIn, TOut], impl: Impl)
+                                          (implicit fieldIn: MixType[TIn], fieldOut: MixType[TOut]): BaseTransform[TIn, TOut] =
+    new BaseTransform(transform, impl)
 }
 
 

@@ -10,20 +10,22 @@ class SPermutation[T](val row: Int, val column: Int)
                      (implicit tag: ClassTag[T], field: MixType[T])
   extends BaseTransform[T, T](
     SPermutation.getTransform(row, column),
-    SPermutation.getImpl(row, column),
-    SPermutation.getSize(row, column))(field, field)
+    SPermutation.getImpl(row, column))(field, field)
 
 
 object SPermutation {
 
-  def getTransform[T](row: Int, column: Int)(implicit tag: ClassTag[T]) =
+  def getTransform[T: ClassTag](row: Int, column: Int): Algo[T, T] =
     (dataIn: Array[T]) => {
       require(dataIn.length == row * column)
       dataIn.grouped(row).toArray.transpose.flatten
     }
 
-  // todo: implement this
-  def getImpl(row: Int, column: Int) = (dataIn: Vec[Bits]) => dataIn
+  def getImpl(row: Int, column: Int) = new Impl(
+    (row * column, row * column),
+    (dataIn: Vec[Bits]) => Vec(dataIn.toArray.grouped(row).toArray.transpose.flatten),
+    latency = 0
+  )
 
   def getSize(row: Int, column: Int) = (row * column, row * column)
 

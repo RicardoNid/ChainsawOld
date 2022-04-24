@@ -8,7 +8,7 @@ import scala.math.BigInt
 package object dsl {
 
   type Algo[TIn, TOut] = Array[TIn] => Array[TOut]
-  type Impl = Vec[Bits] => Vec[Bits]
+  type Impl = dsl.transform.Impl
   type MixType[T] = dsl.field.MixType[T]
   type Field[T] = dsl.field.MixType[T] with RingOp[T]
   type BaseTransform[TIn, TOut] = dsl.transform.BaseTransform[TIn, TOut]
