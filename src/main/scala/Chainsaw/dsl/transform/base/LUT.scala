@@ -6,8 +6,9 @@ import spinal.core._
 import scala.reflect.ClassTag
 import LUT._
 
-class LUT[T: ClassTag](val lut: Array[T])
-                      (implicit mixTypeIn: MixType[Int], mixTypeOut: MixType[T])
+class LUT[T: ClassTag]
+(val lut: Array[T])
+(implicit mixTypeIn: MixType[Int], mixTypeOut: MixType[T])
   extends BaseTransform[Int, T](
     getAlgo(lut),
     getImpl(lut))
@@ -30,8 +31,8 @@ object LUT {
       latency = 1
     )
 
-
-  def apply[T: ClassTag](lut: T*)
-                        (implicit mixTypeIn: MixType[Int], mixTypeOut: MixType[T]): LUT[T] =
+  def apply[T: ClassTag]
+  (lut: T*)
+  (implicit mixTypeIn: MixType[Int], mixTypeOut: MixType[T]): LUT[T] =
     new LUT(lut.toArray)
 }

@@ -1,11 +1,19 @@
 package Chainsaw.dsl.transform
 
+import scala.reflect.ClassTag
+
 case class SpaceRepetition(group: Int, step: Int = -1) {
+
   def expand(size: (Int, Int)) = {
     val (inputSize, outputSize) = size
     if (step == -1) (inputSize * group, outputSize * group)
     else (step * (group - 1) + inputSize, outputSize * group)
   }
+
+  def divide[T:ClassTag](vec: Array[T]) =
+    if(step == -1) vec.grouped(vec.length / group).toArray
+    else vec.sliding(vec.length - step * (group - 1), step).toArray
+
 }
 
 case class TimeRepetition(group: Int)

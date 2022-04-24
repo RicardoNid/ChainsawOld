@@ -4,6 +4,14 @@ import Chainsaw.dsl.field._
 import Chainsaw.dsl.transform.base._
 import Chainsaw.dsl.vectorspace.BasicVectorSpace
 import breeze.math._
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.lib.fsm._
+
+import Chainsaw._
+import Chainsaw.matlabIO._
+import Chainsaw.dspTest._
 
 import scala.util.Random
 
@@ -34,9 +42,15 @@ object Examples {
       Array(1 + 0 * i, 1 + 0 * i),
       Array(1 + 0 * i, -1 + 0 * i)))
 
-    val ofdm = (dft2 ⊗ 32) ° (lut ⊗ 64) ° (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
+    val ofdm = sp16_16 ° (conv ⊗ (128, 1))
+    //    val ofdm = sp16_16 ° (conv ⊗ (128, 1))
+    //    val ofdm = (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
+    //    val ofdm = (lut ⊗ 64) ° (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
+    //    val ofdm = (dft2 ⊗ 32) ° (lut ⊗ 64) ° (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
 
     println(ofdm(data).mkString("Array(", ", ", ")"))
+    GenRTL(ofdm.build)
+    ofdm.testOnce(data)
 
   }
 }

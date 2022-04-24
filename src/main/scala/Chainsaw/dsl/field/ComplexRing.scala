@@ -5,17 +5,17 @@ import spinal.core.Bits
 import Chainsaw.dsl._
 
 class ComplexRing(integral: Int, fractional: Int) extends MixType[Complex] with RingOp[Complex] {
-  override val width = integral + fractional + 1
+  override val width = (integral + fractional + 1) * 2
 
   def scaling = (1 << fractional).toDouble
 
   override def toBits(value: Complex) = {
     val toInt: Double => BigInt = x => BigInt((x * scaling).toInt)
-    toInt(value.real).toSigned(width) ++ toInt(value.imag).toSigned(width)
+    toInt(value.real).toSigned(width / 2) ++ toInt(value.imag).toSigned(width / 2)
   }
 
   override def fromBits(bits: String) = {
-    val (real, imag) = bits.splitAt(width)
+    val (real, imag) = bits.splitAt(width / 2)
     Complex(real.asSigned.toDouble / scaling, imag.asSigned.toDouble / scaling)
   }
 

@@ -11,10 +11,10 @@ import scala.Predef
 class BaseTransform[TIn, TOut]
 (val algo: Algo[TIn, TOut],
  val impl: Impl)
-(implicit fieldIn: MixType[TIn], fieldOut: MixType[TOut]) {
+(implicit val typeIn: MixType[TIn], val typeOut: MixType[TOut]) {
 
-  implicit val tagIn: ClassTag[TIn] = fieldIn.tag
-  implicit val tagOut: ClassTag[TOut] = fieldOut.tag
+  implicit val tagIn: ClassTag[TIn] = typeIn.tag
+  implicit val tagOut: ClassTag[TOut] = typeOut.tag
 
   def ⊗(parallel: Int, step: Int = -1) =
     new Transform(this, Repetition(Seq(SpaceRepetition(parallel, step)), TimeRepetition(1)))
@@ -28,8 +28,9 @@ class BaseTransform[TIn, TOut]
 
 
 object BaseTransform {
-  def apply[TIn: ClassTag, TOut: ClassTag](transform: Algo[TIn, TOut], impl: Impl)
-                                          (implicit fieldIn: MixType[TIn], fieldOut: MixType[TOut]): BaseTransform[TIn, TOut] =
+  def apply[TIn: ClassTag, TOut: ClassTag]
+  (transform: Algo[TIn, TOut], impl: Impl)
+  (implicit fieldIn: MixType[TIn], fieldOut: MixType[TOut]): BaseTransform[TIn, TOut] =
     new BaseTransform(transform, impl)
 }
 

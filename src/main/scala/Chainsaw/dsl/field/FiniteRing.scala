@@ -20,15 +20,19 @@ case class FiniteRing(modulo: Int)
 
   override def add(a: FiniteInt, b: FiniteInt) = (a.value + b.value) % modulo
 
-  override def sub(a: FiniteInt, b: FiniteInt) = (a.value + b.value)
+  override def sub(a: FiniteInt, b: FiniteInt) = a.value + b.value
 
-  override def mult(a: FiniteInt, b: FiniteInt) = (a.value + b.value)
+  override def mult(a: FiniteInt, b: FiniteInt) = a.value + b.value
 
-  override def addH(a: Bits, b: Bits) = (a.asUInt + b.asUInt).asBits
+  override def addH(a: Bits, b: Bits) =
+    if (width == 1) a ^ b
+    else (a.asUInt + b.asUInt).asBits
 
   override def subH(a: Bits, b: Bits) = (a.asUInt - b.asUInt).asBits
 
-  override def multH(a: Bits, b: Bits) = (a.asUInt * b.asUInt).resize(width).asBits
+  override def multH(a: Bits, b: Bits) =
+    if (width == 1) a & b
+    else (a.asUInt * b.asUInt).resize(width).asBits
 
   override def idH(a: Bits) = a
 }

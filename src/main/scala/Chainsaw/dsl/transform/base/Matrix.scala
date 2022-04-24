@@ -44,8 +44,9 @@ object Matrix {
                         (implicit vectorSpace: VectorSpace[T], field: MixType[T]): Matrix[T] =
     Matrix(array.map(Array(_)))
 
-  def tabulate[T: ClassTag](m: Int, n: Int)(gen: (Int, Int) => T)
-                           (implicit vectorSpace: VectorSpace[T], field: MixType[T]) = {
+  def tabulate[T: ClassTag]
+  (m: Int, n: Int)(gen: (Int, Int) => T)
+  (implicit vectorSpace: VectorSpace[T], field: MixType[T]) = {
     Matrix(Array.tabulate(m, n)(gen))
   }
 }
