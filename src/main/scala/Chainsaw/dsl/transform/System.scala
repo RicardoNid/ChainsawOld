@@ -6,14 +6,20 @@ class System[TIn, TOut](algo: Algo[TIn, TOut], impls: Seq[Impl], repetitions: Se
 
   def apply(dataIn: Array[TIn]) = algo(dataIn)
 
-  def composite[TPrev](that: PureTransform[TPrev, TIn]) = {
+  def composite[TPrev](that: Transform[TPrev, TIn]) = {
     val newAlgo = (dataIn: Array[TPrev]) => this.apply(that.apply(dataIn))
     val newImpls = impls :+ that.base.impl
     val newRepetitions = repetitions :+ that.repetition
     new System[TPrev, TOut](newAlgo, newImpls, newRepetitions)
   }
 
-  def °[TPrev](that: PureTransform[TPrev, TIn]) = composite(that)
+  def °[TPrev](that: Transform[TPrev, TIn]) = composite(that)
+
+  def build() = {
+
+
+
+  }
 
 }
 

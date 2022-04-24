@@ -1,18 +1,11 @@
 package Chainsaw.dsl.vectorspace
 
-import Chainsaw.dsl.field.Field
-
 import spinal.core._
-import spinal.core.sim._
-import spinal.lib._
-import spinal.lib.fsm._
 
-import Chainsaw._
-import Chainsaw.matlabIO._
-import Chainsaw.dspTest._
 import scala.reflect.ClassTag
+import Chainsaw.dsl._
 
-abstract class VectorSpace[T](val field: Field[T])(implicit classTag: ClassTag[T]) {
+abstract class VectorSpace[T](val field: Field[T]) {
 
   implicit val vectorSpace = this
 

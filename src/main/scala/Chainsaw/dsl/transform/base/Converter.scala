@@ -4,19 +4,19 @@ import Chainsaw.dsl.{BaseTransform, _}
 import Chainsaw.dsl.transform.base.Converter._
 import spinal.core._
 
-import scala.reflect.ClassTag
+import scala.language.postfixOps
+import scala.reflect.{ClassTag, classTag}
 
-class Converter[TIn, TOut](sizeIn: Int, sizeOut: Int, fieldIn: Field[TIn], fieldOut: Field[TOut])
-                          (implicit tagIn: ClassTag[TIn], tagOut: ClassTag[TOut])
+class Converter[TIn: ClassTag, TOut: ClassTag](sizeIn: Int, sizeOut: Int, fieldIn: MixType[TIn], fieldOut: MixType[TOut])
   extends BaseTransform[TIn, TOut](
     getAlgo(fieldIn, fieldOut),
     getImpl(fieldOut),
     (sizeIn, sizeOut)
-  )(tagIn, tagOut, fieldIn, fieldOut)
+  )(fieldIn, fieldOut)
 
 object Converter {
 
-  def getAlgo[TIn, TOut: ClassTag](fieldIn: Field[TIn], fieldOut: Field[TOut]): Algo[TIn, TOut] =
+  def getAlgo[TIn, TOut: ClassTag](fieldIn: MixType[TIn], fieldOut: MixType[TOut]): Algo[TIn, TOut] =
     (dataIn: Array[TIn]) => {
       dataIn
         .map(fieldIn.toBits)
@@ -26,7 +26,11 @@ object Converter {
     }
 
   // TODO: IMPLEMENT
-  def getImpl[TIn, TOut](fieldOut: Field[TOut]) =
+  def getImpl[TIn, TOut](fieldOut: MixType[TOut]) =
     (dataIn: Vec[Bits]) => dataIn.asBits.subdivideIn(fieldOut.width bits)
+
+  def apply[TIn: ClassTag, TOut: ClassTag]
+  (sizeIn: Int, sizeOut: Int, fieldIn: MixType[TIn], fieldOut: MixType[TOut]): Converter[TIn, TOut] =
+    new Converter(sizeIn, sizeOut, fieldIn, fieldOut)
 
 }

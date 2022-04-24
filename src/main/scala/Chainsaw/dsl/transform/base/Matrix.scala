@@ -4,13 +4,13 @@ import Chainsaw.dsl.vectorspace.VectorSpace
 import spinal.core.{Bits, _}
 import Chainsaw.dsl._
 
-import scala.reflect.ClassTag
+import scala.reflect.{ClassTag, classTag}
 
 /** a more accurate name would be "linear transform", as linear transform can always be represented by a matrix, we take matrix as its name
  */
-class Matrix[T](val array: Array[Array[T]])
-               (implicit tag: ClassTag[T], vectorSpace: VectorSpace[T])
-  extends BaseTransform[T, T](Matrix.transform(array), Matrix.impl(array), Matrix.size(array))(tag, tag, vectorSpace.field, vectorSpace.field) {
+class Matrix[T: ClassTag](val array: Array[Array[T]])
+                         (implicit vectorSpace: VectorSpace[T])
+  extends BaseTransform[T, T](Matrix.transform(array), Matrix.impl(array), Matrix.size(array))(vectorSpace.field, vectorSpace.field) {
 
   override def toString = {
     val widthMax = array.flatten.map(_.toString.length).max
@@ -32,19 +32,19 @@ object Matrix {
 
   /** basic factory method with full parameters
    */
-  def apply[T](array: Array[Array[T]])
-              (implicit classTag: ClassTag[T], vectorSpace: VectorSpace[T]): Matrix[T] =
+  def apply[T: ClassTag](array: Array[Array[T]])
+                        (implicit vectorSpace: VectorSpace[T], field: MixType[T]): Matrix[T] =
     new Matrix(array)
 
 
   /** from an 1-D array, the result is a column vector
    */
-  def apply[T](array: Array[T])
-              (implicit classTag: ClassTag[T], vectorSpace: VectorSpace[T]): Matrix[T] =
+  def apply[T: ClassTag](array: Array[T])
+                        (implicit vectorSpace: VectorSpace[T], field: MixType[T]): Matrix[T] =
     Matrix(array.map(Array(_)))
 
-  def tabulate[T](m: Int, n: Int)(gen: (Int, Int) => T)
-                 (implicit classTag: ClassTag[T], vectorSpace: VectorSpace[T]) = {
+  def tabulate[T: ClassTag](m: Int, n: Int)(gen: (Int, Int) => T)
+                           (implicit vectorSpace: VectorSpace[T], field: MixType[T]) = {
     Matrix(Array.tabulate(m, n)(gen))
   }
 }

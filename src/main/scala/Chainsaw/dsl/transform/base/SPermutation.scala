@@ -7,11 +7,11 @@ import scala.reflect.ClassTag
 
 
 class SPermutation[T](val row: Int, val column: Int)
-                     (implicit tag: ClassTag[T], field: Field[T])
+                     (implicit tag: ClassTag[T], field: MixType[T])
   extends BaseTransform[T, T](
     SPermutation.getTransform(row, column),
     SPermutation.getImpl(row, column),
-    SPermutation.getSize(row, column))(tag, tag, field, field)
+    SPermutation.getSize(row, column))(field, field)
 
 
 object SPermutation {
@@ -28,7 +28,7 @@ object SPermutation {
   def getSize(row: Int, column: Int) = (row * column, row * column)
 
   def apply[T](row: Int, column: Int)
-              (implicit tag: ClassTag[T], field: Field[T]): SPermutation[T] =
+              (implicit tag: ClassTag[T], field: MixType[T]): SPermutation[T] =
     new SPermutation(row, column)(tag, field)
 
 }
