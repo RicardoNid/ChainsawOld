@@ -11,7 +11,7 @@ import scala.collection.mutable.ArrayBuffer
  * @param impls       the last element of impls is the beginning part of the system
  * @param repetitions repetition objects corresponding to impls
  */
-class System[TIn, TOut](algo: Algo[TIn, TOut], impls: Seq[HardImpl], repetitions: Seq[Repetition],
+class System[TIn, TOut](algo: Algo[TIn, TOut], impls: Seq[Impl], repetitions: Seq[Repetition],
                         val typeIn: MixType[TIn], val typeOut: MixType[TOut]) {
 
   def apply(dataIn: Array[TIn]) = algo(dataIn)
@@ -25,7 +25,7 @@ class System[TIn, TOut](algo: Algo[TIn, TOut], impls: Seq[HardImpl], repetitions
 
   def °[TPrev](that: Transform[TPrev, TIn]) = composite(that)
 
-  def buildImplForTransform(impl: HardImpl, repetition: Repetition) = {
+  def buildImplForTransform(impl: Impl, repetition: Repetition) = {
 
     val (inputSize, outputSize) = repetition.expand(impl.size)
 
@@ -89,7 +89,7 @@ class System[TIn, TOut](algo: Algo[TIn, TOut], impls: Seq[HardImpl], repetitions
 
 object System {
   def apply[TIn, TOut]
-  (algo: Algo[TIn, TOut], impls: Seq[HardImpl], repetitions: Seq[Repetition],
+  (algo: Algo[TIn, TOut], impls: Seq[Impl], repetitions: Seq[Repetition],
    typeIn: MixType[TIn], typeOut: MixType[TOut]): System[TIn, TOut] =
     new System(algo, impls, repetitions, typeIn, typeOut)
 }

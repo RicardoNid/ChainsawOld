@@ -4,7 +4,7 @@ import Chainsaw.dsl._
 import spinal.core._
 import spinal.lib._
 
-class DiagonalImpl(coeff: Array[String], mult: Op2[Bits], multLatency: Int) extends HardImpl {
+class DiagonalImpl(coeff: Array[String], mult: Op2[Bits], multLatency: Int) extends Impl {
   val N = coeff.length
   override val spaceFold = factors(N)
 

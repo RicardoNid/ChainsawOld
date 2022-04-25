@@ -11,7 +11,6 @@ package object dsl {
   type Op2[T] = (T, T) => T
 
   case class HardOp2(op: Op2[Bits], latency: Int)
-  case class Impl(size: (Int, Int), impl: Vec[Bits] => Vec[Bits], latency: Int)
 
   type Module = (Vec[Bits], Bool) => Vec[Bits]
 

@@ -1,8 +1,9 @@
 package Chainsaw.dsl.transform
 
 import Chainsaw.dsl
-import spinal.core.{Bits, _}
+import spinal.core.{Bits, Vec, _}
 import Chainsaw.dsl._
+import spinal.lib.Delay
 
 import scala.annotation.tailrec
 import scala.reflect.{ClassTag, classTag}
@@ -40,19 +41,6 @@ object Matrix {
       afterMult.map(reduceBalancedTree(_, ring.add)).map(_.head)
     }
 
-  def getImpl[T: ClassTag](array: Array[Array[T]])
-                          (implicit ring: Ring[T])
-  =  Impl(
-    size = (array.head.length, array.length),
-    impl = (dataIn: Vec[Bits]) => {
-
-      val coeffs = array.map(_.map(ring.toCoeff))
-      val afterMult = coeffs.map(row => row.zip(dataIn).map { case (coeff, data) => ring.multH.op(coeff, data) })
-      Vec(afterMult.map(reduceBalancedTree(_, ring.addH.op)).map(_.head))
-    },
-    latency = log2Up(array.head.length) * ring.addH.latency + ring.multH.latency
-  )
-
   /** basic factory method with full parameters
    */
   def apply[T: ClassTag]
@@ -74,4 +62,20 @@ object Matrix {
   }
 }
 
+class MatrixImpl(array: Array[Array[String]], multH: HardOp2, addH: HardOp2) extends Impl {
+
+  override val size = (array.head.length, array.length)
+
+  override def getImpl(spaceFold: Int, timeFold: Int) = {
+    val latency = log2Up(array.head.length) * addH.latency + multH.latency
+    val impl = (dataIn: (Vec[Bits], Bool)) => {
+
+      val coeffs = array.map(_.map(B(_)))
+      val afterMult = coeffs.map(row => row.zip(dataIn._1).map { case (coeff, data) => multH.op(coeff, data) })
+      val ret = Vec(afterMult.map(Matrix.reduceBalancedTree(_, addH.op)).map(_.head))
+      (ret, Delay(dataIn._2, latency, init = False))
+    }
+    RawImpl(impl, latency)
+  }
+}
 

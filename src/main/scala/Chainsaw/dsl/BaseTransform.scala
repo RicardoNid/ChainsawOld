@@ -4,7 +4,7 @@ import scala.reflect.ClassTag
 
 class BaseTransform[TIn, TOut]
 (val algo: Algo[TIn, TOut],
- val impl: HardImpl)
+ val impl: Impl)
 (implicit val typeIn: MixType[TIn], val typeOut: MixType[TOut]) {
 
   implicit val tagIn: ClassTag[TIn] = typeIn.tag
@@ -23,7 +23,7 @@ class BaseTransform[TIn, TOut]
 
 object BaseTransform {
   def apply[TIn: ClassTag, TOut: ClassTag]
-  (transform: Algo[TIn, TOut], impl: HardImpl)
+  (transform: Algo[TIn, TOut], impl: Impl)
   (implicit fieldIn: MixType[TIn], fieldOut: MixType[TOut]): BaseTransform[TIn, TOut] =
     new BaseTransform(transform, impl)
 }
