@@ -11,7 +11,7 @@ import scala.reflect.{ClassTag, classTag}
 class Converter[TIn: ClassTag, TOut: ClassTag](sizeIn: Int, sizeOut: Int, fieldIn: MixType[TIn], fieldOut: MixType[TOut])
   extends dsl.BaseTransform[TIn, TOut](
     getAlgo(fieldIn, fieldOut),
-    getImpl(sizeIn, sizeOut, fieldOut)
+    new ConverterImpl(sizeIn, sizeOut, fieldOut.width)
   )(fieldIn, fieldOut)
 
 object Converter {
@@ -24,17 +24,6 @@ object Converter {
         .grouped(typeOut.width).toArray
         .map(typeOut.fromBits)
     }
-
-  // TODO: IMPLEMENT
-  def getImpl[TIn, TOut](sizeIn: Int, sizeOut: Int, fieldOut: MixType[TOut]) = new Impl(
-    (sizeIn, sizeOut),
-    (dataIn: Vec[Bits]) => {
-      dataIn.setName("converterIn")
-      val ret = Vec(dataIn.reverse).asBits.subdivideIn(fieldOut.width bits)
-      ret.setName("converterOut")
-    },
-    0
-  )
 
   def apply[TIn: ClassTag, TOut: ClassTag]
   (sizeIn: Int, sizeOut: Int, fieldIn: MixType[TIn], fieldOut: MixType[TOut]): Converter[TIn, TOut] =

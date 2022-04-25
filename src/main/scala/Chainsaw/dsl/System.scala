@@ -11,7 +11,7 @@ import scala.collection.mutable.ArrayBuffer
  * @param impls       the last element of impls is the beginning part of the system
  * @param repetitions repetition objects corresponding to impls
  */
-class System[TIn, TOut](algo: Algo[TIn, TOut], impls: Seq[Impl], repetitions: Seq[Repetition],
+class System[TIn, TOut](algo: Algo[TIn, TOut], impls: Seq[HardImpl], repetitions: Seq[Repetition],
                         val typeIn: MixType[TIn], val typeOut: MixType[TOut]) {
 
   def apply(dataIn: Array[TIn]) = algo(dataIn)
@@ -25,7 +25,7 @@ class System[TIn, TOut](algo: Algo[TIn, TOut], impls: Seq[Impl], repetitions: Se
 
   def °[TPrev](that: Transform[TPrev, TIn]) = composite(that)
 
-  def buildImplForTransform(impl: Impl, repetition: Repetition) = {
+  def buildImplForTransform(impl: HardImpl, repetition: Repetition) = {
 
     val (inputSize, outputSize) = repetition.expand(impl.size)
 
@@ -40,13 +40,18 @@ class System[TIn, TOut](algo: Algo[TIn, TOut], impls: Seq[Impl], repetitions: Se
       }
 
       // iterate according to time reuse
-      val ret = segments.map(data =>
-        if (repetition.time.group == 1) impl.impl(data)
-        else Array.iterate(data, repetition.time.group + 1)(impl.impl).last
-      ).flatten.toArray
+      val ret = segments.map { data =>
+        val current = impl.getImpl(1, 1).impl // TODO: FINISH THIS
+        val pair = (data,False)
+        if (repetition.time.group == 1) current(pair)
+        else Array.iterate(pair, repetition.time.group + 1)(current).last
+      }.toArray
 
-      require(ret.length == outputSize)
-      Vec(ret)
+      val payload = Vec(ret.map(_._1).flatten)
+      val last = ret.head._2
+
+      require(payload.length == outputSize)
+      payload
     }
   }
 
@@ -84,7 +89,7 @@ class System[TIn, TOut](algo: Algo[TIn, TOut], impls: Seq[Impl], repetitions: Se
 
 object System {
   def apply[TIn, TOut]
-  (algo: Algo[TIn, TOut], impls: Seq[Impl], repetitions: Seq[Repetition],
+  (algo: Algo[TIn, TOut], impls: Seq[HardImpl], repetitions: Seq[Repetition],
    typeIn: MixType[TIn], typeOut: MixType[TOut]): System[TIn, TOut] =
     new System(algo, impls, repetitions, typeIn, typeOut)
 }

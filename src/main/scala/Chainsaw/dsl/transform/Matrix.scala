@@ -11,7 +11,7 @@ import scala.reflect.{ClassTag, classTag}
  */
 class Matrix[T: ClassTag](val array: Array[Array[T]])
                          (implicit ring: Ring[T])
-  extends BaseTransform[T, T](Matrix.getAlgo(array), Matrix.getImpl(array)) {
+  extends BaseTransform[T, T](Matrix.getAlgo(array), new MatrixImpl(array.map(_.map(ring.toBits)), ring.multH, ring.addH)) {
 
   override def toString = {
     val widthMax = array.flatten.map(_.toString.length).max

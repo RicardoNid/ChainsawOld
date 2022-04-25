@@ -11,7 +11,7 @@ class SPermutation[T](val row: Int, val column: Int)
                      (implicit tag: ClassTag[T], field: MixType[T])
   extends dsl.BaseTransform[T, T](
     SPermutation.getTransform(row, column),
-    SPermutation.getImpl(row, column))(field, field)
+    new SPermImpl(row, column))(field, field)
 
 
 object SPermutation {

@@ -12,7 +12,7 @@ class LUT[T: ClassTag]
 (implicit mixTypeIn: MixType[Int], mixTypeOut: MixType[T])
   extends dsl.BaseTransform[Int, T](
     getAlgo(lut),
-    getImpl(lut))
+    new LutImpl(lut.map(mixTypeOut.toBits)))
 
 object LUT {
 
@@ -21,16 +21,6 @@ object LUT {
       require(dataIn.length == 1)
       Array(lut(dataIn.head))
     }
-
-  def getImpl[T: ClassTag](lut: Array[T])(implicit mixType: MixType[T]): Impl =
-    new Impl(
-      size = (1, 1),
-      impl = (dataIn: Vec[Bits]) => {
-        val rom = Mem(lut.map(mixType.toCoeff))
-        Vec(rom.readAsync(dataIn.head.asUInt))
-      },
-      latency = 0
-    )
 
   def apply[T: ClassTag]
   (lut: T*)
