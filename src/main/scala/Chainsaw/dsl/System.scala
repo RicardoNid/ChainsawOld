@@ -1,5 +1,7 @@
 package Chainsaw.dsl
 
+import Chainsaw.dsl
+import Chainsaw.dsl.dataflow.PeriodicFlow
 import spinal.core._
 import spinal.core.sim._
 
@@ -25,37 +27,7 @@ class System[TIn, TOut](algo: Algo[TIn, TOut], impls: Seq[Impl], repetitions: Se
 
   def °[TPrev](that: Transform[TPrev, TIn]) = composite(that)
 
-  def buildImplForTransform(impl: Impl, repetition: Repetition) = {
-
-    val (inputSize, outputSize) = repetition.expand(impl.size)
-
-    (dataIn: Vec[Bits]) => {
-
-      require(dataIn.length == inputSize, s"input size should be $inputSize, while it is actually ${dataIn.length}")
-      var segments = Seq(dataIn)
-
-      // get segments according to space reuse
-      repetition.space.reverse.foreach { rep =>
-        segments = segments.map(segment => rep.divide(segment.toArray).map(Vec(_))).flatten
-      }
-
-      // iterate according to time reuse
-      val ret = segments.map { data =>
-        val current = impl.getImpl(1, 1).impl // TODO: FINISH THIS
-        val pair = (data,False)
-        if (repetition.time.group == 1) current(pair)
-        else Array.iterate(pair, repetition.time.group + 1)(current).last
-      }.toArray
-
-      val payload = Vec(ret.map(_._1).flatten)
-      val last = ret.head._2
-
-      require(payload.length == outputSize)
-      payload
-    }
-  }
-
-  def build =
+  def build(targetThroughput: Double) =
 
   // without reuse
     new Component {
@@ -64,18 +36,27 @@ class System[TIn, TOut](algo: Algo[TIn, TOut], impls: Seq[Impl], repetitions: Se
       val dataIn = in Vec(Bits(typeIn.width bits), inputSize)
       val dataOut = out Vec(Bits(typeOut.width bits), outputSize)
 
-      val temp = ArrayBuffer(dataIn)
-      impls.zip(repetitions).reverse.foreach { case (impl, repetition) =>
-        val trans = buildImplForTransform(impl, repetition)
-        temp += trans(temp.last)
+      val transforms = impls.zip(repetitions).reverse
+
+      // find reuse for each transform
+      val transformsWithReuse = transforms.map { transform =>
+        val reuse = Reuse.findReuse(targetThroughput, transform._2, transform._1)
+        (transform._1, transform._2, reuse)
       }
 
-      dataOut := temp.last
+      val operators = transformsWithReuse.map((TransformBuild.apply _).tupled(_))
+      //      val flows = transformsWithReuse.map((PeriodicFlow.apply _).tupled(_))
+      val flows = transformsWithReuse.map { case (impl, repetition, reuse) => PeriodicFlow(impl.size, repetition, reuse) }
+      val flowConverters = flows.init.zip(flows.tail)
+
+      val dataPath = ArrayBuffer(dataIn)
+      operators.foreach(op => dataPath += op(dataPath.last))
+      dataOut := dataPath.last
     }
 
 
-  def testOnce(stimuli: Array[TIn]) = {
-    SimConfig.withFstWave.compile(build).doSim { dut =>
+  def testOnce(stimuli: Array[TIn], targetThroughput: Double) = {
+    SimConfig.withFstWave.compile(build(targetThroughput)).doSim { dut =>
       dut.dataIn.zip(stimuli).foreach { case (port, data) => port #= typeIn.toBigInt(data) }
       sleep(2)
       val ret = dut.dataOut.map(_.toBigInt).map(typeOut.fromBigInt)

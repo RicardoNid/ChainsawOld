@@ -66,7 +66,7 @@ class MatrixImpl(array: Array[Array[String]], multH: HardOp2, addH: HardOp2) ext
 
   override val size = (array.head.length, array.length)
 
-  override def getImpl(spaceFold: Int, timeFold: Int) = {
+  override def getImpl(fold:Int) = {
     val latency = log2Up(array.head.length) * addH.latency + multH.latency
     val impl = (dataIn: (Vec[Bits], Bool)) => {
 

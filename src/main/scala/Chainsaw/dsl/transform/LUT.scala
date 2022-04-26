@@ -30,7 +30,7 @@ object LUT {
 
 class LutImpl(lut:Array[String]) extends Impl {
 
-  override def getImpl(spaceFold: Int, timeFold: Int) = {
+  override def getImpl(fold:Int) = {
     val impl = (dataIn: (Vec[Bits], Bool)) => {
       val rom = Mem(lut.map(B(_)))
       val ret = Vec(rom.readAsync(dataIn._1.head.asUInt))

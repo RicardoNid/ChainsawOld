@@ -22,7 +22,7 @@ case class Repetition(space: Seq[SpaceRepetition], time: TimeRepetition) {
 
   def spaceFactor = space.map(_.group).product
 
-  def timeFactor = time
+  def timeFactor = time.group
 
   def ⊗(group: Int, step: Int = -1) = {
     if (step == -1) {
@@ -38,6 +38,14 @@ case class Repetition(space: Seq[SpaceRepetition], time: TimeRepetition) {
     var init = size
     space.foreach(rep => init = rep.expand(init))
     init
+  }
+
+  def divide[T:ClassTag](dataIn: Array[T]) = {
+    var segments = Seq(dataIn)
+    space.reverse.foreach { rep =>
+      segments = segments.map(segment => rep.divide(segment)).flatten
+    }
+    segments.toArray
   }
 
 }

@@ -7,7 +7,7 @@ import spinal.lib._
 
 import scala.math.ceil
 
-case class FlowConversion(flowIn: FlowDescriptor, flowOut: FlowDescriptor) {
+case class FlowConversion(flowIn: FlowAnalyser, flowOut: FlowAnalyser) {
 
   require(flowIn.dataCount == flowOut.dataCount)
 
@@ -48,29 +48,29 @@ case class FlowConversion(flowIn: FlowDescriptor, flowOut: FlowDescriptor) {
 
 object FlowConversion {
   def main(args: Array[String]): Unit = {
-
-    val flowIn = BasicFlowDescriptor((0 until 16).map(Seq(_)))
-    val flowOut = BasicFlowDescriptor(Seq(0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15).map(Seq(_)))
-    val intrlv = FlowConversion(flowIn, flowOut)
-
-    val serialIn = PeriodicFlowDescriptor(1, 1, 4, 1)
-    val parallelOut = PeriodicFlowDescriptor(4, 4, 1, 4)
-    val s2p = FlowConversion(serialIn, parallelOut)
-
-    println(s2p.toKaTex)
-    println(new ForwardRegisterAllocator(s2p).getAllocation)
-    GenRTL(FlowConverter(s2p, new ForwardRegisterAllocator(s2p).getAllocation, UInt(8 bits)))
-    SimConfig.withFstWave.compile(FlowConverter(s2p, new ForwardRegisterAllocator(s2p).getAllocation, UInt(8 bits))).doSim { dut =>
-      dut.clockDomain.forkStimulus(2)
-      dut.dataIn.last #= true
-      dut.clockDomain.waitSampling()
-      dut.dataIn.last #= false
-      (0 until 8).foreach { data =>
-        dut.dataIn.payload(0) #= data % 4
-        if (data % 4 == 3) dut.dataIn.last #= true
-        else dut.dataIn.last #= false
-        dut.clockDomain.waitSampling()
-      }
-    }
+//
+//    val flowIn = BasicFlow((0 until 16).map(Seq(_)))
+//    val flowOut = BasicFlow(Seq(0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15).map(Seq(_)))
+//    val intrlv = FlowConversion(flowIn, flowOut)
+//
+//    val serialIn = PeriodicFlow(1, 1, 4, 1)
+//    val parallelOut = PeriodicFlow(4, 4, 1, 4)
+//    val s2p = FlowConversion(serialIn, parallelOut)
+//
+//    println(s2p.toKaTex)
+//    println(new ForwardRegisterAllocator(s2p).getAllocation)
+//    GenRTL(FlowConverter(s2p, new ForwardRegisterAllocator(s2p).getAllocation, UInt(8 bits)))
+//    SimConfig.withFstWave.compile(FlowConverter(s2p, new ForwardRegisterAllocator(s2p).getAllocation, UInt(8 bits))).doSim { dut =>
+//      dut.clockDomain.forkStimulus(2)
+//      dut.dataIn.last #= true
+//      dut.clockDomain.waitSampling()
+//      dut.dataIn.last #= false
+//      (0 until 8).foreach { data =>
+//        dut.dataIn.payload(0) #= data % 4
+//        if (data % 4 == 3) dut.dataIn.last #= true
+//        else dut.dataIn.last #= false
+//        dut.clockDomain.waitSampling()
+//      }
+//    }
   }
 }

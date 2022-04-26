@@ -2,6 +2,8 @@ package Chainsaw
 
 import Chainsaw.dsl.ring.RingOp
 import spinal.core._
+
+import scala.reflect.ClassTag
 //import scala.language.implicitConversions
 import scala.math.BigInt
 
@@ -69,7 +71,11 @@ package object dsl {
     }
   }
 
-  implicit class array2d[T](array: Array[Array[T]]) {
+  implicit class arrayUtil[T:ClassTag](array: Array[T]){
+    def divide(group:Int) = array.grouped(array.length / group).toArray
+  }
+
+  implicit class array2dUtil[T](array: Array[Array[T]]) {
     def toKatex = {
       val rows = array.length
       val head = s"\\left[\\begin{array}{${"c" * rows}}"

@@ -13,7 +13,7 @@ object Examples {
 
     implicit val finiteField: FiniteRing = FiniteRing(2)
     implicit val intField: UIntRing = UIntRing(4)
-    implicit val complexField: ComplexRing = ComplexRing(2, 13)
+    implicit val complexField: ComplexRing = ComplexRing(5, 10)
 
     complexField.selfTest()
 
@@ -27,7 +27,8 @@ object Examples {
 
     val convert = new Converter(4, 1, finiteField, intField)
 
-    val lut = LUT[Complex](Array.fill(16)(1 + i): _*)
+    val qamValue: Seq[BComplex] = (0 until 16).map(j => Complex(j, j))
+    val qam16 = LUT[Complex](qamValue: _*)
 
     val dft2 = Matrix(Array(
       Array(1 + 0 * i, 1 + 0 * i),
@@ -37,12 +38,9 @@ object Examples {
     //    val ofdm = sp16_16 ° (conv ⊗ (128, 1))
     //    val ofdm = sp16_16 ° (conv ⊗ (128, 1))
     //    val ofdm = (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
-    val ofdm = (lut ⊗ 64) ° (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
+    val ofdm = (qam16 ⊗ 64) ° (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
     //    val ofdm = (dft2 ⊗ 32) ° (lut ⊗ 64) ° (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
-
-    println(ofdm(data).mkString("Array(", ", ", ")"))
-    GenRTL(ofdm.build)
-    ofdm.testOnce(data)
+    ofdm.testOnce(data, targetThroughput = 0.25)
 
   }
 }

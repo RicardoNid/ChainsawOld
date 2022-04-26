@@ -35,7 +35,7 @@ class ConverterImpl(sizeIn: Int, sizeOut: Int, widthOut: Int) extends Impl {
 
   override val size = (sizeIn, sizeOut)
 
-  override def getImpl(spaceFold: Int, timeFold: Int) = {
+  override def getImpl(fold:Int) = {
     val impl = (dataIn: (Vec[Bits], Bool)) => {
       val ret = Vec(dataIn._1.reverse).asBits.subdivideIn(widthOut bits)
       (ret, dataIn._2)

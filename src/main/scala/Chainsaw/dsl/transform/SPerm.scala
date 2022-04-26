@@ -29,7 +29,7 @@ class SPermImpl(row:Int, column:Int) extends Impl{
 
   override val size = (row * column, row * column)
 
-  override def getImpl(spaceFold: Int, timeFold: Int) = {
+  override def getImpl(fold:Int) = {
     val impl = (dataIn: (Vec[Bits],Bool)) => {
       val ret = Vec(dataIn._1.toArray.grouped(row).toArray.transpose.flatten)
       (ret, dataIn._2)
