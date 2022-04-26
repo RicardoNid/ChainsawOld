@@ -59,3 +59,9 @@ case class FlowConverter[T <: Data](conversion: FlowConversion, registerAllocati
   }
   dataOut.last := Delay(dataIn.last, conversion.latency, init = False)
 }
+
+object FlowConverter {
+  def test[T <: Data](flowConverter: FlowConverter[T]) = {
+
+  }
+}

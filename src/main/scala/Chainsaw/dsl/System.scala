@@ -57,8 +57,9 @@ class System[TIn, TOut](algo: Algo[TIn, TOut], impls: Seq[Impl], repetitions: Se
 
   def testOnce(stimuli: Array[TIn], targetThroughput: Double) = {
     SimConfig.withFstWave.compile(build(targetThroughput)).doSim { dut =>
+      dut.clockDomain.forkStimulus(2)
       dut.dataIn.zip(stimuli).foreach { case (port, data) => port #= typeIn.toBigInt(data) }
-      sleep(2)
+      dut.clockDomain.waitSampling(5)
       val ret = dut.dataOut.map(_.toBigInt).map(typeOut.fromBigInt)
       println(s"yours : ${ret.mkString(" ")}")
       println(s"golden: ${apply(stimuli).mkString(" ")}")

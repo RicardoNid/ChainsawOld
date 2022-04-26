@@ -41,7 +41,7 @@ case class FlowConversion(flowIn: FlowAnalyser, flowOut: FlowAnalyser) {
     val head = "\\begin{array}{crrrrrc}"
     val last = "\\hline\\end{array}"
     val header = "\\hline \\text { Variable }(v) & T_{\\text {input }} & T_{\\text {zlout }} & T_{\\text {diff }} & T_{\\text {out }} & L(v) & \\text { Life Period } \\\\ \\hline"
-    val contents = (0 until dataCount).map(index => s"\\text { $index } & ${tIns(index)} & ${tZlOuts(0)} & ${tDiff(index)} & ${tOuts(index)} & ${tOuts(index) - tIns(index)} & ${tIns(index)} \\rightarrow ${tOuts(index)} \\\\").mkString("\n")
+    val contents = (0 until dataCount).map(index => s"\\text { $index } & ${tIns(index)} & ${tZlOuts(index)} & ${tDiff(index)} & ${tOuts(index)} & ${tOuts(index) - tIns(index)} & ${tIns(index)} \\rightarrow ${tOuts(index)} \\\\").mkString("\n")
     Seq(head, header, contents, last).mkString(" ")
   }
 }

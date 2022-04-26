@@ -27,19 +27,19 @@ object Examples {
 
     val convert = new Converter(4, 1, finiteField, intField)
 
-    val qamValue: Seq[BComplex] = (0 until 16).map(j => Complex(j, j))
+    val qamValue: Seq[BComplex] = (0 until 16).map(j => Complex(1,1))
     val qam16 = LUT[Complex](qamValue: _*)
 
     val dft2 = Matrix(Array(
       Array(1 + 0 * i, 1 + 0 * i),
-      Array(1 + 0 * i, -1 + 0 * i)))
+      Array(1 + 0 * i, 1 + 0 * i)))
 
     //    val ofdm = (conv ⊗ (128, 1))
     //    val ofdm = sp16_16 ° (conv ⊗ (128, 1))
     //    val ofdm = sp16_16 ° (conv ⊗ (128, 1))
     //    val ofdm = (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
-    val ofdm = (qam16 ⊗ 64) ° (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
-    //    val ofdm = (dft2 ⊗ 32) ° (lut ⊗ 64) ° (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
+    //    val ofdm = (qam16 ⊗ 64) ° (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
+    val ofdm = (dft2 ⊗ 32) ° (qam16 ⊗ 64) ° (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
     ofdm.testOnce(data, targetThroughput = 0.25)
 
   }
