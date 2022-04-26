@@ -19,13 +19,12 @@ class GaloisFieldHardWareTest extends AnyFlatSpec {
     }
 
     import GaloisFieldHardWare._
-    io.dataOut.zipWithIndex.foreach { case (o, index) => o := io.dataIn.multi(index) }
+    io.dataOut.zipWithIndex.foreach { case (o, index) => o := io.dataIn.constMulti(index) }
   }
   "GF(16) constant multiplier" should "work normally" in simNow(4)
   "GF(32) constant multiplier" should "work normally" in simNow(5)
 
-
-  def simNow(M: Int) ={
+  def simNow(M: Int) = {
     SimConfig.withFstWave.compile(new GFMulti(M)).doSim { dut =>
       import dut._
       import PolynomialString._
@@ -40,7 +39,7 @@ class GaloisFieldHardWareTest extends AnyFlatSpec {
           assert(gf.getInt(oGF) == o)
         }
       }
-  }
+    }
 
   }
 

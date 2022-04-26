@@ -13,14 +13,16 @@ import scala.collection.mutable._
 import scala.math._
 
 class FIR2ParallelTest extends AnyFlatSpec {
+//  new QuartusFlow(FIR2Parallel(Seq.fill(200)(nextDouble() * 6 -3))).impl()
+  Range(0, 10).foreach { i =>
+    val coffSize = nextInt(100) + 5
+    val coff     = Seq.fill(if (coffSize % 2 == 1) coffSize + 1 else coffSize)(nextDouble() * 5)
+    s"${i}: ${coffSize} order FIR with the ${coff.head}" should "work normally" in simNow(coff)
+  }
 
-  val coffSize = nextInt(100) + 5
-  val coff     = Seq.fill(if (coffSize % 2 == 1) coffSize + 1 else coffSize)(nextDouble() * 5)
-  s"${coffSize} order FIR with the ${coff.head}" should "work normally" in simNow(coff)
 //  it should "work normally" in simNow(Seq(1, 2, 3, 4))
 
   def simNow(C: Seq[Double]) = {
-    val data = Seq.fill(1000)(nextDouble() * 6 - 3)
     SimConfig.withFstWave
       .withConfig(
         SpinalConfig(
@@ -44,7 +46,7 @@ class FIR2ParallelTest extends AnyFlatSpec {
         clockDomain.waitSampling()
         var validCount = 0
         var errCount   = 0
-        val coffSF = H0.coffSFix.map(_.toDouble).zip(H1.coffSFix.map(_.toDouble)).map{case(z,o) => Seq(z, o)}.reduce(_ ++ _)
+        val coffSF     = H0.coffSFix.map(_.toDouble).zip(H1.coffSFix.map(_.toDouble)).map { case (z, o) => Seq(z, o) }.reduce(_ ++ _)
         println(coffSF.mkString(" "))
         Range(0, 10000).foreach { i =>
           io.dataIn.valid.randomize()
@@ -70,7 +72,6 @@ class FIR2ParallelTest extends AnyFlatSpec {
               println("err!!!!!!!!!!!!!")
             }
           }
-
         }
         println(validCount)
         println(errCount)

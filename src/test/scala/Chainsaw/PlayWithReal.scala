@@ -132,7 +132,7 @@ class testPlayWithReal extends AnyFunSuite {
           input #= value
         } catch {
           case _: AssertionError => println(s"range: ${input.realInfo}, value: $value")
-          case _ =>
+          case _                 =>
         }
         sleep(1)
         if (

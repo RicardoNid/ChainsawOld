@@ -80,14 +80,14 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
       val pipesAll = false :: (0 until iteration).map { i =>
         cordicPipe match {
           case CordicPipe.MAXIMUM => true
-          case CordicPipe.HALF => i % 2 == 0
-          case CordicPipe.NONE => false
+          case CordicPipe.HALF    => i % 2 == 0
+          case CordicPipe.NONE    => false
         }
       }.toList
       val pipes = pipesAll.dropRight(1)
 
       val counterClockwises = rotationMode match {
-        case RotationMode.ROTATION => signalZs.dropRight(1).map(~_.asBits.msb) // Z > 0
+        case RotationMode.ROTATION  => signalZs.dropRight(1).map(~_.asBits.msb) // Z > 0
         case RotationMode.VECTORING => signalYs.dropRight(1).map(_.asBits.msb) // Y < 0
       }
 
@@ -98,9 +98,9 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
         .zip(shiftedYs)
         .foreach { case (((prev, next), (counterClockwise, pipe)), shifted) => // note the format of tuple
           val combX = algebricMode match {
-            case AlgebraicMode.CIRCULAR => Mux(counterClockwise, prev - shifted, prev + shifted).truncated
+            case AlgebraicMode.CIRCULAR   => Mux(counterClockwise, prev - shifted, prev + shifted).truncated
             case AlgebraicMode.HYPERBOLIC => Mux(counterClockwise, prev + shifted, prev - shifted).truncated
-            case AlgebraicMode.LINEAR => prev.truncated
+            case AlgebraicMode.LINEAR     => prev.truncated
           }
           next := (if (pipe) RegNext(combX) else combX).truncated
         }
@@ -171,7 +171,7 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
         phaseCoeff.setName("diffZ")
 
         val counterClockwise = rotationMode match {
-          case RotationMode.ROTATION => Mux(counter === U(0), ~inputZ.asBits.msb, ~signalZ.asBits.msb) // Z > 0
+          case RotationMode.ROTATION  => Mux(counter === U(0), ~inputZ.asBits.msb, ~signalZ.asBits.msb) // Z > 0
           case RotationMode.VECTORING => Mux(counter === U(0), inputY.asBits.msb, signalY.asBits.msb) // Y < 0
         }
 
@@ -184,9 +184,9 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
             when(counter === U(0)) {
               val nextX =
                 algebricMode match {
-                  case DSP.AlgebraicMode.CIRCULAR => Mux(counterClockwise, inputX - shiftedY, inputX + shiftedY).truncated
+                  case DSP.AlgebraicMode.CIRCULAR   => Mux(counterClockwise, inputX - shiftedY, inputX + shiftedY).truncated
                   case DSP.AlgebraicMode.HYPERBOLIC => Mux(counterClockwise, inputX + shiftedY, inputX - shiftedY).truncated
-                  case DSP.AlgebraicMode.LINEAR => inputX.truncated
+                  case DSP.AlgebraicMode.LINEAR     => inputX.truncated
                 }
               signalX := nextX
               signalY := Mux(counterClockwise, inputY + shiftedX, inputY - shiftedX).truncated
@@ -194,9 +194,9 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
             }.otherwise {
               val nextX =
                 algebricMode match {
-                  case DSP.AlgebraicMode.CIRCULAR => Mux(counterClockwise, signalX - shiftedY, signalX + shiftedY).truncated
+                  case DSP.AlgebraicMode.CIRCULAR   => Mux(counterClockwise, signalX - shiftedY, signalX + shiftedY).truncated
                   case DSP.AlgebraicMode.HYPERBOLIC => Mux(counterClockwise, signalX + shiftedY, signalX - shiftedY).truncated
-                  case DSP.AlgebraicMode.LINEAR => signalX.truncated
+                  case DSP.AlgebraicMode.LINEAR     => signalX.truncated
                 }
               signalX := nextX
               signalY := Mux(counterClockwise, signalY + shiftedX, signalY - shiftedX).truncated
@@ -232,9 +232,9 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
     */
   def getPhaseCoeff(iteration: Int)(implicit algebricMode: AlgebraicMode) = {
     algebricMode match {
-      case AlgebraicMode.CIRCULAR => atan(pow(2.0, -iteration))
+      case AlgebraicMode.CIRCULAR   => atan(pow(2.0, -iteration))
       case AlgebraicMode.HYPERBOLIC => atanh(pow(2.0, -getHyperbolicSequence(iteration + 1).last))
-      case AlgebraicMode.LINEAR => pow(2.0, -iteration)
+      case AlgebraicMode.LINEAR     => pow(2.0, -iteration)
     }
   }
 
@@ -259,15 +259,15 @@ class CORDIC(inputX: SFix, inputY: SFix, inputZ: SFix, cordicConfig: CordicConfi
       case PARALLEL => {
         cordicPipe match {
           case CordicPipe.MAXIMUM => iteration + extraDelay
-          case CordicPipe.HALF => iteration / 2 + extraDelay
-          case CordicPipe.NONE => extraDelay
+          case CordicPipe.HALF    => iteration / 2 + extraDelay
+          case CordicPipe.NONE    => extraDelay
         }
       }
       case SERIAL => iteration + extraDelay
     }
     val initiationInterval = cordicArch match {
       case PARALLEL => 1
-      case SERIAL => latency
+      case SERIAL   => latency
     }
     TimingInfo(inputInterval, outputInterval, latency, initiationInterval)
   }

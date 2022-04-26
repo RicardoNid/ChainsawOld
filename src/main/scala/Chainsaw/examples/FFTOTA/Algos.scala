@@ -47,7 +47,7 @@ object Algos {
     val ret = Try(eng.feval[BComplex]("exp", new BComplex(0, -2 * Pi * nk / N)))
     ret match {
       case Failure(exception) => new BComplex(eng.feval[Double]("exp", new BComplex(0, -2 * Pi * nk / N)), 0)
-      case Success(value) => value
+      case Success(value)     => value
     }
   }
 

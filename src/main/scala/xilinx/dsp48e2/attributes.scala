@@ -72,9 +72,9 @@ class DSPAttrBuilder {
   def setMult(multMODE: MULTMODE): DSPAttrBuilder = {
     USE_MULT = "MULTIPLY"
     multMODE match {
-      case AB1 => AMULTSEL = "A"; BMULTSEL = "B"; PREADDINSEL = "A";
-      case AD0B1 => AMULTSEL = "AD"; BMULTSEL = "B"; PREADDINSEL = "A";
-      case AAD01 => AMULTSEL = "A"; BMULTSEL = "AD"; PREADDINSEL = "A";
+      case AB1     => AMULTSEL = "A"; BMULTSEL = "B"; PREADDINSEL = "A";
+      case AD0B1   => AMULTSEL = "AD"; BMULTSEL = "B"; PREADDINSEL = "A";
+      case AAD01   => AMULTSEL = "A"; BMULTSEL = "AD"; PREADDINSEL = "A";
       case AD0AD01 => AMULTSEL = "AD"; BMULTSEL = "AD"; PREADDINSEL = "A";
     }
     multMode = multMODE

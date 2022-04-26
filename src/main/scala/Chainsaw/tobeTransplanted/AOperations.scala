@@ -25,7 +25,7 @@ object AOperations {
     printlnWhenDebug("left", shiftedLeft, shiftedLeft.realInfo.interval)
     printlnWhenDebug("right", shiftedRight, shiftedRight.realInfo.interval)
     val sum = config.aOpSign match {
-      case ADD => shiftedLeft + shiftedRight
+      case ADD     => shiftedLeft + shiftedRight
       case SUBNEXT => shiftedLeft - shiftedRight
       case SUBPREV => shiftedRight - shiftedLeft
     }

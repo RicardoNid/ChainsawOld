@@ -87,9 +87,9 @@ class RegularDFG[T <: Data](name: String) extends DFGGraph[T](name) {
           if (currInRange && nextInRange) {
             // current node in range and next node in range, use both current node and next node to add inner edges
             InOut match {
-              case IN => this.addEdge(nodes(r + indexDiff._1)(c + indexDiff._2), nodes(r)(c), outOrder, inOrder, 1) // next node -> curr node
+              case IN  => this.addEdge(nodes(r + indexDiff._1)(c + indexDiff._2), nodes(r)(c), outOrder, inOrder, 1) // next node -> curr node
               case OUT => this.addEdge(nodes(r)(c), nodes(r + indexDiff._1)(c + indexDiff._2), outOrder, inOrder, 1) // curr node -> next node
-              case _ => logger.error("Wrong InOut type")
+              case _   => logger.error("Wrong InOut type")
             }
           } else if (!currInRange && nextInRange) {
             // current node not in range but next node in range, use next node to do withInput or do withOutput

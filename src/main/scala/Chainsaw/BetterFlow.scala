@@ -46,7 +46,7 @@ object BetterFlow {
         output.valid := input.valid && counter.willOverflowIfInc
         endianness match {
           case `LITTLE` => output.fragment.assignFromBits((input.fragment ## buffer).resized)
-          case `BIG` => output.fragment.assignFromBits((input.fragment ## buffer).subdivideIn(factor slices).reverse.asBits().resized)
+          case `BIG`    => output.fragment.assignFromBits((input.fragment ## buffer).subdivideIn(factor slices).reverse.asBits().resized)
         }
         output.last := input.last
       }

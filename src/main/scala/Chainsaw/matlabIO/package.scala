@@ -71,7 +71,7 @@ package object matlabIO {
 
         element match {
           case array: Array[_] => array.map(recursiveBuild(_, depth + 1)).mkString(sep)
-          case _ => element.toString
+          case _               => element.toString
         }
       }
 
@@ -88,7 +88,7 @@ package object matlabIO {
         .map { case (key, value) =>
           val valueString = value match {
             case array: Array[_] => array.info
-            case value => value.toString
+            case value           => value.toString
           }
           s"$key: $valueString"
         }

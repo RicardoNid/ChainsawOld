@@ -65,7 +65,7 @@ class QuartusFlow[T <: Component](dut: => T, workspace: String = "quartusWorkspa
       var fileName = ""
       reportType match {
         case Chainsaw.DSP.DAS.Report.RESOURCE => fileName = mapReportFile
-        case Chainsaw.DSP.DAS.Report.TIMING => fileName   = staReportFile
+        case Chainsaw.DSP.DAS.Report.TIMING   => fileName = staReportFile
       }
       val rptFile = Paths.get(workspace, fileName).toFile
       val report  = Source.fromFile(rptFile).getLines().toArray
@@ -92,4 +92,3 @@ class QuartusFlow[T <: Component](dut: => T, workspace: String = "quartusWorkspa
 
   }
 }
-

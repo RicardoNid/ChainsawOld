@@ -26,7 +26,7 @@ case class QAMDeModCore(symbolType: HardType[ComplexNumber], bitsAllocated: Int,
   val maxExp = dataIn.payload.real.maxExp // in fact, this should be 1
   val minExp = dataIn.payload.real.minExp
 
-  val thresholds = (i: Int) => SF(i / Refs.getQAMRms(bitsAllocated) * factor, maxExp exp, minExp exp) // TODO: get threshold from a RAM
+  val thresholds = (i: Int)      => SF(i / Refs.getQAMRms(bitsAllocated) * factor, maxExp exp, minExp exp) // TODO: get threshold from a RAM
   val abs        = (value: SFix) => Mux(value.raw.msb, -value, value)
   val isPositive = (value: SFix) => ~value.raw.msb
 

@@ -59,7 +59,7 @@ trait DFGTransform[T <: Data] {
         }
     } ++ // pairs for latency
       (dfg.latencyEdges.flatMap(edge => (0 until ioMultiple).map(i => (Iteration(edge.source, 0), Iteration(edge.target, i + edge.weightWithSource), edge)))
-        ++ (1 to ioMultiple).map(i => (Iteration(dfg.ioReference, 0), Iteration(dfg.ioReference, i), LatencyEdge[T]())))
+        ++ (1 to ioMultiple).map(i   => (Iteration(dfg.ioReference, 0), Iteration(dfg.ioReference, i), LatencyEdge[T]())))
   }
 
   def constraints: Seq[DSPConstraint[T]] = pairsInvolved.map { case (source, target, _) => constraint(source, target) }

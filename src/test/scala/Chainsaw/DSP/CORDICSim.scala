@@ -45,15 +45,15 @@ class CORDICSim(cordicConfig: CordicConfig) extends CORDICDUT(cordicConfig) with
     cordicConfig.rotationMode match {
       case ROTATION =>
         cordicConfig.algebricMode match {
-          case CIRCULAR => CordicSimData(x * cos(z) - y * sin(z), y * cos(z) + x * sin(z), 0.0)
+          case CIRCULAR   => CordicSimData(x * cos(z) - y * sin(z), y * cos(z) + x * sin(z), 0.0)
           case HYPERBOLIC => CordicSimData(x * cosh(z) - y * sinh(z), y * cosh(z) + x * sinh(z), 0.0)
-          case LINEAR => CordicSimData(x, y + x * z, 0.0)
+          case LINEAR     => CordicSimData(x, y + x * z, 0.0)
         }
       case VECTORING =>
         cordicConfig.algebricMode match {
-          case CIRCULAR => CordicSimData(sqrt(x * x + y * y), 0.0, z + atan(y / x))
+          case CIRCULAR   => CordicSimData(sqrt(x * x + y * y), 0.0, z + atan(y / x))
           case HYPERBOLIC => CordicSimData(sqrt(x * x - y * y), 0.0, z + atanh(y / x))
-          case LINEAR => CordicSimData(x, 0.0, z + y / x)
+          case LINEAR     => CordicSimData(x, 0.0, z + y / x)
         }
     }
   }

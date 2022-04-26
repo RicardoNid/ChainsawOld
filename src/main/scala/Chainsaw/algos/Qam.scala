@@ -31,7 +31,7 @@ object Qam {
     def genSymbols(modulationOrder: Int): Seq[Double] = (0 until modulationOrder).flatMap(genSymbol(_, bits))
 
     val rawData = modulationOrder match {
-      case 2 => Seq(-1.0, 0.0, 1.0, 0.0)
+      case 2               => Seq(-1.0, 0.0, 1.0, 0.0)
       case modulationOrder => genSymbols(modulationOrder)
     }
 

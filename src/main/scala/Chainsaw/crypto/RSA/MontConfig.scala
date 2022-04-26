@@ -51,14 +51,14 @@ case class MontConfig(lMs: Seq[Int] = Seq(512, 1024, 2048, 3072, 4096), w: Int =
   // utilizations, tasks / (PE * round)
   val utilizations =
     if (parallel) (0 until ns.size).map(i => ns(i).toDouble / (p * rounds(i)) * (lMs.max / lMs(i)))
-    else (0 until ns.size).map(i => ns(i).toDouble / (p * rounds(i)))
+    else (0 until ns.size).map(i          => ns(i).toDouble / (p * rounds(i)))
   val queueUtilizations =
-    if (parallel) lMs.map(lM => (lMs.max / lM) * (lM / lMs.min) / parallelFactor.toDouble)
+    if (parallel) lMs.map(lM     => (lMs.max / lM) * (lM / lMs.min) / parallelFactor.toDouble)
     else (0 until es.size).map(i => (es(i).toDouble - p) / (es.max - p))
   // n + e - 1 for the whole interval, (round - 1) * (e - p) for waiting - (e - 1) for where the output word started, 1 for start -> run
   val latencies =
     if (parallel) (0 until ns.size).map(i => (ns(i) + es(i) - 1) + (rounds(i) - 1) * (es(i) - pPerInstance(i)) - es(i) + 1 + 1)
-    else (0 until ns.size).map(i => (ns(i) + es(i) - 1) + (rounds(i) - 1) * (es(i) - p) - es(i) + 1 + 1)
+    else (0 until ns.size).map(i          => (ns(i) + es(i) - 1) + (rounds(i) - 1) * (es(i) - p) - es(i) + 1 + 1)
 
   printlnGreen(
     s"\n********systolic array properties report********" +
