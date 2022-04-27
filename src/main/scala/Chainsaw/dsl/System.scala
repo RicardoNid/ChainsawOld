@@ -44,8 +44,11 @@ class System[TIn, TOut](algo: Algo[TIn, TOut], impls: Seq[Impl], repetitions: Se
         (transform._1, transform._2, reuse)
       }
 
+      println(transformsWithReuse.map{ case (impl, repetition, reuse) =>
+      s"${impl.getClass.toString} $reuse"
+      }.mkString("\n↓\n"))
+
       val operators = transformsWithReuse.map((TransformBuild.apply _).tupled(_))
-      //      val flows = transformsWithReuse.map((PeriodicFlow.apply _).tupled(_))
       val flows = transformsWithReuse.map { case (impl, repetition, reuse) => PeriodicFlow(impl.size, repetition, reuse) }
       val flowConverters = flows.init.zip(flows.tail)
 
@@ -55,7 +58,7 @@ class System[TIn, TOut](algo: Algo[TIn, TOut], impls: Seq[Impl], repetitions: Se
     }
 
 
-  def testOnce(stimuli: Array[TIn], targetThroughput: Double) = {
+  def randomTest(stimuli: Array[TIn], targetThroughput: Double) = {
     SimConfig.withFstWave.compile(build(targetThroughput)).doSim { dut =>
       dut.clockDomain.forkStimulus(2)
       dut.dataIn.zip(stimuli).foreach { case (port, data) => port #= typeIn.toBigInt(data) }

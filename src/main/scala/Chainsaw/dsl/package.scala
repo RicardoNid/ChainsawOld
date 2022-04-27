@@ -71,8 +71,10 @@ package object dsl {
     }
   }
 
-  implicit class arrayUtil[T:ClassTag](array: Array[T]){
-    def divide(group:Int) = array.grouped(array.length / group).toArray
+  implicit class arrayUtil[T: ClassTag](array: Array[T]) {
+    def divide(group: Int) = array.grouped(array.length / group).toArray
+
+    def prevAndNext(f: ((T, T)) => Unit) = array.init.zip(array.tail).foreach(f)
   }
 
   implicit class array2dUtil[T](array: Array[Array[T]]) {

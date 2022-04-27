@@ -43,3 +43,4 @@ class ConverterImpl(sizeIn: Int, sizeOut: Int, widthOut: Int) extends Impl {
     RawImpl(impl, 0)
   }
 }
+

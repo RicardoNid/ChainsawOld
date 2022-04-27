@@ -27,6 +27,8 @@ object SPerm {
 
 class SPermImpl(row:Int, column:Int) extends Impl{
 
+
+  override val foldMax = row * column
   override val size = (row * column, row * column)
 
   override def getImpl(fold:Int) = {

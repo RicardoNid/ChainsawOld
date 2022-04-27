@@ -2,7 +2,7 @@ package Chainsaw.dsl
 
 import Chainsaw._
 import Chainsaw.dsl.ring._
-import Chainsaw.dsl.transform.{Converter, LUT, Matrix, SPerm}
+import Chainsaw.dsl.transform._
 import breeze.math._
 
 import scala.util.Random
@@ -15,8 +15,6 @@ object Examples {
     implicit val intField: UIntRing = UIntRing(4)
     implicit val complexField: ComplexRing = ComplexRing(5, 10)
 
-    complexField.selfTest()
-
     val data = Array.fill[FiniteInt](6)(0) ++ (0 until 128).map(_ => FiniteInt(Random.nextInt(2)))
 
     val conv = Matrix[FiniteInt](Array(
@@ -24,23 +22,31 @@ object Examples {
       Array[FiniteInt](1, 1, 0, 1, 1, 0, 1)))
 
     val sp16_16 = SPerm[FiniteInt](16, 16)
-
     val convert = new Converter(4, 1, finiteField, intField)
 
-    val qamValue: Seq[BComplex] = (0 until 16).map(j => Complex(1,1))
-    val qam16 = LUT[Complex](qamValue: _*)
+    val qam16 = LUT[Complex](
+      Complex(-0.9486, 0.9486), Complex(-0.9486, 0.3162), Complex(-0.9486, -0.9486), Complex(-0.9486, -0.3162),
+      Complex(-0.3162, 0.9486), Complex(-0.3162, 0.3162), Complex(-0.3162, -0.9486), Complex(-0.3162, -0.3162),
+      Complex(0.9486, 0.9486), Complex(0.9486, 0.3162), Complex(0.9486, -0.9486), Complex(0.9486, -0.3162),
+      Complex(0.3162, 0.9486), Complex(0.3162, 0.3162), Complex(0.3162, -0.9486), Complex(0.3162, -0.3162)
+    )
 
-    val dft2 = Matrix(Array(
-      Array(1 + 0 * i, 1 + 0 * i),
-      Array(1 + 0 * i, 1 + 0 * i)))
+    val ifft = Diagonal(Array.fill(64)(Complex(1, 1)))
 
-    //    val ofdm = (conv ⊗ (128, 1))
-    //    val ofdm = sp16_16 ° (conv ⊗ (128, 1))
-    //    val ofdm = sp16_16 ° (conv ⊗ (128, 1))
-    //    val ofdm = (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
-    //    val ofdm = (qam16 ⊗ 64) ° (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
-    val ofdm = (dft2 ⊗ 32) ° (qam16 ⊗ 64) ° (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
-    ofdm.testOnce(data, targetThroughput = 0.25)
+    val ofdm = ifft ° (qam16 ⊗ 64) ° (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
+    //    ofdm.randomTest(data, targetThroughput = 1 / 1.0)
+    //    ofdm.randomTest(data, targetThroughput = 1 / 2.0)
+    //    ofdm.randomTest(data, targetThroughput = 1 / 4.0)
+    //    ofdm.randomTest(data, targetThroughput = 1 / 8.0)
+    //
+    //    VivadoImpl(ofdm.build(targetThroughput = 1 / 1.0), "system1_1")
+    //    VivadoImpl(ofdm.build(targetThroughput = 1 / 2.0), "system1_2")
+    //    VivadoImpl(ofdm.build(targetThroughput = 1 / 4.0), "system1_4")
+    //    VivadoImpl(ofdm.build(targetThroughput = 1 / 8.0), "system1_8")
 
+    val sp4_4 = SPerm[FiniteInt](4, 4)
+    val ifft4 = HSIFFT(4)
+    val ofdmSmall = ifft4 ° (qam16 ⊗ 4) ° (convert ⊗ 4) ° sp4_4 ° (conv ⊗ (8, 1))
+    GenRTL(ofdmSmall.build(targetThroughput = 1.0))
   }
 }

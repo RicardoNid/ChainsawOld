@@ -36,7 +36,7 @@ class ComplexRing(integral: Int, fractional: Int) extends MixType[Complex] with 
       val complexA, complexB = ct()
       complexA.assignFromBits(a)
       complexB.assignFromBits(b)
-      (complexA + complexB).asBits
+      (complexA + complexB).d.asBits
     },
     latency = 1
   )
@@ -45,7 +45,7 @@ class ComplexRing(integral: Int, fractional: Int) extends MixType[Complex] with 
       val complexA, complexB = ct()
       complexA.assignFromBits(a)
       complexB.assignFromBits(b)
-      (complexA - complexB).asBits
+      (complexA - complexB).d.asBits
     },
     latency = 1
   )

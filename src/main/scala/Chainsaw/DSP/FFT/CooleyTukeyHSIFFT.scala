@@ -9,7 +9,7 @@ import spinal.lib._
 case class CooleyTukeyHSIFFT(N: Int, pF: Int,
                              dataType: HardType[SFix], coeffType: HardType[SFix],
                              factors: Seq[Int], shifts: Seq[Int] = null)
-                            (implicit complexMultConfig: ComplexMultConfig= ComplexMultConfig())
+                            (implicit complexMultConfig: ComplexMultConfig = ComplexMultConfig())
   extends Component with DSPTestable[Vec[ComplexNumber], Vec[SFix]] {
 
   val fold = N / pF
@@ -59,4 +59,16 @@ case class CooleyTukeyHSIFFT(N: Int, pF: Int,
   }
 
   override val latency = tempLatency
+}
+
+object CooleyTukeyHSIFFT {
+  def main(args: Array[String]): Unit = {
+    val dt = HardType(SFix(5 exp, -10 exp))
+    val ct = HardType(SFix(1 exp, -14 exp))
+
+    VivadoSynthForTiming(CooleyTukeyHSIFFT(64, 16, dt, ct, Seq(8, 4, 2)), "system_1_8")
+    VivadoSynthForTiming(CooleyTukeyHSIFFT(64, 32, dt, ct, Seq(8, 2, 4)), "system_1_4")
+    VivadoSynthForTiming(CooleyTukeyHSIFFT(64, 64, dt, ct, Seq(8, 4, 2)), "system_1_2")
+    VivadoSynthForTiming(CooleyTukeyFFT(64, true, dt, ct, Seq(8, 8)), "system_1_1")
+  }
 }

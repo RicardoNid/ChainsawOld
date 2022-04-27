@@ -1,7 +1,9 @@
 package Chainsaw.dsl
 
 
-case class Reuse(spaceReuse: Int, timeReuse: Int, fold: Int, iterationLatency:Int)
+case class Reuse(spaceReuse: Int, timeReuse: Int, fold: Int, iterationLatency:Int){
+  override def toString = s"reuse: space = $spaceReuse, time = $timeReuse, fold = $fold"
+}
 
 object Reuse {
 
@@ -42,6 +44,8 @@ object Reuse {
       timeReuse = reuse
       if (!pass) timeReuse = old
     }
+
+
 
     Reuse(spaceReuse, timeReuse, fold, iterationLatency)
   }

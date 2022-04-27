@@ -15,4 +15,6 @@ trait RingOp[T] {
   val subH: HardOp2
   val multH: HardOp2
 
+
+
 }

@@ -4,12 +4,15 @@ import spinal.core._
 
 object TransformBuild {
 
+
+
   def apply(impl: Impl, repetition: Repetition, reuse: Reuse) = {
+
+    println(impl.getClass)
 
     val (inputSize, outputSize) = repetition.expand(impl.size)
 
     (dataIn: Vec[Bits]) => {
-
       require(dataIn.length == inputSize, s"input size should be $inputSize, while it is actually ${dataIn.length}")
       var segments = Seq(dataIn)
 
@@ -29,7 +32,7 @@ object TransformBuild {
       val payload = Vec(ret.map(_._1).flatten)
       val last = ret.head._2
 
-      require(payload.length == outputSize)
+      require(payload.length == outputSize, s"output size should be $outputSize, while it is actually ${payload.length}")
       payload
     }
   }

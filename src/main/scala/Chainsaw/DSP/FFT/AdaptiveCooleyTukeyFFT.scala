@@ -32,6 +32,7 @@ case class AdaptiveCooleyTukeyFFT(N: Int, pF: Int, inverse: Boolean,
   val interDataType = core0.retDataType
   val interComplexDataType = toComplexType(interDataType)
 
+  println(s"factor $N1, $N2")
   val core1s = Seq.fill(N1 / N2)(CooleyTukeyFFT(N2, inverse, interDataType, coeffType, factors2, shifts2))
   val retDataType = core1s.head.retDataType
   val retComplexDataType = toComplexType(retDataType)

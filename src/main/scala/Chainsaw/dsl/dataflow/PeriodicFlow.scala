@@ -64,12 +64,12 @@ object PeriodicFlow {
     val repetition1 = Repetition(Seq(SpaceRepetition(2)), TimeRepetition(4))
     val reuse1 = Reuse(2, 4, 1, 1)
     val flow1 = PeriodicFlow((2, 3), repetition1, reuse1)
-    flow1.drawOutput
+//    flow1.drawOutput
 
     val repetition2 = Repetition(Seq(SpaceRepetition(2)), TimeRepetition(5))
     val reuse2 = Reuse(2, 5, 1, 1)
-    val flow2 = PeriodicFlow((2, 3), repetition1, reuse1)
-    flow2.drawOutput
+    val flow2 = PeriodicFlow((2, 3), repetition2, reuse2)
+//    flow2.drawOutput
 
     println(FlowConversion(flow1.outputFlow, flow0.inputFlow).toKaTex)
     println(FlowConversion(flow2.outputFlow, flow0.inputFlow).toKaTex)
