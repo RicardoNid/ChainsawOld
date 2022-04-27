@@ -5,9 +5,9 @@ import spinal.lib._
 
 case class RawImpl(impl: ((Vec[Bits], Bool)) => (Vec[Bits], Bool), latency: Int)
 
-abstract class ImplComponent extends Component {
-  val dataIn: Fragment[Vec[Bits]]
-  val dataOut: Fragment[Vec[Bits]]
+abstract class ImplComponent(inWidth: Int, outWidth: Int, inSize: Int, outSize: Int) extends Component {
+  val dataIn = in(Fragment(Vec(Bits(inWidth bits), inSize)))
+  val dataOut = out(Fragment(Vec(Bits(outWidth bits), outSize)))
   val latency: Int
 }
 

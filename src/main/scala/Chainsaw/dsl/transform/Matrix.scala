@@ -23,7 +23,7 @@ class Matrix[T: ClassTag](val array: Array[Array[T]])
 object Matrix {
 
   @tailrec
-  def reduceBalancedTree[T:ClassTag](array: Array[T], op: Op2[T]): Array[T] = {
+  def reduceBalancedTree[T: ClassTag](array: Array[T], op: Op2[T]): Array[T] = {
     val n = array.length
     if (n == 1) array
     else {
@@ -66,16 +66,28 @@ class MatrixImpl(array: Array[Array[String]], multH: HardOp2, addH: HardOp2) ext
 
   override val size = (array.head.length, array.length)
 
-  override def getImpl(fold:Int) = {
-    val latency = log2Up(array.head.length) * addH.latency + multH.latency
-    val impl = (dataIn: (Vec[Bits], Bool)) => {
+  override def getImpl(fold: Int) = {
 
-      val coeffs = array.map(_.map(B(_)))
-      val afterMult = coeffs.map(row => row.zip(dataIn._1).map { case (coeff, data) => multH.op(coeff, data) })
-      val ret = Vec(afterMult.map(Matrix.reduceBalancedTree(_, addH.op)).map(_.head))
-      (ret, Delay(dataIn._2, latency, init = False))
+    val component = MatrixModule(array, multH, addH)
+    val impl = (dataIn: (Vec[Bits], Bool)) => {
+      component.dataIn.fragment := dataIn._1
+      component.dataIn.last := dataIn._2
+      (component.dataOut.fragment, component.dataOut.last)
     }
-    RawImpl(impl, latency)
+    RawImpl(impl, component.latency)
   }
+}
+
+case class MatrixModule(array: Array[Array[String]], multH: HardOp2, addH: HardOp2)
+  extends ImplComponent(array.head.head.length, array.head.head.length, array.head.length, array.length) {
+
+  val coeffs = array.map(_.map(B(_)))
+  val afterMult = coeffs.map(row => row.zip(dataIn.fragment).map { case (coeff, data) => multH.op(coeff, data) })
+  val ret = Vec(afterMult.map(Matrix.reduceBalancedTree(_, addH.op)).map(_.head))
+
+  override val latency = log2Up(array.head.length) * addH.latency + multH.latency
+
+  dataOut.fragment := ret
+  dataOut.last := Delay(dataIn.last, latency, init = False)
 }
 

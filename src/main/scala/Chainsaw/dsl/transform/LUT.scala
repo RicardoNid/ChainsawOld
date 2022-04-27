@@ -35,18 +35,19 @@ class LutImpl(lut: Array[String]) extends Impl {
   override def getImpl(fold: Int) = {
     val component = LUTModule(lut)
     val impl = (dataIn: (Vec[Bits], Bool)) => {
-      component.dataIn.fragment := dataIn._1.head.asUInt
+      component.dataIn.fragment.head := dataIn._1.head
       component.dataIn.last := dataIn._2
-      (Vec(component.dataOut.fragment), component.dataIn.last)
+      (Vec(component.dataOut.fragment.head), component.dataIn.last)
     }
     RawImpl(impl, 1)
   }
 }
 
-case class LUTModule(lut: Array[String]) extends Component {
-  val dataIn = in (Fragment(UInt(log2Up(lut.length) bits)))
-  val dataOut = out (Fragment(Bits(lut.head.length bits)))
-  val rom = Mem(lut.map(B(_)))
-  dataOut.fragment := rom.readSync(dataIn.fragment)
+case class LUTModule(lut: Array[String]) extends ImplComponent(
+  log2Up(lut.length), lut.head.length, 1, 1) {
+  val ROM = Mem(lut.map(B(_)))
+  val ret = ROM.readSync(dataIn.fragment.head.asUInt)
+  dataOut.fragment.head := ret
   dataOut.last := RegNext(dataIn.last, init = False)
+  override val latency = 1
 }

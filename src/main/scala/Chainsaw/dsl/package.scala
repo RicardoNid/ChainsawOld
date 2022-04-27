@@ -2,6 +2,14 @@ package Chainsaw
 
 import Chainsaw.dsl.ring.RingOp
 import spinal.core._
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.lib.fsm._
+
+import Chainsaw._
+import Chainsaw.matlabIO._
+import Chainsaw.dspTest._
 
 import scala.reflect.ClassTag
 //import scala.language.implicitConversions
@@ -89,4 +97,5 @@ package object dsl {
 
   // get factors of Int
   def factors(value: Int) = (1 to value).filter(value % _ == 0).toArray
+
 }

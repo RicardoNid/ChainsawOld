@@ -34,7 +34,7 @@ object Examples {
     val ifft = Diagonal(Array.fill(64)(Complex(1, 1)))
 
     val ofdm = ifft ° (qam16 ⊗ 64) ° (convert ⊗ 64) ° sp16_16 ° (conv ⊗ (128, 1))
-    //    ofdm.randomTest(data, targetThroughput = 1 / 1.0)
+    ofdm.randomTest(data, targetThroughput = 1 / 1.0)
     //    ofdm.randomTest(data, targetThroughput = 1 / 2.0)
     //    ofdm.randomTest(data, targetThroughput = 1 / 4.0)
     //    ofdm.randomTest(data, targetThroughput = 1 / 8.0)
@@ -44,9 +44,9 @@ object Examples {
     //    VivadoImpl(ofdm.build(targetThroughput = 1 / 4.0), "system1_4")
     //    VivadoImpl(ofdm.build(targetThroughput = 1 / 8.0), "system1_8")
 
-    val sp4_4 = SPerm[FiniteInt](4, 4)
-    val ifft4 = HSIFFT(4)
-    val ofdmSmall = ifft4 ° (qam16 ⊗ 4) ° (convert ⊗ 4) ° sp4_4 ° (conv ⊗ (8, 1))
-    GenRTL(ofdmSmall.build(targetThroughput = 1.0))
+        val sp4_4 = SPerm[FiniteInt](4, 4)
+        val ifft4 = HSIFFT(4)
+        val ofdmSmall = ifft4 ° (qam16 ⊗ 4) ° (convert ⊗ 4) ° sp4_4 ° (conv ⊗ (8, 1))
+        GenRTL(ofdmSmall.build(targetThroughput = 1.0))
   }
 }
