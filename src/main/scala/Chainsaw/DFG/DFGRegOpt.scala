@@ -43,7 +43,7 @@ class DFGRegOpt[T <: Data](dfg: DFGGraph[T]) {
           }
         }
       case through: PassThrough[_] => // do nothing
-      case _ => // do nothing
+      case _                       => // do nothing
     }
     graph
   }

@@ -10,15 +10,15 @@ import spinal.core.sim._
 // the restoringDivider algorithm
 case class RestoringDivider(config: DividerConfig) extends Component {
   val io = new Bundle {
-    val dividend = in SInt (2 * config.width + 1 bits)
-    val divisor = in SInt (config.width + 1 bits)
-    val quotient = out SInt (config.width + 1 bits)
+    val dividend  = in SInt (2 * config.width + 1 bits)
+    val divisor   = in SInt (config.width + 1 bits)
+    val quotient  = out SInt (config.width + 1 bits)
     val remainder = out SInt (config.width + 1 bits)
   }
 
   // preprocess the dividend and divisor
   val dividendSign = if (config.signed) io.dividend.msb else False
-  val divisorSign = if (config.signed) io.divisor.msb else False
+  val divisorSign  = if (config.signed) io.divisor.msb else False
 
   val uintDividend = UInt(2 * config.width + 1 bits)
   switch(dividendSign) {
@@ -44,11 +44,10 @@ case class RestoringDivider(config: DividerConfig) extends Component {
   val quotientReg = Reg(UInt(config.width + 1 bits)) init (U(0, config.width + 1 bits))
 
   io.remainder := dividendReg(config.width, config.width + 1 bits).asSInt
-  io.quotient := quotientReg.asSInt
-
+  io.quotient  := quotientReg.asSInt
 
   // define other signal which the compute need
-  val counter = Counter(0, config.width + 1)
+  val counter    = Counter(0, config.width + 1)
   val holdResult = False
   holdResult.noCombLoopCheck
 
@@ -56,12 +55,15 @@ case class RestoringDivider(config: DividerConfig) extends Component {
   when(counter <= U(config.width - 1)) {
     val adder = BasicAdder(config.width, AdderType.RCA).setDefinitionName("Adder")
     adder.setName("adderForIteration")
-    adder.x := dividendReg(config.width - 1, config.width bits)
-    adder.y := (uintDivisor(0, config.width bits).asBits ^ B(config.width bits, default -> true)).asUInt
+    adder.x   := dividendReg(config.width - 1, config.width bits)
+    adder.y   := (uintDivisor(0, config.width bits).asBits ^ B(config.width bits, default -> true)).asUInt
     adder.cIn := U(1, 1 bits)
 
     when(adder.fullSum.msb | dividendReg(2 * config.width - 1, 1 bits).asBool) {
-      dividendReg := (!(dividendReg(2 * config.width - 1, 1 bits).asBool | adder.fullSum.msb) ## adder.fullSum(0, config.width bits) ## dividendReg(0, config.width - 1 bits) ## B(0, 1 bits)).asUInt
+      dividendReg := (!(dividendReg(2 * config.width - 1, 1 bits).asBool | adder.fullSum.msb) ## adder.fullSum(0, config.width bits) ## dividendReg(
+        0,
+        config.width - 1 bits
+      ) ## B(0, 1 bits)).asUInt
     } otherwise {
       dividendReg := (dividendReg(0, 2 * config.width bits) ## B(0, 1 bits)).asUInt
     }
@@ -74,19 +76,22 @@ case class RestoringDivider(config: DividerConfig) extends Component {
         val adderForRemainder, adderForQuotient = new BasicAdder(config.width + 1, AdderType.RCA).setDefinitionName("adderForResult")
         adderForRemainder.setName("adderForRemainder")
         adderForQuotient.setName("adderForQuotient")
-        adderForRemainder.x := dividendReg(config.width, config.width + 1 bits)
-        adderForRemainder.y := uintDivisor(0, config.width + 1 bits)
+        adderForRemainder.x   := dividendReg(config.width, config.width + 1 bits)
+        adderForRemainder.y   := uintDivisor(0, config.width + 1 bits)
         adderForRemainder.cIn := U(0, 1 bits)
         switch(dividendSign) {
           is(True) {
-            dividendReg(config.width, config.width + 1 bits) := (adderForRemainder.fullSum(0, config.width + 1 bits).asBits ^ B(config.width + 1 bits, default -> true)).asUInt + U(1)
+            dividendReg(config.width, config.width + 1 bits) := (adderForRemainder.fullSum(0, config.width + 1 bits).asBits ^ B(
+              config.width + 1 bits,
+              default -> true
+            )).asUInt + U(1)
           }
           is(False) {
             dividendReg(config.width, config.width + 1 bits) := adderForRemainder.fullSum(0, config.width + 1 bits)
           }
         }
-        adderForQuotient.x := quotientReg
-        adderForQuotient.y := (U(1, config.width + 1 bits).asBits ^ B(config.width + 1 bits, default -> true)).asUInt
+        adderForQuotient.x   := quotientReg
+        adderForQuotient.y   := (U(1, config.width + 1 bits).asBits ^ B(config.width + 1 bits, default -> true)).asUInt
         adderForQuotient.cIn := U(1, 1 bits)
         switch(dividendSign ^ divisorSign) {
           is(True) {
@@ -100,7 +105,10 @@ case class RestoringDivider(config: DividerConfig) extends Component {
       } otherwise {
         switch(dividendSign) {
           is(True) {
-            dividendReg(config.width, config.width + 1 bits) := (dividendReg(config.width, config.width + 1 bits).asBits ^ B(config.width + 1 bits, default -> true)).asUInt + U(1)
+            dividendReg(config.width, config.width + 1 bits) := (dividendReg(config.width, config.width + 1 bits).asBits ^ B(
+              config.width + 1 bits,
+              default -> true
+            )).asUInt + U(1)
           }
           is(False) {
             dividendReg(config.width, config.width + 1 bits) := dividendReg(config.width, config.width + 1 bits)
@@ -116,23 +124,20 @@ case class RestoringDivider(config: DividerConfig) extends Component {
         }
         counter.increment()
       }
-    } otherwise {
-
-  }
+    } otherwise {}
 }
-
 
 import spinal.sim._
 
-
 object TestRestoringDivider extends App {
-  SimConfig.withWave.allOptimisation.compile(RestoringDivider(DividerConfig(true, 4)))
+  SimConfig.withWave.allOptimisation
+    .compile(RestoringDivider(DividerConfig(true, 4)))
     .doSim { dut =>
       import dut.{clockDomain, io}
       clockDomain.forkStimulus(10)
       clockDomain.assertReset()
       io.dividend #= -49
-      io.divisor #= -7
+      io.divisor  #= -7
 
       clockDomain.deassertReset()
       if (dut.config.signed) {

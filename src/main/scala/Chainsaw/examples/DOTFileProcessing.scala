@@ -34,7 +34,7 @@ class DOTFileProcessing {
       case "RL" => GRdir = s"  rankdir = RL;\n"
       case "TB" => GRdir = s"  rankdir = TB;\n"
       case "BT" => GRdir = s"  rankdir = BT;\n"
-      case _ => logger.error("Wrong rankdir type")
+      case _    => logger.error("Wrong rankdir type")
     }
     DOTContent.replace("digraph G {", s"digraph G {\n\n$GRdir")
   }

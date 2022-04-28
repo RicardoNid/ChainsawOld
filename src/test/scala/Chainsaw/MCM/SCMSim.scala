@@ -50,7 +50,7 @@ object SCMSim {
       val mode = scmArch match {
         case SCMArch.CSD => "CSD"
         case SCMArch.MAG => "MAG"
-        case MULT => "MULT"
+        case MULT        => "MULT"
       }
       if (report.totalCase == report.trueCase) printlnGreen(s"$mode with constant = $constant, PASS")
       else printlnRed(s"$mode with constant = $constant, FAIL")

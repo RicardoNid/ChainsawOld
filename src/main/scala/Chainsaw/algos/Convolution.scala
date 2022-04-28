@@ -49,8 +49,8 @@ object Convolution {
     }
 
     val padLength = overhang match {
-      case OptOverhang.Full => 2 * (L - 1)
-      case OptOverhang.None => 0
+      case OptOverhang.Full           => 2 * (L - 1)
+      case OptOverhang.None           => 0
       case OptOverhang.PreserveLength => L - 1
     }
 
@@ -58,17 +58,17 @@ object Convolution {
     val padLengthR = padLength - padLengthL
 
     val (padL, padR) = padding match {
-      case OptPadding.Boundary => (DenseVector.fill(padLengthL)(data(0)), DenseVector.fill(padLengthR)(data(-1)))
-      case OptPadding.Cyclical => (data(N - padLengthL to N - 1), data(0 until padLengthR))
+      case OptPadding.Boundary        => (DenseVector.fill(padLengthL)(data(0)), DenseVector.fill(padLengthR)(data(-1)))
+      case OptPadding.Cyclical        => (data(N - padLengthL to N - 1), data(0 until padLengthR))
       case OptPadding.ValueOpt(value) => (DenseVector.fill(padLengthL)(value.asInstanceOf[T]), DenseVector.fill(padLengthR)(value.asInstanceOf[T]))
-      case OptPadding.Zero => (DenseVector.zeros[T](padLengthL), DenseVector.zeros[T](padLengthR))
+      case OptPadding.Zero            => (DenseVector.zeros[T](padLengthL), DenseVector.zeros[T](padLengthR))
     }
 
     val paddedData = DenseVector.vertcat(padL, data, padR)
     val fullRange  = paddedData.length - L + 1
 
     val parsedRange = range match {
-      case OptRange.All => 0 until fullRange
+      case OptRange.All         => 0 until fullRange
       case OptRange.RangeOpt(r) => r
     }
 

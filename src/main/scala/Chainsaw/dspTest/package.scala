@@ -32,9 +32,9 @@ package object dspTest {
     */
   def pokeWhatever[D](port: Data, data: D): Unit = { // TODO: check whether it works for SInt
     port match {
-      case bool: Bool => bool                            #= data.asInstanceOf[Boolean]
-      case bitVector: BitVector => bitVector             #= data.asInstanceOf[BigInt]
-      case sfix: SFix => sfix                            #= data.asInstanceOf[Double]
+      case bool: Bool                   => bool          #= data.asInstanceOf[Boolean]
+      case bitVector: BitVector         => bitVector     #= data.asInstanceOf[BigInt]
+      case sfix: SFix                   => sfix          #= data.asInstanceOf[Double]
       case complexNumber: ComplexNumber => complexNumber #= data.asInstanceOf[BComplex]
       case vec: Vec[_] =>
         vec.head match {
@@ -47,9 +47,9 @@ package object dspTest {
         }
       case fragment: Fragment[_] =>
         fragment.fragment match {
-          case bool: Bool => bool                            #= data.asInstanceOf[Boolean]
-          case bitVector: BitVector => bitVector             #= data.asInstanceOf[BigInt]
-          case sfix: SFix => sfix                            #= data.asInstanceOf[Double]
+          case bool: Bool                   => bool          #= data.asInstanceOf[Boolean]
+          case bitVector: BitVector         => bitVector     #= data.asInstanceOf[BigInt]
+          case sfix: SFix                   => sfix          #= data.asInstanceOf[Double]
           case complexNumber: ComplexNumber => complexNumber #= data.asInstanceOf[BComplex]
           case vec: Vec[_] =>
             vec.head match {
@@ -68,27 +68,27 @@ package object dspTest {
     val complex0 = BComplex(0, 0)
     port match {
       //      case bool: Bool => bool #= false
-      case bitVector: BitVector => bitVector             #= 0
-      case sfix: SFix => sfix                            #= 0
+      case bitVector: BitVector         => bitVector     #= 0
+      case sfix: SFix                   => sfix          #= 0
       case complexNumber: ComplexNumber => complexNumber #= complex0
       case vec: Vec[_] =>
         vec.head match {
           //          case bool: Bool => vec.asInstanceOf[Vec[Bool]].foreach(_ #= false)
-          case bitVector: BitVector => vec.asInstanceOf[Vec[BitVector]].foreach(_ #= 0)
-          case sfix: SFix => vec.asInstanceOf[Vec[SFix]].foreach(_ #= 0)
+          case bitVector: BitVector         => vec.asInstanceOf[Vec[BitVector]].foreach(_ #= 0)
+          case sfix: SFix                   => vec.asInstanceOf[Vec[SFix]].foreach(_ #= 0)
           case complexNumber: ComplexNumber => vec.asInstanceOf[Vec[ComplexNumber]].foreach(_ #= complex0)
         }
       case fragment: Fragment[_] =>
         fragment.fragment match {
           //          case bool: Bool => bool #= false
-          case bitVector: BitVector => bitVector             #= 0
-          case sfix: SFix => sfix                            #= 0
+          case bitVector: BitVector         => bitVector     #= 0
+          case sfix: SFix                   => sfix          #= 0
           case complexNumber: ComplexNumber => complexNumber #= complex0
           case vec: Vec[_] =>
             vec.head match {
               //              case bool: Bool => vec.asInstanceOf[Vec[Bool]].foreach(_ #= false)
-              case bitVector: BitVector => vec.asInstanceOf[Vec[BitVector]].foreach(_ #= 0)
-              case sfix: SFix => vec.asInstanceOf[Vec[SFix]].foreach(_ #= 0)
+              case bitVector: BitVector         => vec.asInstanceOf[Vec[BitVector]].foreach(_ #= 0)
+              case sfix: SFix                   => vec.asInstanceOf[Vec[SFix]].foreach(_ #= 0)
               case complexNumber: ComplexNumber => vec.asInstanceOf[Vec[ComplexNumber]].foreach(_ #= complex0)
             }
         }
@@ -99,24 +99,24 @@ package object dspTest {
     */
   def peekWhatever[D](port: Data): D = {
     port match {
-      case baseType: BaseType => baseType.toBigInt.asInstanceOf[D]
-      case sfix: SFix => sfix.toDouble.asInstanceOf[D]
+      case baseType: BaseType           => baseType.toBigInt.asInstanceOf[D]
+      case sfix: SFix                   => sfix.toDouble.asInstanceOf[D]
       case complexNumber: ComplexNumber => complexNumber.toComplex.asInstanceOf[D]
       case vec: Vec[_] =>
         vec.head match {
-          case baseType: BaseType => vec.map(_.asInstanceOf[BaseType].toBigInt).asInstanceOf[D]
-          case sfix: SFix => vec.map(_.asInstanceOf[SFix].toDouble).asInstanceOf[D]
+          case baseType: BaseType           => vec.map(_.asInstanceOf[BaseType].toBigInt).asInstanceOf[D]
+          case sfix: SFix                   => vec.map(_.asInstanceOf[SFix].toDouble).asInstanceOf[D]
           case complexNumber: ComplexNumber => vec.map(_.asInstanceOf[ComplexNumber].toComplex).asInstanceOf[D]
         }
       case fragment: Fragment[_] =>
         fragment.fragment match {
-          case baseType: BaseType => baseType.toBigInt.asInstanceOf[D]
-          case sfix: SFix => sfix.toDouble.asInstanceOf[D]
+          case baseType: BaseType           => baseType.toBigInt.asInstanceOf[D]
+          case sfix: SFix                   => sfix.toDouble.asInstanceOf[D]
           case complexNumber: ComplexNumber => complexNumber.toComplex.asInstanceOf[D]
           case vec: Vec[_] =>
             vec.head match {
-              case baseType: BaseType => vec.map(_.asInstanceOf[BaseType].toBigInt).asInstanceOf[D]
-              case sfix: SFix => vec.map(_.asInstanceOf[SFix].toDouble).asInstanceOf[D]
+              case baseType: BaseType           => vec.map(_.asInstanceOf[BaseType].toBigInt).asInstanceOf[D]
+              case sfix: SFix                   => vec.map(_.asInstanceOf[SFix].toDouble).asInstanceOf[D]
               case complexNumber: ComplexNumber => vec.map(_.asInstanceOf[ComplexNumber].toComplex).asInstanceOf[D]
             }
         }
@@ -166,7 +166,7 @@ package object dspTest {
       .doSim { dut =>
         val outputSize = dut.dataOut.payload match {
           case vec: Vec[_] => vec.size
-          case _ => 1
+          case _           => 1
         }
         val innerGolden = golden.drop(initLength * outputSize)
 
@@ -214,7 +214,7 @@ package object dspTest {
       } else { // as master
         dc match {
           case stream: Stream[_] => stream.ready #= false
-          case _ => // do nothing
+          case _                 => // do nothing
         }
       }
     }
@@ -231,7 +231,7 @@ package object dspTest {
       } else { // as master
         dc match {
           case stream: Stream[_] => stream.ready #= false
-          case _ => // do nothing
+          case _                 => // do nothing
         }
       }
     }
@@ -243,7 +243,7 @@ package object dspTest {
       dc.valid #= true
       dc.payload match {
         case fragment: Fragment[_] => fragment.last #= lastWhen
-        case _ => // do nothing
+        case _                     => // do nothing
       }
 
       // deal with payload
@@ -257,7 +257,7 @@ package object dspTest {
         dc.valid #= true
         dc.payload match {
           case fragment: Fragment[_] => fragment.last #= lastWhen
-          case _ => // do nothing
+          case _                     => // do nothing
         }
 
         // deal with payload
@@ -282,7 +282,7 @@ package object dspTest {
         case fragment: Fragment[_] =>
           fragment.fragment match {
             case vec: Vec[_] => Container ++= peekWhatever(vec)
-            case _ => Container += peekWhatever(fragment.fragment)
+            case _           => Container += peekWhatever(fragment.fragment)
           }
         case _ => Container += peekWhatever(dc.payload)
       }

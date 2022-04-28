@@ -61,7 +61,7 @@ object CSD {
     @tailrec
     def process(raw: String): String = {
       pattern.findFirstIn(raw) match {
-        case None => raw
+        case None    => raw
         case Some(x) => process(raw.replaceFirst(x, "9" + "0" * (x.length - 2) + "1"))
       }
     }

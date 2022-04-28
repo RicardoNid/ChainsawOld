@@ -61,9 +61,9 @@ class FIRGen[THard <: Data, TSoft](mac: TrinaryNode[THard], firArch: FirArch, co
     }
 
     firArch match {
-      case DIRECT => buildFir(1, 0)
+      case DIRECT    => buildFir(1, 0)
       case TRANSPOSE => buildFir(0, 1)
-      case SYSTOLIC => buildFir(2, 1)
+      case SYSTOLIC  => buildFir(2, 1)
     }
     dfg.setOutput(macs.last)
     dfg.setLatency(latency)
@@ -302,7 +302,7 @@ class BinaryTreeGen[T <: Data](binaryNode: BinaryNode[T], size: Int) extends DFG
       val indexCond    = pow(2, level + 2).toInt - 1 >= size
       val upLayerNodes = treeNodes.slice(pow(2, level).toInt - 1, pow(2, level + 1).toInt - 1)
       val downLayerNodes = indexCond match {
-        case true => treeNodes.slice(pow(2, level + 1).toInt - 1, size)
+        case true  => treeNodes.slice(pow(2, level + 1).toInt - 1, size)
         case false => treeNodes.slice(pow(2, level + 1).toInt - 1, pow(2, level + 2).toInt - 1)
       }
 

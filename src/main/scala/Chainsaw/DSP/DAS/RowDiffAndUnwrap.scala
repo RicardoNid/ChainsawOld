@@ -34,10 +34,10 @@ case class RowDiffAndUnwrap() extends Component {
     counter.clear()
     xnFlow2.valid.set()
     xnFlow2.payload := (acc * divisor).truncated
-    when(firstUnwrap.io.xnOut.valid){
+    when(firstUnwrap.io.xnOut.valid) {
       acc := firstUnwrap.io.xnOut.payload
-    }otherwise(acc := 0)
-  }elsewhen(firstUnwrap.io.xnOut.valid)(acc := acc + firstUnwrap.io.xnOut.payload)
+    } otherwise (acc := 0)
+  } elsewhen (firstUnwrap.io.xnOut.valid)(acc := acc + firstUnwrap.io.xnOut.payload)
 
   val secondUnwrap = Unwrap(Para.rowCount2, xnFlow2)
 

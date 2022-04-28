@@ -15,7 +15,7 @@ case class PrePulseSample() extends Component {
     when(~loadCounter.willOverflowIfInc)(loadCounter.increment())
   }
 
-  val probeCounter   = Counter(0, Para.probeWidth - 1)
+  val probeCounter  = Counter(0, Para.probeWidth - 1)
   val mergeCounter2 = Counter(0, mergeWidth * 2 - 1)
 
   val FSM = new StateMachine {
@@ -38,11 +38,11 @@ case class PrePulseSample() extends Component {
       countAndGo(mergeCounter2, s2)
     }
 
-    def countAndGo(c: Counter, s: State)={
-      when(c.willOverflowIfInc && io.dataIn.valid){
+    def countAndGo(c: Counter, s: State) = {
+      when(c.willOverflowIfInc && io.dataIn.valid) {
         c.clear()
         goto(s)
-      }elsewhen(io.dataIn.valid)(c.increment())
+      } elsewhen (io.dataIn.valid)(c.increment())
     }
   }
 }

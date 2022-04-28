@@ -30,7 +30,7 @@ object MyLatencyAnalysis {
             s"$i: ${nodes
               .map {
                 case baseType: BaseType => baseType.toString()
-                case mem: Mem[_] => mem.toString()
+                case mem: Mem[_]        => mem.toString()
               }
               .mkString(" ")}"
           }
@@ -39,8 +39,8 @@ object MyLatencyAnalysis {
       print(s"walked: ")
       Component.current.foreachReflectableNameables {
         case node: BaseType => if (node.algoIncrementale == walkedId) print(s"${node.getName()} ")
-        case node: Mem[_] => if (node.algoIncrementale == walkedId) print(s"${node.getName()} ")
-        case _ =>
+        case node: Mem[_]   => if (node.algoIncrementale == walkedId) print(s"${node.getName()} ")
+        case _              =>
       }
       println()
     }
@@ -82,9 +82,9 @@ object MyLatencyAnalysis {
       val succeed = des match {
         case that: Mem[_] => { // Mem, delay write -> mem = 1, thus, add all write ports to prevQueue
           that.foreachStatements {
-            case port: MemWrite => port.foreachDrivingExpression(input => prevQueue += input)
+            case port: MemWrite     => port.foreachDrivingExpression(input => prevQueue += input)
             case port: MemReadWrite => port.foreachDrivingExpression(input => prevQueue += input)
-            case _ => // do nothing
+            case _                  => // do nothing
           }
           false
         }
@@ -97,7 +97,7 @@ object MyLatencyAnalysis {
           }
           // delay = 1
           if (that.isReg) walkInputs(input => prevQueue += input)
-          else walkInputs(input => if (traceBack(input, "basetype")) return true)
+          else walkInputs(input            => if (traceBack(input, "basetype")) return true)
           false
         }
         // following are three kind of read ports, mem of these ports need to be handled independently, as the won't be visited by foreachDrivingExpression

@@ -25,9 +25,9 @@ object Operators {
   val xor: (Bits, Bits) => Bits = (a: Bits, b: Bits) => a ^ b
 
   // sint operators
-  val sintInc: SInt => SInt                   = (signal: SInt) => signal + 1
-  val sintAdd: (SInt, SInt) => SInt           = (a: SInt, b: SInt) => a + b
-  val sintMult: (SInt, SInt) => SInt          = (a: SInt, b: SInt) => a * b
+  val sintInc: SInt => SInt                   = (signal: SInt)              => signal + 1
+  val sintAdd: (SInt, SInt) => SInt           = (a: SInt, b: SInt)          => a + b
+  val sintMult: (SInt, SInt) => SInt          = (a: SInt, b: SInt)          => a * b
   val sintMultAdd: (SInt, SInt, SInt) => SInt = (a: SInt, b: SInt, c: SInt) => (a * b) + c
 
   // operators of ''Computer Arithmetic''

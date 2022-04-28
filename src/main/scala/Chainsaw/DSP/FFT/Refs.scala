@@ -12,7 +12,7 @@ object Refs {
     val ret = Try(eng.feval[Array[BComplex]]("fft", input.map(_.toMComplex)))
     ret match {
       case Failure(exception) => eng.feval[Array[Double]]("fft", input).map(new BComplex(_, 0))
-      case Success(value) => value
+      case Success(value)     => value
     }
   }
 
@@ -20,7 +20,7 @@ object Refs {
     val ret = Try(eng.feval[Array[BComplex]]("ifft", input))
     ret match {
       case Failure(exception) => eng.feval[Array[Double]]("ifft", input).map(new BComplex(_, 0))
-      case Success(value) => value
+      case Success(value)     => value
     }
   }
 
@@ -28,7 +28,7 @@ object Refs {
     val ret = Try(eng.feval[Array[BComplex]]("cconv", input, coeff, Array(length)))
     ret match {
       case Failure(exception) => eng.feval[Array[Double]]("cconv", input, coeff, Array(length)).map(new BComplex(_, 0))
-      case Success(value) => value
+      case Success(value)     => value
     }
   }
 }
