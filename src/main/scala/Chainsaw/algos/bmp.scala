@@ -12,32 +12,32 @@ object PathInfo {
   val cTestPath     = bootPath + "test_bmp_4K/"
   val scalaTestPath = bootPath + "test_scala/"
   val cUpPath       = cTestPath + "bicubic_upsampling/"
-  val scalaUpPath   = scalaTestPath + "bicubic_upsampling/"
+  val scalaUpPath   = scalaTestPath + "fastNedi_upsampling/"
   val cDownPath     = cTestPath + "downsampling/"
   val scalaDownPath = scalaTestPath + "downsampling/"
 }
 
 case class BMPPixels(width: Int, height: Int) {
-  var r, g, b, a: Array[Short] = Array.fill(width * height)(0.toShort)
+  var r, g, b, a: Array[Short] = Array.fill((width * height).toInt)(0.toShort)
 }
 
-case class BMPHeader(width: Int, height: Int) {
-  var b_type: Int            = 0x4d42                  // Magic identifier: 0x4d42
+case class BMPHeader(width: Long, height: Long) {
+  var b_type: Int            = 0x4d42 // Magic identifier: 0x4d42
   var size: Long             = width * height * 3 + 54 // File size in bytes
-  var reserved1: Int         = 0                       // Not used
-  var reserved2: Int         = 0                       // Not used
-  var offset: Long           = 54                      // Offset to image data in bytes from beginning of file (54 bytes)
-  var dib_header_size: Long  = 40                      // DIB Header size in bytes (40 bytes)
-  var width_px: Int          = width                   // Width of the image
-  var height_px: Int         = height                  // Height of image
-  var num_planes: Int        = 1                       // Number of color planes
-  var bits_per_pixel: Int    = 24                      // Bits per pixel
-  var compression: Long      = 0                       // Compression type
-  var image_size_bytes: Long = width * height * 3      // Image size in bytes
-  var x_resolution_ppm: Int  = 0                       // Pixels per meter
-  var y_resolution_ppm: Int  = 0                       // Pixels per meter
-  var num_colors: Long       = 0                       // Number of colors
-  var important_colors: Long = 0                       // Important colors
+  var reserved1: Int         = 0 // Not used
+  var reserved2: Int         = 0 // Not used
+  var offset: Long           = 54 // Offset to image data in bytes from beginning of file (54 bytes)
+  var dib_header_size: Long  = 40 // DIB Header size in bytes (40 bytes)
+  var width_px: Int          = width.toInt // Width of the image
+  var height_px: Int         = height.toInt // Height of image
+  var num_planes: Int        = 1 // Number of color planes
+  var bits_per_pixel: Int    = 24 // Bits per pixel
+  var compression: Long      = 0 // Compression type
+  var image_size_bytes: Long = width * height * 3 // Image size in bytes
+  var x_resolution_ppm: Int  = 0 // Pixels per meter
+  var y_resolution_ppm: Int  = 0 // Pixels per meter
+  var num_colors: Long       = 0 // Number of colors
+  var important_colors: Long = 0 // Important colors
 }
 
 case class BMPImage(width: Int, height: Int) {
@@ -248,8 +248,7 @@ case class BMPImage(width: Int, height: Int) {
   }
 
   def getPixels(x: Int, y: Int) = {
-    case class retPixel(var r: Short, var g: Short, var b: Short) {}
-    val ret        = retPixel(0, 0, 0)
+    val ret = Array.fill(3)(0.toShort)
     var xIdx, yIdx = 0
     x match {
       case i if i > header.height_px - 1            => xIdx = header.height_px - 1
@@ -264,15 +263,25 @@ case class BMPImage(width: Int, height: Int) {
 
     header.height_px >= 0 match {
       case true =>
-        ret.r = pixels.r(yIdx + header.width_px * (header.height_px - xIdx - 1))
-        ret.g = pixels.g(yIdx + header.width_px * (header.height_px - xIdx - 1))
-        ret.b = pixels.b(yIdx + header.width_px * (header.height_px - xIdx - 1))
+        ret(0) = pixels.r(yIdx + header.width_px * (header.height_px - xIdx - 1))
+        ret(1) = pixels.g(yIdx + header.width_px * (header.height_px - xIdx - 1))
+        ret(2) = pixels.b(yIdx + header.width_px * (header.height_px - xIdx - 1))
       case false =>
-        ret.r = pixels.r(yIdx + xIdx * header.width_px)
-        ret.g = pixels.g(yIdx + xIdx * header.width_px)
-        ret.b = pixels.b(yIdx + xIdx * header.width_px)
+        ret(0) = pixels.r(yIdx + xIdx * header.width_px)
+        ret(1) = pixels.g(yIdx + xIdx * header.width_px)
+        ret(2) = pixels.b(yIdx + xIdx * header.width_px)
     }
     ret
+  }
+
+  def assignPixels(x: Int, y: Int, pixel: Short, idx: Int) = {
+    idx match {
+      case 0 => pixels.r(transPosition(x, y)) = pixel
+      case 1 => pixels.g(transPosition(x, y)) = pixel
+      case 2 => pixels.b(transPosition(x, y)) = pixel
+      case _ => throw new IndexOutOfBoundsException
+    }
+
   }
 
   def transPosition(x: Int, y: Int) = {

@@ -10,29 +10,49 @@ import breeze.linalg._
 import scala.math._
 import breeze.math._
 
+import scala.collection.mutable.ArrayBuffer
+
 object Interpolation {
 
-  def getPixels(image: BMPImage, x: Int, y: Int) = {
-    case class retPixel(var r: Short, var g: Short, var b: Short) {}
-    val ret        = retPixel(0, 0, 0)
-    var xIdx, yIdx = 0
-    if (x > image.header.height_px - 1) { xIdx = image.header.height_px - 1 }
-    else if (x < 0) { xIdx = 0 }
-    else { xIdx = x }
-    if (y > image.header.width_px - 1) { yIdx = image.header.width_px - 1 }
-    else if (y < 0) { yIdx = 0 }
-    else { yIdx = y }
-    image.height >= 0 match {
-      case true =>
-        ret.r = image.pixels.r(yIdx + image.header.width_px * (image.header.height_px - xIdx - 1))
-        ret.g = image.pixels.g(yIdx + image.header.width_px * (image.header.height_px - xIdx - 1))
-        ret.b = image.pixels.b(yIdx + image.header.width_px * (image.header.height_px - xIdx - 1))
-      case false =>
-        ret.r = image.pixels.r(yIdx + xIdx * image.header.width_px)
-        ret.g = image.pixels.g(yIdx + xIdx * image.header.width_px)
-        ret.b = image.pixels.b(yIdx + xIdx * image.header.width_px)
-    }
-    ret
+//  def getPixels(image: BMPImage, x: Int, y: Int) = {
+//    case class retPixel(var r: Short, var g: Short, var b: Short) {}
+//    val ret        = retPixel(0, 0, 0)
+//    var xIdx, yIdx = 0
+//    if (x > image.header.height_px - 1) { xIdx = image.header.height_px - 1 }
+//    else if (x < 0) { xIdx = 0 }
+//    else { xIdx = x }
+//    if (y > image.header.width_px - 1) { yIdx = image.header.width_px - 1 }
+//    else if (y < 0) { yIdx = 0 }
+//    else { yIdx = y }
+//    image.height >= 0 match {
+//      case true =>
+//        ret.r = image.pixels.r(yIdx + image.header.width_px * (image.header.height_px - xIdx - 1))
+//        ret.g = image.pixels.g(yIdx + image.header.width_px * (image.header.height_px - xIdx - 1))
+//        ret.b = image.pixels.b(yIdx + image.header.width_px * (image.header.height_px - xIdx - 1))
+//      case false =>
+//        ret.r = image.pixels.r(yIdx + xIdx * image.header.width_px)
+//        ret.g = image.pixels.g(yIdx + xIdx * image.header.width_px)
+//        ret.b = image.pixels.b(yIdx + xIdx * image.header.width_px)
+//    }
+//    ret
+//  }
+
+  def getBiquadFactor(srcBmp: BMPImage, tagBmp: BMPImage, xDPos: Double, xIPos: Int, yDPos: Double, yIPos: Int) = {
+    val xDiff                                  = xDPos - xIPos
+    val yDiff                                  = yDPos - yIPos
+    val coffs                                  = Array.ofDim[Int](2, 2)
+    var xFactor0, xFactor1, yFactor0, yFactor1 = 0.toShort
+    xFactor0 = ((1.toDouble - xDiff) * 4).toShort
+    xFactor1 = (4 - xFactor0).toShort
+    yFactor0 = ((1.toDouble - yDiff) * 4).toShort
+    yFactor1 = (4 - yFactor0).toShort
+
+    coffs(0)(0) = xFactor0 * yFactor0
+    coffs(0)(1) = xFactor0 * yFactor1
+    coffs(1)(0) = xFactor1 * yFactor0
+    coffs(1)(1) = xFactor1 * yFactor1
+
+    coffs
   }
 
   def BiQuadratic(
@@ -50,45 +70,33 @@ object Interpolation {
     val tagBmp = BMPImage(tagWidth, tagHeight)
 
     // do interpolation
-    val yDoubleScale = srcWidth.toDouble / tagWidth.toDouble
-    val xDoubleScale = srcHeight.toDouble / tagHeight.toDouble
+    val yDoubleScale = srcBmp.header.width_px.toDouble / tagBmp.header.width_px.toDouble
+    val xDoubleScale = srcBmp.header.height_px.toDouble / tagBmp.header.height_px.toDouble
 
     (0 until tagBmp.header.height_px).foreach { x =>
       val xDPosition = x * xDoubleScale + 0.5 * (xDoubleScale - 1)
       var xIPosition = floor(xDPosition).toInt
-      val xDiff      = xDPosition - xIPosition
-      if (xIPosition < 0) { xIPosition = 0 }
-      else if (xIPosition > srcBmp.header.height_px - 1) { xIPosition = srcBmp.header.height_px - 1 }
       (0 until tagBmp.header.width_px).foreach { y =>
         val yDPosition = y * yDoubleScale + 0.5 * (yDoubleScale - 1)
         var yIPosition = floor(yDPosition).toInt
-        var yDiff      = yDPosition - yIPosition
+        val coffs      = getBiquadFactor(srcBmp, tagBmp, xDPosition, xIPosition, yDPosition, yIPosition)
+
+        if (xIPosition < 0) { xIPosition = 0 }
+        else if (xIPosition > srcBmp.header.height_px - 1) { xIPosition = srcBmp.header.height_px - 1 }
         if (yIPosition < 0) { yIPosition = 0 }
         else if (yIPosition > srcBmp.header.width_px - 1) { yIPosition = srcBmp.header.width_px - 1 }
-        val coffs                                  = Array.ofDim[Int](2, 2)
-        var xFactor0, xFactor1, yFactor0, yFactor1 = 0.toShort
-        xFactor0 = ((1.toDouble - xDiff) * 2048).toShort
-        xFactor1 = (2048 - xFactor0).toShort
-        yFactor0 = ((1.toDouble - yDiff) * 2048).toShort
-        yFactor1 = (2048 - yFactor0).toShort
 
-        coffs(0)(0) = xFactor0 * yFactor0
-        coffs(0)(1) = xFactor0 * yFactor1
-        coffs(1)(0) = xFactor1 * yFactor0
-        coffs(1)(1) = xFactor1 * yFactor1
-
-        tagBmp.pixels.r(tagBmp.transPosition(x, y)) = ((coffs(0)(0) * srcBmp.getPixels(xIPosition, yIPosition).r
-          + coffs(0)(1) * srcBmp.getPixels(xIPosition, yIPosition + 1).r
-          + coffs(1)(0) * srcBmp.getPixels(xIPosition + 1, yIPosition).r
-          + coffs(1)(1) * srcBmp.getPixels(xIPosition + 1, yIPosition + 1).r) / 4194304).toShort
-        tagBmp.pixels.g(tagBmp.transPosition(x, y)) = ((coffs(0)(0) * srcBmp.getPixels(xIPosition, yIPosition).g
-          + coffs(0)(1) * srcBmp.getPixels(xIPosition, yIPosition + 1).g
-          + coffs(1)(0) * srcBmp.getPixels(xIPosition + 1, yIPosition).g
-          + coffs(1)(1) * srcBmp.getPixels(xIPosition + 1, yIPosition + 1).g) / 4194304).toShort
-        tagBmp.pixels.b(tagBmp.transPosition(x, y)) = ((coffs(0)(0) * srcBmp.getPixels(xIPosition, yIPosition).b
-          + coffs(0)(1) * srcBmp.getPixels(xIPosition, yIPosition + 1).b
-          + coffs(1)(0) * srcBmp.getPixels(xIPosition + 1, yIPosition).b
-          + coffs(1)(1) * srcBmp.getPixels(xIPosition + 1, yIPosition + 1).b) / 4194304).toShort
+        Range(0, 3).foreach { i =>
+          tagBmp.assignPixels(
+            x,
+            y,
+            ((coffs(0)(0) * srcBmp.getPixels(xIPosition, yIPosition)(i)
+              + coffs(0)(1) * srcBmp.getPixels(xIPosition, yIPosition + 1)(i)
+              + coffs(1)(0) * srcBmp.getPixels(xIPosition + 1, yIPosition)(i)
+              + coffs(1)(1) * srcBmp.getPixels(xIPosition + 1, yIPosition + 1)(i)) / 16).toShort,
+            i
+          )
+        }
       }
 
     }
@@ -112,7 +120,7 @@ object Interpolation {
       tagHeight: Int,
       srcWidth: Int  = 960,
       srcHeight: Int = 540,
-      a: Double       = -0.5,
+      a: Double      = -0.5,
       fileName: String,
       filePath: String = scalaDownPath
   ): BMPImage = {
@@ -141,111 +149,58 @@ object Interpolation {
         else if (yIPosition > srcBmp.header.width_px - 1) { yIPosition = srcBmp.header.width_px - 1 }
 
         val rowFactorVector = DenseVector(
-          (getCovFactor(1 + xDiff, a) * 2048).toInt,
-          (getCovFactor(xDiff, a) * 2048).toInt,
-          (getCovFactor(1 - xDiff, a) * 2048).toInt,
-          (getCovFactor(2 - xDiff, a) * 2048).toInt
+          (getCovFactor(1 + xDiff, a) * 16).toInt,
+          (getCovFactor(xDiff, a) * 16).toInt,
+          (getCovFactor(1 - xDiff, a) * 16).toInt,
+          (getCovFactor(2 - xDiff, a) * 16).toInt
         ).t
         val colFactorVector = DenseVector(
-          (getCovFactor(1 + yDiff, a) * 2048).toInt,
-          (getCovFactor(yDiff, a) * 2048).toInt,
-          (getCovFactor(1 - yDiff, a) * 2048).toInt,
-          (getCovFactor(2 - yDiff, a) * 2048).toInt
+          (getCovFactor(1 + yDiff, a) * 16).toInt,
+          (getCovFactor(yDiff, a) * 16).toInt,
+          (getCovFactor(1 - yDiff, a) * 16).toInt,
+          (getCovFactor(2 - yDiff, a) * 16).toInt
         )
-        val rPixelsMatrix = DenseMatrix(
-          (
-            srcBmp.getPixels(xIPosition - 1, yIPosition - 1).r,
-            srcBmp.getPixels(xIPosition - 1, yIPosition).r,
-            srcBmp.getPixels(xIPosition - 1, yIPosition + 1).r,
-            srcBmp.getPixels(xIPosition - 1, yIPosition + 2).r
-          ),
-          (
-            srcBmp.getPixels(xIPosition, yIPosition - 1).r,
-            srcBmp.getPixels(xIPosition, yIPosition).r,
-            srcBmp.getPixels(xIPosition, yIPosition + 1).r,
-            srcBmp.getPixels(xIPosition, yIPosition + 2).r
-          ),
-          (
-            srcBmp.getPixels(xIPosition + 1, yIPosition - 1).r,
-            srcBmp.getPixels(xIPosition + 1, yIPosition).r,
-            srcBmp.getPixels(xIPosition + 1, yIPosition + 1).r,
-            srcBmp.getPixels(xIPosition + 1, yIPosition + 2).r
-          ),
-          (
-            srcBmp.getPixels(xIPosition + 2, yIPosition - 1).r,
-            srcBmp.getPixels(xIPosition + 2, yIPosition).r,
-            srcBmp.getPixels(xIPosition + 2, yIPosition + 1).r,
-            srcBmp.getPixels(xIPosition + 2, yIPosition + 2).r
-          )
-        ).map(_.toInt)
-        val gPixelsMatrix = DenseMatrix(
-          (
-            srcBmp.getPixels(xIPosition - 1, yIPosition - 1).g,
-            srcBmp.getPixels(xIPosition - 1, yIPosition).g,
-            srcBmp.getPixels(xIPosition - 1, yIPosition + 1).g,
-            srcBmp.getPixels(xIPosition - 1, yIPosition + 2).g
-          ),
-          (
-            srcBmp.getPixels(xIPosition, yIPosition - 1).g,
-            srcBmp.getPixels(xIPosition, yIPosition).g,
-            srcBmp.getPixels(xIPosition, yIPosition + 1).r,
-            srcBmp.getPixels(xIPosition, yIPosition + 2).g
-          ),
-          (
-            srcBmp.getPixels(xIPosition + 1, yIPosition - 1).g,
-            srcBmp.getPixels(xIPosition + 1, yIPosition).g,
-            srcBmp.getPixels(xIPosition + 1, yIPosition + 1).g,
-            srcBmp.getPixels(xIPosition + 1, yIPosition + 2).g
-          ),
-          (
-            srcBmp.getPixels(xIPosition + 2, yIPosition - 1).g,
-            srcBmp.getPixels(xIPosition + 2, yIPosition).g,
-            srcBmp.getPixels(xIPosition + 2, yIPosition + 1).g,
-            srcBmp.getPixels(xIPosition + 2, yIPosition + 2).g
-          )
-        ).map(_.toInt)
-        val bPixelsMatrix = DenseMatrix(
-          (
-            srcBmp.getPixels(xIPosition - 1, yIPosition - 1).b,
-            srcBmp.getPixels(xIPosition - 1, yIPosition).b,
-            srcBmp.getPixels(xIPosition - 1, yIPosition + 1).b,
-            srcBmp.getPixels(xIPosition - 1, yIPosition + 2).b
-          ),
-          (
-            srcBmp.getPixels(xIPosition, yIPosition - 1).b,
-            srcBmp.getPixels(xIPosition, yIPosition).b,
-            srcBmp.getPixels(xIPosition, yIPosition + 1).b,
-            srcBmp.getPixels(xIPosition, yIPosition + 2).b
-          ),
-          (
-            srcBmp.getPixels(xIPosition + 1, yIPosition - 1).b,
-            srcBmp.getPixels(xIPosition + 1, yIPosition).b,
-            srcBmp.getPixels(xIPosition + 1, yIPosition + 1).b,
-            srcBmp.getPixels(xIPosition + 1, yIPosition + 2).b
-          ),
-          (
-            srcBmp.getPixels(xIPosition + 2, yIPosition - 1).b,
-            srcBmp.getPixels(xIPosition + 2, yIPosition).b,
-            srcBmp.getPixels(xIPosition + 2, yIPosition + 1).b,
-            srcBmp.getPixels(xIPosition + 2, yIPosition + 2).b
-          )
-        ).map(_.toInt)
-//        var rPixels, gPixels, bPixels = 0D
-//        if((rowFactorVector * rPixelsMatrix * colFactorVector) > 255) {rPixels = 255D} else if((rowFactorVector * rPixelsMatrix * colFactorVector) < 0){rPixels = 0D}
-//        else {rPixels = rowFactorVector * rPixelsMatrix * colFactorVector}
-//        if((rowFactorVector * gPixelsMatrix * colFactorVector) > 255) {gPixels = 255D} else if((rowFactorVector * gPixelsMatrix * colFactorVector) < 0){gPixels = 0D}
-//        else {gPixels = rowFactorVector * gPixelsMatrix * colFactorVector}
-//        if((rowFactorVector * bPixelsMatrix * colFactorVector) > 255) {bPixels = 255D} else if((rowFactorVector * bPixelsMatrix * colFactorVector) < 0){bPixels = 0D}
-//        else {bPixels = rowFactorVector * bPixelsMatrix * colFactorVector}
-        tagBmp.pixels.r(tagBmp.transPosition(x, y)) = (rowFactorVector * rPixelsMatrix * colFactorVector / 4194304).abs.toShort
-        tagBmp.pixels.g(tagBmp.transPosition(x, y)) = (rowFactorVector * gPixelsMatrix * colFactorVector / 4194304).abs.toShort
-        tagBmp.pixels.b(tagBmp.transPosition(x, y)) = (rowFactorVector * bPixelsMatrix * colFactorVector / 4194304).abs.toShort
+
+        val PixelsMatrixs = new Array[DenseMatrix[Int]](3)
+
+        Range(0, 3).foreach { i =>
+          PixelsMatrixs(i) = DenseMatrix(
+            (
+              srcBmp.getPixels(xIPosition - 1, yIPosition - 1)(i),
+              srcBmp.getPixels(xIPosition - 1, yIPosition)(i),
+              srcBmp.getPixels(xIPosition - 1, yIPosition + 1)(i),
+              srcBmp.getPixels(xIPosition - 1, yIPosition + 2)(i)
+            ),
+            (
+              srcBmp.getPixels(xIPosition, yIPosition - 1)(i),
+              srcBmp.getPixels(xIPosition, yIPosition)(i),
+              srcBmp.getPixels(xIPosition, yIPosition + 1)(i),
+              srcBmp.getPixels(xIPosition, yIPosition + 2)(i)
+            ),
+            (
+              srcBmp.getPixels(xIPosition + 1, yIPosition - 1)(i),
+              srcBmp.getPixels(xIPosition + 1, yIPosition)(i),
+              srcBmp.getPixels(xIPosition + 1, yIPosition + 1)(i),
+              srcBmp.getPixels(xIPosition + 1, yIPosition + 2)(i)
+            ),
+            (
+              srcBmp.getPixels(xIPosition + 2, yIPosition - 1)(i),
+              srcBmp.getPixels(xIPosition + 2, yIPosition)(i),
+              srcBmp.getPixels(xIPosition + 2, yIPosition + 1)(i),
+              srcBmp.getPixels(xIPosition + 2, yIPosition + 2)(i)
+            )
+          ).map(_.toInt)
+        }
+        Range(0, 3).foreach { i =>
+          tagBmp.assignPixels(x, y, (rowFactorVector * PixelsMatrixs(i) * colFactorVector / 256).abs.toShort, i)
+        }
       }
     }
     tagBmp
   }
 
   def FastNediInterpolation(
+      threshold: Int,
       tagWidth: Int,
       tagHeight: Int,
       srcWidth: Int  = 960,
@@ -259,17 +214,324 @@ object Interpolation {
     // generate target bmp image class
     val tagBmp = BMPImage(tagWidth, tagHeight)
 
-    Range(0, tagBmp.header.height_px, 2).foreach { x =>
-      Range(0, tagBmp.header.width_px, 2).foreach { y =>
-        (x % 4, y % 4) match {
-          case (0, 0) =>
-            tagBmp.pixels.r(tagBmp.transPosition(x, y)) = srcBmp.getPixels(x / 4, y / 4).r
-            tagBmp.pixels.g(tagBmp.transPosition(x, y)) = srcBmp.getPixels(x / 4, y / 4).g
-          case (_, _) =>
+    Range(0, tagBmp.header.height_px).foreach { x =>
+      Range(0, tagBmp.header.width_px).foreach { y =>
+        x % 4 match {
+          case 0 =>
+            y % 4 match {
+              case 0 =>
+                Range(0, 3).foreach { i =>
+                  tagBmp.assignPixels(x, y, srcBmp.getPixels(x / 4, y / 4)(i), i)
+                }
+              case 2 =>
+                Range(0, 3).foreach { k =>
+                  tagBmp.assignPixels(x, y, ((srcBmp.getPixels(x / 4, (y - 2) / 4)(k) + srcBmp.getPixels(x / 4, (y + 2) / 4)(k)) / 2).toShort, k)
+                }
+              case _ =>
+            }
+          case 2 =>
+            y % 4 match {
+              case 0 =>
+                Range(0, 3).foreach { i =>
+                  tagBmp.assignPixels(x, y, ((srcBmp.getPixels((x - 2) / 4, y / 4)(i) + srcBmp.getPixels((x + 2) / 4, y / 4)(i)) / 2).toShort, i)
+                }
+              case 2 =>
+                Range(0, 3).foreach { k =>
+                  tagBmp.assignPixels(
+                    x,
+                    y,
+                    ((srcBmp.getPixels((x - 2) / 4, (y - 2) / 4)(k) + srcBmp.getPixels((x + 2) / 4, (y + 2) / 4)(k) + srcBmp
+                      .getPixels((x - 2) / 4, (y + 2) / 4)(k) + srcBmp.getPixels((x + 2) / 4, (y - 2) / 4)(k)) / 4).toShort,
+                    k
+                  )
+                }
+              case _ =>
+            }
+          case _ =>
         }
-
       }
     }
+
+    Range(0, tagBmp.header.height_px).foreach { x =>
+      Range(0, tagBmp.header.width_px).foreach { y =>
+        x % 2 match {
+          case 0 =>
+            y % 2 match {
+              case 1 =>
+                Range(0, 3).foreach { k =>
+                  if ((srcBmp.getPixels(x / 4, (y - 1) / 4)(k) - srcBmp.getPixels(x / 4, (y + 1) / 4)(k)).abs >= threshold) {
+                    tagBmp.assignPixels(x, y, 0.toShort, k)
+                  } else {
+                    tagBmp.assignPixels(x, y, ((srcBmp.getPixels(x / 4, (y - 1) / 4)(k) + srcBmp.getPixels(x / 4, (y + 1) / 4)(k)) / 2).toShort, k)
+                  }
+                }
+              case _ =>
+            }
+
+          case 1 =>
+            y % 2 match {
+              case 0 =>
+                Range(0, 3).foreach { k =>
+                  if ((srcBmp.getPixels((x - 1) / 4, y / 4)(k) - srcBmp.getPixels((x + 1) / 4, y / 4)(k)).abs >= threshold) {
+                    tagBmp.assignPixels(x, y, 0.toShort, k)
+                  } else {
+                    tagBmp.assignPixels(x, y, ((srcBmp.getPixels((x - 1) / 4, y / 4)(k) + srcBmp.getPixels((x + 1) / 4, y / 4)(k)) / 2).toShort, k)
+                  }
+                }
+              case 1 =>
+                Range(0, 3).foreach { k =>
+                  val diag1 = (srcBmp.getPixels((x - 1) / 4, (y - 1) / 4)(k) - srcBmp.getPixels((x + 1) / 4, (y + 1) / 4)(k)).abs
+                  val diag2 = (srcBmp.getPixels((x + 1) / 4, (y - 1) / 4)(k) - srcBmp.getPixels((x - 1) / 4, (y + 1) / 4)(k)).abs
+                  val diff  = Seq(diag1, diag2).min
+                  if (diff >= threshold) {
+                    tagBmp.assignPixels(x, y, 0.toShort, k)
+                  } else {
+                    if (diag1 >= diag2) {
+                      tagBmp.assignPixels(
+                        x,
+                        y,
+                        ((srcBmp.getPixels((x + 1) / 4, (y - 1) / 4)(k) + srcBmp.getPixels((x - 1) / 4, (y + 1) / 4)(k)) / 2).toShort,
+                        k
+                      )
+                    } else {
+                      tagBmp.assignPixels(
+                        x,
+                        y,
+                        ((srcBmp.getPixels((x - 1) / 4, (y - 1) / 4)(k) + srcBmp.getPixels((x + 1) / 4, (y + 1) / 4)(k)) / 2).toShort,
+                        k
+                      )
+                    }
+                  }
+                }
+              case _ =>
+            }
+          case _ =>
+        }
+      }
+    }
+
+
+    Range(0, tagBmp.header.height_px).foreach { x =>
+      Range(0, tagBmp.header.width_px).foreach { y =>
+        if (tagBmp.getPixels(x, y) == 0) {
+          val candidates = new ArrayBuffer[(Short, Short)]()
+          Range(0, 3).foreach { i =>
+            if (tagBmp.getPixels(x, y - 1)(i) != 0 && tagBmp.getPixels(x, y + 1)(i) != 0) {
+              candidates += Tuple2(
+                (tagBmp.getPixels(x, y - 1)(i) - tagBmp.getPixels(x, y + 1)(i)).abs.toShort,
+                (tagBmp.getPixels(x, y - 1)(i) + tagBmp.getPixels(x, y + 1)(i) / 2).toShort
+              )
+            }
+
+            if (tagBmp.getPixels(x - 1, y)(i) != 0 && tagBmp.getPixels(x + 1, y)(i) != 0) {
+              candidates += Tuple2(
+                (tagBmp.getPixels(x - 1, y)(i) - tagBmp.getPixels(x + 1, y)(i)).abs.toShort,
+                (tagBmp
+                  .getPixels(x - 1, y)(i) + tagBmp.getPixels(x + 1, y)(i) / 2).toShort
+              )
+            }
+
+            if (tagBmp.getPixels(x - 1, y - 1)(i) != 0 && tagBmp.getPixels(x + 1, y + 1)(i) != 0) {
+              candidates += Tuple2(
+                (tagBmp.getPixels(x - 1, y - 1)(i) - tagBmp.getPixels(x + 1, y + 1)(i)).abs.toShort,
+                (tagBmp
+                  .getPixels(x - 1, y - 1)(i) + tagBmp.getPixels(x + 1, y + 1)(i) / 2).toShort
+              )
+            }
+
+            if (tagBmp.getPixels(x + 1, y - 1)(i) != 0 && tagBmp.getPixels(x - 1, y + 1)(i) != 0) {
+              candidates += Tuple2(
+                (tagBmp.getPixels(x + 1, y - 1)(i) - tagBmp.getPixels(x - 1, y + 1)(i)).abs.toShort,
+                (tagBmp
+                  .getPixels(x + 1, y - 1)(i) + tagBmp.getPixels(x - 1, y + 1)(i) / 2).toShort
+              )
+            }
+            val sortCandidate = candidates.sortBy(_._1)
+            tagBmp.assignPixels(x, y, sortCandidate(0)._2, i)
+          }
+        }
+      }
+    }
+
+//    // step1: interpolate the homogenous pixels
+//    Range(0, tagBmp.header.height_px).foreach { x =>
+//      Range(0, tagBmp.header.width_px).foreach { y =>
+//        x % 4 match {
+//          case 0 =>
+//            y % 4 match {
+//              case 0 =>
+//                Range(0, 3).foreach { i =>
+//                  tagBmp.assignPixels(x, y, srcBmp.getPixels(x / 4, y / 4)(i), i)
+//                }
+//              case 1 =>
+//                Range(0, 3).foreach { j =>
+//                  tagBmp.assignPixels(x, y, (3 * (srcBmp.getPixels(x / 4, (y - 1) / 4)(j) + srcBmp.getPixels(x / 4, (y + 3) / 4)(j)) / 4).toShort, j)
+//                }
+//              case 2 =>
+//                Range(0, 3).foreach { k =>
+//                  if ((srcBmp.getPixels(x / 4, (y - 2) / 4)(k) - srcBmp.getPixels(x / 4, (y + 2) / 4)(k)).abs >= threshold) {
+//                    tagBmp.assignPixels(x, y, 0.toShort, k)
+//                  } else {
+//                    tagBmp.assignPixels(x, y, ((srcBmp.getPixels(x / 4, (y - 2) / 4)(k) + srcBmp.getPixels(x / 4, (y + 2) / 4)(k)) / 2).toShort, k)
+//                  }
+//                }
+//              case 3 =>
+//                Range(0, 3).foreach { l =>
+//                  tagBmp.assignPixels(x, y, ((srcBmp.getPixels(x / 4, (y - 3) / 4)(l) + 3 * srcBmp.getPixels(x / 4, (y + 1) / 4)(l)) / 4).toShort, l)
+//                }
+//            }
+//
+//          case 1 =>
+//            y % 4 match {
+//              case 0 =>
+//                Range(0, 3).foreach { i =>
+//                  tagBmp.assignPixels(x, y, (3 * (srcBmp.getPixels((x - 1) / 4, y / 4)(i) + srcBmp.getPixels((x + 3) / 4, y)(i)) / 4).toShort, i)
+//                }
+//              case 1 =>
+//                Range(0, 3).foreach { j =>
+//                  tagBmp.assignPixels(
+//                    x,
+//                    y,
+//                    ((3 * srcBmp.getPixels((x - 1) / 4, (y - 1) / 4)(j) + srcBmp.getPixels((x + 3) / 4, (y + 3) / 4)(j)) / 4).toShort,
+//                    j
+//                  )
+//                }
+//              case 2 =>
+//                Range(0, 3).foreach { k =>
+//                  tagBmp.assignPixels(x, y, 0.toShort, k)
+//                }
+//              case 3 =>
+//                Range(0, 3).foreach { l =>
+//                  tagBmp.assignPixels(
+//                    x,
+//                    y,
+//                    ((3 * srcBmp.getPixels((x - 1) / 4, (y + 1) / 4)(l) + srcBmp.getPixels((x + 3) / 4, (y - 3) / 4)(l)) / 4).toShort,
+//                    l
+//                  )
+//                }
+//
+//            }
+//          case 2 =>
+//            y % 4 match {
+//              case 0 =>
+//                Range(0, 3).foreach { i =>
+//                  if ((srcBmp.getPixels((x - 2) / 4, y / 4)(i) - srcBmp.getPixels((x + 2) / 4, y / 4)(i)).abs >= threshold) {
+//                    tagBmp.assignPixels(x, y, 0.toShort, i)
+//                  } else {
+//                    tagBmp.assignPixels(x, y, ((srcBmp.getPixels((x - 2) / 4, y / 4)(i) + srcBmp.getPixels((x + 2) / 4, y / 4)(i)) / 2).toShort, i)
+//                  }
+//                }
+//              case 1 =>
+//                Range(0, 3).foreach { j =>
+//                  tagBmp.assignPixels(x, y, 0.toShort, j)
+//                }
+//              case 2 =>
+//                Range(0, 3).foreach { k =>
+//                  val diag1 = (srcBmp.getPixels((x - 2) / 4, (y - 2) / 4)(k) - srcBmp.getPixels((x + 2) / 4, (y + 2) / 4)(k)).abs
+//                  val diag2 = (srcBmp.getPixels((x + 2) / 4, (y - 2) / 4)(k) - srcBmp.getPixels((x - 2) / 4, (y + 2) / 4)(k)).abs
+//                  val diff  = Seq(diag1, diag2).min
+//                  if (diff >= threshold) {
+//                    tagBmp.assignPixels(x, y, 0.toShort, k)
+//                  } else {
+//                    if (diag1 >= diag2) {
+//                      tagBmp.assignPixels(
+//                        x,
+//                        y,
+//                        ((srcBmp.getPixels((x + 2) / 4, (y - 2) / 4)(k) + srcBmp.getPixels((x - 2) / 4, (y + 2) / 4)(k)) / 2).toShort,
+//                        k
+//                      )
+//                    } else {
+//                      tagBmp.assignPixels(
+//                        x,
+//                        y,
+//                        ((srcBmp.getPixels((x - 2) / 4, (y - 2) / 4)(k) + srcBmp.getPixels((x + 2) / 4, (y + 2) / 4)(k)) / 2).toShort,
+//                        k
+//                      )
+//                    }
+//                  }
+//                }
+//              case 3 =>
+//                Range(0, 3).foreach { l =>
+//                  tagBmp.assignPixels(x, y, 0.toShort, l)
+//                }
+//            }
+//          case 3 =>
+//            y % 4 match {
+//              case 0 =>
+//                Range(0, 3).foreach { i =>
+//                  tagBmp.assignPixels(x, y, ((srcBmp.getPixels((x - 3) / 4, y / 4)(i) + 3 * srcBmp.getPixels((x + 1) / 4, y)(i)) / 4).toShort, i)
+//                }
+//              case 1 =>
+//                Range(0, 3).foreach { j =>
+//                  tagBmp.assignPixels(
+//                    x,
+//                    y,
+//                    ((3 * srcBmp.getPixels((x + 1) / 4, (y - 1) / 4)(j) + srcBmp.getPixels((x - 3) / 4, (y + 3) / 4)(j)) / 4).toShort,
+//                    j
+//                  )
+//                }
+//              case 2 =>
+//                Range(0, 3).foreach { k =>
+//                  tagBmp.assignPixels(x, y, 0.toShort, k)
+//                }
+//              case 3 =>
+//                Range(0, 3).foreach { l =>
+//                  tagBmp.assignPixels(
+//                    x,
+//                    y,
+//                    ((3 * srcBmp.getPixels((x + 1) / 4, (y + 1) / 4)(l) + srcBmp.getPixels((x - 3) / 4, (y - 3) / 4)(l)) / 4).toShort,
+//                    l
+//                  )
+//                }
+//            }
+//          case _ =>
+//        }
+//      }
+//    }
+//
+//    // step2: interpolate the edge pixels and other special pixels
+//    Range(0, tagBmp.header.height_px).foreach { x =>
+//      Range(0, tagBmp.header.width_px).foreach { y =>
+//        if (tagBmp.getPixels(x, y) == 0) {
+//          val candidates = new ArrayBuffer[(Short, Short)]()
+//          Range(0, 3).foreach { i =>
+//            if (tagBmp.getPixels(x, y - 1)(i) != 0 && tagBmp.getPixels(x, y + 1)(i) != 0) {
+//              candidates += Tuple2(
+//                (tagBmp.getPixels(x, y - 1)(i) - tagBmp.getPixels(x, y + 1)(i)).abs.toShort,
+//                (tagBmp.getPixels(x, y - 1)(i) + tagBmp.getPixels(x, y + 1)(i) / 2).toShort
+//              )
+//            }
+//
+//            if (tagBmp.getPixels(x - 1, y)(i) != 0 && tagBmp.getPixels(x + 1, y)(i) != 0) {
+//              candidates += Tuple2(
+//                (tagBmp.getPixels(x - 1, y)(i) - tagBmp.getPixels(x + 1, y)(i)).abs.toShort,
+//                (tagBmp
+//                  .getPixels(x - 1, y)(i) + tagBmp.getPixels(x + 1, y)(i) / 2).toShort
+//              )
+//            }
+//
+//            if (tagBmp.getPixels(x - 1, y - 1)(i) != 0 && tagBmp.getPixels(x + 1, y + 1)(i) != 0) {
+//              candidates += Tuple2(
+//                (tagBmp.getPixels(x - 1, y - 1)(i) - tagBmp.getPixels(x + 1, y + 1)(i)).abs.toShort,
+//                (tagBmp
+//                  .getPixels(x - 1, y - 1)(i) + tagBmp.getPixels(x + 1, y + 1)(i) / 2).toShort
+//              )
+//            }
+//
+//            if (tagBmp.getPixels(x + 1, y - 1)(i) != 0 && tagBmp.getPixels(x - 1, y + 1)(i) != 0) {
+//              candidates += Tuple2(
+//                (tagBmp.getPixels(x + 1, y - 1)(i) - tagBmp.getPixels(x - 1, y + 1)(i)).abs.toShort,
+//                (tagBmp
+//                  .getPixels(x + 1, y - 1)(i) + tagBmp.getPixels(x - 1, y + 1)(i) / 2).toShort
+//              )
+//            }
+//            val sortCandidate = candidates.sortBy(_._1)
+//            tagBmp.assignPixels(x, y, sortCandidate(0)._2, i)
+//          }
+//        }
+//      }
+//    }
+    tagBmp
   }
 
   def isWindows: Boolean = System.getProperty("os.name").toLowerCase().contains("win")
@@ -330,7 +592,7 @@ object Interpolation {
       pyName: String   = "Measure.py",
       path: String     = scalaTestPath,
       srcPath: String  = scalaUpPath,
-      retName: String  = "scala_score_bicubic.txt",
+      retName: String  = "scala_score_fastNedi.txt",
       logger: String   = "Evaluate score by using Python",
       isWrite: Boolean = false
   ): Unit = {
@@ -364,9 +626,9 @@ object Interpolation {
   }
 
   def showScoreDiff(
-      dutPath: String  = scalaTestPath + "scala_score_bicubic.txt",
+      dutPath: String  = scalaTestPath + "scala_score_fastNedi.txt",
       basePath: String = cTestPath + "c_score.txt",
-      diffPath: String = bootPath + "score_diff_bicubic.txt"
+      diffPath: String = bootPath + "score_diff_fastNedi.txt"
   ) = {
 
     val psnr  = "psnr\\s+=\\s+"
@@ -422,7 +684,7 @@ object Interpolation {
 object TestInterpolation extends App {
 //  (0 to 46).foreach { i =>
 //    println(s"Interpolate the ${i}th image !")
-//    Interpolation.BiQuadratic(3840L, 2160L, fileName = s"${i}.bmp").bmpWrite(s"${i}_upsampling_biquadratic.bmp", scalaTestPath + "biquadratic_upsampling/")
+//    Interpolation.BiQuadratic(3840, 2160, fileName = s"${i}.bmp").bmpWrite(s"${i}_upsampling_biquadratic.bmp", scalaTestPath + "biquadratic_upsampling/")
 //  }
 //  println("Begin evaluate the score !")
 //  Interpolation.evalPyScore(path = scalaTestPath, srcPath = scalaTestPath + "biquadratic_upsampling/", retName = "scala_score_biquadratic.txt", isWrite = true)
@@ -430,15 +692,35 @@ object TestInterpolation extends App {
 //  Interpolation.showScoreDiff(dutPath = scalaTestPath + "scala_score_biquadratic.txt", basePath = bootPath + "base_score_biquadratic.txt", diffPath = bootPath + "score_diff_biquadratic.txt")
 
   // Test bicubic
-  Interpolation.doCmd(s"rm -rf ${scalaUpPath}", scalaTestPath, "remove old bmp!")
-  Interpolation.doCmd(s"mkdir ${scalaUpPath}", scalaTestPath, "new a dict!")
-  val i = -0.001
-  (0 to 46).foreach { j =>
-    println(s"Interpolate the ${j}th image using a : ${i} !")
-    Interpolation.BicubicInterpolation(3840, 2160, fileName = s"${j}.bmp", a = i).bmpWrite(s"${j}_upsampling_bicubic_${i}.bmp")
+//  Interpolation.doCmd(s"rm -rf ${scalaUpPath}", scalaTestPath, "remove old bmp!")
+//  Interpolation.doCmd(s"mkdir ${scalaUpPath}", scalaTestPath, "new a dict!")
+//  val i = -0.1
+//  (0 to 46).foreach { j =>
+//    println(s"Interpolate the ${j}th image using a : ${i} !")
+//    Interpolation.BicubicInterpolation(3840, 2160, fileName = s"${j}.bmp", a = i).bmpWrite(s"${j}_upsampling_bicubic_${i}.bmp")
+//  }
+//  println("Begin evaluate the score !")
+//  Interpolation.evalPyScore(retName = s"scala_score_bicubic_${i}.txt", isWrite = true)
+//  println("Begin get the score difference !")
+//  Interpolation.showScoreDiff(dutPath = scalaTestPath + s"scala_score_bicubic_${i}.txt", basePath = bootPath + "base_score_biquadratic.txt")
+
+  Range(112, 193, 4).foreach { i =>
+    Interpolation.doCmd(s"rm -rf ${scalaTestPath}fastNedi_upsampling_${i}", scalaTestPath, "remove old bmp!")
+    Interpolation.doCmd(s"mkdir ${scalaTestPath}fastNedi_upsampling_${i}", scalaTestPath, "new a dict!")
+    (0 to 46).foreach { j =>
+      println(s"Interpolate the ${j}th image using threshold is ${i} !")
+      Interpolation
+        .FastNediInterpolation(i, 3840, 2160, fileName = s"${j}.bmp")
+        .bmpWrite(s"${j}_upsampling_fastNedi.bmp", filePath = s"${scalaTestPath}fastNedi_upsampling_${i}")
+    }
+    println(s"Begin evaluate the score for threshold ${i}!")
+    Interpolation.evalPyScore(srcPath = s"${scalaTestPath}fastNedi_upsampling_${i}", retName = s"scala_score_fastNedi_${i}.txt", isWrite = true)
+    println(s"Begin get the score difference for threshold ${i} !")
+    Interpolation.showScoreDiff(
+      dutPath  = scalaTestPath + s"scala_score_fastNedi_${i}.txt",
+      basePath = bootPath + "base_score_biquadratic.txt",
+      diffPath = bootPath + s"score_diff_fastNedi_${i}"
+    )
   }
-  println("Begin evaluate the score !")
-  Interpolation.evalPyScore(retName = s"scala_score_bicubic_${i}.txt", isWrite = true)
-  println("Begin get the score difference !")
-  Interpolation.showScoreDiff(dutPath = scalaTestPath + s"scala_score_bicubic_${i}.txt", basePath = bootPath + "base_score_biquadratic.txt")
+
 }
