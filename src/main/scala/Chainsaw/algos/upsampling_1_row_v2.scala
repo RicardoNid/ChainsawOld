@@ -67,15 +67,20 @@ case class upsampling_1_row_v2(cofig:upsampling_1_row_config) extends Component{
     }
 
     io.data_out.valid   := True
-    io.out_frame_flag   := current_frame
-    io.out_row_flag     := current_row
+    //io.out_frame_flag   := current_frame
+    //io.out_row_flag     := current_row
     when(io.data_out.ready){
       transmission_counter.increment()
     }
     when(transmission_counter === 1){
       io.data_out.payload := value_for_itpl
+      io.out_frame_flag   := current_frame   //5.13
+      io.out_row_flag     := False           //5.13
     }otherwise {
       io.data_out.payload := current_pixel
+      io.interpolated := True              //5.13
+      io.out_frame_flag   := False        //5.13
+      io.out_row_flag     := current_row           //5.13
     }
   }otherwise{
     io.data_out.valid := False
@@ -154,9 +159,9 @@ object upsample_1_row extends App{
   //  val data_out_ready = true
 
   var data_out = ListBuffer.fill(72)(-1)
-  var frame_flag_out = ListBuffer.fill(36)(false)
-  var row_flag_out  = ListBuffer.fill(36)(false)
-  var interpolated_flag = ListBuffer.fill(36)(false)
+  var frame_flag_out = ListBuffer.fill(72)(false)
+  var row_flag_out  = ListBuffer.fill(72)(false)
+  var interpolated_flag = ListBuffer.fill(72)(false)
 
   var idy,idf = -1
   var idx = 0
@@ -221,50 +226,55 @@ object upsample_1_row extends App{
             }
             println()
             println("the interpolation flag computed by RTL")
-            for(i<-0 until 36 by 6){
-              println(s"${interpolated_flag(i)} ${interpolated_flag(i+1)} ${interpolated_flag(i+2)} ${interpolated_flag(i+3)} ${interpolated_flag(i+4)} ${interpolated_flag(i+5)}")
+            for(i<-0 until 72 by 12){
+              println(s"${interpolated_flag(i)} ${interpolated_flag(i+1)} ${interpolated_flag(i+2)} ${interpolated_flag(i+3)} ${interpolated_flag(i+4)} ${interpolated_flag(i+5)}" +
+                s"${interpolated_flag(i+6)} ${interpolated_flag(i+7)} ${interpolated_flag(i+8)} ${interpolated_flag(i+9)} ${interpolated_flag(i+10)} ${interpolated_flag(i+11)}")
             }
             println()
             println("the frame_start flag")
             for(i<-1 until 37 by 6){
-              println(s"${frame(i)} ${frame(i+1)} ${frame(i+2)} ${frame(i+3)} ${frame(i+4)} ${frame(i+5)}")
+              println(s"${frame(i)} ${"false"} ${frame(i+1)} ${"false"} ${frame(i+2)} ${"false"} ${frame(i+3)} ${"false"} ${frame(i+4)} ${"false"} ${frame(i+5)} ${"false"} ")
             }
             println()
             println("the frame_start flag computed by RTL")
-            for(i<-0 until 36 by 6){
-              println(s"${frame_flag_out(i)} ${frame_flag_out(i+1)} ${frame_flag_out(i+2)} ${frame_flag_out(i+3)} ${frame_flag_out(i+4)} ${frame_flag_out(i+5)}")
+            for(i<-0 until 72 by 12){
+              println(s"${frame_flag_out(i)} ${frame_flag_out(i+1)} ${frame_flag_out(i+2)} ${frame_flag_out(i+3)} ${frame_flag_out(i+4)} ${frame_flag_out(i+5)}" +
+                s"${frame_flag_out(i+6)} ${frame_flag_out(i+7)} ${frame_flag_out(i+8)} ${frame_flag_out(i+9)} ${frame_flag_out(i+10)} ${frame_flag_out(i+11)}")
             }
             println()
             println("the row_end flag ")
             for(i<-1 until 37 by 6){
-              println(s"${row(i)} ${row(i+1)} ${row(i+2)} ${row(i+3)} ${row(i+4)} ${row(i+5)}")
+              println(s"${"false"} ${row(i)} ${"false"} ${row(i+1)} ${"false"} ${row(i+2)} ${"false"} ${row(i+3)} ${"false"} ${row(i+4)} ${"false"} ${row(i+5)}")
             }
             println()
             println("the row_end flag computed by RTL")
-            for(i<-0 until 36 by 6){
-              println(s"${row_flag_out(i)} ${row_flag_out(i+1)} ${row_flag_out(i+2)} ${row_flag_out(i+3)} ${row_flag_out(i+4)} ${row_flag_out(i+5)}")
+            for(i<-0 until 72 by 12){
+              println(s"${row_flag_out(i)} ${row_flag_out(i+1)} ${row_flag_out(i+2)} ${row_flag_out(i+3)} ${row_flag_out(i+4)} ${row_flag_out(i+5)}" +
+                s"${row_flag_out(i+6)} ${row_flag_out(i+7)} ${row_flag_out(i+8)} ${row_flag_out(i+9)} ${row_flag_out(i+10)} ${row_flag_out(i+11)}")
             }
             println()
             println(s"start to verify the correctness:")
-            //println(s"data_out_length:${data_out.length}")
-            //println(s"result_test_length:${result_test.length}")
             println(s"pixel_result:${result_test == data_out}")
-            //            println(s"frame: ${frame.length}")
-            //            println(s"frame_io_out: ${frame_flag_out.length}")
-            //            println(s"row: ${row.length}")
-            //            println(s"row_io_out: ${row_flag_out.length}")
-            println(s"frame_result:${frame.tail.init == frame_flag_out}")
-            println(s"row_result:${row.tail.init== row_flag_out}")
+            val frame_verify = ListBuffer(true)
+            for (elem <- frame.tail.init){
+              frame_verify.append(elem)
+              frame_verify.append(false)
+            }
+            val row_verify = ListBuffer(true)
+            for (elem <- row.tail.init){
+              row_verify.append(false)
+              row_verify.append(elem)
+            }
+
+            println(s"frame_result:${frame_verify.tail == frame_flag_out}")
+            println(s"row_result:${row_verify.tail == row_flag_out}")
 
             simSuccess()
           }
           data_out(idy) = dut.io.data_out.payload.toInt
-          if((idy % 2 ==0)){
-            idf = idf + 1
-            frame_flag_out(idf) = dut.io.out_frame_flag.toBoolean
-            row_flag_out(idf) = dut.io.out_row_flag.toBoolean
-            interpolated_flag(idf) = dut.io.interpolated.toBoolean
-          }
+          frame_flag_out(idy) = dut.io.out_frame_flag.toBoolean
+          row_flag_out(idy) = dut.io.out_row_flag.toBoolean
+          interpolated_flag(idy) = dut.io.interpolated.toBoolean
         }
 
       }
