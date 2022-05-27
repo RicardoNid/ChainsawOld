@@ -20,21 +20,23 @@ case class InterpolationStep1(config: IPConfig) extends Component {
     val rowEndIn     = in Bool ()
 
     // from slave
-    val inComplete = in Bool ()
+    val inpTwoCompleteIn   = in Bool ()
+    val inpThreeCompleteIn = in Bool ()
 
     // to slave
     val dataOut       = master Stream UInt(dW bits)
+    val startOut      = out Bool ()
     val frameStartOut = out Bool ()
     val rowEndOut     = out Bool ()
-    val inpValid      = out Bool ()
+    val inpValidOut   = out Bool ()
 
     // to master
-    val inpComplete = out Bool ()
+    val inpCompleteOut = out Bool ()
 
     // wait for axi-lite config signal
-    val threshold = in UInt (dW bits)
-    val widthIn   = in UInt (log2Up(sW + 1) bits)
-    val heightIn  = in UInt (log2Up(sH + 1) bits)
+    val thresholdIn = in UInt (dW bits)
+    val widthIn     = in UInt (log2Up(sW + 1) bits)
+    val heightIn    = in UInt (log2Up(sH + 1) bits)
   }
   noIoPrefix()
 
@@ -42,16 +44,19 @@ case class InterpolationStep1(config: IPConfig) extends Component {
   io.setInvalid()
 
   /* register the frame start signal */
-  val frameStart = RegNextWhen(io.frameStartIn, io.dataIn.fire).init(False)
+  val frameStart = RegNextWhen(True, io.frameStartIn).init(False)
+
+  /* register the startOut signal */
+  val slaveStart = RegInit(False).setWhen(io.dataIn.fire && !io.inpTwoCompleteIn).clearWhen(io.inpTwoCompleteIn)
 
   /* register the threshold */
-  val inpThreshold = RegNext(io.threshold).init(U(0, dW bits))
+  val inpThreshold = RegNext(io.thresholdIn).init(U(128, dW bits))
 
   /* start buffer data signal */
   val holdBuffer = RegInit(False).clearWhen(io.StartIn.fall())
 
   /* the signal indicate last interpolation is complete */
-  val interComplete = RegInit(False).setWhen(io.inComplete).clearWhen(io.StartIn.rise())
+  val interComplete = RegInit(False).setWhen(io.inpThreeCompleteIn).clearWhen(io.StartIn.rise())
 
   /* when this signal is true, it means the nextRowBuffer is also lastRowBuffer */
   val sameBuffer = RegInit(False).clearWhen(io.StartIn.rise())
@@ -59,7 +64,7 @@ case class InterpolationStep1(config: IPConfig) extends Component {
   /* record the number of row which is buffered */
   val bufferRowCount = Counter(sH + 1)
 
-  /* when this signal is True, it means that the dataIn should be store in lineBufferTwo when we can receive dataIn*/
+  /* when this signal is True, it means that the dataIn should be store in lineBufferTwo when we can receive dataIn */
   val bufferSwitch = RegInit(False).clearWhen(io.StartIn.rise())
 
   /* the write enable signal of lineBuffer*/
@@ -78,10 +83,10 @@ case class InterpolationStep1(config: IPConfig) extends Component {
   val outPixelAddr = Counter(2 * sW)
 
   /* input bmp picture width */
-  val bmpWidth = RegNext(io.widthIn).init(U(0, log2Up(sW + 1) bits))
+  val bmpWidth = RegNext(io.widthIn).init(U(sW, log2Up(sW + 1) bits))
 
   /* input bmp picture height */
-  val bmpHeight = RegNext(io.heightIn).init(U(0, log2Up(sH + 1) bits))
+  val bmpHeight = RegNext(io.heightIn).init(U(sH, log2Up(sH + 1) bits))
 
   /* the number of row which is already output*/
   val outRowCount = Counter(2 * sH + 1)
@@ -134,7 +139,11 @@ case class InterpolationStep1(config: IPConfig) extends Component {
     val EVEN = StateEntryPoint()
     val ODD  = State()
 
-    EVEN.onEntry { flush := True }
+    EVEN.onEntry {
+      when(outRowCount =/= U(0)) {
+        flush := True
+      }
+    }
     EVEN.whenIsActive {
       when(outRowCount % U(2) === U(0) && outPixelAddr === U(2) * bmpWidth - U(1) && io.dataOut.fire) { goto(ODD) }
 
@@ -212,24 +221,50 @@ case class InterpolationStep1(config: IPConfig) extends Component {
 
       when(sameBuffer) {
         io.dataOut.valid := True
-        when(outPixelAddr % U(2) === U(0)) {
-          io.dataOut.payload := lineBufferOne.readAsync((outPixelAddr / U(2)).resized)
-        }.elsewhen(outPixelAddr % U(2) === U(1)) {
-          switch(lineBufferOne.readAsync(((outPixelAddr - U(1)) / U(2)).resized) >= lineBufferOne.readAsync(((U(1) + outPixelAddr) / U(2)).resized)) {
-            is(True) {
-              mainDiagDiff := lineBufferOne.readAsync(((outPixelAddr - U(1)) / U(2)).resized) - lineBufferOne.readAsync(((U(1) + outPixelAddr) / U(2)).resized)
-            }
-            is(False) {
-              mainDiagDiff := lineBufferOne.readAsync(((U(1) + outPixelAddr) / U(2)).resized) - lineBufferOne.readAsync(((outPixelAddr - U(1)) / U(2)).resized)
+        switch(nextRowBuffer){
+          is(True){
+            when(outPixelAddr % U(2) === U(0)) {
+              io.dataOut.payload := lineBufferOne.readAsync((outPixelAddr / U(2)).resized)
+            }.elsewhen(outPixelAddr % U(2) === U(1)) {
+              switch(lineBufferOne.readAsync(((outPixelAddr - U(1)) / U(2)).resized) >= lineBufferOne.readAsync(((U(1) + outPixelAddr) / U(2)).resized)) {
+                is(True) {
+                  mainDiagDiff := lineBufferOne.readAsync(((outPixelAddr - U(1)) / U(2)).resized) - lineBufferOne.readAsync(((U(1) + outPixelAddr) / U(2)).resized)
+                }
+                is(False) {
+                  mainDiagDiff := lineBufferOne.readAsync(((U(1) + outPixelAddr) / U(2)).resized) - lineBufferOne.readAsync(((outPixelAddr - U(1)) / U(2)).resized)
+                }
+              }
+
+              when(mainDiagDiff >= inpThreshold) {
+                io.dataOut.payload := lineBufferOne.readAsync(((outPixelAddr - U(1)) / U(2)).resized)
+              }.otherwise {
+                io.dataOut.payload := ((lineBufferOne.readAsync(((outPixelAddr - U(1)) / U(2)).resized) +^ lineBufferOne.readAsync(
+                  ((U(1) + outPixelAddr) / U(2)).resized
+                )) / U(2)).resized
+              }
             }
           }
+          is(False){
+            when(outPixelAddr % U(2) === U(0)) {
+              io.dataOut.payload := lineBufferTwo.readAsync((outPixelAddr / U(2)).resized)
+            }.elsewhen(outPixelAddr % U(2) === U(1)) {
+              switch(lineBufferTwo.readAsync(((outPixelAddr - U(1)) / U(2)).resized) >= lineBufferTwo.readAsync(((U(1) + outPixelAddr) / U(2)).resized)) {
+                is(True) {
+                  mainDiagDiff := lineBufferTwo.readAsync(((outPixelAddr - U(1)) / U(2)).resized) - lineBufferTwo.readAsync(((U(1) + outPixelAddr) / U(2)).resized)
+                }
+                is(False) {
+                  mainDiagDiff := lineBufferTwo.readAsync(((U(1) + outPixelAddr) / U(2)).resized) - lineBufferTwo.readAsync(((outPixelAddr - U(1)) / U(2)).resized)
+                }
+              }
 
-          when(mainDiagDiff >= inpThreshold) {
-            io.dataOut.payload := lineBufferOne.readAsync(((outPixelAddr - U(1)) / U(2)).resized)
-          }.otherwise {
-            io.dataOut.payload := ((lineBufferOne.readAsync(((outPixelAddr - U(1)) / U(2)).resized) +^ lineBufferOne.readAsync(
-              ((U(1) + outPixelAddr) / U(2)).resized
-            )) / U(2)).resized
+              when(mainDiagDiff >= inpThreshold) {
+                io.dataOut.payload := lineBufferTwo.readAsync(((outPixelAddr - U(1)) / U(2)).resized)
+              }.otherwise {
+                io.dataOut.payload := ((lineBufferTwo.readAsync(((outPixelAddr - U(1)) / U(2)).resized) +^ lineBufferTwo.readAsync(
+                  ((U(1) + outPixelAddr) / U(2)).resized
+                )) / U(2)).resized
+              }
+            }
           }
         }
       }.otherwise {
@@ -367,7 +402,9 @@ case class InterpolationStep1(config: IPConfig) extends Component {
             switch(lineBufferTwo.readAsync(((outPixelAddr - U(1)) / U(2)).resized) >= lineBufferOne.readAsync(((outPixelAddr - U(1)) / U(2)).resized)) {
               is(True) {
                 when(
-                  lineBufferTwo.readAsync(((outPixelAddr - U(1)) / U(2)).resized) - lineBufferOne.readAsync(((outPixelAddr - U(1)) / U(2)).resized) >= inpThreshold
+                  lineBufferTwo.readAsync(((outPixelAddr - U(1)) / U(2)).resized) - lineBufferOne.readAsync(
+                    ((outPixelAddr - U(1)) / U(2)).resized
+                  ) >= inpThreshold
                 ) {
                   switch(nextRowBuffer) {
                     is(True) {
@@ -385,7 +422,9 @@ case class InterpolationStep1(config: IPConfig) extends Component {
               }
               is(False) {
                 when(
-                  lineBufferOne.readAsync(((outPixelAddr - U(1)) / U(2)).resized) - lineBufferTwo.readAsync(((outPixelAddr - U(1)) / U(2)).resized) >= inpThreshold
+                  lineBufferOne.readAsync(((outPixelAddr - U(1)) / U(2)).resized) - lineBufferTwo.readAsync(
+                    ((outPixelAddr - U(1)) / U(2)).resized
+                  ) >= inpThreshold
                 ) {
                   switch(nextRowBuffer) {
                     is(True) {
@@ -427,11 +466,14 @@ case class InterpolationStep1(config: IPConfig) extends Component {
   when(outPixelAddr === U(2) * bmpWidth - U(1) && io.dataOut.valid) {
     io.rowEndOut := True
   }
+  when(interComplete){ interComplete := False}
 
-  io.inpValid.allowOverride
-  io.inpComplete.allowOverride
-  io.inpValid    := True
-  io.inpComplete := interComplete
+  io.inpValidOut.allowOverride
+  io.inpCompleteOut.allowOverride
+  io.startOut.allowOverride
+  io.inpValidOut    := True
+  io.inpCompleteOut := interComplete
+  io.startOut       := slaveStart
 }
 
 object GenTest extends App {

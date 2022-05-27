@@ -1,14 +1,13 @@
 package Chainsaw.algos.UpSamplingIP
 
-import spinal.lib._
-import spinal.core._
-import spinal.core.sim._
-import org.slf4j._
 import org.scalatest.funsuite._
+import org.slf4j._
+import spinal.core.sim._
+
 import scala.collection.mutable._
 import scala.util.Random._
 
-object simFuncs {
+object sim1Funcs {
   def startSim(threshold: Int, sH: Int, sW: Int, testCases: ArrayBuffer[Int], golden: ArrayBuffer[Int], isPrint: Boolean = false) = {
     val compiled   = SimConfig.withFstWave.compile(InterpolationStep1(IPConfig(sH, sW)))
     val results    = ArrayBuffer[Int]()
@@ -17,22 +16,30 @@ object simFuncs {
     compiled.doSimUntilVoid { dut =>
       val logger = LoggerFactory.getLogger(s"Test : InterpolationSep1")
 
+      dut.io.dataOut.ready #= false
+      dut.io.rowEndIn      #= false
+      dut.io.frameStartIn  #= false
+      dut.io.StartIn       #= false
+      dut.io.widthIn       #= 1
+      dut.io.heightIn      #= 1
+
+      val monitor = fork {
+        while (true) {
+          if (dut.io.dataOut.valid.toBoolean && dut.io.dataOut.ready.toBoolean) {
+            results += dut.io.dataOut.payload.toInt
+            rowEndOuts += dut.io.rowEndOut.toBoolean
+          }
+          sleep(2)
+        }
+      }
+
       dut.clockDomain.forkStimulus(2)
       val interpolation = fork {
-        dut.io.rowEndIn      #= false
-        dut.io.frameStartIn  #= false
-        dut.io.StartIn       #= false
-        dut.io.dataOut.ready #= false
-        dut.io.widthIn       #= 1
-        dut.io.heightIn      #= 1
-        dut.clockDomain.assertReset()
-        dut.clockDomain.waitSampling()
-        dut.clockDomain.deassertReset()
-        dut.clockDomain.waitSampling()
+        dut.clockDomain.waitSampling(5)
         dut.io.dataOut.ready #= true
         dut.io.widthIn       #= sW
         dut.io.heightIn      #= sH
-        dut.io.threshold     #= threshold
+        dut.io.thresholdIn     #= threshold
         dut.clockDomain.waitSampling()
         dut.io.StartIn #= true
         inCount = 0
@@ -56,22 +63,14 @@ object simFuncs {
 
       }
 
-      val monitor = fork {
-        while (true) {
-          if (dut.io.dataOut.valid.toBoolean && dut.io.dataOut.ready.toBoolean) {
-            results += dut.io.dataOut.payload.toInt
-            rowEndOuts += dut.io.rowEndOut.toBoolean
-          }
-          sleep(2)
-        }
-      }
 
       val getSimResult = fork {
         while (true) {
           if (results.length == 4 * sH * sW) {
-            dut.io.inComplete #= true
+            dut.io.inpTwoCompleteIn #= true
+            dut.io.inpThreeCompleteIn #= true
             dut.io.StartIn    #= false
-            dut.clockDomain.waitSampling()
+            dut.clockDomain.waitSampling(2)
             if (isPrint) {
               val formatTestCases  = testCases.map(_.toString.padTo(5, ' ')).grouped(sW).toSeq.map(_.mkString("")).mkString("\n")
               val formatGolden     = golden.map(_.toString.padTo(5, ' ')).grouped(2 * sW).toSeq.map(_.mkString("")).mkString("\n")
@@ -99,9 +98,11 @@ object simFuncs {
               simFailure("test fail !")
             }
           } else {
-            dut.io.inComplete #= false
+            dut.io.inpThreeCompleteIn #= false
+            dut.io.inpTwoCompleteIn #= false
           }
-          sleep(2)
+          //sleep(2)
+          dut.clockDomain.waitSampling()
         }
       }
 
@@ -207,15 +208,15 @@ object simFuncs {
 }
 
 class InterpolationStep1Test extends AnyFunSuite {
-  test("Test InterpolationStep1 5 * 10 ") {
-    val testCases = ArrayBuffer.fill(5 * 5)(nextInt(32))
-    simFuncs.startSim(16, 5, 5, testCases, simFuncs.getGolden(16, 5, 5, testCases), true)
+  test("Test InterpolationStep1 5 * 5 ") {
+      val testCases = ArrayBuffer.fill(5 * 5)(nextInt(32))
+      sim1Funcs.startSim(16, 5, 5, testCases, sim1Funcs.getGolden(16, 5, 5, testCases), true)
   }
   test("Test InterpolationStep1 Randomly !") {
     val h         = nextInt(541)
     val w         = nextInt(961)
     val thd       = nextInt(201)
     val testCases = ArrayBuffer.fill(h * w)(nextInt(255))
-    simFuncs.startSim(thd, h, w, testCases, simFuncs.getGolden(thd, h, w, testCases), true)
+    sim1Funcs.startSim(thd, h, w, testCases, sim1Funcs.getGolden(thd, h, w, testCases), true)
   }
 }
