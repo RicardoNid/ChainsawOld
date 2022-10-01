@@ -33,5 +33,6 @@ class ViterbiHardTest extends AnyFlatSpec {
   }
 
   it should "synth for FTN" in VivadoSynth(ViterbiHard(trellis, groupLength, temp))
+  it should "impl for FTN" in VivadoSynth(ViterbiHard(trellis, groupLength, temp))
 
 }

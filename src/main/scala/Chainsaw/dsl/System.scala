@@ -4,6 +4,7 @@ import Chainsaw.dsl
 import Chainsaw.dsl.dataflow.PeriodicFlow
 import spinal.core._
 import spinal.core.sim._
+import spinal.lib.Delay
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -27,25 +28,23 @@ class System[TIn, TOut](algo: Algo[TIn, TOut], impls: Seq[Impl], repetitions: Se
 
   def °[TPrev](that: Transform[TPrev, TIn]) = composite(that)
 
-  def build(targetThroughput: Double) =
+  val transforms = impls.zip(repetitions).reverse
+  def getReuse(targetThroughput: Double) = transforms.map { transform => Reuse.findReuse(targetThroughput, transform._2, transform._1) }
 
-  // without reuse
+  def build(targetThroughput: Double) = {
+
     new Component {
       val inputSize = repetitions.last.expand(impls.last.size)._1
       val outputSize = repetitions.head.expand(impls.head.size)._2
       val dataIn = in Vec(Bits(typeIn.width bits), inputSize)
+      val lastIn = in Bool()
+      val lastOut = out Bool()
       val dataOut = out Vec(Bits(typeOut.width bits), outputSize)
 
-      val transforms = impls.zip(repetitions).reverse
-
       // find reuse for each transform
-      val transformsWithReuse = transforms.map { transform =>
-        val reuse = Reuse.findReuse(targetThroughput, transform._2, transform._1)
-        (transform._1, transform._2, reuse)
-      }
-
-      println(transformsWithReuse.map{ case (impl, repetition, reuse) =>
-      s"${impl.getClass.toString} $reuse"
+      val transformsWithReuse = transforms.zip(getReuse(targetThroughput)).map{ case (transform, reuse) => (transform._1, transform._2, reuse)}
+      println(transformsWithReuse.map { case (impl, repetition, reuse) =>
+        s"${impl.getClass.toString} $reuse"
       }.mkString("\n↓\n"))
 
       val operators = transformsWithReuse.map((TransformBuild.apply _).tupled(_))
@@ -55,10 +54,14 @@ class System[TIn, TOut](algo: Algo[TIn, TOut], impls: Seq[Impl], repetitions: Se
       val dataPath = ArrayBuffer(dataIn)
       operators.foreach(op => dataPath += op(dataPath.last))
       dataOut := dataPath.last
+      lastOut := Delay(lastIn, 20, init = False)
     }
-
+  }
 
   def randomTest(stimuli: Array[TIn], targetThroughput: Double) = {
+
+    Chainsaw.logger.info("start quick by-the-way random test")
+
     SimConfig.withFstWave.compile(build(targetThroughput)).doSim { dut =>
       dut.clockDomain.forkStimulus(2)
       dut.dataIn.zip(stimuli).foreach { case (port, data) => port #= typeIn.toBigInt(data) }

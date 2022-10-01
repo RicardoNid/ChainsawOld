@@ -32,15 +32,10 @@ object Converter {
 }
 
 class ConverterImpl(sizeIn: Int, sizeOut: Int, widthOut: Int) extends Impl {
-
+  override val name = "Converter"
+  override val width = (widthOut * sizeOut / sizeIn, widthOut)
   override val size = (sizeIn, sizeOut)
+  override def getLatency(fold: Int) = 0
+  override def getFunction(fold: Int) = (dataIn: Vec[Bits]) => Vec(dataIn.reverse).asBits.subdivideIn(widthOut bits)
 
-  override def getImpl(fold:Int) = {
-    val impl = (dataIn: (Vec[Bits], Bool)) => {
-      val ret = Vec(dataIn._1.reverse).asBits.subdivideIn(widthOut bits)
-      (ret, dataIn._2)
-    }
-    RawImpl(impl, 0)
-  }
 }
-

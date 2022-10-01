@@ -4,8 +4,6 @@ import spinal.core._
 
 object TransformBuild {
 
-
-
   def apply(impl: Impl, repetition: Repetition, reuse: Reuse) = {
 
     println(impl.getClass)
@@ -22,11 +20,20 @@ object TransformBuild {
       }
 
       // iterate according to time reuse
+//      val ret = segments.map { data =>
+//        val current = impl.getImpl(1).impl // TODO: FINISH THIS
+//        val pair = (data, False)
+//        if (repetition.time.group == 1) current(pair)
+//        else Array.iterate(pair, repetition.time.group + 1)(current).last
+//      }.toArray
+//
       val ret = segments.map { data =>
-        val current = impl.getImpl(1).impl // TODO: FINISH THIS
-        val pair = (data, False)
-        if (repetition.time.group == 1) current(pair)
-        else Array.iterate(pair, repetition.time.group + 1)(current).last
+        println(s"init ${repetition.timeFactor} components of type ${impl.getClass}")
+        val components = Array.fill(repetition.timeFactor)(impl.getImpl(1))
+        components.head.dataIn.fragment := data
+        components.head.dataIn.last := False
+        components.prevAndNext { case (prev, next) => next.dataIn := prev.dataOut}
+        (components.last.dataOut.fragment, components.last.dataOut.last)
       }.toArray
 
       val payload = Vec(ret.map(_._1).flatten)

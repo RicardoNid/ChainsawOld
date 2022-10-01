@@ -2,12 +2,10 @@ package Chainsaw.dsl.transform
 
 import Chainsaw.dsl
 import Chainsaw.dsl._
+import Chainsaw.dsl.transform.LUT._
 import spinal.core._
-import spinal.lib._
 
 import scala.reflect.ClassTag
-import LUT._
-import spinal.lib.Fragment
 
 class LUT[T: ClassTag]
 (val lut: Array[T])
@@ -31,23 +29,11 @@ object LUT {
 }
 
 class LutImpl(lut: Array[String]) extends Impl {
-
-  override def getImpl(fold: Int) = {
-    val component = LUTModule(lut)
-    val impl = (dataIn: (Vec[Bits], Bool)) => {
-      component.dataIn.fragment.head := dataIn._1.head
-      component.dataIn.last := dataIn._2
-      (Vec(component.dataOut.fragment.head), component.dataIn.last)
-    }
-    RawImpl(impl, 1)
+  override val name = "LUT"
+  override val width = (log2Up(lut.length), lut.head.length)
+  override def getLatency(fold: Int) = 1
+  override def getFunction(fold: Int) = (dataIn: Vec[Bits]) => {
+    val ROM = Mem(lut.map(B(_)))
+    Vec(ROM.readSync(dataIn.head.asUInt))
   }
-}
-
-case class LUTModule(lut: Array[String]) extends ImplComponent(
-  log2Up(lut.length), lut.head.length, 1, 1) {
-  val ROM = Mem(lut.map(B(_)))
-  val ret = ROM.readSync(dataIn.fragment.head.asUInt)
-  dataOut.fragment.head := ret
-  dataOut.last := RegNext(dataIn.last, init = False)
-  override val latency = 1
 }

@@ -9,7 +9,7 @@ import scala.reflect.ClassTag
 
 class SPerm[T](val row: Int, val column: Int)
               (implicit tag: ClassTag[T], field: MixType[T])
-  extends dsl.BaseTransform[T, T](SPerm.getTransform(row, column), new SPermImpl(row, column))(field, field)
+  extends dsl.BaseTransform[T, T](SPerm.getTransform(row, column), new SPermImpl(row, column, field.width))(field, field)
 
 object SPerm {
 
@@ -25,17 +25,13 @@ object SPerm {
 
 }
 
-class SPermImpl(row:Int, column:Int) extends Impl{
-
-
+class SPermImpl(row: Int, column: Int, theWidth: Int) extends Impl {
+  override val name = "SPerm"
   override val foldMax = row * column
+  override val width = (theWidth, theWidth)
   override val size = (row * column, row * column)
+  override def getFunction(fold: Int) = (dataIn: Vec[Bits]) =>
+  Vec(dataIn.toArray.grouped(row).toArray.transpose.flatten)
+  override def getLatency(fold: Int) = 0
 
-  override def getImpl(fold:Int) = {
-    val impl = (dataIn: (Vec[Bits],Bool)) => {
-      val ret = Vec(dataIn._1.toArray.grouped(row).toArray.transpose.flatten)
-      (ret, dataIn._2)
-    }
-    RawImpl(impl, 0)
-  }
 }

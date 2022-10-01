@@ -16,14 +16,9 @@ object Reuse {
     var timeReuse = 1
     var fold: Int = 1
 
-    def latency = impl.getImpl(fold).latency
-
+    def latency = impl.getLatency(fold)
     def iterationLatency = (timeFactor / timeReuse * latency) max (spaceReuse * fold)
-
     def throughput = 1.0 / (timeReuse * iterationLatency)
-
-    def util = spaceReuse * fold / iterationLatency
-
     def pass = throughput >= targetThroughput
 
     // find reuse in space repetition
@@ -45,8 +40,7 @@ object Reuse {
       if (!pass) timeReuse = old
     }
 
-
-
+    def util = spaceReuse * fold / iterationLatency
     Reuse(spaceReuse, timeReuse, fold, iterationLatency)
   }
 }

@@ -7,6 +7,14 @@ import Chainsaw.ringsUtils._
 
 object ModularReduction {
 
+  def getKREDConfig(ring: Ring[Long]) = {
+    val p = ring.p
+    val m = (p - 1).toBinaryString.reverse.takeWhile(_ == '0').size
+    val k = (p - 1) / (1 << m)
+    require(p == k * (1 << m) + 1, s"K2RED require p = k * 2^m + 1, while $p != $k * 2^$m + 1")
+    (p, m, k)
+  }
+
   /** modular reduction for a specific Zp in which p = k * 2^m^ + 1, like Montgomery modular reduction, this won't give an exact mod result, so you need regard it as a different "representation"
    *
    * @see Speeding up the Number Theoretic Transform for Faster Ideal Lattice-Based Cryptography [[http://eprint.iacr.org/2016/504.pdf]]
@@ -17,14 +25,6 @@ object ModularReduction {
    * @see [[crypto]] for hardware implementation
    * @return ret === K^2^ * c mod p
    */
-  def getKREDConfig(ring: Ring[Long]) = {
-    val p = ring.p
-    val m = (p - 1).toBinaryString.reverse.takeWhile(_ == '0').size
-    val k = (p - 1) / (1 << m)
-    require(p == k * (1 << m) + 1, s"K2RED require p = k * 2^m + 1, while $p != $k * 2^$m + 1")
-    (p, m, k)
-  }
-
   def K2RED(c: Int, ring: Ring[Long]): Long = { // TODO: generalize this for different q
     // get m and k from p
     val (p, m, k) = getKREDConfig(ring)

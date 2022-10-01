@@ -63,31 +63,13 @@ object Matrix {
 }
 
 class MatrixImpl(array: Array[Array[String]], multH: HardOp2, addH: HardOp2) extends Impl {
-
+  override val name = "Matrix"
   override val size = (array.head.length, array.length)
-
-  override def getImpl(fold: Int) = {
-
-    val component = MatrixModule(array, multH, addH)
-    val impl = (dataIn: (Vec[Bits], Bool)) => {
-      component.dataIn.fragment := dataIn._1
-      component.dataIn.last := dataIn._2
-      (component.dataOut.fragment, component.dataOut.last)
-    }
-    RawImpl(impl, component.latency)
+  override val width = (array.head.head.length, array.head.head.length)
+  override def getLatency(fold: Int) = log2Up(array.head.length) * addH.latency + multH.latency
+  override def getFunction(fold: Int) = (dataIn: Vec[Bits]) => {
+    val coeffs = array.map(_.map(B(_)))
+    val afterMult = coeffs.map(row => row.zip(dataIn).map { case (coeff, data) => multH.op(coeff, data) })
+    Vec(afterMult.map(Matrix.reduceBalancedTree(_, addH.op)).map(_.head))
   }
 }
-
-case class MatrixModule(array: Array[Array[String]], multH: HardOp2, addH: HardOp2)
-  extends ImplComponent(array.head.head.length, array.head.head.length, array.head.length, array.length) {
-
-  val coeffs = array.map(_.map(B(_)))
-  val afterMult = coeffs.map(row => row.zip(dataIn.fragment).map { case (coeff, data) => multH.op(coeff, data) })
-  val ret = Vec(afterMult.map(Matrix.reduceBalancedTree(_, addH.op)).map(_.head))
-
-  override val latency = log2Up(array.head.length) * addH.latency + multH.latency
-
-  dataOut.fragment := ret
-  dataOut.last := Delay(dataIn.last, latency, init = False)
-}
-

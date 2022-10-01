@@ -21,6 +21,7 @@ import scala.util.{Failure, Success, Try}
 import scala.collection.JavaConversions._
 
 
+
 /** represent a group of inequalities by a graph and solve it as a shortest path problem
  *
  * @see ''VLSI Digital Signal Processing Systems: Design and Implementation'' Chap4.3

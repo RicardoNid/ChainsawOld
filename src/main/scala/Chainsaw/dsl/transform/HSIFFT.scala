@@ -25,20 +25,16 @@ object HSIFFT {
 }
 
 class HSIFFTImpl(theSize: Int) extends Impl {
-
+  override val name = "HSIFFT"
+  val st = HardType(SFix(2 exp, -13 exp))
   override val foldMax = theSize
-
+  override val width = (32, 32)
   override val size = (theSize, theSize)
-
-  override def getImpl(fold: Int) = {
-    val st = HardType(SFix(2 exp, -13 exp))
-    val component = CooleyTukeyFFT(theSize, true, st, st, Seq(4))
-    val impl = (dataIn: (Vec[Bits], Bool)) => {
-      component.dataIn.payload.zip(dataIn._1).foreach { case (port, data) => port.assignFromBits(data) }
-      component.dataIn.valid := True
-      val ret = Vec(component.dataOut.payload.map(_.asBits))
-      (ret, Delay(dataIn._2, component.latency, init = False))
-    }
-    RawImpl(impl, 0)
+  override def getLatency(fold: Int) = CooleyTukeyFFT(4, true, st, st, Seq(4)).latency
+  override def getFunction(fold: Int) = (dataIn: Vec[Bits]) => {
+    val core = CooleyTukeyFFT(4, true, st, st, Seq(4))
+    core.dataIn.payload.zip(dataIn).foreach { case (port, data) => port.assignFromBits(data) }
+    core.dataIn.valid := True
+    Vec(core.dataOut.payload.map(_.asBits))
   }
 }
